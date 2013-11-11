@@ -1,0 +1,18 @@
+---
+# This Playbook would deploy the whole Baazdata cluster with replication and sharding.
+
+
+- hosts: tag_Name_MongoDBServer 
+  roles:
+  - role: common
+  - role: mongodb
+
+- hosts: tag_Name_Backoffice
+  roles:
+  - role: common
+  - role: backoffice
+
+- hosts: tag_Name_Webserver1
+  roles:
+  - role: webserver
+

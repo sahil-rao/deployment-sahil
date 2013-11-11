@@ -1,0 +1,65 @@
+---
+- name: Install apache2
+  apt: pkg=apache2 state=present
+  sudo: yes
+- name: Install mysql server
+  apt: pkg=mysql-server state=present
+  sudo: yes
+- name: Install python setuptools
+  apt: pkg=python-setuptools state=present
+  sudo: yes
+- name: Install graphviz
+  apt: pkg=graphviz state=present
+  sudo: yes
+  ignore_errors: True
+- name: Install libgraphviz-dev
+  apt: pkg=libgraphviz-dev state=present
+  sudo: yes
+- name: Install pip
+  shell: sudo easy_install pip
+- name: Install pymongo
+  shell: sudo pip install pymongo
+- name: Install networkx
+  shell: sudo pip install networkx
+#- name: Install pygraphviz
+#  shell: sudo pip install pygraphviz
+- name: Install Django
+  shell: sudo pip install Django
+- name: Install mod_wsgi
+  apt: pkg=libapache2-mod-wsgi state=present
+  sudo: yes
+  notify: restart apache2
+- name: Install python mysqlDB
+  apt: pkg=python-mysqldb state=present
+  sudo: yes
+- name: Install S3 CMD
+  apt: pkg=s3cmd state=present
+  sudo: yes
+- name: Copy s3cmd config file
+  copy: src=/home/ubuntu/.s3cfg dest=/home/ubuntu/.s3cfg 
+- name: Create mysql user
+  mysql_user: name=baaz password=baaz priv=*.*:ALL state=present
+- name: Create mysql DB
+  mysql_db: name=baazdata state=present
+- name: Get Flightpath
+  shell: s3cmd sync s3://baaz-deployment/flightpath-deployment.tar.gz .
+- name: Untar flightpath
+  shell: tar -zxf /home/ubuntu/flightpath-deployment.tar.gz chdir=/
+  sudo: yes
+- name: Get Baazdata App
+  shell: s3cmd sync s3://baaz-deployment/Baazapp-deployment.tar.gz .
+- name: Untar Baazdata App
+  shell: tar -zxf /home/ubuntu/Baazapp-deployment.tar.gz chdir=/
+  sudo: yes
+- name: Copy apache2 config
+  copy: src=roles/webserver/files/apache2.conf dest=/etc/apache2/apache2.conf
+  sudo: yes
+- name: Copy apache2 sites configuration
+  copy: src=roles/webserver/files/000-default.conf dest=/etc/apache2/sites-enabled/000-default.conf
+  sudo: yes
+- name: Get Baazdata Static Web files
+  shell: s3cmd sync s3://baaz-deployment/Web-Static-Deployment.tar.gz .
+- name: Untar Static web files
+  shell: tar -zxf /home/ubuntu/Web-Static-Deployment.tar.gz chdir=/var/www
+  sudo: yes
+  notify: restart apache2
