@@ -1,0 +1,16 @@
+---
+- name: Add rabbitMQ Repo 
+  shell: echo "deb http://www.rabbitmq.com/debian/ testing main" >> /etc/apt/sources.list
+  sudo: yes
+- name: Set rabbitmq public key
+  shell: wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
+- name: Add rabbit MQ key
+  shell: apt-key add rabbitmq-signing-key-public.asc
+  sudo: yes
+- name: update APT
+  shell: apt-key update
+  sudo: yes
+- name: Install Rabbit MQ
+  apt: pkg=rabbitmq-server state=present
+  sudo: yes
+

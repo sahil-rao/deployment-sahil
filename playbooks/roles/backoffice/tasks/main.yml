@@ -8,6 +8,8 @@
   shell: sudo pip install pymongo
 - name: Install networkx
   shell: sudo pip install networkx
+- name: Install pika
+  shell: sudo pip install pika==0.9.8
 - name: Install S3 CMD
   apt: pkg=s3cmd state=present
   sudo: yes
@@ -16,17 +18,28 @@
 - name: Copy s3cmd config file
   copy: src=/home/ubuntu/.s3cfg dest=~root/.s3cfg
   sudo: yes
+- name: Copy boto config file
+  copy: src=/home/ubuntu/.boto dest=/home/ubuntu/.boto
+- name: Copy boto config file
+  copy: src=/home/ubuntu/.boto dest=~root/.boto
+  sudo: yes
 - name: Get Flightpath
   shell: s3cmd sync s3://baaz-deployment/flightpath-deployment.tar.gz .
 - name: Untar flightpath
   shell: tar -zxf /home/ubuntu/flightpath-deployment.tar.gz chdir=/
   sudo: yes
-- name: Get Scheduled Parsing
-  shell: s3cmd sync s3://baaz-deployment/Scheduled-deployment.tar.gz .
-- name: Untar Scheduled
-  shell: tar -zxf /home/ubuntu/Scheduled-deployment.tar.gz chdir=/
+- name: Get Data Acquisition service
+  shell: s3cmd sync s3://baaz-deployment/Baaz-DataAcquisition-Service.tar.gz .
+- name: Copy the service files
+  shell: tar -zxf /home/ubuntu/Baaz-DataAcquisition-Service.tar.gz chdir=/
   sudo: yes
-- name: start cron job
-  cron: name="Parse Files" minute="55" job="/usr/local/bin/hourly.sh  >> /tmp/cronlog 2>&1"
+- name: Remove any previous service that may be installed.
+  shell: update-rc.d -f baazdataacquisition remove
+  sudo: yes
+- name: Install baazdataacquisition Service.
+  shell: update-rc.d baazdataacquisition defaults
+  sudo: yes
+- name: Start baazdataacquisition Service.
+  service: name=baazdataacquisition state=started
   sudo: yes
 

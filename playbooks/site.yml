@@ -16,3 +16,7 @@
   roles:
   - role: webserver
 
+- hosts: tag_Name_QueueServer
+  roles:
+  - role: common
+  - role: queueserver
