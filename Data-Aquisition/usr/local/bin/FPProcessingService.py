@@ -23,6 +23,7 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(
         '172.31.10.27'))
 channel = connection.channel()
 channel.queue_declare(queue='ftpupload')
+channel1.queue_declare(queue='mathqueue')
 
 boto_conn = boto.connect_s3()
 bucket = boto_conn.get_bucket('partner-logs') 
@@ -128,9 +129,6 @@ def callback(ch, method, properties, body):
     #for en in connector.entities:
     #    mongoconn.getEntity(en)
 
-    connector.close()
-    mongoconn.close()
-
     """
     Checkpoint the file processing.
     """
@@ -139,6 +137,25 @@ def callback(ch, method, properties, body):
     chkpoint_key.set_contents_from_string("Processed")
     errlog.write("Processed file : {0} \n".format(dest_file))     
     errlog.flush()
+
+    math_msg = {'tenent':tenent}
+    job_insts = {}
+    for en in connector.entities:
+        entity = connector.getEntity(en)
+        if not entity.etype == 'HADOOP_JOB':
+            continue
+        job_insts[entity.eid] = {'program_id':entity.eid}
+    math_msg['job_instances'] = job_insts.values()
+    message = dumps(math_msg)
+    channel1.basic_publish(exchange='',
+                      routing_key='mathqueue',
+                      body=message)
+
+    errlog.write("Published Message {0}\n".format(message))
+    errlog.flush()
+
+    connector.close()
+    mongoconn.close()
 
 channel.basic_consume(callback,
                       queue='ftpupload',
