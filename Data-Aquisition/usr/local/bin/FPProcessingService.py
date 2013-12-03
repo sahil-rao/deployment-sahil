@@ -23,7 +23,10 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(
         '172.31.10.27'))
 channel = connection.channel()
 channel.queue_declare(queue='ftpupload')
+channel1 = connection.channel()
 channel1.queue_declare(queue='mathqueue')
+channel2 = connection.channel()
+channel2.queue_declare(queue='compilerqueue')
 
 boto_conn = boto.connect_s3()
 bucket = boto_conn.get_bucket('partner-logs') 
@@ -48,7 +51,7 @@ def callback(ch, method, properties, body):
     source = tenent + "/" + filename
 
     """
-    Check if the file exists in S3 TODO:
+    Check if the file exists in S3. 
     """ 
     file_key = bucket.get_key(source)
     if file_key is None:
@@ -137,6 +140,24 @@ def callback(ch, method, properties, body):
     chkpoint_key.set_contents_from_string("Processed")
     errlog.write("Processed file : {0} \n".format(dest_file))     
     errlog.flush()
+
+    for en in connector.entities:
+        entity = connector.getEntity(en)
+        if not entity.etype == 'HADOOP_JOB': 
+            continue
+
+        if not entity.instances[0].config_data.has_key("hive.query.string"):
+    	    errlog.write("Progname found {0}\n".format(entity.name))
+    	    errlog.flush()
+	    continue
+
+	compiler_msg = {'tenent':tenent, 'job_instances':[{'entity_id':entity.eid, 'query':entity.name}]}
+    	message = dumps(compiler_msg)
+    	channel2.basic_publish(exchange='',
+                      routing_key='compilerqueue',
+                      body=message)
+    	errlog.write("Published Compiler Message {0}\n".format(message))
+    	errlog.flush()
 
     math_msg = {'tenent':tenent}
     job_insts = {}
