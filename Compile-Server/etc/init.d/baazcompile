@@ -19,7 +19,7 @@ start() {
 # Restart the service baazmath
 stop() {
         #initlog -c "echo -n Stopping baazcompile server: "
-        killall BaazMathService.py
+        killall BaazCompileService.py
         ### Now, delete the lock file ###
         rm -f /var/lock/baazcompile
         echo
