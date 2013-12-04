@@ -98,12 +98,13 @@ def callback(ch, method, properties, body):
     Parse the data.
     """
     context = tenent
-    connector = HadoopConnector({'logpath':logpath})
     mongoconn = Connector.getConnector(context)
     if mongoconn is None:
         mongoconn = MongoConnector({'host':'172.31.2.42', 'context':context, \
                                 'create_db_if_not_exist':True})
 
+    connector = HadoopConnector({'logpath':logpath, 'psConnector':mongoconn})
+    
     """
     Perorm Audit steps TODO.
     """
