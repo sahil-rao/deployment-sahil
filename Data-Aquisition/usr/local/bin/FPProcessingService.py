@@ -72,10 +72,12 @@ def callback(ch, method, properties, body):
     """
     Download the file and extract TODO:
     """ 
-    destination = BAAZ_DATA_ROOT + tenent 
+    dest_file = BAAZ_DATA_ROOT + tenent + "/" + filename
+    destination = os.path.dirname(dest_file)
+    print destination
     if not os.path.exists(destination):
         os.makedirs(destination)
-    dest_file = destination + "/" + filename
+
     d_file = open(dest_file, "w+")
     file_key.get_contents_to_file(d_file)
 
@@ -154,7 +156,7 @@ def callback(ch, method, properties, body):
             jinst_dict['query'] = entity.name
         elif entity.instances[0].config_data.has_key("pig.script.features"):
             jinst_dict['program_type'] = "Pig"
-            jinst_dict['pig_features'] = entity.instances[0].config_data['pig.script.features']
+            jinst_dict['pig_features'] = int(entity.instances[0].config_data['pig.script.features'])
         else:
     	    errlog.write("Progname found {0}\n".format(entity.name))
     	    errlog.flush()

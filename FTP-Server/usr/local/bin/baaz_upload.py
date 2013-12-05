@@ -6,6 +6,10 @@ import sys
 import os
 import pika
 from json import *
+import datetime
+import time
+
+errlog = open("/var/log/baazmonitor.log", "w")
 
 splits = sys.argv[1].split()
 
@@ -13,12 +17,18 @@ tenent = splits[7].strip('",[]')
 filepath = splits[12].strip('",[]')
 filename = filepath.rsplit("/", 1)[1]
 
-source = "/mnt/volume1/" + tenent + filepath
-destination = tenent + "/" + filename
+timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d')
 
-print source, destination
+source = "/mnt/volume1/" + tenent + filepath
+s3filepath =  timestr + "/" + filename
+destination = tenent + "/" + s3filepath
+
+errlog.write("Source {0}, destination {1}\n".format(source, destination))
 
 if not os.path.isfile(source):
+    errlog.write("File {0} notfound \n".format(source))
+    errlog.flush()
+    errlog.close()
     exit(0)
 
 connection = boto.connect_s3()
@@ -33,7 +43,7 @@ pconn = pika.BlockingConnection(pika.ConnectionParameters(
 channel = pconn.channel()
 channel.queue_declare(queue='ftpupload')
 
-msg_dict = {'tenent':tenent, 'filename':filename}
+msg_dict = {'tenent':tenent, 'filename':s3filepath}
 message = dumps(msg_dict)
 channel.basic_publish(exchange='',
                       routing_key='ftpupload',
