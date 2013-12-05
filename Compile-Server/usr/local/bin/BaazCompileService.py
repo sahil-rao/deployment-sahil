@@ -24,6 +24,21 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(
 channel = connection.channel()
 channel.queue_declare(queue='compilerqueue')
 
+PIG_FEATURE = ['UNKNOWN', 'MERGE_JOIN', 'REPLICATED_JOIN', 'SKEWED_JOIN', 'HASH_JOIN',\
+     'COLLECTED_GROUP', 'MERGE_COGROUP', 'COGROUP', 'GROUP_BY', 'ORDER_BY', 'DISTINCT', \
+     'STREAMING', 'SAMPLING', 'MULTI_QUERY', 'FILTER', 'MAP_ONLY', 'CROSS', 'LIMIT', 'UNION',\
+     'COMBINER']
+
+def generatePigSignature(pig_data, tenent, entity_id):
+    operations = []
+    for i in range(0, len(PIG_FEATURE)):
+        if (((pig_data >> i) & 0x00000001) != 0):
+            operations.append(PIG_FEATURE[i])
+    ret_dict = { 'EntityId':entity_id, 'TenentId': tenent, \
+                 'ComplexityScore': len(operations),\
+                 'InputTableList': [], 'OutputTableList': [],\
+                 'Operations': operations}
+    return ret_dict
     
 def callback(ch, method, properties, body):
     msg_dict = loads(body)
@@ -43,11 +58,28 @@ def callback(ch, method, properties, body):
     tenent = msg_dict["tenent"]
     instances = msg_dict["job_instances"]
 
+    mongoconn = Connector.getConnector(context)
+    if mongoconn is None:
+        mongoconn = MongoConnector({'host':'172.31.2.42', 'context':context, \
+                                    'create_db_if_not_exist':True})
     """
     Generate the CSV from the job instances.
     """
     counter = 0
     for inst in instances:
+    
+        compile_doc = None
+        prog_id = inst["entity_id"] 
+        query = inst["query"] 
+        entity = mongoconn.getEntity(prog_id)
+        if entity is None:
+            continue
+
+        if inst['program_type'] == "Pig":
+            compile_doc = generatePigSignature(inst['pig_features'], tenent, prog_id)
+            mongoconn.updateProfile(entity, "Compiler", compile_doc)
+            continue
+
     	"""
     	Create a destination/processing folder.
     	"""
@@ -57,9 +89,8 @@ def callback(ch, method, properties, body):
         	os.makedirs(destination)
 
     	dest_file_name = destination + "/input.query"
+        output_file_name = destination + "/compiler.out"
 
-        prog_id = inst["entity_id"] 
-        query = inst["query"] 
         #inst_id = inst["inst_id"] 
         #if prog_collector.has_key(prog_id):
         #    prog_collector[prog_id].append(inst_id)
@@ -76,12 +107,17 @@ def callback(ch, method, properties, body):
             """
                 Call the process here
             """ 
-            proc = Popen('java com.baaz.hive.ast.BaazHiveQueryAnalyzer {0}'.format(dest_file_name),\
+            proc = Popen('java com.baaz.hive.ast.BaazHiveQueryAnalyzer {0} {1}'.format(dest_file_name, ouput_file_name),\
                          stdout=PIPE, shell=True, env=dict(os.environ, \
                         CLASSPATH='/usr/lib/Baaz-Hive-Compiler:/usr/lib/hive/lib/antlr-runtime-3.4.jar:/usr/lib/hive/lib/avro-1.7.1.jar:/usr/lib/hive/lib/avro-mapred-1.7.1.jar:/usr/lib/hive/lib/commons-cli-1.2.jar:/usr/lib/hive/lib/commons-codec-1.4.jar:/usr/lib/hive/lib/commons-collections-3.2.1.jar:/usr/lib/hive/lib/commons-compress-1.4.1.jar:/usr/lib/hive/lib/commons-configuration-1.6.jar:/usr/lib/hive/lib/commons-dbcp-1.4.jar:/usr/lib/hive/lib/commons-io-2.4.jar:/usr/lib/hive/lib/commons-lang-2.4.jar:/usr/lib/hive/lib/commons-logging-1.0.4.jar:/usr/lib/hive/lib/commons-logging-api-1.0.4.jar:/usr/lib/hive/lib/commons-pool-1.5.4.jar:/usr/lib/hive/lib/datanucleus-connectionpool-2.0.3.jar:/usr/lib/hive/lib/datanucleus-core-2.0.3.jar:/usr/lib/hive/lib/datanucleus-enhancer-2.0.3.jar:/usr/lib/hive/lib/datanucleus-rdbms-2.0.3.jar:/usr/lib/hive/lib/derby-10.4.2.0.jar:/usr/lib/hive/lib/guava-11.0.2.jar:/usr/lib/hive/lib/hbase-0.94.6.1.jar:/usr/lib/hive/lib/hbase-0.94.6.1-tests.jar:/usr/lib/hive/lib/hive-beeline-0.11.0.jar:/usr/lib/hive/lib/hive-cli-0.11.0.jar:/usr/lib/hive/lib/hive-common-0.11.0.jar:/usr/lib/hive/lib/hive-contrib-0.11.0.jar:/usr/lib/hive/lib/hive-exec-0.11.0.jar:/usr/lib/hive/lib/hive-hbase-handler-0.11.0.jar:/usr/lib/hive/lib/hive-hwi-0.11.0.jar:/usr/lib/hive/lib/hive-jdbc-0.11.0.jar:/usr/lib/hive/lib/hive-metastore-0.11.0.jar:/usr/lib/hive/lib/hive-serde-0.11.0.jar:/usr/lib/hive/lib/hive-service-0.11.0.jar:/usr/lib/hive/lib/hive-shims-0.11.0.jar:/usr/lib/hive/lib/jackson-core-asl-1.8.8.jar:/usr/lib/hive/lib/jackson-jaxrs-1.8.8.jar:/usr/lib/hive/lib/jackson-mapper-asl-1.8.8.jar:/usr/lib/hive/lib/jackson-xc-1.8.8.jar:/usr/lib/hive/lib/JavaEWAH-0.3.2.jar:/usr/lib/hive/lib/javolution-5.5.1.jar:/usr/lib/hive/lib/jdo2-api-2.3-ec.jar:/usr/lib/hive/lib/jetty-6.1.26.jar:/usr/lib/hive/lib/jetty-util-6.1.26.jar:/usr/lib/hive/lib/jline-0.9.94.jar:/usr/lib/hive/lib/json-20090211.jar:/usr/lib/hive/lib/libfb303-0.9.0.jar:/usr/lib/hive/lib/libthrift-0.9.0.jar:/usr/lib/hive/lib/log4j-1.2.16.jar:/usr/lib/hive/lib/maven-ant-tasks-2.1.3.jar:/usr/lib/hive/lib/metrics-core-2.1.2.jar:/usr/lib/hive/lib/protobuf-java-2.4.1.jar:/usr/lib/hive/lib/servlet-api-2.5-20081211.jar:/usr/lib/hive/lib/slf4j-api-1.6.1.jar:/usr/lib/hive/lib/slf4j-log4j12-1.6.1.jar:/usr/lib/hive/lib/snappy-0.2.jar:/usr/lib/hive/lib/ST4-4.0.4.jar:/usr/lib/hive/lib/tempus-fugit-1.1.jar:/usr/lib/hive/lib/xz-1.0.jar:/usr/lib/hive/lib/zookeeper-3.4.3.jar')) 
             for line in proc.stdout:
                 errlog.write(line)
                 errlog.flush()
+            compile_doc = None
+            with open('output_file_name') as data_file:    
+                compile_doc = json.load(data_file)
+            if compile_doc is not None:
+                mongoconn.updateProfile(entity, "Compiler", compile_doc)
         except:
             errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenent, prog_id, traceback.format_exc()))     
             errlog.flush()

@@ -147,12 +147,20 @@ def callback(ch, method, properties, body):
         if not entity.etype == 'HADOOP_JOB': 
             continue
 
-        if not entity.instances[0].config_data.has_key("hive.query.string"):
+        jinst_dict = {'entity_id':entity.eid} 
+        prog_type = ""
+        if entity.instances[0].config_data.has_key("hive.query.string"):
+            jinst_dict['program_type'] = "Hive"
+            jinst_dict['query'] = entity.name
+        elif entity.instances[0].config_data.has_key("pig.script.features"):
+            jinst_dict['program_type'] = "Pig"
+            jinst_dict['pig_features'] = entity.instances[0].config_data['pig.script.features']
+        else:
     	    errlog.write("Progname found {0}\n".format(entity.name))
     	    errlog.flush()
 	    continue
 
-	compiler_msg = {'tenent':tenent, 'job_instances':[{'entity_id':entity.eid, 'query':entity.name}]}
+	compiler_msg = {'tenent':tenent, 'job_instances':[jinst_dict]}
     	message = dumps(compiler_msg)
     	channel2.basic_publish(exchange='',
                       routing_key='compilerqueue',
