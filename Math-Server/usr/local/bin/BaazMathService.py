@@ -103,6 +103,7 @@ def callback(ch, method, properties, body):
         generateBaseStats(tenent)
         proc = Popen('mysql -ubaazdep -pbaazdep --local-infile -A HADOOP_DEV < /usr/lib/reports/queries/HADOOP/JobReports.sql', 
                      stdout=PIPE, shell=True) 
+        proc.wait()
         storeResourceProfile(tenent)
         return
         
