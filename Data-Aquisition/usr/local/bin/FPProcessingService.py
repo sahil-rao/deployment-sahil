@@ -170,7 +170,7 @@ def callback(ch, method, properties, body):
     	errlog.write("Published Compiler Message {0}\n".format(message))
     	errlog.flush()
 
-    math_msg = {'tenent':tenent}
+    math_msg = {'tenent':tenent, 'opcode':"Frequency-Estimation"}
     job_insts = {}
     for en in connector.entities:
         entity = connector.getEntity(en)
@@ -183,6 +183,14 @@ def callback(ch, method, properties, body):
                       routing_key='mathqueue',
                       body=message)
 
+    errlog.write("Published Message {0}\n".format(message))
+    errlog.flush()
+
+    math_msg = {'tenent':tenent, 'opcode':"BaseStats"}
+    message = dumps(math_msg)
+    channel1.basic_publish(exchange='',
+                      routing_key='mathqueue',
+                      body=message)
     errlog.write("Published Message {0}\n".format(message))
     errlog.flush()
 

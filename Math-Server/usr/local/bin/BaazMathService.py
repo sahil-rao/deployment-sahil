@@ -27,7 +27,25 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(
 channel = connection.channel()
 channel.queue_declare(queue='mathqueue')
 
-    
+def generateBaseStats(tenent):
+    """
+    Create a destination/processing folder.
+    """
+    timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
+    destination = '/mnt/volume1/base-stats-' + tenent + "/" + timestr 
+    if not os.path.exists(destination):
+        os.makedirs(destination)
+
+    dest_file_name = destination + "/input.csv"
+    dest_file = open(dest_file_name, "w+")
+    generateBaseStatsCSV(tenent, dest_file)
+    dest_file.flush()
+    dest_file.close()
+   
+    """
+    Call Base stats generation.
+    """ 
+
 def callback(ch, method, properties, body):
     msg_dict = loads(body)
 
@@ -37,13 +55,26 @@ def callback(ch, method, properties, body):
     Validate the message.
     """ 
     if not msg_dict.has_key("tenent") or \
-       not msg_dict.has_key("job_instances"):
+       not msg_dict.has_key("opcode"):
         errlog.write("Invalid message received\n")     
         errlog.write(body)
         errlog.write("\n")
         errlog.flush()
+        return
 
-    tenent = msg_dict["tenent"]
+    tenent = msg_dict['tenent']
+    opcode = msg_dict['opcode']
+    if opcode == "BaseStats":
+        generateBaseStats(tenent):
+        return
+        
+    if not msg_dict.has_key("job_instances"):
+        errlog.write("Invalid message received\n")     
+        errlog.write(body)
+        errlog.write("\n")
+        errlog.flush()
+        return
+
     instances = msg_dict["job_instances"]
 
     """
