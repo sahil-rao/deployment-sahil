@@ -74,13 +74,11 @@ def callback(ch, method, properties, body):
         if entity is None:
             continue
 
-	print "Program type :", inst['program_type']
         if inst['program_type'] == "Pig":
             compile_doc = generatePigSignature(inst['pig_features'], tenent, prog_id)
             mongoconn.updateProfile(entity, "Compiler", compile_doc)
             continue
 
-	print "Got Hive query"
         query = inst["query"] 
     	"""
     	Create a destination/processing folder.

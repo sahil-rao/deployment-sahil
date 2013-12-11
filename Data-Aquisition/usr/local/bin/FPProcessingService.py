@@ -5,6 +5,7 @@ Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenent> <log Directory>
 """
 from flightpath.parsing.hadoop.HadoopConnector import *
+from flightpath.parsing.SQL.SQLScriptConnector import *
 import sys
 from flightpath.MongoConnector import *
 from boto.s3.key import Key
@@ -132,8 +133,10 @@ def callback(ch, method, properties, body):
     for rel in connector.relations:
         mongoconn.updateConsociation(rel)
 
-    #for en in connector.entities:
-    #    mongoconn.getEntity(en)
+    SQLconnector = SQLScriptConnector({'logpath':logpath, 'psConnector':mongoconn})
+    for en in SQLconnector.entities:
+        entity = SQLconnector.getEntity(en)
+        mongoconn.updateEntity(entity)
 
     """
     Checkpoint the file processing.
@@ -170,6 +173,22 @@ def callback(ch, method, properties, body):
     	errlog.write("Published Compiler Message {0}\n".format(message))
     	errlog.flush()
 
+    for en in SQLconnector.entities:
+        entity = SQLconnector.getEntity(en)
+        if not entity.etype == 'SQL_QUERY': 
+            continue
+
+        jinst_dict = {'entity_id':entity.eid} 
+        prog_type = "SQL"
+        jinst_dict['query'] = entity.name
+	compiler_msg = {'tenent':tenent, 'job_instances':[jinst_dict]}
+    	message = dumps(compiler_msg)
+    	channel2.basic_publish(exchange='',
+                      routing_key='compilerqueue',
+                      body=message)
+    	errlog.write("Published Compiler Message {0}\n".format(message))
+    	errlog.flush()
+
     math_msg = {'tenent':tenent, 'opcode':"Frequency-Estimation"}
     job_insts = {}
     for en in connector.entities:
@@ -194,6 +213,7 @@ def callback(ch, method, properties, body):
     errlog.write("Published Message {0}\n".format(message))
     errlog.flush()
 
+    SQLconnector.close()
     connector.close()
     mongoconn.close()
 
