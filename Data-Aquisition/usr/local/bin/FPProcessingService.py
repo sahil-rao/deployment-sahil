@@ -179,7 +179,7 @@ def callback(ch, method, properties, body):
             continue
 
         jinst_dict = {'entity_id':entity.eid} 
-        prog_type = "SQL"
+        jinst_dict['program_type'] = "SQL"
         jinst_dict['query'] = entity.name
 	compiler_msg = {'tenent':tenent, 'job_instances':[jinst_dict]}
     	message = dumps(compiler_msg)
