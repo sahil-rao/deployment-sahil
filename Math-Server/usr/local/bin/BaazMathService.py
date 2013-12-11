@@ -8,6 +8,7 @@ from flightpath.parsing.hadoop.HadoopConnector import *
 from flightpath.MongoConnector import *
 from json import *
 from baazmath.interface.BaazCSV import *
+from subprocess import Popen, PIPE
 import baazmath.workflows.estimate_frequency as EF
 import sys
 import pika
@@ -32,11 +33,12 @@ def generateBaseStats(tenent):
     Create a destination/processing folder.
     """
     timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-    destination = '/mnt/volume1/base-stats-' + tenent + "/" + timestr 
-    if not os.path.exists(destination):
-        os.makedirs(destination)
+    destination = "/tmp"
+    #destination = '/mnt/volume1/base-stats-' + tenent + "/" + timestr 
+    #if not os.path.exists(destination):
+    #    os.makedirs(destination)
 
-    dest_file_name = destination + "/input.csv"
+    dest_file_name = destination + "/test.csv"
     dest_file = open(dest_file_name, "w+")
     generateBaseStatsCSV(tenent, dest_file)
     dest_file.flush()
@@ -46,10 +48,43 @@ def generateBaseStats(tenent):
     Call Base stats generation.
     """ 
 
+def storeResourceProfile(tenent):
+    print "Going to store resource profile\n"    
+    if not os.path.isfile("/tmp/test_hadoop_job_resource_share.out"):
+        return
+
+    print "Resource profile file found\n"    
+    mongoconn = Connector.getConnector(tenent)
+    if mongoconn is None:
+        mongoconn = MongoConnector({'host':'172.31.2.42', 'context':tenent, \
+                                    'create_db_if_not_exist':True})
+
+    with open("/tmp/test_hadoop_job_resource_share.out", "r") as resource_file:
+        for line in resource_file:
+            print "Resource profile line :", line    
+            if line.strip().startswith("Entity"):
+                continue
+
+            splits = line.strip().split()
+            if not len(splits) == 2:
+                continue
+
+            entity = mongoconn.getEntity(splits[0])
+            if entity is None:
+                errlog.write("Entity {0} not found for storing resource profile\n".format(splits[0]))    
+                errlog.flush()
+                continue
+
+            errlog.write("Entity {0} resource profile {1}\n".format(splits[0], splits[1]))    
+            errlog.flush()
+            resource_doc = { "Resource_share": splits[1]}
+            mongoconn.updateProfile(entity, "Resource", resource_doc)
+    mongoconn.close()
+            
 def callback(ch, method, properties, body):
     msg_dict = loads(body)
 
-    print "Got message ", msg_dict
+    print "Analytics: Got message ", msg_dict
 
     """
     Validate the message.
@@ -65,7 +100,11 @@ def callback(ch, method, properties, body):
     tenent = msg_dict['tenent']
     opcode = msg_dict['opcode']
     if opcode == "BaseStats":
-        generateBaseStats(tenent):
+        generateBaseStats(tenent)
+        proc = Popen('mysql -ubaazdep -pbaazdep --local-infile -A HADOOP_DEV < /usr/lib/reports/queries/HADOOP/JobReports.sql', 
+                     stdout=PIPE, shell=True) 
+        proc.wait()
+        storeResourceProfile(tenent)
         return
         
     if not msg_dict.has_key("job_instances"):
