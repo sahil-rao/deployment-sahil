@@ -24,17 +24,38 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(
 channel = connection.channel()
 channel.queue_declare(queue='compilerqueue')
 
+COMPILER_MODULES='/usr/lib/baaz_compiler'
+dirList=os.listdir(COMPILER_MODULES)
+classpath = ""
+for fname in dirList:
+    fullpath = os.path.join(COMPILER_MODULES, fname)
+    if not os.path.isfile(fullpath):
+        continue
+    if not fullpath.lower().endswith(".jar"):
+        continue
+    classpath = classpath + fullpath + ":"
+
+HIVE_MODULES='/usr/lib/hive/lib'
+dirList=os.listdir(HIVE_MODULES)
+for fname in dirList:
+    fullpath = os.path.join(HIVE_MODULES, fname)
+    if not os.path.isfile(fullpath):
+        continue
+    if not fullpath.lower().endswith(".jar"):
+        continue
+    classpath = classpath + fullpath + ":"
+
 PIG_FEATURE = ['UNKNOWN', 'MERGE_JOIN', 'REPLICATED_JOIN', 'SKEWED_JOIN', 'HASH_JOIN',\
      'COLLECTED_GROUP', 'MERGE_COGROUP', 'COGROUP', 'GROUP_BY', 'ORDER_BY', 'DISTINCT', \
      'STREAMING', 'SAMPLING', 'MULTI_QUERY', 'FILTER', 'MAP_ONLY', 'CROSS', 'LIMIT', 'UNION',\
      'COMBINER']
 
-def generatePigSignature(pig_data, tenent, entity_id):
+def generatePigSignature(pig_data, tenant, entity_id):
     operations = []
     for i in range(0, len(PIG_FEATURE)):
         if (((pig_data >> i) & 0x00000001) != 0):
             operations.append(PIG_FEATURE[i])
-    ret_dict = { 'EntityId':entity_id, 'TenentId': tenent, \
+    ret_dict = { 'EntityId':entity_id, 'TenentId': tenant, \
                  'ComplexityScore': len(operations),\
                  'InputTableList': [], 'OutputTableList': [],\
                  'Operations': operations}
@@ -55,12 +76,12 @@ def callback(ch, method, properties, body):
         errlog.write("\n")
         errlog.flush()
 
-    tenent = msg_dict["tenent"]
+    tenant = msg_dict["tenent"]
     instances = msg_dict["job_instances"]
 
-    mongoconn = Connector.getConnector(tenent)
+    mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
-        mongoconn = MongoConnector({'host':'172.31.2.42', 'context':tenent, \
+        mongoconn = MongoConnector({'host':'172.31.2.42', 'context':tenant, \
                                     'create_db_if_not_exist':True})
     """
     Generate the CSV from the job instances.
@@ -75,21 +96,20 @@ def callback(ch, method, properties, body):
             continue
 
         if inst['program_type'] == "Pig":
-            compile_doc = generatePigSignature(inst['pig_features'], tenent, prog_id)
+            compile_doc = generatePigSignature(inst['pig_features'], tenant, prog_id)
             mongoconn.updateProfile(entity, "Compiler", compile_doc)
             continue
 
-        query = inst["query"] 
+	query = inst["query"].encode('utf-8').strip()
     	"""
     	Create a destination/processing folder.
     	"""
     	timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-    	destination = '/mnt/volume1/compile-' + tenent + "/" + timestr 
+    	destination = '/mnt/volume1/compile-' + tenant + "/" + timestr 
     	if not os.path.exists(destination):
         	os.makedirs(destination)
 
     	dest_file_name = destination + "/input.query"
-        output_file_name = destination + "/compiler.out"
 
         #inst_id = inst["inst_id"] 
         #if prog_collector.has_key(prog_id):
@@ -97,19 +117,24 @@ def callback(ch, method, properties, body):
         #else:
         #    prog_collector[prog_id] = [inst_id]
         #counter = counter + 1
-        errlog.write("Event received for {0}, entity {1}\n".format(tenent, prog_id))     
+        errlog.write("Event received for {0}, entity {1}\n".format(tenant, prog_id))     
         errlog.flush()
         dest_file = open(dest_file_name, "w+")
         dest_file.write(query)
         dest_file.flush()
 	dest_file.close()
 	try:
-            """
-                Call the process here
+            """ Call Hive Compiler
             """ 
-            proc = Popen('java com.baaz.hive.ast.BaazHiveQueryAnalyzer {0} {1}'.format(dest_file_name, output_file_name),\
-                         stdout=PIPE, shell=True, env=dict(os.environ, \
-                        CLASSPATH='/usr/lib/Baaz-Hive-Compiler:/usr/lib/hive/lib/antlr-runtime-3.4.jar:/usr/lib/hive/lib/avro-1.7.1.jar:/usr/lib/hive/lib/avro-mapred-1.7.1.jar:/usr/lib/hive/lib/commons-cli-1.2.jar:/usr/lib/hive/lib/commons-codec-1.4.jar:/usr/lib/hive/lib/commons-collections-3.2.1.jar:/usr/lib/hive/lib/commons-compress-1.4.1.jar:/usr/lib/hive/lib/commons-configuration-1.6.jar:/usr/lib/hive/lib/commons-dbcp-1.4.jar:/usr/lib/hive/lib/commons-io-2.4.jar:/usr/lib/hive/lib/commons-lang-2.4.jar:/usr/lib/hive/lib/commons-logging-1.0.4.jar:/usr/lib/hive/lib/commons-logging-api-1.0.4.jar:/usr/lib/hive/lib/commons-pool-1.5.4.jar:/usr/lib/hive/lib/datanucleus-connectionpool-2.0.3.jar:/usr/lib/hive/lib/datanucleus-core-2.0.3.jar:/usr/lib/hive/lib/datanucleus-enhancer-2.0.3.jar:/usr/lib/hive/lib/datanucleus-rdbms-2.0.3.jar:/usr/lib/hive/lib/derby-10.4.2.0.jar:/usr/lib/hive/lib/guava-11.0.2.jar:/usr/lib/hive/lib/hbase-0.94.6.1.jar:/usr/lib/hive/lib/hbase-0.94.6.1-tests.jar:/usr/lib/hive/lib/hive-beeline-0.11.0.jar:/usr/lib/hive/lib/hive-cli-0.11.0.jar:/usr/lib/hive/lib/hive-common-0.11.0.jar:/usr/lib/hive/lib/hive-contrib-0.11.0.jar:/usr/lib/hive/lib/hive-exec-0.11.0.jar:/usr/lib/hive/lib/hive-hbase-handler-0.11.0.jar:/usr/lib/hive/lib/hive-hwi-0.11.0.jar:/usr/lib/hive/lib/hive-jdbc-0.11.0.jar:/usr/lib/hive/lib/hive-metastore-0.11.0.jar:/usr/lib/hive/lib/hive-serde-0.11.0.jar:/usr/lib/hive/lib/hive-service-0.11.0.jar:/usr/lib/hive/lib/hive-shims-0.11.0.jar:/usr/lib/hive/lib/jackson-core-asl-1.8.8.jar:/usr/lib/hive/lib/jackson-jaxrs-1.8.8.jar:/usr/lib/hive/lib/jackson-mapper-asl-1.8.8.jar:/usr/lib/hive/lib/jackson-xc-1.8.8.jar:/usr/lib/hive/lib/JavaEWAH-0.3.2.jar:/usr/lib/hive/lib/javolution-5.5.1.jar:/usr/lib/hive/lib/jdo2-api-2.3-ec.jar:/usr/lib/hive/lib/jetty-6.1.26.jar:/usr/lib/hive/lib/jetty-util-6.1.26.jar:/usr/lib/hive/lib/jline-0.9.94.jar:/usr/lib/hive/lib/json-20090211.jar:/usr/lib/hive/lib/libfb303-0.9.0.jar:/usr/lib/hive/lib/libthrift-0.9.0.jar:/usr/lib/hive/lib/log4j-1.2.16.jar:/usr/lib/hive/lib/maven-ant-tasks-2.1.3.jar:/usr/lib/hive/lib/metrics-core-2.1.2.jar:/usr/lib/hive/lib/protobuf-java-2.4.1.jar:/usr/lib/hive/lib/servlet-api-2.5-20081211.jar:/usr/lib/hive/lib/slf4j-api-1.6.1.jar:/usr/lib/hive/lib/slf4j-log4j12-1.6.1.jar:/usr/lib/hive/lib/snappy-0.2.jar:/usr/lib/hive/lib/ST4-4.0.4.jar:/usr/lib/hive/lib/tempus-fugit-1.1.jar:/usr/lib/hive/lib/xz-1.0.jar:/usr/lib/hive/lib/zookeeper-3.4.3.jar')) 
+            output_file_name = destination + "/hive.out"
+            proc = Popen('java com.baaz.query.BaazQueryAnalyzer -input {0} -output {1} -tenant 100 -program {2} -compiler hive'.format(dest_file_name, output_file_name, prog_id),\
+                 stdout=PIPE, shell=True, env=dict(os.environ, CLASSPATH=classpath))
+
+            wait_count = 0
+            while wait_count < 5 and proc.poll() is None:
+                time.sleep(1)
+                wait_count = wait_count + 1
+
             for line in proc.stdout:
                 errlog.write(line)
                 errlog.flush()
@@ -117,14 +142,36 @@ def callback(ch, method, properties, body):
             with open(output_file_name) as data_file:    
                 compile_doc = load(data_file)
             if compile_doc is not None:
-                mongoconn.updateProfile(entity, "Compiler", compile_doc)
+                for key in compile_doc:
+                    mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
+
+            """ Call JSQL Compiler
+            """ 
+            output_file_name = destination + "/jsql.out"
+            proc = Popen('java com.baaz.query.BaazQueryAnalyzer -input {0} -output {1} -tenant 100 -program {2} -compiler jsql'.format(dest_file_name, output_file_name, prog_id),\
+                 stdout=PIPE, shell=True, env=dict(os.environ, CLASSPATH=classpath))
+
+            wait_count = 0
+            while wait_count < 5 and proc.poll() is None:
+                time.sleep(1)
+                wait_count = wait_count + 1
+
+            for line in proc.stdout:
+                errlog.write(line)
+                errlog.flush()
+            compile_doc = None
+            with open(output_file_name) as data_file:    
+                compile_doc = load(data_file)
+            if compile_doc is not None:
+                for key in compile_doc:
+                    mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
         except:
-            errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenent, prog_id, traceback.format_exc()))     
+            errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
             errlog.flush()
             
 
     #errlog.write("Event received for {0}, {1} total runs with {1} unique jobs \n".format\
-    #                (tenent, len(prog_collector.keys()), counter))     
+    #                (tenant, len(prog_collector.keys()), counter))     
 
     #for prog_id in prog_collector:
     #    dest_file = open(dest_file_name, "w+")
