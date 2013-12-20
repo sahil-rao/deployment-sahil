@@ -61,6 +61,26 @@ def generatePigSignature(pig_data, tenant, entity_id):
                  'Operations': operations}
     return ret_dict
     
+def processTableSet(tableset, mongoconn, tenant, entity, isinput):
+    if tableset is None or len(tableset) == 0:
+        return
+
+    endict = {}
+    for tableentry in tableset:
+        tablename = tableentry["TableName"]
+        table_entity = mongoconn.getEntityByName(table_entity)
+        if table_entity is None:
+            eid = IdentityService.getNewIdentity(Self.context, True)
+            mongoconn.addEn(eid, table_name, tenant,\
+                      EntityType.HADOOP_DATA, endict, None)
+            table_entity = mongoconn.getEntityByName(table_entity)
+        
+        if entity is not None:
+            if isinput:
+                mongoconn.formRelation(table_entity, entity, "READ", weight=1)
+            else:
+                mongoconn.formRelation(entity, table_entity, "WRITE", weight=1)
+
 def callback(ch, method, properties, body):
     msg_dict = loads(body)
 
@@ -144,6 +164,12 @@ def callback(ch, method, properties, body):
             if compile_doc is not None:
                 for key in compile_doc:
                     mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
+                    if compile_doc[key].has_key("InputTableList"):
+                        processTableSet(compile_doc[key]["InputTableList"], mongoconn,\
+                                        tenant, entity, True)
+                    if compile_doc[key].has_key("OutputTableList"):
+                        processTableSet(compile_doc[key]["OutputTableList"], mongoconn,\
+                                        tenant, entity, False)
 
             """ Call JSQL Compiler
             """ 
