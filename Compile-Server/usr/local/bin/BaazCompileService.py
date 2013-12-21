@@ -70,6 +70,8 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput):
         tablename = tableentry["TableName"]
         table_entity = mongoconn.getEntityByName(table_entity)
         if table_entity is None:
+            errlog.write("Creating table entity for {0}\n".format(tablename))     
+            errlog.flush()
             eid = IdentityService.getNewIdentity(Self.context, True)
             mongoconn.addEn(eid, table_name, tenant,\
                       EntityType.HADOOP_DATA, endict, None)
@@ -151,8 +153,8 @@ def callback(ch, method, properties, body):
                  stdout=PIPE, shell=True, env=dict(os.environ, CLASSPATH=classpath))
 
             wait_count = 0
-            while wait_count < 5 and proc.poll() is None:
-                time.sleep(1)
+            while wait_count < 25 and proc.poll() is None:
+                time.sleep(.2)
                 wait_count = wait_count + 1
 
             for line in proc.stdout:
@@ -171,6 +173,11 @@ def callback(ch, method, properties, body):
                         processTableSet(compile_doc[key]["OutputTableList"], mongoconn,\
                                         tenant, entity, False)
 
+        except:
+            errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
+            errlog.flush()
+
+        try:
             """ Call JSQL Compiler
             """ 
             output_file_name = destination + "/jsql.out"
@@ -178,8 +185,8 @@ def callback(ch, method, properties, body):
                  stdout=PIPE, shell=True, env=dict(os.environ, CLASSPATH=classpath))
 
             wait_count = 0
-            while wait_count < 5 and proc.poll() is None:
-                time.sleep(1)
+            while wait_count < 25 and proc.poll() is None:
+                time.sleep(.2)
                 wait_count = wait_count + 1
 
             for line in proc.stdout:
