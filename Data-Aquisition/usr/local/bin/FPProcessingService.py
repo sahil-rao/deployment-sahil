@@ -2,7 +2,7 @@
 
 """
 Parse the Hadoop logs from the given path and populate flightpath
-Usage : FPProcessing.py <tenent> <log Directory>
+Usage : FPProcessing.py <tenant> <log Directory>
 """
 from flightpath.parsing.hadoop.HadoopConnector import *
 from flightpath.parsing.SQL.SQLScriptConnector import *
@@ -46,10 +46,10 @@ def callback(ch, method, properties, body):
         errlog.write("\n")
         errlog.flush()
 
-    tenent = msg_dict["tenent"]
+    tenant = msg_dict["tenent"]
     filename = msg_dict["filename"]
 
-    source = tenent + "/" + filename
+    source = tenant + "/" + filename
 
     """
     Check if the file exists in S3. 
@@ -73,7 +73,7 @@ def callback(ch, method, properties, body):
     """
     Download the file and extract TODO:
     """ 
-    dest_file = BAAZ_DATA_ROOT + tenent + "/" + filename
+    dest_file = BAAZ_DATA_ROOT + tenant + "/" + filename
     destination = os.path.dirname(dest_file)
     print destination
     if not os.path.exists(destination):
@@ -81,6 +81,7 @@ def callback(ch, method, properties, body):
 
     d_file = open(dest_file, "w+")
     file_key.get_contents_to_file(d_file)
+    d_file.close()
 
     logpath = destination + "/" + BAAZ_PROCESSING_DIRECTORY
     if os.path.exists(logpath):
@@ -89,10 +90,14 @@ def callback(ch, method, properties, body):
     tar = None
     if dest_file.endswith(".gz"):
         tar = tarfile.open(dest_file, mode="r:gz")
-    else:
+        tar.extractall(path=logpath)
+        tar.close()
+    elif dest_file.endswith(".tar"):
         tar = tarfile.open(dest_file)
-    tar.extractall(path=logpath)
-    tar.close()
+        tar.extractall(path=logpath)
+        tar.close()
+    else:
+        shutil.copy(dest_file, logpath) 
 
     errlog.write("Extracted file : {0} \n".format(dest_file))     
     errlog.flush()
@@ -100,13 +105,13 @@ def callback(ch, method, properties, body):
     """
     Parse the data.
     """
-    context = tenent
+    context = tenant
     mongoconn = Connector.getConnector(context)
     if mongoconn is None:
         mongoconn = MongoConnector({'host':'172.31.2.42', 'context':context, \
                                 'create_db_if_not_exist':True})
 
-    connector = HadoopConnector({'logpath':logpath, 'psConnector':mongoconn})
+    connector = HadoopConnector({'logpath':logpath, 'tenant': tenant, 'psConnector':mongoconn})
     
     """
     Perorm Audit steps TODO.
@@ -133,7 +138,7 @@ def callback(ch, method, properties, body):
     for rel in connector.relations:
         mongoconn.updateConsociation(rel)
 
-    SQLconnector = SQLScriptConnector({'logpath':logpath, 'psConnector':mongoconn})
+    SQLconnector = SQLScriptConnector({'logpath':logpath, 'tenant': tenant, 'psConnector':mongoconn})
     for en in SQLconnector.entities:
         entity = SQLconnector.getEntity(en)
         mongoconn.updateEntity(entity)
@@ -165,7 +170,7 @@ def callback(ch, method, properties, body):
     	    errlog.flush()
 	    continue
 
-	compiler_msg = {'tenent':tenent, 'job_instances':[jinst_dict]}
+	compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
     	message = dumps(compiler_msg)
     	channel2.basic_publish(exchange='',
                       routing_key='compilerqueue',
@@ -181,7 +186,7 @@ def callback(ch, method, properties, body):
         jinst_dict = {'entity_id':entity.eid} 
         jinst_dict['program_type'] = "SQL"
         jinst_dict['query'] = entity.name
-	compiler_msg = {'tenent':tenent, 'job_instances':[jinst_dict]}
+	compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
     	message = dumps(compiler_msg)
     	channel2.basic_publish(exchange='',
                       routing_key='compilerqueue',
@@ -189,7 +194,7 @@ def callback(ch, method, properties, body):
     	errlog.write("Published Compiler Message {0}\n".format(message))
     	errlog.flush()
 
-    math_msg = {'tenent':tenent, 'opcode':"Frequency-Estimation"}
+    math_msg = {'tenant':tenant, 'opcode':"Frequency-Estimation"}
     job_insts = {}
     for en in connector.entities:
         entity = connector.getEntity(en)
@@ -205,7 +210,7 @@ def callback(ch, method, properties, body):
     errlog.write("Published Message {0}\n".format(message))
     errlog.flush()
 
-    math_msg = {'tenent':tenent, 'opcode':"BaseStats"}
+    math_msg = {'tenant':tenant, 'opcode':"BaseStats"}
     message = dumps(math_msg)
     channel1.basic_publish(exchange='',
                       routing_key='mathqueue',

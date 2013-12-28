@@ -67,38 +67,42 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput):
 
     endict = {}
     for tableentry in tableset:
-        tablename = tableentry["TableName"]
-        table_entity = mongoconn.getEntityByName(table_entity)
+        tablename = tableentry["TableName"].lower()
+        table_entity = mongoconn.getEntityByName(tablename)
         if table_entity is None:
             errlog.write("Creating table entity for {0}\n".format(tablename))     
+            #print "Creating table entity for {0}\n".format(tablename)    
             errlog.flush()
-            eid = IdentityService.getNewIdentity(Self.context, True)
-            mongoconn.addEn(eid, table_name, tenant,\
+            eid = IdentityService.getNewIdentity(tenant, True)
+            mongoconn.addEn(eid, tablename, tenant,\
                       EntityType.HADOOP_DATA, endict, None)
-            table_entity = mongoconn.getEntityByName(table_entity)
+            table_entity = mongoconn.getEntityByName(tablename)
         
         if entity is not None:
             if isinput:
                 mongoconn.formRelation(table_entity, entity, "READ", weight=1)
+                errlog.write("Relation between {0} {1}\n".format(table_entity.eid, entity.eid))     
             else:
                 mongoconn.formRelation(entity, table_entity, "WRITE", weight=1)
+                errlog.write("Relation between {0} {1}\n".format(entity.eid, table_entity.eid))     
+            errlog.flush()
 
 def callback(ch, method, properties, body):
     msg_dict = loads(body)
 
-    print "Got message ", msg_dict
+    #print "Got message ", msg_dict
 
     """
     Validate the message.
     """ 
-    if not msg_dict.has_key("tenent") or \
+    if not msg_dict.has_key("tenant") or \
        not msg_dict.has_key("job_instances"):
         errlog.write("Invalid message received\n")     
         errlog.write(body)
         errlog.write("\n")
         errlog.flush()
 
-    tenant = msg_dict["tenent"]
+    tenant = msg_dict["tenant"]
     instances = msg_dict["job_instances"]
 
     mongoconn = Connector.getConnector(tenant)
@@ -116,6 +120,8 @@ def callback(ch, method, properties, body):
         entity = mongoconn.getEntity(prog_id)
         if entity is None:
             continue
+        errlog.write("Program Entity : {0}, eid {1}\n".format(entity.name, prog_id))
+        errlog.flush()
 
         if inst['program_type'] == "Pig":
             compile_doc = generatePigSignature(inst['pig_features'], tenant, prog_id)
@@ -161,6 +167,7 @@ def callback(ch, method, properties, body):
                 errlog.write(line)
                 errlog.flush()
             compile_doc = None
+            #print "Loading file : ", output_file_name
             with open(output_file_name) as data_file:    
                 compile_doc = load(data_file)
             if compile_doc is not None:
@@ -193,11 +200,18 @@ def callback(ch, method, properties, body):
                 errlog.write(line)
                 errlog.flush()
             compile_doc = None
+            #print "Loading file : ", output_file_name
             with open(output_file_name) as data_file:    
                 compile_doc = load(data_file)
             if compile_doc is not None:
                 for key in compile_doc:
                     mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
+                    if compile_doc[key].has_key("InputTableList"):
+                        processTableSet(compile_doc[key]["InputTableList"], mongoconn,\
+                                        tenant, entity, True)
+                    if compile_doc[key].has_key("OutputTableList"):
+                        processTableSet(compile_doc[key]["OutputTableList"], mongoconn,\
+                                        tenant, entity, False)
         except:
             errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
             errlog.flush()
