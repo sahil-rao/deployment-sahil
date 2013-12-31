@@ -117,7 +117,11 @@ def callback(ch, method, properties, body):
     
         compile_doc = None
         prog_id = inst["entity_id"] 
-        entity = mongoconn.getEntity(prog_id)
+        try:
+            entity = mongoconn.getEntity(prog_id)
+        except:
+            continue
+
         if entity is None:
             continue
         errlog.write("Program Entity : {0}, eid {1}\n".format(entity.name, prog_id))
