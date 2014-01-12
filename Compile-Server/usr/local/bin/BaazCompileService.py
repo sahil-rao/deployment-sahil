@@ -129,7 +129,7 @@ def callback(ch, method, properties, body):
 
         if inst['program_type'] == "Pig":
             compile_doc = generatePigSignature(inst['pig_features'], tenant, prog_id)
-            mongoconn.updateProfile(entity, "Compiler", compile_doc)
+            mongoconn.updateProfile(entity, "Compiler", "Pig", compile_doc)
             continue
 
 	query = inst["query"].encode('utf-8').strip()

@@ -4,8 +4,9 @@
 Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenant> <log Directory>
 """
-from flightpath.parsing.hadoop.HadoopConnector import *
-from flightpath.parsing.SQL.SQLScriptConnector import *
+#from flightpath.parsing.hadoop.HadoopConnector import *
+#from flightpath.parsing.SQL.SQLScriptConnector import *
+from flightpath.parsing.ParseDemux import *
 import sys
 from flightpath.MongoConnector import *
 from boto.s3.key import Key
@@ -111,37 +112,7 @@ def callback(ch, method, properties, body):
         mongoconn = MongoConnector({'host':'172.31.2.42', 'context':context, \
                                 'create_db_if_not_exist':True})
 
-    connector = HadoopConnector({'logpath':logpath, 'tenant': tenant, 'psConnector':mongoconn})
-    
-    """
-    Perorm Audit steps TODO.
-    """
-    for ev in connector.events:
-        initiator = None
-        for en in ev.initiators:
-            initiator = en
-
-        if ev.targets is not None:
-            for en in ev.targets:
-                connector.formRelation(initiator, en, 'WRITE')
-
-        for en in ev.cohorts:
-            connector.formRelation(en, initiator, 'READ')
-
-    """
-    The graph is now created.
-    """ 
-    for en in connector.entities:
-        entity = connector.getEntity(en)
-        mongoconn.updateEntity(entity)
-
-    for rel in connector.relations:
-        mongoconn.updateConsociation(rel)
-
-    SQLconnector = SQLScriptConnector({'logpath':logpath, 'tenant': tenant, 'psConnector':mongoconn})
-    for en in SQLconnector.entities:
-        entity = SQLconnector.getEntity(en)
-        mongoconn.updateEntity(entity)
+    parseDir(tenant, logpath, mongoconn)
 
     """
     Checkpoint the file processing.
@@ -152,8 +123,8 @@ def callback(ch, method, properties, body):
     errlog.write("Processed file : {0} \n".format(dest_file))     
     errlog.flush()
 
-    for en in connector.entities:
-        entity = connector.getEntity(en)
+    for en in mongoconn.entities:
+        entity = mongoconn.getEntity(en)
         if not entity.etype == 'HADOOP_JOB': 
             continue
 
@@ -178,8 +149,8 @@ def callback(ch, method, properties, body):
     	errlog.write("Published Compiler Message {0}\n".format(message))
     	errlog.flush()
 
-    for en in SQLconnector.entities:
-        entity = SQLconnector.getEntity(en)
+    for en in mongoconn.entities:
+        entity = mongoconn.getEntity(en)
         if not entity.etype == 'SQL_QUERY': 
             continue
 
@@ -196,8 +167,8 @@ def callback(ch, method, properties, body):
 
     math_msg = {'tenant':tenant, 'opcode':"Frequency-Estimation"}
     job_insts = {}
-    for en in connector.entities:
-        entity = connector.getEntity(en)
+    for en in mongoconn.entities:
+        entity = mongoconn.getEntity(en)
         if not entity.etype == 'HADOOP_JOB':
             continue
         job_insts[entity.eid] = {'program_id':entity.eid}
@@ -218,8 +189,6 @@ def callback(ch, method, properties, body):
     errlog.write("Published Message {0}\n".format(message))
     errlog.flush()
 
-    SQLconnector.close()
-    connector.close()
     mongoconn.close()
 
 channel.basic_consume(callback,
