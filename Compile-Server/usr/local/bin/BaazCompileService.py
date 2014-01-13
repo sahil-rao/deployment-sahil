@@ -63,7 +63,7 @@ def generatePigSignature(pig_data, tenant, entity_id):
                  'Operations': operations}
     return ret_dict
     
-def processTableSet(tableset, mongoconn, tenant, entity, isinput):
+def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=None):
     if tableset is None or len(tableset) == 0:
         return
 
@@ -91,6 +91,8 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput):
             mongoconn.addEn(eid, tablename, tenant,\
                       EntityType.SQL_TABLE, endict, None)
             table_entity = mongoconn.getEntityByName(tablename)
+
+        tableEidList.add(table_entity.eid)
 
         """
         If the database is found then create database Entity if it does not already exist.
@@ -200,6 +202,8 @@ def callback(ch, method, properties, body):
         dest_file.write(query)
         dest_file.flush()
 	dest_file.close()
+
+        tableEidList = set()
 	try:
             """ Call Hive Compiler
             """ 
@@ -224,10 +228,10 @@ def callback(ch, method, properties, body):
                     mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
                     if compile_doc[key].has_key("InputTableList"):
                         processTableSet(compile_doc[key]["InputTableList"], mongoconn,\
-                                        tenant, entity, True)
+                                        tenant, entity, True, tableEidList)
                     if compile_doc[key].has_key("OutputTableList"):
                         processTableSet(compile_doc[key]["OutputTableList"], mongoconn,\
-                                        tenant, entity, False)
+                                        tenant, entity, False, tableEidList)
 
         except:
             errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
@@ -257,14 +261,30 @@ def callback(ch, method, properties, body):
                     mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
                     if compile_doc[key].has_key("InputTableList"):
                         processTableSet(compile_doc[key]["InputTableList"], mongoconn,\
-                                        tenant, entity, True)
+                                        tenant, entity, True, TableEidList)
                     if compile_doc[key].has_key("OutputTableList"):
                         processTableSet(compile_doc[key]["OutputTableList"], mongoconn,\
-                                        tenant, entity, False)
+                                        tenant, entity, False, TableEidList)
         except:
             errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
             errlog.flush()
-            
+    
+        #Inject event for profile updation for query
+        msg_dict = {'tenant':tenant, 'opcode':"GenerateQueryProfile", "entityid":entity.eid}
+        message = dumps(msg_dict)
+        channel.basic_publish(exchange='',
+                          routing_key='mathqueue',
+                          body=message)
+       
+        #Inject event for table profile.
+        msg_dict = {'tenant':tenant, 'opcode':"GenerateTableProfile"}
+        for eid in list(tableEidList):
+            #Inject event for profile updation for query
+            msg_dict["entityid"] = eid
+            message = dumps(msg_dict)
+            channel.basic_publish(exchange='',
+                              routing_key='mathqueue',
+                              body=message)
 
     #errlog.write("Event received for {0}, {1} total runs with {1} unique jobs \n".format\
     #                (tenant, len(prog_collector.keys()), counter))     

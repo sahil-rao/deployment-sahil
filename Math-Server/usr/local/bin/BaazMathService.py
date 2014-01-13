@@ -2,7 +2,7 @@
 
 """
 Parse the Hadoop logs from the given path and populate flightpath
-Usage : FPProcessing.py <tenent> <log Directory>
+Usage : FPProcessing.py <tenant> <log Directory>
 """
 from flightpath.parsing.hadoop.HadoopConnector import *
 from flightpath.MongoConnector import *
@@ -10,6 +10,7 @@ from json import *
 from baazmath.interface.BaazCSV import *
 from subprocess import Popen, PIPE
 import baazmath.workflows.estimate_frequency as EF
+import baazmath.workflows.create_profiles as CP
 import sys
 import pika
 import shutil
@@ -28,19 +29,19 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(
 channel = connection.channel()
 channel.queue_declare(queue='mathqueue')
 
-def generateBaseStats(tenent):
+def generateBaseStats(tenant):
     """
     Create a destination/processing folder.
     """
     timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
     destination = "/tmp"
-    #destination = '/mnt/volume1/base-stats-' + tenent + "/" + timestr 
+    #destination = '/mnt/volume1/base-stats-' + tenant + "/" + timestr 
     #if not os.path.exists(destination):
     #    os.makedirs(destination)
 
     dest_file_name = destination + "/test.csv"
     dest_file = open(dest_file_name, "w+")
-    generateBaseStatsCSV(tenent, dest_file)
+    generateBaseStatsCSV(tenant, dest_file)
     dest_file.flush()
     dest_file.close()
    
@@ -48,15 +49,15 @@ def generateBaseStats(tenent):
     Call Base stats generation.
     """ 
 
-def storeResourceProfile(tenent):
+def storeResourceProfile(tenant):
     print "Going to store resource profile\n"    
     if not os.path.isfile("/tmp/test_hadoop_job_resource_share.out"):
         return
 
     print "Resource profile file found\n"    
-    mongoconn = Connector.getConnector(tenent)
+    mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
-        mongoconn = MongoConnector({'host':'172.31.2.42', 'context':tenent, \
+        mongoconn = MongoConnector({'host':'172.31.2.42', 'context':tenant, \
                                     'create_db_if_not_exist':True})
 
     with open("/tmp/test_hadoop_job_resource_share.out", "r") as resource_file:
@@ -89,7 +90,7 @@ def callback(ch, method, properties, body):
     """
     Validate the message.
     """ 
-    if not msg_dict.has_key("tenent") or \
+    if not msg_dict.has_key("tenant") or \
        not msg_dict.has_key("opcode"):
         errlog.write("Invalid message received\n")     
         errlog.write(body)
@@ -97,16 +98,55 @@ def callback(ch, method, properties, body):
         errlog.flush()
         return
 
-    tenent = msg_dict['tenent']
+    tenant = msg_dict['tenant']
     opcode = msg_dict['opcode']
     if opcode == "BaseStats":
-        generateBaseStats(tenent)
+        errlog.write("Got Base Stats\n")     
+        errlog.flush()
+        generateBaseStats(tenant)
         proc = Popen('mysql -ubaazdep -pbaazdep --local-infile -A HADOOP_DEV < /usr/lib/reports/queries/HADOOP/JobReports.sql', 
                      stdout=PIPE, shell=True) 
         proc.wait()
-        storeResourceProfile(tenent)
+        storeResourceProfile(tenant)
+
+        """ Compute single table profile of SQL queries
+        """
+        errlog.write("Genrating Single Table profile\n")     
+        errlog.flush()
         return
         
+    if opcode == "GenerateTableProfile":
+        errlog.write("Got GenerateTableProfile\n")     
+        errlog.flush()
+
+        """ Compute single table profile of SQL queries
+        TODO: If a single or a set of table is given then perform the
+        operation only on that set.
+        """
+        errlog.write("Genrating Single Table profile\n")     
+        errlog.flush()
+        entityid = None
+        if "entityid" in msg_dict:
+            entityid = msg_dict["entityid"]    
+
+        CP.updateTableProfile(tenant, entityid)
+        return
+
+    if opcode == "GenerateQueryProfile":
+        errlog.write("Got GenerateTableProfile\n")     
+        errlog.flush()
+
+        """ Compute single table profile of SQL queries
+        """
+        errlog.write("Genrating Single Table profile\n")     
+        errlog.flush()
+        entityid = None
+        if "entityid" in msg_dict:
+            entityid = msg_dict["entityid"]    
+
+        CP.updateSingleTableProfile(tenant, entityid)
+        return
+
     if not msg_dict.has_key("job_instances"):
         errlog.write("Invalid message received\n")     
         errlog.write(body)
@@ -125,7 +165,7 @@ def callback(ch, method, properties, body):
     	Create a destination/processing folder.
     	"""
     	timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-    	destination = '/mnt/volume1/' + tenent + "/" + timestr 
+    	destination = '/mnt/volume1/' + tenant + "/" + timestr 
     	if not os.path.exists(destination):
         	os.makedirs(destination)
 
@@ -138,22 +178,22 @@ def callback(ch, method, properties, body):
         #else:
         #    prog_collector[prog_id] = [inst_id]
         #counter = counter + 1
-        errlog.write("Event received for {0}, entity {1}\n".format(tenent, prog_id))     
+        errlog.write("Event received for {0}, entity {1}\n".format(tenant, prog_id))     
         errlog.flush()
         dest_file = open(dest_file_name, "w+")
         generateCSV1Header(prog_id, dest_file)
-        generateCSV1(tenent, prog_id, None, dest_file)
+        generateCSV1(tenant, prog_id, None, dest_file)
         dest_file.flush()
 	dest_file.close()
 	try:
-            EF.run_workflow(tenent, dest_file_name, destination)
+            EF.run_workflow(tenant, dest_file_name, destination)
         except:
-            errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenent, prog_id, sys.exc_info()[2]))     
+            errlog.write("Tenant {0}, Entity {1}, {2}\n".format(tenant, prog_id, sys.exc_info()[2]))     
             errlog.flush()
             
 
     #errlog.write("Event received for {0}, {1} total runs with {1} unique jobs \n".format\
-    #                (tenent, len(prog_collector.keys()), counter))     
+    #                (tenant, len(prog_collector.keys()), counter))     
 
     #for prog_id in prog_collector:
     #    dest_file = open(dest_file_name, "w+")
