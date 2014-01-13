@@ -13,7 +13,7 @@ import os
 import time
 import datetime
 import traceback
-
+import re
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -50,6 +50,8 @@ PIG_FEATURE = ['UNKNOWN', 'MERGE_JOIN', 'REPLICATED_JOIN', 'SKEWED_JOIN', 'HASH_
      'STREAMING', 'SAMPLING', 'MULTI_QUERY', 'FILTER', 'MAP_ONLY', 'CROSS', 'LIMIT', 'UNION',\
      'COMBINER']
 
+table_regex = re.compile("([\w]*)\.([\w]*)")
+
 def generatePigSignature(pig_data, tenant, entity_id):
     operations = []
     for i in range(0, len(PIG_FEATURE)):
@@ -66,8 +68,20 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput):
         return
 
     endict = {}
+    mongoconn.startBatchUpdate()
     for tableentry in tableset:
-        tablename = tableentry["TableName"].lower()
+        database_name = None
+        entryname = tableentry["TableName"].lower()
+        matches = table_regex.search(entryname)
+        if matches is not None:
+            database_name = matches.group(1)
+            tablename = matches.group(2)
+        else:
+            tablename = entryname
+
+        """
+        Create the Table Entity first if it does not already exist.
+        """
         table_entity = mongoconn.getEntityByName(tablename)
         if table_entity is None:
             errlog.write("Creating table entity for {0}\n".format(tablename))     
@@ -75,10 +89,29 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput):
             errlog.flush()
             eid = IdentityService.getNewIdentity(tenant, True)
             mongoconn.addEn(eid, tablename, tenant,\
-                      EntityType.HADOOP_DATA, endict, None)
+                      EntityType.SQL_TABLE, endict, None)
             table_entity = mongoconn.getEntityByName(tablename)
-        
-        if entity is not None:
+
+        """
+        If the database is found then create database Entity if it does not already exist.
+        """
+        database_entity = None
+        if database_name is not None:
+            database_entity = mongoconn.getEntityByName(database_name)
+            if database_entity is None:
+                errlog.write("Creating database entity for {0}\n".format(database_name))     
+                #print "Creating table entity for {0}\n".format(tablename)    
+                errlog.flush()
+                eid = IdentityService.getNewIdentity(tenant, True)
+                mongoconn.addEn(eid, database_name, tenant,\
+                          EntityType.SQL_DATABASE, endict, None)
+                database_entity = mongoconn.getEntityByName(database_name)
+
+        """
+        Create relations, first between tables and query             
+            Then between query and database, table and database
+        """
+        if entity is not None and table_entity is not None:
             if isinput:
                 mongoconn.formRelation(table_entity, entity, "READ", weight=1)
                 errlog.write("Relation between {0} {1}\n".format(table_entity.eid, entity.eid))     
@@ -86,6 +119,18 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput):
                 mongoconn.formRelation(entity, table_entity, "WRITE", weight=1)
                 errlog.write("Relation between {0} {1}\n".format(entity.eid, table_entity.eid))     
             errlog.flush()
+
+        if database_entity is not None:
+            if table_entity is not None:
+                mongoconn.formRelation(database_entity, table_entity, "CONTAINS", weight=1)
+                errlog.write("Relation between {0} {1}\n".format(database_entity.eid, table_entity.eid))     
+
+            """ Note this assumes that formRelations is idempotent
+            """
+            if entity is not None:
+                mongoconn.formRelation(database_entity, entity, "CONTAINS", weight=1)
+                errlog.write("Relation between {0} {1}\n".format(database_entity.eid, entity.eid))     
+    mongoconn.finishBatchUpdate()
 
 def callback(ch, method, properties, body):
     msg_dict = loads(body)
