@@ -269,6 +269,38 @@ def callback(ch, method, properties, body):
             errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
             errlog.flush()
     
+        try:
+            """ Call SPJ Compiler
+            """ 
+            output_file_name = destination + "/spj.out"
+            proc = Popen('java com.baaz.query.BaazQueryAnalyzer -input {0} -output {1} -tenant 100 -program {2} -compiler spj'.format(dest_file_name, output_file_name, prog_id),\
+                 stdout=PIPE, shell=True, env=dict(os.environ, CLASSPATH=classpath))
+
+            wait_count = 0
+            while wait_count < 25 and proc.poll() is None:
+                time.sleep(.2)
+                wait_count = wait_count + 1
+
+            for line in proc.stdout:
+                errlog.write(line)
+                errlog.flush()
+            compile_doc = None
+            #print "Loading file : ", output_file_name
+            with open(output_file_name) as data_file:    
+                compile_doc = load(data_file)
+            if compile_doc is not None:
+                for key in compile_doc:
+                    mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
+                    if compile_doc[key].has_key("InputTableList"):
+                        processTableSet(compile_doc[key]["InputTableList"], mongoconn,\
+                                        tenant, entity, True, TableEidList)
+                    if compile_doc[key].has_key("OutputTableList"):
+                        processTableSet(compile_doc[key]["OutputTableList"], mongoconn,\
+                                        tenant, entity, False, TableEidList)
+        except:
+            errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
+            errlog.flush()
+
         #Inject event for profile updation for query
         msg_dict = {'tenant':tenant, 'opcode':"GenerateQueryProfile", "entityid":entity.eid}
         message = dumps(msg_dict)
