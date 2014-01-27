@@ -1,7 +1,7 @@
 #Sets up Ansible, Runs Ansible
 echo "Installling Hive"
-sudo tar -zxf /home/ubuntu/hive-0.11.0.tar.gz -C /home/ubuntu
-sudo mv /home/ubuntu/hive-0.11.0 /usr/lib/hive
+sudo tar -zxf /home/ubuntu/apache-hive-0.13.0-SNAPSHOT-bin.tar.gz -C /home/ubuntu
+sudo mv /home/ubuntu/apache-hive-0.13.0-SNAPSHOT-bin /usr/lib/hive
 echo "Installed Hive"
 echo "Making directories..."
 sudo mkdir /var/Baaz
