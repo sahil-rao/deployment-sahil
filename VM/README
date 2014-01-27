@@ -1,0 +1,20 @@
+INSTRUCTIONS
+********************************
+
+IMPORTANT:
+
+All files must be extracted in the home directory of user ubuntu "/home/ubuntu/“, with no containing folder.
+
+To set up, run setup.sh. Be prepared to wait a long time for certain packages to be installed. 
+
+**************************************************************
+
+TO RUN:
+
+In home directory, run "./upload.py <tenent> <filepath>" where filepath is the fully qualified path to the .tar file of queries. If nothing happens on the command line,
+run ./refresh.sh to restart all services and try again.
+
+Visit localhost/baaz_scatter_chart.html for the scatter chart and localhost/app/programrank/customer to view raw JSONs, ranked.
+
+
+
