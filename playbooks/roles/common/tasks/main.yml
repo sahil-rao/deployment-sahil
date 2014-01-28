@@ -11,4 +11,9 @@
 - name: Change ownsership of volume1
   file: path=/mnt/volume1 owner=ubuntu group=ubuntu state=directory
   sudo: yes
-
+- name: Create the Baaz config directory
+  file: path=/var/Baaz state=directory
+  sudo: yes
+- name: Save configuration file
+  template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
+  sudo: yes

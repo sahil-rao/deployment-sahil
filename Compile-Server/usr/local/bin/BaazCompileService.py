@@ -14,13 +14,19 @@ import time
 import datetime
 import traceback
 import re
+import ConfigParser
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
 
+config = ConfigParser.RawConfigParser ()
+config.read("/var/Baaz/hosts.cfg")
+rabbitserverIP = config.get("RabbitMQ", "server")
+mongoserverIP = config.get("MongoDB", "server")
+
 errlog = open("/var/log/BaazCompileService.err", "w+")
 connection = pika.BlockingConnection(pika.ConnectionParameters(
-        '172.31.10.27'))
+        rabbitserverIP))
 channel = connection.channel()
 channel.queue_declare(queue='compilerqueue')
 
@@ -154,7 +160,7 @@ def callback(ch, method, properties, body):
 
     mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
-        mongoconn = MongoConnector({'host':'172.31.2.42', 'context':tenant, \
+        mongoconn = MongoConnector({'host':mongoserverIP, 'context':tenant, \
                                     'create_db_if_not_exist':True})
     """
     Generate the CSV from the job instances.
@@ -340,7 +346,7 @@ channel.basic_consume(callback,
                       queue='compilerqueue',
                       no_ack=True)
 
-print "Going to sart consuming"
+print "Going to start consuming"
 channel.start_consuming()
 print "OOps I am done"
 

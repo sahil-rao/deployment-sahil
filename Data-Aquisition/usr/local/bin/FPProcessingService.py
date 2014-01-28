@@ -9,20 +9,28 @@ Usage : FPProcessing.py <tenant> <log Directory>
 from flightpath.parsing.ParseDemux import *
 import sys
 from flightpath.MongoConnector import *
-from boto.s3.key import Key
 from json import *
 import pika
 import shutil
 import os
-import boto
 import tarfile
+import ConfigParser
+
+config = ConfigParser.RawConfigParser ()
+config.read("/var/Baaz/hosts.cfg")
+usingAWS = config.getboolean("mode", "usingAWS")
+if usingAWS:
+    from boto.s3.key import Key
+    import boto
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
+rabbitserverIP = config.get("RabbitMQ", "server")
+mongoserverIP = config.get("MongoDB", "server")
 
 errlog = open("/var/log/FPProcessing.err", "w+")
 connection = pika.BlockingConnection(pika.ConnectionParameters(
-        '172.31.10.27'))
+        rabbitserverIP))
 channel = connection.channel()
 channel.queue_declare(queue='ftpupload')
 channel1 = connection.channel()
@@ -30,8 +38,9 @@ channel1.queue_declare(queue='mathqueue')
 channel2 = connection.channel()
 channel2.queue_declare(queue='compilerqueue')
 
-boto_conn = boto.connect_s3()
-bucket = boto_conn.get_bucket('partner-logs') 
+if usingAWS:
+    boto_conn = boto.connect_s3()
+    bucket = boto_conn.get_bucket('partner-logs') 
 
 def callback(ch, method, properties, body):
     msg_dict = loads(body)
@@ -52,27 +61,30 @@ def callback(ch, method, properties, body):
 
     source = tenant + "/" + filename
 
-    """
-    Check if the file exists in S3. 
-    """ 
-    file_key = bucket.get_key(source)
-    if file_key is None:
-        errlog.write("NOT FOUND: {0} not in S3\n".format(source))     
-        errlog.flush()
-        return
+    if usingAWS:
+        """
+        Check if the file exists in S3. 
+        """ 
+        file_key = bucket.get_key(source)
+        if file_key is None:
+            errlog.write("NOT FOUND: {0} not in S3\n".format(source))     
+            errlog.flush()
+            return
+
+        """
+        Check if the file has already been processed. TODO:
+        """
+        checkpoint = source + ".processed"
+        chkpoint_key = bucket.get_key(checkpoint)
+        if chkpoint_key is not None:
+            errlog.write("ALREADY PROCESSED: {0} \n".format(source))     
+            errlog.flush()
+            return
+    else:
+        print "Downloading and extracting file"
 
     """
-    Check if the file has already been processed. TODO:
-    """
-    checkpoint = source + ".processed"
-    chkpoint_key = bucket.get_key(checkpoint)
-    if chkpoint_key is not None:
-        errlog.write("ALREADY PROCESSED: {0} \n".format(source))     
-        errlog.flush()
-        return
-
-    """
-    Download the file and extract TODO:
+    Download the file and extract:
     """ 
     dest_file = BAAZ_DATA_ROOT + tenant + "/" + filename
     destination = os.path.dirname(dest_file)
@@ -80,9 +92,10 @@ def callback(ch, method, properties, body):
     if not os.path.exists(destination):
         os.makedirs(destination)
 
-    d_file = open(dest_file, "w+")
-    file_key.get_contents_to_file(d_file)
-    d_file.close()
+    if usingAWS:
+        d_file = open(dest_file, "w+")
+        file_key.get_contents_to_file(d_file)
+        d_file.close()
 
     logpath = destination + "/" + BAAZ_PROCESSING_DIRECTORY
     if os.path.exists(logpath):
@@ -102,26 +115,29 @@ def callback(ch, method, properties, body):
 
     errlog.write("Extracted file : {0} \n".format(dest_file))     
     errlog.flush()
-
+    if not usingAWS:
+        print "Extracted file to /mnt/volume1/[tenent]/processing"
+    
     """
     Parse the data.
     """
     context = tenant
     mongoconn = Connector.getConnector(context)
     if mongoconn is None:
-        mongoconn = MongoConnector({'host':'172.31.2.42', 'context':context, \
+        mongoconn = MongoConnector({'host':mongoserverIP, 'context':context, \
                                 'create_db_if_not_exist':True})
 
     parseDir(tenant, logpath, mongoconn)
 
-    """
-    Checkpoint the file processing.
-    """
-    chkpoint_key = Key(bucket)
-    chkpoint_key.key = checkpoint
-    chkpoint_key.set_contents_from_string("Processed")
-    errlog.write("Processed file : {0} \n".format(dest_file))     
-    errlog.flush()
+    if usingAWS:
+        """
+        Checkpoint the file processing.
+        """
+        chkpoint_key = Key(bucket)
+        chkpoint_key.key = checkpoint
+        chkpoint_key.set_contents_from_string("Processed")
+        errlog.write("Processed file : {0} \n".format(dest_file))     
+        errlog.flush()
 
     for en in mongoconn.entities:
         entity = mongoconn.getEntity(en)
@@ -195,8 +211,9 @@ channel.basic_consume(callback,
                       queue='ftpupload',
                       no_ack=True)
 
-print "Going to sart consuming"
+print "FPProcessingService going to start consuming"
 channel.start_consuming()
-boto_conn.close()
+if usingAWS:
+    boto_conn.close()
 print "OOps I am done"
 
