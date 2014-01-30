@@ -18,14 +18,19 @@ import os
 import tarfile
 import time
 import datetime
-
+import ConfigParser
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
 
+config = ConfigParser.RawConfigParser ()
+config.read("/var/Baaz/hosts.cfg")
+rabbitserverIP = config.get("RabbitMQ", "server")
+mongoserverIP = config.get("MongoDB", "server")
+
 errlog = open("/var/log/BaazMathService.err", "w+")
 connection = pika.BlockingConnection(pika.ConnectionParameters(
-        '172.31.10.27'))
+        rabbitserverIP))
 channel = connection.channel()
 channel.queue_declare(queue='mathqueue')
 
@@ -57,7 +62,7 @@ def storeResourceProfile(tenant):
     print "Resource profile file found\n"    
     mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
-        mongoconn = MongoConnector({'host':'172.31.2.42', 'context':tenant, \
+        mongoconn = MongoConnector({'host':mongoserverIP, 'context':tenant, \
                                     'create_db_if_not_exist':True})
 
     with open("/tmp/test_hadoop_job_resource_share.out", "r") as resource_file:
