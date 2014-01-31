@@ -13,6 +13,7 @@ import baazmath.workflows.estimate_frequency as EF
 import baazmath.workflows.create_profiles as CP
 import baazmath.workflows.exception_heatmap as ExceptionHeatmap
 import baazmath.workflows.generate_dashboard as Dashboard
+import baazmath.workflows.form_join_groups as JoinGroup
 import sys
 import pika
 import shutil
@@ -155,8 +156,9 @@ def callback(ch, method, properties, body):
             CP.updateSingleTableProfile(tenant, entityid)
             ExceptionHeatmap.run_workflow(tenant, None, None)
             Dashboard.run_workflow(tenant, None, None)
+            JoinGroup.formJoinGroup(tenant, entityid)
         except:
-            errlog.write("Tenant {0}, Entity {1}, {2}\n".format(tenant, prog_id, sys.exc_info()[2]))     
+            errlog.write("Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
             errlog.flush()
         return
 
