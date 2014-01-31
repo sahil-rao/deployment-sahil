@@ -12,6 +12,7 @@ from subprocess import Popen, PIPE
 import baazmath.workflows.estimate_frequency as EF
 import baazmath.workflows.create_profiles as CP
 import baazmath.workflows.exception_heatmap as ExceptionHeatmap
+import baazmath.workflows.generate_dashboard as Dashboard
 import sys
 import pika
 import shutil
@@ -150,8 +151,13 @@ def callback(ch, method, properties, body):
         if "entityid" in msg_dict:
             entityid = msg_dict["entityid"]    
 
-        CP.updateSingleTableProfile(tenant, entityid)
-        ExceptionHeatmap.run_workflow(tenant, None, None)
+	try:
+            CP.updateSingleTableProfile(tenant, entityid)
+            ExceptionHeatmap.run_workflow(tenant, None, None)
+            Dashboard.run_workflow(tenant, None, None)
+        except:
+            errlog.write("Tenant {0}, Entity {1}, {2}\n".format(tenant, prog_id, sys.exc_info()[2]))     
+            errlog.flush()
         return
 
     if not msg_dict.has_key("job_instances"):
