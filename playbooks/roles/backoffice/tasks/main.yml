@@ -10,6 +10,10 @@
   shell: sudo pip install networkx
 - name: Install pika
   shell: sudo pip install pika==0.9.8
+- name: Install peewee
+  shell: sudo pip install peewee
+- name: Install sqlparse
+  shell: sudo pip install sqlparse
 - name: Install S3 CMD
   apt: pkg=s3cmd state=present
   sudo: yes
