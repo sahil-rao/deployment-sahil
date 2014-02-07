@@ -14,6 +14,9 @@ import baazmath.workflows.create_profiles as CP
 import baazmath.workflows.exception_heatmap as ExceptionHeatmap
 import baazmath.workflows.generate_dashboard as Dashboard
 import baazmath.workflows.form_join_groups as JoinGroup
+import baazmath.workflows.base_stats as BaseStats
+import baazmath.workflows.compute_join_popularity as JoinPopularity
+import baazmath.workflows.compute_table_popularity as TablePopularity
 import sys
 import pika
 import shutil
@@ -174,6 +177,8 @@ def callback(ch, method, properties, body):
             errlog.write("Dashboard: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
             errlog.flush()
  
+        errlog.write("Going to form Join Groups\n")     
+        errlog.flush()
         try:
             JoinGroup.formJoinGroup(tenant, entityid)
         except:
@@ -181,8 +186,28 @@ def callback(ch, method, properties, body):
             errlog.write("Join Group: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
             errlog.flush()
 
-        return
+        try:
+            BaseStats.run_workflow(tenant, None, None)
+        except:
+            traceback.print_exc()
+            errlog.write("Base Stats: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
+            errlog.flush()
 
+        try:
+            JoinPopularity.run_workflow(tenant, None, None)
+        except:
+            traceback.print_exc()
+            errlog.write("Join Popularity: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
+            errlog.flush()
+
+        try:
+            TablePopularity.run_workflow(tenant, None, None)
+        except:
+            traceback.print_exc()
+            errlog.write("Table Popularity: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
+            errlog.flush()
+
+        return
     if not msg_dict.has_key("job_instances"):
         errlog.write("Invalid message received\n")     
         errlog.write(body)
