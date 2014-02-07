@@ -22,6 +22,7 @@ import tarfile
 import time
 import datetime
 import ConfigParser
+import traceback
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -154,12 +155,32 @@ def callback(ch, method, properties, body):
 
 	try:
             CP.updateSingleTableProfile(tenant, entityid)
+        except:
+            traceback.print_exc()
+            errlog.write("Single table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
+            errlog.flush()
+ 
+        try:
             ExceptionHeatmap.run_workflow(tenant, None, None)
+        except:
+            traceback.print_exc()
+            errlog.write("Exception Heatmap: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
+            errlog.flush()
+ 
+        try:
             Dashboard.run_workflow(tenant, None, None)
+        except:
+            traceback.print_exc()
+            errlog.write("Dashboard: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
+            errlog.flush()
+ 
+        try:
             JoinGroup.formJoinGroup(tenant, entityid)
         except:
-            errlog.write("Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
+            traceback.print_exc()
+            errlog.write("Join Group: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
             errlog.flush()
+
         return
 
     if not msg_dict.has_key("job_instances"):
