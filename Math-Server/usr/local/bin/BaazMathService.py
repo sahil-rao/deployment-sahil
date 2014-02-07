@@ -17,6 +17,7 @@ import baazmath.workflows.form_join_groups as JoinGroup
 import baazmath.workflows.base_stats as BaseStats
 import baazmath.workflows.compute_join_popularity as JoinPopularity
 import baazmath.workflows.compute_table_popularity as TablePopularity
+import baazmath.workflows.summarize_hive_exceptions as SummarizeHiveExceptions
 import sys
 import pika
 import shutil
@@ -205,6 +206,13 @@ def callback(ch, method, properties, body):
         except:
             traceback.print_exc()
             errlog.write("Table Popularity: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
+            errlog.flush()
+
+        try:
+            SummarizeHiveExceptions.run_workflow(tenant, None, None)
+        except:
+            traceback.print_exc()
+            errlog.write("Summarize Hive Exceptions: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
             errlog.flush()
 
         return
