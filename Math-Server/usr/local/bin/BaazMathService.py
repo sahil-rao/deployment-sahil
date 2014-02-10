@@ -142,7 +142,12 @@ def callback(ch, method, properties, body):
         if "entityid" in msg_dict:
             entityid = msg_dict["entityid"]    
 
-        CP.updateTableProfile(tenant, entityid)
+        try:
+            CP.updateTableProfile(tenant, entityid)
+        except:
+            traceback.print_exc()
+            errlog.write("Update table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
+            errlog.flush()
         return
 
     if opcode == "GenerateQueryProfile":
