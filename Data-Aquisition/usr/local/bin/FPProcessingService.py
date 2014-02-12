@@ -33,6 +33,12 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(
         rabbitserverIP))
 channel = connection.channel()
 channel.queue_declare(queue='ftpupload')
+
+channel.exchange_declare("Fanout", type="fanout")
+result = channel.queue_declare(exclusive=True)
+queue_name = result.method.queue
+channel.queue_bind(exchange="Fanout", queue=queue_name)
+
 channel1 = connection.channel()
 channel1.queue_declare(queue='mathqueue')
 channel2 = connection.channel()
@@ -42,6 +48,15 @@ if usingAWS:
     boto_conn = boto.connect_s3()
     bucket = boto_conn.get_bucket('partner-logs') 
 
+def performTenantCleanup(tenant):
+    print "Cleaning Tenant ", tenant
+    destination = BAAZ_DATA_ROOT + tenant     
+    if os.path.exists(destination):
+        shutil.rmtree(destination)
+    destination = '/mnt/volume1/compile-' + tenant 
+    if os.path.exists(destination):
+        shutil.rmtree(destination)
+
 def callback(ch, method, properties, body):
     msg_dict = loads(body)
 
@@ -50,13 +65,20 @@ def callback(ch, method, properties, body):
     Validate the message.
     """ 
     if not msg_dict.has_key("tenent") or \
-       not msg_dict.has_key("filename"):
+       (not msg_dict.has_key("filename") and 
+        not msg_dict.has_key("opcode")):
         errlog.write("Invalid message received\n")     
         errlog.write(body)
         errlog.write("\n")
         errlog.flush()
 
     tenant = msg_dict["tenent"]
+    filename = None
+    opcode = None
+    if msg_dict.has_key("opcode") and msg_dict["opcode"] == "DeleteTenant":
+        performTenantCleanup(tenant)
+        return
+
     filename = msg_dict["filename"]
 
     source = tenant + "/" + filename
@@ -211,6 +233,9 @@ channel.basic_consume(callback,
                       queue='ftpupload',
                       no_ack=True)
 
+channel.basic_consume(callback,
+                      queue=queue_name,
+                      no_ack=True)
 print "FPProcessingService going to start consuming"
 channel.start_consuming()
 if usingAWS:
