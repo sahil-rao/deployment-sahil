@@ -97,11 +97,11 @@ def callback(ch, method, properties, body):
         Check if the file has already been processed. TODO:
         """
         checkpoint = source + ".processed"
-        chkpoint_key = bucket.get_key(checkpoint)
-        if chkpoint_key is not None:
-            errlog.write("ALREADY PROCESSED: {0} \n".format(source))     
-            errlog.flush()
-            return
+        #chkpoint_key = bucket.get_key(checkpoint)
+        #if chkpoint_key is not None:
+        #    errlog.write("ALREADY PROCESSED: {0} \n".format(source))     
+        #    errlog.flush()
+        #    return
     else:
         print "Downloading and extracting file"
 

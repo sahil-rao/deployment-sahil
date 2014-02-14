@@ -116,11 +116,14 @@ def callback(ch, method, properties, body):
     if opcode == "BaseStats":
         errlog.write("Got Base Stats\n")     
         errlog.flush()
-        generateBaseStats(tenant)
-        proc = Popen('mysql -ubaazdep -pbaazdep --local-infile -A HADOOP_DEV < /usr/lib/reports/queries/HADOOP/JobReports.sql', 
-                     stdout=PIPE, shell=True) 
-        proc.wait()
-        storeResourceProfile(tenant)
+        try:
+            generateBaseStats(tenant)
+            proc = Popen('mysql -ubaazdep -pbaazdep --local-infile -A HADOOP_DEV < /usr/lib/reports/queries/HADOOP/JobReports.sql', 
+                         stdout=PIPE, shell=True) 
+            proc.wait()
+            storeResourceProfile(tenant)
+        except:
+            pass
 
         """ Compute single table profile of SQL queries
         """
