@@ -20,3 +20,7 @@
   roles:
   - role: common
   - role: queueserver
+
+- hosts: tag_Name_NodeJS
+  roles:
+  - role: nodejsserver
