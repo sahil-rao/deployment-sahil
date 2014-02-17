@@ -267,10 +267,10 @@ def callback(ch, method, properties, body):
                     mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
                     if compile_doc[key].has_key("InputTableList"):
                         processTableSet(compile_doc[key]["InputTableList"], mongoconn,\
-                                        tenant, entity, True, TableEidList)
+                                        tenant, entity, True, tableEidList)
                     if compile_doc[key].has_key("OutputTableList"):
                         processTableSet(compile_doc[key]["OutputTableList"], mongoconn,\
-                                        tenant, entity, False, TableEidList)
+                                        tenant, entity, False, tableEidList)
         except:
             errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
             errlog.flush()
@@ -299,10 +299,10 @@ def callback(ch, method, properties, body):
                     mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
                     if compile_doc[key].has_key("InputTableList"):
                         processTableSet(compile_doc[key]["InputTableList"], mongoconn,\
-                                        tenant, entity, True, TableEidList)
+                                        tenant, entity, True, tableEidList)
                     if compile_doc[key].has_key("OutputTableList"):
                         processTableSet(compile_doc[key]["OutputTableList"], mongoconn,\
-                                        tenant, entity, False, TableEidList)
+                                        tenant, entity, False, tableEidList)
         except:
             errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
             errlog.flush()
@@ -331,10 +331,10 @@ def callback(ch, method, properties, body):
                     mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
                     if compile_doc[key].has_key("InputTableList"):
                         processTableSet(compile_doc[key]["InputTableList"], mongoconn,\
-                                        tenant, entity, True, TableEidList)
+                                        tenant, entity, True, tableEidList)
                     if compile_doc[key].has_key("OutputTableList"):
                         processTableSet(compile_doc[key]["OutputTableList"], mongoconn,\
-                                        tenant, entity, False, TableEidList)
+                                        tenant, entity, False, tableEidList)
         except:
             errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
             errlog.flush()
