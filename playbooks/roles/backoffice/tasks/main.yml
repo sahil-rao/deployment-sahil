@@ -60,6 +60,9 @@
 - name: Install Basestats scripts
   shell: tar -zxf /home/ubuntu/Baaz-Basestats-Report.tar.gz chdir=/usr/lib
   sudo: yes
+- name: Install Monit service
+  apt: pkg=monit state=present
+  sudo: yes
 - name: Install gcc needed for numpy
   apt: pkg=gcc state=present
   sudo: yes
@@ -120,4 +123,10 @@
   sudo: yes
 - name: Start Baaz Compiler Service.
   service: name=baazcompile state=started
+  sudo: yes
+- name: Copy Monitrc file
+  copy: src=roles/backoffice/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+- name: Start monit service
+  shell: monit reload
   sudo: yes

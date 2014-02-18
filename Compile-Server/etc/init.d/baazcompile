@@ -11,6 +11,7 @@
 start() {
         initlog -c "echo -n Starting baazcompile server: "
         /usr/local/bin/BaazCompileService.py &
+        echo $! > /var/run/BaazCompileService.pid
         ### Create the lock file ###
         touch /var/lock/baazcompile
         #success $"baaz server startup"

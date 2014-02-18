@@ -11,6 +11,7 @@
 start() {
         initlog -c "echo -n Starting baazdataacquisition server: "
         /usr/local/bin/FPProcessingService.py &
+        echo $! > /var/run/FPProcessingService.pid
         ### Create the lock file ###
         touch /var/lock/baaz
         #success $"baaz server startup"

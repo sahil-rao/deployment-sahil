@@ -11,6 +11,7 @@
 start() {
         initlog -c "echo -n Starting baazmath server: "
         /usr/local/bin/BaazMathService.py &
+        echo $! > /var/run/BaazMathService.pid
         ### Create the lock file ###
         touch /var/lock/baazmath
         #success $"baaz server startup"
