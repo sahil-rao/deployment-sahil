@@ -53,6 +53,9 @@
 #                backup.bar.baz port 10025,  # backup mailserver on port 10025
 #                localhost                   # fallback relay
 #
+set mailserver smtp.gmail.com port 587
+     username "noreply@baazdata.com" password "Xplainio123" using tlsv1 
+     with timeout 15 seconds
 #
 ## By default Monit will drop alert events if no mail servers are available. 
 ## If you want to keep the alerts for later delivery retry, you can use the 
@@ -110,6 +113,7 @@
 # set alert manager@foo.bar only on { timeout }  # receive just service-
 #                                                # timeout alert
 #
+set alert parna@baazdata.com # receive all alerts
 #
 ## Monit has an embedded web server which can be used to view status of 
 ## services monitored and manage services from a web interface. See the
@@ -252,6 +256,7 @@ set httpd port 2812
 check process baazdataacquisition with pidfile /var/run/FPProcessingService.pid
     start program = "/etc/init.d/baazdataacquisition start"
     stop program = "/etc/init.d/baazdataacquisition  stop"
+    alert parna@baazdata.com only on { nonexist }
 
 check process baazcompile with pidfile /var/run/BaazCompileService.pid
     start program = "/etc/init.d/baazcompile start"
