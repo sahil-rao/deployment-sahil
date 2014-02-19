@@ -5,6 +5,9 @@
 - name: Create the Baaz config directory
   file: path=/var/Baaz state=directory
   sudo: yes
+- name: Update apt
+  shell: apt-get update
+  sudo: yes
 - name: Save configuration file
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
   sudo: yes
