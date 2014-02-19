@@ -124,8 +124,8 @@
 - name: Start Baaz Compiler Service.
   service: name=baazcompile state=started
   sudo: yes
-- name: Copy Monitrc file
-  copy: src=roles/backoffice/files/monitrc dest=/etc/monit/monitrc
+- name: copy monitrc file
+  template: src=roles/backoffice/files/monitrc dest=/etc/monit/monitrc
   sudo: yes
 - name: Start monit service
   shell: monit reload
