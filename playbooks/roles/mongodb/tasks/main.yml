@@ -7,10 +7,13 @@
   shell: sudo apt-get update
 - name: Install Mongodb
   shell: sudo apt-get install mongodb-10gen
+- name: Copy Mongodb config
+  copy: src=roles/mongodb/files/mongodb.conf dest=/etc/mongodb.conf
+  sudo: yes
 - name: Create Mongo log
   file: path=/mnt/volume1/mongo/log owner=ubuntu group=ubuntu state=directory
 - name: Create Mongo db
   file: path=/mnt/volume1/mongo/db owner=ubuntu group=ubuntu state=directory
 - name: Start Mongo
-  shell: mongod --fork --logpath /mnt/volume1/mongo/log/mongo.log -dbpath /mnt/volume1/mongo/db
+  shell: mongod --fork --config /etc/mongodb.conf
   ignore_errors: True
