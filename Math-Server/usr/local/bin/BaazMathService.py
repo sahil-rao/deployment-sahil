@@ -30,11 +30,24 @@ import traceback
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
+BAAZ_MATH_LOG_FILE = "/var/log/BaazMathService.err"
 
 config = ConfigParser.RawConfigParser ()
 config.read("/var/Baaz/hosts.cfg")
 rabbitserverIP = config.get("RabbitMQ", "server")
 mongoserverIP = config.get("MongoDB", "server")
+try:
+   replicationGroup = config.get("MongoDB", "replicationGroup")
+except:
+   replicationGroup = None
+
+mongo_url = "mongodb://" + mongoserverIP + "/"
+if replicationGroup is not None:
+    mongo_url = mongo_url + "?replicaset=" + replicationGroup
+
+if os.path.isfile(BAAZ_MATH_LOG_FILE):
+    timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
+    shutil.copy(BAAZ_MATH_LOG_FILE, BAAZ_MATH_LOG_FILE+timestr)
 
 errlog = open("/var/log/BaazMathService.err", "w+")
 connection = pika.BlockingConnection(pika.ConnectionParameters(
@@ -118,7 +131,7 @@ def callback(ch, method, properties, body):
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
 
-        collection = MongoClient()[tenant].uploadStats
+        collection = MongoClient(mongo_url)[tenant].uploadStats
         collection.update({'uid':uid},{'$inc':{"Math":1}})
 
     if opcode == "BaseStats":

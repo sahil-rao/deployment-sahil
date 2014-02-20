@@ -15,6 +15,12 @@ import shutil
 import os
 import tarfile
 import ConfigParser
+import datetime
+import time
+
+BAAZ_DATA_ROOT="/mnt/volume1/"
+BAAZ_PROCESSING_DIRECTORY="processing"
+BAAZ_FP_LOG_FILE = "/var/log/FPProcessing.err"
 
 config = ConfigParser.RawConfigParser ()
 config.read("/var/Baaz/hosts.cfg")
@@ -23,10 +29,20 @@ if usingAWS:
     from boto.s3.key import Key
     import boto
 
-BAAZ_DATA_ROOT="/mnt/volume1/"
-BAAZ_PROCESSING_DIRECTORY="processing"
 rabbitserverIP = config.get("RabbitMQ", "server")
 mongoserverIP = config.get("MongoDB", "server")
+try:
+    replicationGroup = config.get("MongoDB", "replicationGroup")
+except:
+    replicationGroup = None
+
+mongo_url = "mongodb://" + mongoserverIP + "/"
+if replicationGroup is not None:
+    mongo_url = mongo_url + "?replicaset=" + replicationGroup
+
+if os.path.isfile(BAAZ_FP_LOG_FILE):
+    timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
+    shutil.copy(BAAZ_FP_LOG_FILE, BAAZ_FP_LOG_FILE+timestr)
 
 errlog = open("/var/log/FPProcessing.err", "w+")
 connection = pika.BlockingConnection(pika.ConnectionParameters(
@@ -85,7 +101,7 @@ def callback(ch, method, properties, body):
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
 
-        collection = MongoClient()[tenant].uploadStats
+        collection = MongoClient(mongo_url)[tenant].uploadStats
         collection.update({'uid':uid},{'$inc':{"FPProcessing":1}})
 
     source = tenant + "/" + filename
@@ -153,7 +169,7 @@ def callback(ch, method, properties, body):
     context = tenant
     mongoconn = Connector.getConnector(context)
     if mongoconn is None:
-        mongoconn = MongoConnector({'host':mongoserverIP, 'context':context, \
+        mongoconn = MongoConnector({'host':mongo_url, 'context':context, \
                                 'create_db_if_not_exist':True})
 
     parseDir(tenant, logpath, mongoconn)
