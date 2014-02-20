@@ -143,7 +143,7 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
 def callback(ch, method, properties, body):
     msg_dict = loads(body)
 
-    #print "Got message ", msg_dict
+    #print "compiler Got message ", msg_dict
 
     """
     Validate the message.
@@ -157,6 +157,13 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict["tenant"]
     instances = msg_dict["job_instances"]
+
+    uid = None
+    if msg_dict.has_key('uid'):
+        uid = msg_dict['uid']
+
+        collection = MongoClient()[tenant].uploadStats
+        collection.update({'uid':uid},{'$inc':{"Compiler":1}})
 
     mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
@@ -276,7 +283,10 @@ def callback(ch, method, properties, body):
             errlog.flush()
 
         #Inject event for profile updation for query
-        msg_dict = {'tenant':tenant, 'opcode':"GenerateQueryProfile", "entityid":entity.eid}
+        
+        msg_dict = {'tenant':tenant, 'opcode':"GenerateQueryProfile", "entityid":entity.eid} 
+        if uid is not None:
+            msg_dict['uid'] = uid
         message = dumps(msg_dict)
         channel.basic_publish(exchange='',
                           routing_key='mathqueue',
@@ -284,6 +294,9 @@ def callback(ch, method, properties, body):
        
         #Inject event for table profile.
         msg_dict = {'tenant':tenant, 'opcode':"GenerateTableProfile"}
+        if uid is not None:
+            msg_dict['uid'] = uid
+
         for eid in list(tableEidList):
             #Inject event for profile updation for query
             msg_dict["entityid"] = eid

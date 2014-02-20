@@ -60,7 +60,7 @@ def performTenantCleanup(tenant):
 def callback(ch, method, properties, body):
     msg_dict = loads(body)
 
-    print "Got message ", msg_dict
+    print "FPPS Got message ", msg_dict
     """
     Validate the message.
     """ 
@@ -80,6 +80,13 @@ def callback(ch, method, properties, body):
         return
 
     filename = msg_dict["filename"]
+
+    uid = None
+    if msg_dict.has_key('uid'):
+        uid = msg_dict['uid']
+
+        collection = MongoClient()[tenant].uploadStats
+        collection.update({'uid':uid},{'$inc':{"FPProcessing":1}})
 
     source = tenant + "/" + filename
 
@@ -180,6 +187,8 @@ def callback(ch, method, properties, body):
 	    continue
 
 	compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
+        if uid is not None:
+            compiler_msg['uid'] = uid
     	message = dumps(compiler_msg)
     	channel2.basic_publish(exchange='',
                       routing_key='compilerqueue',
@@ -196,6 +205,8 @@ def callback(ch, method, properties, body):
         jinst_dict['program_type'] = "SQL"
         jinst_dict['query'] = entity.name
 	compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
+        if uid is not None:
+            compiler_msg['uid'] = uid
     	message = dumps(compiler_msg)
     	channel2.basic_publish(exchange='',
                       routing_key='compilerqueue',
@@ -204,6 +215,8 @@ def callback(ch, method, properties, body):
     	errlog.flush()
 
     math_msg = {'tenant':tenant, 'opcode':"Frequency-Estimation"}
+    if uid is not None:
+        math_msg['uid'] = uid
     job_insts = {}
     for en in mongoconn.entities:
         entity = mongoconn.getEntity(en)
@@ -220,6 +233,8 @@ def callback(ch, method, properties, body):
     errlog.flush()
 
     math_msg = {'tenant':tenant, 'opcode':"BaseStats"}
+    if uid is not None:
+        math_msg['uid'] = uid
     message = dumps(math_msg)
     channel1.basic_publish(exchange='',
                       routing_key='mathqueue',

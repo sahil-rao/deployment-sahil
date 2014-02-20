@@ -113,6 +113,14 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict['tenant']
     opcode = msg_dict['opcode']
+
+    uid = None
+    if msg_dict.has_key('uid'):
+        uid = msg_dict['uid']
+
+        collection = MongoClient()[tenant].uploadStats
+        collection.update({'uid':uid},{'$inc':{"Math":1}})
+
     if opcode == "BaseStats":
         errlog.write("Got Base Stats\n")     
         errlog.flush()
