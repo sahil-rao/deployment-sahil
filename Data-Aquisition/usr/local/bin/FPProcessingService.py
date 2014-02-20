@@ -114,6 +114,7 @@ def callback(ch, method, properties, body):
         if file_key is None:
             errlog.write("NOT FOUND: {0} not in S3\n".format(source))     
             errlog.flush()
+            ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
         """
@@ -259,14 +260,15 @@ def callback(ch, method, properties, body):
     errlog.flush()
 
     mongoconn.close()
+    ch.basic_ack(delivery_tag=method.delivery_tag)
 
 channel.basic_consume(callback,
-                      queue='ftpupload',
-                      no_ack=True)
+                      queue='ftpupload')
 
 channel.basic_consume(callback,
                       queue=queue_name,
                       no_ack=True)
+
 print "FPProcessingService going to start consuming"
 channel.start_consuming()
 if usingAWS:

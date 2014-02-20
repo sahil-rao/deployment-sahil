@@ -335,10 +335,10 @@ def callback(ch, method, properties, body):
     errlog.write("Event Processing Complete")     
     errlog.flush()
     mongoconn.close()
+    ch.basic_ack(delivery_tag=method.delivery_tag)
 
 channel.basic_consume(callback,
-                      queue='compilerqueue',
-                      no_ack=True)
+                      queue='compilerqueue')
 
 print "Going to start consuming"
 channel.start_consuming()

@@ -122,6 +122,7 @@ def callback(ch, method, properties, body):
         errlog.write(body)
         errlog.write("\n")
         errlog.flush()
+        ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
     tenant = msg_dict['tenant']
@@ -150,6 +151,7 @@ def callback(ch, method, properties, body):
         """
         errlog.write("Genrating Single Table profile\n")     
         errlog.flush()
+        ch.basic_ack(delivery_tag=method.delivery_tag)
         return
         
     if opcode == "GenerateTableProfile":
@@ -172,6 +174,7 @@ def callback(ch, method, properties, body):
             traceback.print_exc()
             errlog.write("Update table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
             errlog.flush()
+        ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
     if opcode == "GenerateQueryProfile":
@@ -244,12 +247,14 @@ def callback(ch, method, properties, body):
             errlog.write("Summarize Hive Exceptions: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
             errlog.flush()
 
+        ch.basic_ack(delivery_tag=method.delivery_tag)
         return
     if not msg_dict.has_key("job_instances"):
         errlog.write("Invalid message received\n")     
         errlog.write(body)
         errlog.write("\n")
         errlog.flush()
+        ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
     instances = msg_dict["job_instances"]
@@ -306,10 +311,10 @@ def callback(ch, method, properties, body):
 
     errlog.write("Event Processing Complete")     
     errlog.flush()
+    ch.basic_ack(delivery_tag=method.delivery_tag)
 
 channel.basic_consume(callback,
-                      queue='mathqueue',
-                      no_ack=True)
+                      queue='mathqueue')
 
 print "Going to sart consuming"
 channel.start_consuming()
