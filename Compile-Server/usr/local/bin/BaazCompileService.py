@@ -154,6 +154,7 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
     mongoconn.finishBatchUpdate()
 
 def callback(ch, method, properties, body):
+    startTime = time.time()
     msg_dict = loads(body)
 
     #print "compiler Got message ", msg_dict
@@ -174,9 +175,9 @@ def callback(ch, method, properties, body):
     uid = None
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
-
+	
         collection = MongoClient(mongo_url)[tenant].uploadStats
-        collection.update({'uid':uid},{'$inc':{"Compiler":1}})
+        collection.update({'uid':uid},{'$inc':{"Compiler.count":1}})
 
     mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
@@ -187,7 +188,6 @@ def callback(ch, method, properties, body):
     """
     counter = 0
     for inst in instances:
-    
         compile_doc = None
         prog_id = inst["entity_id"] 
         try:
@@ -334,11 +334,20 @@ def callback(ch, method, properties, body):
 
     errlog.write("Event Processing Complete")     
     errlog.flush()
+    
+    endTime = time.time()
+
+    if msg_dict.has_key('uid'):
+	#if uid has been set, the variable will be set already
+        collection.update({'uid':uid},{"$inc": {"Compiler.time":(endTime-startTime)}})
+	
+	
+    
     mongoconn.close()
+    ch.basic_ack(delivery_tag=method.delivery_tag)
 
 channel.basic_consume(callback,
-                      queue='compilerqueue',
-                      no_ack=True)
+                      queue='compilerqueue')
 
 print "Going to start consuming"
 channel.start_consuming()
