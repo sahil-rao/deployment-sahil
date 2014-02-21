@@ -74,6 +74,8 @@ def performTenantCleanup(tenant):
         shutil.rmtree(destination)
 
 def callback(ch, method, properties, body):
+    starttime = time.time()
+    
     msg_dict = loads(body)
 
     print "FPPS Got message ", msg_dict
@@ -102,7 +104,7 @@ def callback(ch, method, properties, body):
         uid = msg_dict['uid']
 
         collection = MongoClient(mongo_url)[tenant].uploadStats
-        collection.update({'uid':uid},{'$inc':{"FPProcessing":1}})
+        collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}})
 
     source = tenant + "/" + filename
 
@@ -261,6 +263,10 @@ def callback(ch, method, properties, body):
 
     mongoconn.close()
     ch.basic_ack(delivery_tag=method.delivery_tag)
+
+    if msg_dict.has_key('uid'):
+	#if uid has been set, the variable will be set already
+        collection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.time()-starttime)}})
 
 channel.basic_consume(callback,
                       queue='ftpupload')

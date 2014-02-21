@@ -109,6 +109,8 @@ def storeResourceProfile(tenant):
     mongoconn.close()
             
 def callback(ch, method, properties, body):
+
+    startTime = time.time()
     msg_dict = loads(body)
 
     print "Analytics: Got message ", msg_dict
@@ -122,6 +124,11 @@ def callback(ch, method, properties, body):
         errlog.write(body)
         errlog.write("\n")
         errlog.flush()
+
+        endTime = time.time()
+        if msg_dict.has_key('uid'):
+            collection.update({'uid':uid},{'$inc':{"Math.tmpcount":1, "Math.time":(endTime-startTime)}})
+
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
@@ -133,7 +140,7 @@ def callback(ch, method, properties, body):
         uid = msg_dict['uid']
 
         collection = MongoClient(mongo_url)[tenant].uploadStats
-        collection.update({'uid':uid},{'$inc':{"Math":1}})
+        collection.update({'uid':uid},{'$inc':{"Math.count":1}})
 
     if opcode == "BaseStats":
         errlog.write("Got Base Stats\n")     
@@ -152,6 +159,12 @@ def callback(ch, method, properties, body):
         errlog.write("Genrating Single Table profile\n")     
         errlog.flush()
         ch.basic_ack(delivery_tag=method.delivery_tag)
+
+        endTime = time.time()
+        if msg_dict.has_key('uid'):
+	    #if uid has been set, the variable will be set already
+            collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
+
         return
         
     if opcode == "GenerateTableProfile":
@@ -175,6 +188,12 @@ def callback(ch, method, properties, body):
             errlog.write("Update table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
             errlog.flush()
         ch.basic_ack(delivery_tag=method.delivery_tag)
+
+        endTime = time.time()
+        if msg_dict.has_key('uid'):
+	    #if uid has been set, the variable will be set already
+            collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
+
         return
 
     if opcode == "GenerateQueryProfile":
@@ -246,6 +265,10 @@ def callback(ch, method, properties, body):
             traceback.print_exc()
             errlog.write("Summarize Hive Exceptions: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
             errlog.flush()
+        endTime = time.time()
+        if msg_dict.has_key('uid'):
+	    #if uid has been set, the variable will be set already
+            collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
@@ -255,6 +278,11 @@ def callback(ch, method, properties, body):
         errlog.write("\n")
         errlog.flush()
         ch.basic_ack(delivery_tag=method.delivery_tag)
+
+        endTime = time.time()
+        if msg_dict.has_key('uid'):
+	    #if uid has been set, the variable will be set already
+            collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
         return
 
     instances = msg_dict["job_instances"]
@@ -312,6 +340,12 @@ def callback(ch, method, properties, body):
     errlog.write("Event Processing Complete")     
     errlog.flush()
     ch.basic_ack(delivery_tag=method.delivery_tag)
+
+    endTime = time.time()
+    if msg_dict.has_key('uid'):
+	#if uid has been set, the variable will be set already
+        collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
+
 
 channel.basic_consume(callback,
                       queue='mathqueue')
