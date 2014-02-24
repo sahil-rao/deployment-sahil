@@ -18,6 +18,8 @@ import baazmath.workflows.base_stats as BaseStats
 import baazmath.workflows.compute_join_popularity as JoinPopularity
 import baazmath.workflows.compute_table_popularity as TablePopularity
 import baazmath.workflows.summarize_hive_exceptions as SummarizeHiveExceptions
+import baazmath.workflows.form_join_supersets as FormJoinSupersets
+import baazmath.workflows.form_complexity_treemap as FormComplexityTreemap
 import sys
 import pika
 import shutil
@@ -239,6 +241,17 @@ def callback(ch, method, properties, body):
             SummarizeHiveExceptions.run_workflow(tenant, None, None)
         except:
             logging.exception("Summarize Hive Exceptions: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
+
+        try:
+            FormJoinSupersets.buildJoinSuperSets(tenant)
+        except:
+            logging.exception("Build Join Supersets: Tenant {0}\n".format(tenant))
+
+        try:
+            FormComplexityTreemap.buildComplexityTreemap(tenant)
+        except:
+            logging.exception("Form Complexity Treemap: Tenant {0}\n".format(tenant))
+
         endTime = time.time()
         if msg_dict.has_key('uid'):
 	    #if uid has been set, the variable will be set already
