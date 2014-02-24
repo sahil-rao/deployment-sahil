@@ -27,6 +27,7 @@ import time
 import datetime
 import ConfigParser
 import traceback
+import logging
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -49,7 +50,9 @@ if os.path.isfile(BAAZ_MATH_LOG_FILE):
     timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
     shutil.copy(BAAZ_MATH_LOG_FILE, BAAZ_MATH_LOG_FILE+timestr)
 
-errlog = open("/var/log/BaazMathService.err", "w+")
+logging.basicConfig(filename=BAAZ_MATH_LOG_FILE,level=logging.INFO,)
+
+#errlog = open("/var/log/BaazMathService.err", "w+")
 connection = pika.BlockingConnection(pika.ConnectionParameters(
         rabbitserverIP))
 channel = connection.channel()
@@ -98,12 +101,10 @@ def storeResourceProfile(tenant):
 
             entity = mongoconn.getEntity(splits[0])
             if entity is None:
-                errlog.write("Entity {0} not found for storing resource profile\n".format(splits[0]))    
-                errlog.flush()
+                logging.error("Entity {0} not found for storing resource profile\n".format(splits[0]))    
                 continue
 
-            errlog.write("Entity {0} resource profile {1}\n".format(splits[0], splits[1]))    
-            errlog.flush()
+            logging.info("Entity {0} resource profile {1}\n".format(splits[0], splits[1]))    
             resource_doc = { "Resource_share": splits[1]}
             mongoconn.updateProfile(entity, "Resource", resource_doc)
     mongoconn.close()
@@ -120,10 +121,7 @@ def callback(ch, method, properties, body):
     """ 
     if not msg_dict.has_key("tenant") or \
        not msg_dict.has_key("opcode"):
-        errlog.write("Invalid message received\n")     
-        errlog.write(body)
-        errlog.write("\n")
-        errlog.flush()
+        logging.error("Invalid message received\n")     
 
         endTime = time.time()
         if msg_dict.has_key('uid'):
@@ -143,8 +141,7 @@ def callback(ch, method, properties, body):
         collection.update({'uid':uid},{'$inc':{"Math.count":1}})
 
     if opcode == "BaseStats":
-        errlog.write("Got Base Stats\n")     
-        errlog.flush()
+        logging.info("Got Base Stats\n")     
         try:
             generateBaseStats(tenant)
             proc = Popen('mysql -ubaazdep -pbaazdep --local-infile -A HADOOP_DEV < /usr/lib/reports/queries/HADOOP/JobReports.sql', 
@@ -156,8 +153,7 @@ def callback(ch, method, properties, body):
 
         """ Compute single table profile of SQL queries
         """
-        errlog.write("Genrating Single Table profile\n")     
-        errlog.flush()
+        logging.info("Generating BaseStats for {0}\n".format(tenant))     
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
         endTime = time.time()
@@ -168,15 +164,13 @@ def callback(ch, method, properties, body):
         return
         
     if opcode == "GenerateTableProfile":
-        errlog.write("Got GenerateTableProfile\n")     
-        errlog.flush()
+        logging.info("Got GenerateTableProfile {0}\n".format(tenant))     
 
         """ Compute single table profile of SQL queries
         TODO: If a single or a set of table is given then perform the
         operation only on that set.
         """
-        errlog.write("Genrating Single Table profile\n")     
-        errlog.flush()
+        logging.info("Generating Single Table profile for {0}\n".format(tenant))     
         entityid = None
         if "entityid" in msg_dict:
             entityid = msg_dict["entityid"]    
@@ -184,9 +178,8 @@ def callback(ch, method, properties, body):
         try:
             CP.updateTableProfile(tenant, entityid)
         except:
-            traceback.print_exc()
-            errlog.write("Update table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-            errlog.flush()
+            #traceback.print_exc()
+            logging.exception("Update table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
         endTime = time.time()
@@ -197,13 +190,11 @@ def callback(ch, method, properties, body):
         return
 
     if opcode == "GenerateQueryProfile":
-        errlog.write("Got GenerateTableProfile\n")     
-        errlog.flush()
+        logging.info("Got GenerateTableProfile for {0}\n".format(tenant))     
 
         """ Compute single table profile of SQL queries
         """
-        errlog.write("Genrating Single Table profile\n")     
-        errlog.flush()
+        logging.info("Generating Single Table profile for {0}\n".format(tenant))     
         entityid = None
         if "entityid" in msg_dict:
             entityid = msg_dict["entityid"]    
@@ -211,60 +202,43 @@ def callback(ch, method, properties, body):
 	try:
             CP.updateSingleTableProfile(tenant, entityid)
         except:
-            traceback.print_exc()
-            errlog.write("Single table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-            errlog.flush()
+            logging.exception("Single table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
  
         try:
             ExceptionHeatmap.run_workflow(tenant, None, None)
         except:
-            traceback.print_exc()
-            errlog.write("Exception Heatmap: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-            errlog.flush()
+            Logging.exception("Exception Heatmap: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
  
         try:
             Dashboard.run_workflow(tenant, None, None)
         except:
-            traceback.print_exc()
-            errlog.write("Dashboard: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-            errlog.flush()
+            logging.exception("Dashboard: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
  
-        errlog.write("Going to form Join Groups\n")     
-        errlog.flush()
+        logging.info("Going to form Join Groups {0}\n".format(tenant))     
         try:
             JoinGroup.formJoinGroup(tenant, entityid)
         except:
-            traceback.print_exc()
-            errlog.write("Join Group: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-            errlog.flush()
+            logging.exception("Join Group: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
             BaseStats.run_workflow(tenant, None, None)
         except:
-            traceback.print_exc()
-            errlog.write("Base Stats: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-            errlog.flush()
+            logging.exception("Base Stats: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
             JoinPopularity.run_workflow(tenant, None, None)
         except:
-            traceback.print_exc()
-            errlog.write("Join Popularity: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-            errlog.flush()
+            logging.exception("Join Popularity: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
             TablePopularity.run_workflow(tenant, None, None)
         except:
-            traceback.print_exc()
-            errlog.write("Table Popularity: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-            errlog.flush()
+            logging.exception("Table Popularity: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
             SummarizeHiveExceptions.run_workflow(tenant, None, None)
         except:
-            traceback.print_exc()
-            errlog.write("Summarize Hive Exceptions: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-            errlog.flush()
+            logging.exception("Summarize Hive Exceptions: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
         endTime = time.time()
         if msg_dict.has_key('uid'):
 	    #if uid has been set, the variable will be set already
@@ -272,73 +246,51 @@ def callback(ch, method, properties, body):
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
-    if not msg_dict.has_key("job_instances"):
-        errlog.write("Invalid message received\n")     
-        errlog.write(body)
-        errlog.write("\n")
-        errlog.flush()
-        ch.basic_ack(delivery_tag=method.delivery_tag)
 
-        endTime = time.time()
-        if msg_dict.has_key('uid'):
-	    #if uid has been set, the variable will be set already
-            collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
-        return
+    try:
+        if not msg_dict.has_key("job_instances"):
+            logging.error("Invalid message received\n")     
+            ch.basic_ack(delivery_tag=method.delivery_tag)
 
-    instances = msg_dict["job_instances"]
+            endTime = time.time()
+            if msg_dict.has_key('uid'):
+	        #if uid has been set, the variable will be set already
+                collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
+            return
 
-    """
-    Generate the CSV from the job instances.
-    """
-    counter = 0
-    for inst in instances:
-    	"""
-    	Create a destination/processing folder.
-    	"""
-    	timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-    	destination = '/mnt/volume1/' + tenant + "/" + timestr 
-    	if not os.path.exists(destination):
-        	os.makedirs(destination)
+        instances = msg_dict["job_instances"]
 
-    	dest_file_name = destination + "/input.csv"
+        """
+        Generate the CSV from the job instances.
+        """
+        counter = 0
+        for inst in instances:
+    	    """
+        	Create a destination/processing folder.
+            """
+            timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
+            destination = '/mnt/volume1/' + tenant + "/" + timestr 
+            if not os.path.exists(destination):
+                os.makedirs(destination)
 
-        prog_id = inst["program_id"] 
-        #inst_id = inst["inst_id"] 
-        #if prog_collector.has_key(prog_id):
-        #    prog_collector[prog_id].append(inst_id)
-        #else:
-        #    prog_collector[prog_id] = [inst_id]
-        #counter = counter + 1
-        errlog.write("Event received for {0}, entity {1}\n".format(tenant, prog_id))     
-        errlog.flush()
-        dest_file = open(dest_file_name, "w+")
-        generateCSV1Header(prog_id, dest_file)
-        generateCSV1(tenant, prog_id, None, dest_file)
-        dest_file.flush()
-	dest_file.close()
-	try:
-            EF.run_workflow(tenant, dest_file_name, destination)
-        except:
-            errlog.write("Tenant {0}, Entity {1}, {2}\n".format(tenant, prog_id, sys.exc_info()[2]))     
-            errlog.flush()
+            dest_file_name = destination + "/input.csv"
+
+            prog_id = inst["program_id"] 
+            logging.info("Event received for {0}, entity {1}\n".format(tenant, prog_id))     
+            dest_file = open(dest_file_name, "w+")
+            generateCSV1Header(prog_id, dest_file)
+            generateCSV1(tenant, prog_id, None, dest_file)
+            dest_file.flush()
+	    dest_file.close()
+	    try:
+                EF.run_workflow(tenant, dest_file_name, destination)
+            except:
+                logging.exception("Estimate Frequency: Tenant {0}, Entity {1}, {2}\n".format(tenant, prog_id, sys.exc_info()[2]))     
+    except:
+        logging.exception("{0}, Entity {1}, {2}\n".format(tenant, prog_id, sys.exc_info()[2]))     
             
 
-    #errlog.write("Event received for {0}, {1} total runs with {1} unique jobs \n".format\
-    #                (tenant, len(prog_collector.keys()), counter))     
-
-    #for prog_id in prog_collector:
-    #    dest_file = open(dest_file_name, "w+")
-    #    generateCSV1Header(prog_id, dest_file)
-    #    for inst in prog_collector[prog_id]:
-    #        generateCSV1Header(prog_id, inst, dest_file)
-        
-    #    """
-    #    Now start the analytics module.
-    #    """
-    #    dest_file.close()
-
-    errlog.write("Event Processing Complete")     
-    errlog.flush()
+    logging.info("Event Processing Complete")     
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
     endTime = time.time()

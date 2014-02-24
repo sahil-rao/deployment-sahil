@@ -15,6 +15,7 @@ import datetime
 import traceback
 import re
 import ConfigParser
+import logging
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -37,7 +38,9 @@ if os.path.isfile(BAAZ_COMPILER_LOG_FILE):
     timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
     shutil.copy(BAAZ_COMPILER_LOG_FILE, BAAZ_COMPILER_LOG_FILE+timestr)
 
-errlog = open("/var/log/BaazCompileService.err", "w+")
+logging.basicConfig(filename=BAAZ_COMPILER_LOG_FILE,level=logging.INFO,)
+
+#errlog = open("/var/log/BaazCompileService.err", "w+")
 connection = pika.BlockingConnection(pika.ConnectionParameters(
         rabbitserverIP))
 channel = connection.channel()
@@ -103,9 +106,8 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
         """
         table_entity = mongoconn.getEntityByName(tablename)
         if table_entity is None:
-            errlog.write("Creating table entity for {0}\n".format(tablename))     
+            logging.info("Creating table entity for {0}\n".format(tablename))     
             #print "Creating table entity for {0}\n".format(tablename)    
-            errlog.flush()
             eid = IdentityService.getNewIdentity(tenant, True)
             mongoconn.addEn(eid, tablename, tenant,\
                       EntityType.SQL_TABLE, endict, None)
@@ -120,9 +122,8 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
         if database_name is not None:
             database_entity = mongoconn.getEntityByName(database_name)
             if database_entity is None:
-                errlog.write("Creating database entity for {0}\n".format(database_name))     
+                logging.info("Creating database entity for {0}\n".format(database_name))     
                 #print "Creating table entity for {0}\n".format(tablename)    
-                errlog.flush()
                 eid = IdentityService.getNewIdentity(tenant, True)
                 mongoconn.addEn(eid, database_name, tenant,\
                           EntityType.SQL_DATABASE, endict, None)
@@ -135,22 +136,22 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
         if entity is not None and table_entity is not None:
             if isinput:
                 mongoconn.formRelation(table_entity, entity, "READ", weight=1)
-                errlog.write("Relation between {0} {1}\n".format(table_entity.eid, entity.eid))     
+                logging.info("Relation between {0} {1}\n".format(table_entity.eid, entity.eid))     
             else:
                 mongoconn.formRelation(entity, table_entity, "WRITE", weight=1)
-                errlog.write("Relation between {0} {1}\n".format(entity.eid, table_entity.eid))     
-            errlog.flush()
+                logging.info("Relation between {0} {1}\n".format(entity.eid, table_entity.eid))     
 
         if database_entity is not None:
             if table_entity is not None:
                 mongoconn.formRelation(database_entity, table_entity, "CONTAINS", weight=1)
-                errlog.write("Relation between {0} {1}\n".format(database_entity.eid, table_entity.eid))     
+                logging.info("Relation between {0} {1}\n".format(database_entity.eid, table_entity.eid))     
 
             """ Note this assumes that formRelations is idempotent
             """
             if entity is not None:
                 mongoconn.formRelation(database_entity, entity, "CONTAINS", weight=1)
-                errlog.write("Relation between {0} {1}\n".format(database_entity.eid, entity.eid))     
+                logging.info("Relation between {0} {1}\n".format(database_entity.eid, entity.eid))     
+
     mongoconn.finishBatchUpdate()
 
 def callback(ch, method, properties, body):
@@ -164,10 +165,7 @@ def callback(ch, method, properties, body):
     """ 
     if not msg_dict.has_key("tenant") or \
        not msg_dict.has_key("job_instances"):
-        errlog.write("Invalid message received\n")     
-        errlog.write(body)
-        errlog.write("\n")
-        errlog.flush()
+        logging.error("Invalid message received\n")     
 
     tenant = msg_dict["tenant"]
     instances = msg_dict["job_instances"]
@@ -197,8 +195,7 @@ def callback(ch, method, properties, body):
 
         if entity is None:
             continue
-        errlog.write("Program Entity : {0}, eid {1}\n".format(entity.name, prog_id))
-        errlog.flush()
+        logging.info("Program Entity : {0}, eid {1}\n".format(entity.name, prog_id))
 
         if inst['program_type'] == "Pig":
             compile_doc = generatePigSignature(inst['pig_features'], tenant, prog_id)
@@ -222,8 +219,7 @@ def callback(ch, method, properties, body):
         #else:
         #    prog_collector[prog_id] = [inst_id]
         #counter = counter + 1
-        errlog.write("Event received for {0}, entity {1}\n".format(tenant, prog_id))     
-        errlog.flush()
+        logging.info("Event received for {0}, entity {1}\n".format(tenant, prog_id))     
         dest_file = open(dest_file_name, "w+")
         dest_file.write(query)
         dest_file.flush()
@@ -243,8 +239,7 @@ def callback(ch, method, properties, body):
                 wait_count = wait_count + 1
 
             for line in proc.stdout:
-                errlog.write(line)
-                errlog.flush()
+                logging.info(line)
             compile_doc = None
             #print "Loading file : ", output_file_name
             with open(output_file_name) as data_file:    
@@ -260,8 +255,7 @@ def callback(ch, method, properties, body):
                                         tenant, entity, False, tableEidList)
 
         except:
-            errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
-            errlog.flush()
+            logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
 
         try:
             """ Call GSP Compiler
@@ -276,8 +270,7 @@ def callback(ch, method, properties, body):
                 wait_count = wait_count + 1
 
             for line in proc.stdout:
-                errlog.write(line)
-                errlog.flush()
+                logging.info(line)
             compile_doc = None
             #print "Loading file : ", output_file_name
             with open(output_file_name) as data_file:    
@@ -292,8 +285,7 @@ def callback(ch, method, properties, body):
                         processTableSet(compile_doc[key]["OutputTableList"], mongoconn,\
                                         tenant, entity, False, tableEidList)
         except:
-            errlog.write("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
-            errlog.flush()
+            logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
 
         #Inject event for profile updation for query
         
@@ -332,8 +324,7 @@ def callback(ch, method, properties, body):
     #    """
     #    dest_file.close()
 
-    errlog.write("Event Processing Complete")     
-    errlog.flush()
+    logging.info("Event Processing Complete")     
     
     endTime = time.time()
 

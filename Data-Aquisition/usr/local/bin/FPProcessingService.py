@@ -17,6 +17,7 @@ import tarfile
 import ConfigParser
 import datetime
 import time
+import logging
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -44,7 +45,9 @@ if os.path.isfile(BAAZ_FP_LOG_FILE):
     timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
     shutil.copy(BAAZ_FP_LOG_FILE, BAAZ_FP_LOG_FILE+timestr)
 
-errlog = open("/var/log/FPProcessing.err", "w+")
+logging.basicConfig(filename=BAAZ_FP_LOG_FILE,level=logging.INFO,)
+
+#errlog = open("/var/log/FPProcessing.err", "w+")
 connection = pika.BlockingConnection(pika.ConnectionParameters(
         rabbitserverIP))
 channel = connection.channel()
@@ -85,10 +88,8 @@ def callback(ch, method, properties, body):
     if not msg_dict.has_key("tenent") or \
        (not msg_dict.has_key("filename") and 
         not msg_dict.has_key("opcode")):
-        errlog.write("Invalid message received\n")     
-        errlog.write(body)
-        errlog.write("\n")
-        errlog.flush()
+        logging.error("Invalid message received\n")     
+        logging.error(body)
 
     tenant = msg_dict["tenent"]
     filename = None
@@ -114,8 +115,7 @@ def callback(ch, method, properties, body):
         """ 
         file_key = bucket.get_key(source)
         if file_key is None:
-            errlog.write("NOT FOUND: {0} not in S3\n".format(source))     
-            errlog.flush()
+            logging.error("NOT FOUND: {0} not in S3\n".format(source))     
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
@@ -161,8 +161,7 @@ def callback(ch, method, properties, body):
     else:
         shutil.copy(dest_file, logpath) 
 
-    errlog.write("Extracted file : {0} \n".format(dest_file))     
-    errlog.flush()
+    logging.info("Extracted file : {0} \n".format(dest_file))     
     if not usingAWS:
         print "Extracted file to /mnt/volume1/[tenent]/processing"
     
@@ -184,8 +183,7 @@ def callback(ch, method, properties, body):
         chkpoint_key = Key(bucket)
         chkpoint_key.key = checkpoint
         chkpoint_key.set_contents_from_string("Processed")
-        errlog.write("Processed file : {0} \n".format(dest_file))     
-        errlog.flush()
+        logging.info("Processed file : {0} \n".format(dest_file))     
 
     for en in mongoconn.entities:
         entity = mongoconn.getEntity(en)
@@ -201,8 +199,7 @@ def callback(ch, method, properties, body):
             jinst_dict['program_type'] = "Pig"
             jinst_dict['pig_features'] = int(entity.instances[0].config_data['pig.script.features'])
         else:
-    	    errlog.write("Progname found {0}\n".format(entity.name))
-    	    errlog.flush()
+    	    logging.info("Progname found {0}\n".format(entity.name))
 	    continue
 
 	compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
@@ -212,8 +209,7 @@ def callback(ch, method, properties, body):
     	channel2.basic_publish(exchange='',
                       routing_key='compilerqueue',
                       body=message)
-    	errlog.write("Published Compiler Message {0}\n".format(message))
-    	errlog.flush()
+    	logging.info("Published Compiler Message {0}\n".format(message))
 
     for en in mongoconn.entities:
         entity = mongoconn.getEntity(en)
@@ -230,8 +226,7 @@ def callback(ch, method, properties, body):
     	channel2.basic_publish(exchange='',
                       routing_key='compilerqueue',
                       body=message)
-    	errlog.write("Published Compiler Message {0}\n".format(message))
-    	errlog.flush()
+    	logging.info("Published Compiler Message {0}\n".format(message))
 
     math_msg = {'tenant':tenant, 'opcode':"Frequency-Estimation"}
     if uid is not None:
@@ -248,8 +243,7 @@ def callback(ch, method, properties, body):
                       routing_key='mathqueue',
                       body=message)
 
-    errlog.write("Published Message {0}\n".format(message))
-    errlog.flush()
+    logging.info("Published Message {0}\n".format(message))
 
     math_msg = {'tenant':tenant, 'opcode':"BaseStats"}
     if uid is not None:
@@ -258,8 +252,7 @@ def callback(ch, method, properties, body):
     channel1.basic_publish(exchange='',
                       routing_key='mathqueue',
                       body=message)
-    errlog.write("Published Message {0}\n".format(message))
-    errlog.flush()
+    logging.info("Published Message {0}\n".format(message))
 
     mongoconn.close()
     ch.basic_ack(delivery_tag=method.delivery_tag)
