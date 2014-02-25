@@ -44,7 +44,7 @@
   shell: update-rc.d baazdataacquisition defaults
   sudo: yes
 - name: Start baazdataacquisition Service.
-  service: name=baazdataacquisition state=started
+  service: name=baazdataacquisition state=restarted
   sudo: yes
 
 #Start of Analytics module deployment.
@@ -91,7 +91,7 @@
   shell: update-rc.d baazmath defaults
   sudo: yes
 - name: Start baazmath Service.
-  service: name=baazmath state=started
+  service: name=baazmath state=restarted
   sudo: yes
 
 #Start of Compiler module deployment.
@@ -122,7 +122,7 @@
   shell: update-rc.d baazcompile defaults
   sudo: yes
 - name: Start Baaz Compiler Service.
-  service: name=baazcompile state=started
+  service: name=baazcompile state=restarted
   sudo: yes
 - name: copy monitrc file
   template: src=roles/backoffice/files/monitrc dest=/etc/monit/monitrc
