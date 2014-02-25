@@ -6,7 +6,6 @@
   tasks:
   - name: Create mount point
     file: path=/mnt/volume1 owner=ubuntu group=ubuntu state=directory
-
   - name: Set Mongodb Repo Keyserver
     shell: apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
   - name: Set Mongodb repo list
@@ -81,10 +80,6 @@
     #Start of Compiler module deployment.
   - name: Install Java7
     apt: pkg=openjdk-7-jdk state=present
-#  - name: Untar Hive 
-#    shell: tar -zxf /home/ubuntu/hive-0.11.0.tar.gz chdir=/home/ubuntu/
-#  - name: Install Hive
-#    shell: mv /home/ubuntu/hive-0.11.0 /usr/lib/hive
   - name: Untar Compiler binaries
     shell: tar -zxf /home/ubuntu/Baaz-Compiler.tar.gz chdir=/usr/lib
   - name: Install Compiler Service
@@ -96,10 +91,6 @@
   - name: Start Baaz Compiler Service.
     service: name=baazcompile state=started
 
-  - name: Add apache2.4 PPA to repository
-    apt_repository: repo='ppa:ondrej/php5' update_cache=yes
-  - name: Install apache2 (v2.4.6 from ppa)
-    apt: pkg=apache2 state=present update_cache=yes
   - name: Install mysql server
     apt: pkg=mysql-server state=present
   - name: Install python setuptools
@@ -115,12 +106,6 @@
     shell: pip install pymongo
   - name: Install networkx
     shell: pip install networkx
-    #- name: Install pygraphviz
-    #  shell: pip install pygraphviz
-  - name: Install Django
-    shell: pip install Django
-  - name: Install mod_wsgi
-    apt: pkg=libapache2-mod-wsgi state=present
   - name: Install python mysqlDB
     apt: pkg=python-mysqldb state=present
   - name: Create mysql user
@@ -129,15 +114,6 @@
     mysql_db: name=baazdata state=present
   - name: Untar flightpath
     shell: tar -zxf /home/ubuntu/flightpath-deployment.tar.gz chdir=/
-  - name: Untar Baazdata App
-    shell: tar -zxf /home/ubuntu/Baazapp-deployment.tar.gz chdir=/
-  - name: Copy apache2 config
-    copy: src=/home/ubuntu/files/apache2.conf dest=/etc/apache2/apache2.conf
-  - name: Copy apache2 sites configuration
-    copy: src=/home/ubuntu/files/000-default.conf dest=/etc/apache2/sites-enabled/000-default.conf
-  - name: Untar UI web files
-    shell: tar -zxf /home/ubuntu/UI.tar.gz chdir=/var/www
-
   - name: Add rabbitMQ Repo 
     shell: echo "deb http://www.rabbitmq.com/debian/ testing main" >> /etc/apt/sources.list
   - name: Set rabbitmq public key
@@ -148,3 +124,15 @@
     shell: apt-key update
   - name: Install Rabbit MQ
     apt: pkg=rabbitmq-server state=present
+  - name: Copy node upstart configuration file
+    copy: src=/home/ubuntu/nodejs.conf dest=/etc/init/nodejs.conf
+  - name: Install Monit service
+    apt: pkg=monit state=present
+  - name: Untar Baazdata App
+    shell: tar -zxf /home/ubuntu/xplain.io.tar.gz
+  - name: Remove the existing deployed code
+    file: path=/var/xplain state=absent
+  - name: Move the new code
+    shell: mv /home/ubuntu/xplain.io /var/xplain
+  - name: copy monitrc file
+    copy: src=/home/ubuntu/monitrc dest=/etc/monit/monitrc
