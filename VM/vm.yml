@@ -31,6 +31,8 @@
     shell: pip install setuptools --no-use-wheel --upgrade
   - name: Install pymongo
     shell: pip install pymongo
+  - name: Install peewee
+    shell: pip install peewee
   - name: Install networkx
     shell: pip install networkx
   - name: Install pika
