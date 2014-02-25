@@ -1,0 +1,82 @@
+---
+# This Playbook would deploy the whole Baazdata cluster with replication and sharding.
+
+
+- hosts: localhost
+  tasks:
+  - name: Create mount point
+    file: path=/mnt/volume1 owner=ubuntu group=ubuntu state=directory
+  - name: Set Mongodb Repo Keyserver
+    shell: apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
+  - name: Set Mongodb repo list
+    shell: echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | tee /etc/apt/sources.list.d/mongodb.list 
+  - name: Update apt
+    shell: apt-get update
+  - name: Install Mongodb
+    shell: apt-get install mongodb-10gen
+  - name: Create Mongo log
+    file: path=/mnt/volume1/mongo/log owner=ubuntu group=ubuntu state=directory
+  - name: Create Mongo db
+    file: path=/mnt/volume1/mongo/db owner=ubuntu group=ubuntu state=directory
+  - name: Install python setuptools
+    apt: pkg=python-setuptools state=present
+  - name: Install pip
+    shell: easy_install pip
+  - name: Disable wheels (pip 1.5 bug workaround)
+    shell: pip install setuptools --no-use-wheel --upgrade
+  - name: Install pymongo
+    shell: pip install pymongo
+  - name: Install peewee
+    shell: pip install peewee
+  - name: Install networkx
+    shell: pip install networkx
+  - name: Install pika
+    shell: pip install pika==0.9.8
+
+    #Start of Analytics module deployment.
+  - name: Install gcc needed for numpy
+    apt: pkg=gcc state=present
+  - name: Install python-dev needed for numpy
+    apt: pkg=python-dev state=present
+  - name: Install Mysql
+    apt: pkg=mysql-server state=present
+  - name: Install python mysqldb
+    apt: pkg=python-mysqldb state=present
+  - name: Install sqlparse
+    shell: pip install sqlparse
+
+    #Start of Compiler module deployment.
+  - name: Install Java7
+    apt: pkg=openjdk-7-jdk state=present
+
+  - name: Install python setuptools
+    apt: pkg=python-setuptools state=present
+  - name: Install graphviz
+    apt: pkg=graphviz state=present
+    ignore_errors: True
+  - name: Install libgraphviz-dev
+    apt: pkg=libgraphviz-dev state=present
+  - name: Install pip
+    shell: easy_install pip
+  - name: Install pymongo
+    shell: pip install pymongo
+  - name: Install networkx
+    shell: pip install networkx
+  - name: Install python mysqlDB
+    apt: pkg=python-mysqldb state=present
+  - name: Add rabbitMQ Repo 
+    shell: echo "deb http://www.rabbitmq.com/debian/ testing main" >> /etc/apt/sources.list
+  - name: Set rabbitmq public key
+    shell: wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
+  - name: Add rabbit MQ key
+    shell: apt-key add rabbitmq-signing-key-public.asc
+  - name: update APT
+    shell: apt-key update
+  - name: Install Rabbit MQ
+    apt: pkg=rabbitmq-server state=present
+  - name: Copy node upstart configuration file
+    copy: src=/home/ubuntu/nodejs.conf dest=/etc/init/nodejs.conf
+  - name: Install Monit service
+    apt: pkg=monit state=present
+  - name: Change desktop background
+    shell: gsettings set org.gnome.desktop.background picture-uri file://home/ubuntu/Slpash.png
