@@ -6,6 +6,7 @@ from json import *
 import shutil
 import uuid
 from pymongo import MongoClient
+import time
 
 if len(sys.argv) != 3:
     sys.exit ('Incorrect Usage, use upload.py <tenant> <filepath>')
@@ -30,7 +31,7 @@ channel.queue_declare(queue='ftpupload')
 uid = str(uuid.uuid4())
 
 collection = MongoClient()[tenent].uploadStats
-uploadStat = {'tenant' : tenent, 'filename' : filename, 'uid': uid, 'Compiler':0, 'Math':0, 'FPProcessing':0}
+uploadStat = {'tenant' : tenent, 'filename' : filename, 'uid': uid, 'timestamp': time.time()}
 collection.insert(uploadStat)
 
 msg_dict = {'tenent':tenent, 'filename':filename, 'uid':uid}
