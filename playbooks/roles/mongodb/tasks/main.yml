@@ -7,6 +7,9 @@
   shell: sudo apt-get update
 - name: Install Mongodb
   shell: sudo apt-get install mongodb-10gen
+- name: Install Monit service
+  apt: pkg=monit state=present
+  sudo: yes
 - name: Copy Mongodb config
   copy: src=roles/mongodb/files/mongodb.conf dest=/etc/mongodb.conf
   sudo: yes
@@ -18,3 +21,9 @@
   sudo: yes
 - name: Start Mongo
   service: name=mongodb state=started
+- name: copy monitrc file
+  template: src=roles/mongodb/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+- name: Start monit service
+  shell: monit reload
+  sudo: yes
