@@ -64,7 +64,7 @@
     mysql_user: name=baazdep password=baazdep priv=*.*:ALL state=present
   - name: Mysql DB
     mysql_db: name=HADOOP_DEV state=present
-  - name: Install pika
+  - name: Install numpy
     shell: pip install numpy
   - name: Install sqlparse
     shell: pip install sqlparse

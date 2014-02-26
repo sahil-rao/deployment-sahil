@@ -11,9 +11,10 @@
   copy: src=roles/mongodb/files/mongodb.conf dest=/etc/mongodb.conf
   sudo: yes
 - name: Create Mongo log
-  file: path=/mnt/volume1/mongo/log owner=ubuntu group=ubuntu state=directory
+  file: path=/mnt/volume1/mongo/log owner=mongodb state=directory
+  sudo: yes
 - name: Create Mongo db
-  file: path=/mnt/volume1/mongo/db owner=ubuntu group=ubuntu state=directory
+  file: path=/mnt/volume1/mongo/db owner=mongodb state=directory
+  sudo: yes
 - name: Start Mongo
-  shell: mongod --fork --config /etc/mongodb.conf
-  ignore_errors: True
+  service: name=mongodb state=started

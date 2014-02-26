@@ -38,6 +38,8 @@
     apt: pkg=gcc state=present
   - name: Install python-dev needed for numpy
     apt: pkg=python-dev state=present
+  - name: Install numpy
+    shell: pip install numpy
   - name: Install Mysql
     apt: pkg=mysql-server state=present
   - name: Install python mysqldb
