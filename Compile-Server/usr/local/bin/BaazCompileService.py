@@ -264,12 +264,12 @@ def callback(ch, method, properties, body):
 			if msg_dict.has_key('uid'):
                 	    collection.update({'uid':uid},{"$inc": {"Compiler.hive.newDBs": tmpAdditions[0], "Compiler.hive.newTables": tmpAdditions[1]}})
 	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Compiler.hive.success": 1}})
+                collection.update({'uid':uid},{"$inc": {"Compiler.hive.success": 1, "Compiler.hive.failure": 0}})
 
         except:
             logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
 	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Compiler.hive.failure": 1}})
+                collection.update({'uid':uid},{"$inc": {"Compiler.hive.failure": 1, "Compiler.hive.success": 0}})
 
         try:
             """ Call GSP Compiler
@@ -301,11 +301,11 @@ def callback(ch, method, properties, body):
 			if msg_dict.has_key('uid'):
                 	    collection.update({'uid':uid},{"$inc": {"Compiler.gsp.newDBs": tmpAdditions[0], "Compiler.gsp.newTables": tmpAdditions[1]}})
 	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Compiler.gsp.success": 1}})
+                collection.update({'uid':uid},{"$inc": {"Compiler.gsp.success": 1, "Compiler.gsp.failure": 0}})
         except:
             logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
 	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Compiler.gsp.failure": 1}})
+                collection.update({'uid':uid},{"$inc": {"Compiler.gsp.failure": 1, "Compiler.gsp.success": 0}})
 
         #Inject event for profile updation for query
         
