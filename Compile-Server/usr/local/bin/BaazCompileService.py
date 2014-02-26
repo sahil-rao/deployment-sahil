@@ -86,8 +86,10 @@ def generatePigSignature(pig_data, tenant, entity_id):
     return ret_dict
     
 def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=None):
+    dbCount = 0
+    tableCount = 0
     if tableset is None or len(tableset) == 0:
-        return
+        return [dbCount, tableCount]
 
     endict = {}
     mongoconn.startBatchUpdate()
@@ -112,6 +114,7 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
             mongoconn.addEn(eid, tablename, tenant,\
                       EntityType.SQL_TABLE, endict, None)
             table_entity = mongoconn.getEntityByName(tablename)
+            tableCount = tableCount + 1
 
         tableEidList.add(table_entity.eid)
 
@@ -128,6 +131,7 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
                 mongoconn.addEn(eid, database_name, tenant,\
                           EntityType.SQL_DATABASE, endict, None)
                 database_entity = mongoconn.getEntityByName(database_name)
+                dbCount = dbCount + 1
 
         """
         Create relations, first between tables and query             
@@ -153,9 +157,13 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
                 logging.info("Relation between {0} {1}\n".format(database_entity.eid, entity.eid))     
 
     mongoconn.finishBatchUpdate()
+    
+    return [dbCount, tableCount]
 
 def callback(ch, method, properties, body):
     startTime = time.time()
+    dbAdditions = [0,0]
+    tmpAdditions = [0,0]
     msg_dict = loads(body)
 
     #print "compiler Got message ", msg_dict
@@ -248,14 +256,20 @@ def callback(ch, method, properties, body):
                 for key in compile_doc:
                     mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
                     if compile_doc[key].has_key("InputTableList"):
-                        processTableSet(compile_doc[key]["InputTableList"], mongoconn,\
-                                        tenant, entity, True, tableEidList)
+                        tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], mongoconn, tenant, entity, True,  tableEidList)
+			if msg_dict.has_key('uid'):
+                	    collection.update({'uid':uid},{"$inc": {"Compiler.hive.newDBs": tmpAdditions[0], "Compiler.hive.newTables": tmpAdditions[1]}})
                     if compile_doc[key].has_key("OutputTableList"):
-                        processTableSet(compile_doc[key]["OutputTableList"], mongoconn,\
-                                        tenant, entity, False, tableEidList)
+                        tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, tenant, entity, False, tableEidList)
+			if msg_dict.has_key('uid'):
+                	    collection.update({'uid':uid},{"$inc": {"Compiler.hive.newDBs": tmpAdditions[0], "Compiler.hive.newTables": tmpAdditions[1]}})
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Compiler.hive.success": 1}})
 
         except:
             logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Compiler.hive.failure": 1}})
 
         try:
             """ Call GSP Compiler
@@ -279,13 +293,19 @@ def callback(ch, method, properties, body):
                 for key in compile_doc:
                     mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
                     if compile_doc[key].has_key("InputTableList"):
-                        processTableSet(compile_doc[key]["InputTableList"], mongoconn,\
-                                        tenant, entity, True, tableEidList)
+                        tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], mongoconn, tenant, entity, True, tableEidList)
+			if msg_dict.has_key('uid'):
+                	    collection.update({'uid':uid},{"$inc": {"Compiler.gsp.newDBs": tmpAdditions[0], "Compiler.gsp.newTables": tmpAdditions[1]}})
                     if compile_doc[key].has_key("OutputTableList"):
-                        processTableSet(compile_doc[key]["OutputTableList"], mongoconn,\
-                                        tenant, entity, False, tableEidList)
+                        tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, tenant, entity, False, tableEidList)
+			if msg_dict.has_key('uid'):
+                	    collection.update({'uid':uid},{"$inc": {"Compiler.gsp.newDBs": tmpAdditions[0], "Compiler.gsp.newTables": tmpAdditions[1]}})
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Compiler.gsp.success": 1}})
         except:
             logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Compiler.gsp.failure": 1}})
 
         #Inject event for profile updation for query
         
@@ -332,8 +352,6 @@ def callback(ch, method, properties, body):
 	#if uid has been set, the variable will be set already
         collection.update({'uid':uid},{"$inc": {"Compiler.time":(endTime-startTime)}})
 	
-	
-    
     mongoconn.close()
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
