@@ -127,7 +127,7 @@ def callback(ch, method, properties, body):
 
         endTime = time.time()
         if msg_dict.has_key('uid'):
-            collectionn.update({'uid':uid},{'$inc':{"Math.tmpcount":1, "Math.time":(endTime-startTime)}})
+            collection.update({'uid':uid},{'$inc':{"Math.tmpcount":1, "Math.time":(endTime-startTime)}})
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
