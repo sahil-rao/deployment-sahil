@@ -127,7 +127,7 @@ def callback(ch, method, properties, body):
 
         endTime = time.time()
         if msg_dict.has_key('uid'):
-            collection.update({'uid':uid},{'$inc':{"Math.tmpcount":1, "Math.time":(endTime-startTime)}})
+            collectionn.update({'uid':uid},{'$inc':{"Math.tmpcount":1, "Math.time":(endTime-startTime)}})
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
@@ -150,7 +150,11 @@ def callback(ch, method, properties, body):
                          stdout=PIPE, shell=True) 
             proc.wait()
             storeResourceProfile(tenant)
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.generateBaseStats.success": 1, "Math.generateBaseStats.failure": 0}})
         except:
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.generateBaseStats.success": 0, "Math.generateBaseStats.failure": 1}})
             pass
 
         """ Compute single table profile of SQL queries
@@ -179,7 +183,11 @@ def callback(ch, method, properties, body):
 
         try:
             CP.updateTableProfile(tenant, entityid)
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.updateTableProfile.success": 1, "Math.updateTableProfile.failure": 0}})
         except:
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.updateTableProfile.success": 0, "Math.updateTableProfile.failure": 1}})
             #traceback.print_exc()
             logging.exception("Update table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
         ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -203,53 +211,93 @@ def callback(ch, method, properties, body):
 
 	try:
             CP.updateSingleTableProfile(tenant, entityid)
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.updateSingleTableProfile.success": 1, "Math.updateSingleTableProfile.failure": 0}})
         except:
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.updateSingleTableProfile.success": 0, "Math.updateSingleTableProfile.failure": 1}})
             logging.exception("Single table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
  
         try:
             ExceptionHeatmap.run_workflow(tenant, None, None)
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.ExceptionHeatmap.success": 1, "Math.ExceptionHeatmap.failure": 0}})
         except:
-            Logging.exception("Exception Heatmap: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.ExceptionHeatmap.success": 0, "Math.ExceptionHeatmap.failure": 1}})
+            logging.exception("Exception Heatmap: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
  
         try:
             Dashboard.run_workflow(tenant, None, None)
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.Dashboard.success": 1, "Math.Dashboard.failure": 0}})
         except:
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.Dashboard.success": 0, "Math.Dashboard.failure": 1}})
             logging.exception("Dashboard: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
  
         logging.info("Going to form Join Groups {0}\n".format(tenant))     
         try:
             JoinGroup.formJoinGroup(tenant, entityid)
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.JoinGroup.success": 1, "Math.JoinGroup.failure": 0}})
         except:
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.JoinGroup.success": 0, "Math.JoinGroup.failure": 1}})
             logging.exception("Join Group: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
             BaseStats.run_workflow(tenant, None, None)
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.BaseStats.success": 1, "Math.BaseStats.failure": 0}})
         except:
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.BaseStats.success": 0, "Math.BaseStats.failure": 1}})
             logging.exception("Base Stats: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
             JoinPopularity.run_workflow(tenant, None, None)
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.JoinPopularity.success": 1, "Math.JoinPopularity.failure": 0}})
         except:
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.JoinPopularity.success": 0, "Math.JoinPopularity.failure": 1}})
             logging.exception("Join Popularity: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
             TablePopularity.run_workflow(tenant, None, None)
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.TablePopularity.success": 1, "Math.TablePopularity.failure": 0}})
         except:
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.TablePopularity.success": 0, "Math.TablePopularity.failure": 1}})
             logging.exception("Table Popularity: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
             SummarizeHiveExceptions.run_workflow(tenant, None, None)
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.SummarizeHiveExceptions.success": 1, "Math.SummarizeHiveExceptions.failure": 0}})
         except:
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.SummarizeHiveExceptions.success": 0, "Math.SummarizeHiveExceptions.failure": 1}})
             logging.exception("Summarize Hive Exceptions: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
             FormJoinSupersets.buildJoinSuperSets(tenant)
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.FormJoinSupersets.success": 1, "Math.FormJoinSupersets.failure": 0}})
         except:
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.FormJoinSupersets.success": 0, "Math.FormJoinSupersets.failure": 1}})
             logging.exception("Build Join Supersets: Tenant {0}\n".format(tenant))
 
         try:
             FormComplexityTreemap.buildComplexityTreemap(tenant)
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.FormComplexityTreemap.success": 1, "Math.FormComplexityTreemap.failure": 0}})
         except:
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.FormComplexityTreemap.success": 0, "Math.FormComplexityTreemap.failure": 1}})
             logging.exception("Form Complexity Treemap: Tenant {0}\n".format(tenant))
 
         endTime = time.time()
