@@ -118,6 +118,12 @@ def callback(ch, method, properties, body):
 
     print "Analytics: Got message ", msg_dict
 
+    uid = None
+    if msg_dict.has_key('uid'):
+        uid = msg_dict['uid']
+
+        collection = MongoClient(mongo_url)[tenant].uploadStats
+        collection.update({'uid':uid},{'$inc':{"Math.count":1}})
     """
     Validate the message.
     """ 
@@ -134,13 +140,6 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict['tenant']
     opcode = msg_dict['opcode']
-
-    uid = None
-    if msg_dict.has_key('uid'):
-        uid = msg_dict['uid']
-
-        collection = MongoClient(mongo_url)[tenant].uploadStats
-        collection.update({'uid':uid},{'$inc':{"Math.count":1}})
 
     if opcode == "BaseStats":
         logging.info("Got Base Stats\n")     
