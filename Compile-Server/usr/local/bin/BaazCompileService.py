@@ -203,7 +203,6 @@ def callback(ch, method, properties, body):
 
         if entity is None:
             continue
-        logging.info("Program Entity : {0}, eid {1}\n".format(entity.name, prog_id))
 
         if inst['program_type'] == "Pig":
             compile_doc = generatePigSignature(inst['pig_features'], tenant, prog_id)
@@ -211,6 +210,7 @@ def callback(ch, method, properties, body):
             continue
 
 	query = inst["query"].encode('utf-8').strip()
+        logging.info("Program Entity : {0}, eid {1}\n".format(query, prog_id))
     	"""
     	Create a destination/processing folder.
     	"""
