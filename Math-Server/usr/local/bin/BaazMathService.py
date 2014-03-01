@@ -20,6 +20,7 @@ import baazmath.workflows.compute_table_popularity as TablePopularity
 import baazmath.workflows.summarize_hive_exceptions as SummarizeHiveExceptions
 import baazmath.workflows.form_join_supersets as FormJoinSupersets
 import baazmath.workflows.form_complexity_treemap as FormComplexityTreemap
+import baazmath.workflows.overall_stats as OverallStats
 import sys
 import pika
 import shutil
@@ -118,12 +119,6 @@ def callback(ch, method, properties, body):
 
     print "Analytics: Got message ", msg_dict
 
-    uid = None
-    if msg_dict.has_key('uid'):
-        uid = msg_dict['uid']
-
-        collection = MongoClient(mongo_url)[tenant].uploadStats
-        collection.update({'uid':uid},{'$inc':{"Math.count":1}})
     """
     Validate the message.
     """ 
@@ -140,6 +135,13 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict['tenant']
     opcode = msg_dict['opcode']
+
+    uid = None
+    if msg_dict.has_key('uid'):
+        uid = msg_dict['uid']
+
+        collection = MongoClient(mongo_url)[tenant].uploadStats
+        collection.update({'uid':uid},{'$inc':{"Math.count":1}})
 
     if opcode == "BaseStats":
         logging.info("Got Base Stats\n")     
@@ -298,6 +300,15 @@ def callback(ch, method, properties, body):
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.FormComplexityTreemap.success": 0, "Math.FormComplexityTreemap.failure": 1}})
             logging.exception("Form Complexity Treemap: Tenant {0}\n".format(tenant))
+
+	try:
+            OverallStats.updateOrgs()
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.OverallStats.success": 1, "Math.OverallStats.failure": 0}})
+        except:
+	    if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.OverallStats.success": 0, "Math.OverallStats.failure": 1}})
+            logging.exception("Overall Stats: Tenant {0}\n".format(tenant))
 
         endTime = time.time()
         if msg_dict.has_key('uid'):
