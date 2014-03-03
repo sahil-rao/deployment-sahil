@@ -5,7 +5,7 @@ Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenant> <log Directory>
 """
 #from flightpath.parsing.hadoop.HadoopConnector import *
-#from flightpath.parsing.SQL.SQLScriptConnector import *
+from flightpath.utils import *
 from flightpath.parsing.ParseDemux import *
 import sys
 from flightpath.MongoConnector import *
@@ -79,7 +79,10 @@ def performTenantCleanup(tenant):
 def callback(ch, method, properties, body):
     starttime = time.time()
     
-    msg_dict = loads(body)
+    try:
+        msg_dict = loads(body)
+    except:
+        logging.exception("Could not load the message JSON")
 
     print "FPPS Got message ", msg_dict
     """
@@ -90,176 +93,197 @@ def callback(ch, method, properties, body):
         not msg_dict.has_key("opcode")):
         logging.error("Invalid message received\n")     
         logging.error(body)
-
-    tenant = msg_dict["tenent"]
-    filename = None
-    opcode = None
-    if msg_dict.has_key("opcode") and msg_dict["opcode"] == "DeleteTenant":
-        performTenantCleanup(tenant)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
-    filename = msg_dict["filename"]
-
-    uid = None
-    if msg_dict.has_key('uid'):
-        uid = msg_dict['uid']
-
-        collection = MongoClient(mongo_url)[tenant].uploadStats
-        collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}})
-
-    source = tenant + "/" + filename
-
-    if usingAWS:
-        """
-        Check if the file exists in S3. 
-        """ 
-        file_key = bucket.get_key(source)
-        if file_key is None:
-            logging.error("NOT FOUND: {0} not in S3\n".format(source))     
-            ch.basic_ack(delivery_tag=method.delivery_tag)
+    try:
+        tenant = msg_dict["tenent"]
+        filename = None
+        opcode = None
+        if msg_dict.has_key("opcode") and msg_dict["opcode"] == "DeleteTenant":
+            performTenantCleanup(tenant)
             return
+    except:
+        logging.exception("Testing Cleanup")
+
+    try:
+        filename = msg_dict["filename"]
+
+        uid = None
+        if msg_dict.has_key('uid'):
+            uid = msg_dict['uid']
+
+            collection = MongoClient(mongo_url)[tenant].uploadStats
+            collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}})
+
+        source = tenant + "/" + filename
+
+        if usingAWS:
+            """
+            Check if the file exists in S3. 
+            """ 
+            file_key = bucket.get_key(source)
+            if file_key is None:
+                logging.error("NOT FOUND: {0} not in S3\n".format(source))     
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+                return
+
+            """
+            Check if the file has already been processed. TODO:
+            """
+            checkpoint = source + ".processed"
+            #chkpoint_key = bucket.get_key(checkpoint)
+            #if chkpoint_key is not None:
+            #    errlog.write("ALREADY PROCESSED: {0} \n".format(source))     
+            #    errlog.flush()
+            #    return
+        else:
+            print "Downloading and extracting file"
 
         """
-        Check if the file has already been processed. TODO:
-        """
-        checkpoint = source + ".processed"
-        #chkpoint_key = bucket.get_key(checkpoint)
-        #if chkpoint_key is not None:
-        #    errlog.write("ALREADY PROCESSED: {0} \n".format(source))     
-        #    errlog.flush()
-        #    return
-    else:
-        print "Downloading and extracting file"
+        Download the file and extract:
+        """ 
+        dest_file = BAAZ_DATA_ROOT + tenant + "/" + filename
+        destination = os.path.dirname(dest_file)
+        print destination
+        if not os.path.exists(destination):
+            os.makedirs(destination)
 
-    """
-    Download the file and extract:
-    """ 
-    dest_file = BAAZ_DATA_ROOT + tenant + "/" + filename
-    destination = os.path.dirname(dest_file)
-    print destination
-    if not os.path.exists(destination):
-        os.makedirs(destination)
+        if usingAWS:
+            d_file = open(dest_file, "w+")
+            file_key.get_contents_to_file(d_file)
+            d_file.close()
 
-    if usingAWS:
-        d_file = open(dest_file, "w+")
-        file_key.get_contents_to_file(d_file)
-        d_file.close()
-
-    logpath = destination + "/" + BAAZ_PROCESSING_DIRECTORY
-    if os.path.exists(logpath):
-        shutil.rmtree(logpath)
-    os.makedirs(logpath)
-    tar = None
-    if dest_file.endswith(".gz"):
-        tar = tarfile.open(dest_file, mode="r:gz")
-        tar.extractall(path=logpath)
-        tar.close()
-    elif dest_file.endswith(".tar"):
-        tar = tarfile.open(dest_file)
-        tar.extractall(path=logpath)
-        tar.close()
-    else:
-        shutil.copy(dest_file, logpath) 
+        logpath = destination + "/" + BAAZ_PROCESSING_DIRECTORY
+        if os.path.exists(logpath):
+            shutil.rmtree(logpath)
+        os.makedirs(logpath)
+        tar = None
+        if dest_file.endswith(".gz"):
+            tar = tarfile.open(dest_file, mode="r:gz")
+            tar.extractall(path=logpath)
+            tar.close()
+        elif dest_file.endswith(".tar"):
+            tar = tarfile.open(dest_file)
+            tar.extractall(path=logpath)
+            tar.close()
+        else:
+            shutil.copy(dest_file, logpath) 
+    except:
+        logging.exception("Downloading file")
 
     logging.info("Extracted file : {0} \n".format(dest_file))     
     if not usingAWS:
         print "Extracted file to /mnt/volume1/[tenent]/processing"
-    
-    """
-    Parse the data.
-    """
-    context = tenant
-    mongoconn = Connector.getConnector(context)
-    if mongoconn is None:
-        mongoconn = MongoConnector({'host':mongo_url, 'context':context, \
-                                'create_db_if_not_exist':True})
-
-    parseDir(tenant, logpath, mongoconn)
-
-    if usingAWS:
+   
+    try:
         """
-        Checkpoint the file processing.
+        Parse the data.
         """
-        chkpoint_key = Key(bucket)
-        chkpoint_key.key = checkpoint
-        chkpoint_key.set_contents_from_string("Processed")
-        logging.info("Processed file : {0} \n".format(dest_file))     
+        context = tenant
+        mongoconn = Connector.getConnector(context)
+        if mongoconn is None:
+            mongoconn = MongoConnector({'host':mongo_url, 'context':context, \
+                                    'create_db_if_not_exist':True})
 
-    for en in mongoconn.entities:
-        entity = mongoconn.getEntity(en)
-        if not entity.etype == 'HADOOP_JOB': 
-            continue
+        parseDir(tenant, logpath, mongoconn)
 
-        jinst_dict = {'entity_id':entity.eid} 
-        prog_type = ""
-        if entity.instances[0].config_data.has_key("hive.query.string"):
-            jinst_dict['program_type'] = "Hive"
+        if usingAWS:
+            """
+            Checkpoint the file processing.
+            """
+            chkpoint_key = Key(bucket)
+            chkpoint_key.key = checkpoint
+            chkpoint_key.set_contents_from_string("Processed")
+            logging.info("Processed file : {0} \n".format(dest_file))     
+
+        for en in mongoconn.entities:
+            entity = mongoconn.getEntity(en)
+            if not entity.etype == 'HADOOP_JOB': 
+                continue
+
+            jinst_dict = {'entity_id':entity.eid} 
+            prog_type = ""
+            if entity.instances[0].config_data.has_key("hive.query.string"):
+                jinst_dict['program_type'] = "Hive"
+                jinst_dict['query'] = entity.name
+            elif entity.instances[0].config_data.has_key("pig.script.features"):
+                jinst_dict['program_type'] = "Pig"
+                jinst_dict['pig_features'] = int(entity.instances[0].config_data['pig.script.features'])
+            else:
+    	        logging.info("Progname found {0}\n".format(entity.name))
+	        continue
+
+	    compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
+            if uid is not None:
+                compiler_msg['uid'] = uid
+    	    message = dumps(compiler_msg)
+    	    channel2.basic_publish(exchange='',
+                          routing_key='compilerqueue',
+                       body=message)
+            incrementPendingMessage(collection, uid)
+    	    logging.info("Published Compiler Message {0}\n".format(message))
+
+        for en in mongoconn.entities:
+            entity = mongoconn.getEntity(en)
+            if not entity.etype == 'SQL_QUERY': 
+                continue
+
+            jinst_dict = {'entity_id':entity.eid} 
+            jinst_dict['program_type'] = "SQL"
             jinst_dict['query'] = entity.name
-        elif entity.instances[0].config_data.has_key("pig.script.features"):
-            jinst_dict['program_type'] = "Pig"
-            jinst_dict['pig_features'] = int(entity.instances[0].config_data['pig.script.features'])
-        else:
-    	    logging.info("Progname found {0}\n".format(entity.name))
-	    continue
-
-	compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
-        if uid is not None:
-            compiler_msg['uid'] = uid
-    	message = dumps(compiler_msg)
-    	channel2.basic_publish(exchange='',
+    	    compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
+            if uid is not None:
+                compiler_msg['uid'] = uid
+            message = dumps(compiler_msg)
+            channel2.basic_publish(exchange='',
                       routing_key='compilerqueue',
                       body=message)
-    	logging.info("Published Compiler Message {0}\n".format(message))
+            incrementPendingMessage(collection, uid)
+    	    logging.info("Published Compiler Message {0}\n".format(message))
+    except:
+        logging.exception("Parsing the input and Compiler Message")
 
-    for en in mongoconn.entities:
-        entity = mongoconn.getEntity(en)
-        if not entity.etype == 'SQL_QUERY': 
-            continue
-
-        jinst_dict = {'entity_id':entity.eid} 
-        jinst_dict['program_type'] = "SQL"
-        jinst_dict['query'] = entity.name
-	compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
+    try:
+        math_msg = {'tenant':tenant, 'opcode':"Frequency-Estimation"}
         if uid is not None:
-            compiler_msg['uid'] = uid
-    	message = dumps(compiler_msg)
-    	channel2.basic_publish(exchange='',
-                      routing_key='compilerqueue',
-                      body=message)
-    	logging.info("Published Compiler Message {0}\n".format(message))
+            math_msg['uid'] = uid
+        job_insts = {}
+        for en in mongoconn.entities:
+            entity = mongoconn.getEntity(en)
+            if not entity.etype == 'HADOOP_JOB':
+                continue
+            job_insts[entity.eid] = {'program_id':entity.eid}
+        math_msg['job_instances'] = job_insts.values()
+        message = dumps(math_msg)
+        channel1.basic_publish(exchange='',
+                          routing_key='mathqueue',
+                          body=message)
+        incrementPendingMessage(collection, uid)
 
-    math_msg = {'tenant':tenant, 'opcode':"Frequency-Estimation"}
-    if uid is not None:
-        math_msg['uid'] = uid
-    job_insts = {}
-    for en in mongoconn.entities:
-        entity = mongoconn.getEntity(en)
-        if not entity.etype == 'HADOOP_JOB':
-            continue
-        job_insts[entity.eid] = {'program_id':entity.eid}
-    math_msg['job_instances'] = job_insts.values()
-    message = dumps(math_msg)
-    channel1.basic_publish(exchange='',
-                      routing_key='mathqueue',
-                      body=message)
+        logging.info("Published Message {0}\n".format(message))
 
-    logging.info("Published Message {0}\n".format(message))
+        math_msg = {'tenant':tenant, 'opcode':"BaseStats"}
+        if uid is not None:
+            math_msg['uid'] = uid
+        message = dumps(math_msg)
+        channel1.basic_publish(exchange='',
+                          routing_key='mathqueue',
+                          body=message)
+        incrementPendingMessage(collection, uid)
+        logging.info("Published Message {0}\n".format(message))
+    except:
+        logging.exception("Publishing Math Message")
 
-    math_msg = {'tenant':tenant, 'opcode':"BaseStats"}
-    if uid is not None:
-        math_msg['uid'] = uid
-    message = dumps(math_msg)
-    channel1.basic_publish(exchange='',
-                      routing_key='mathqueue',
-                      body=message)
-    logging.info("Published Message {0}\n".format(message))
+    try:
+        mongoconn.close()
+        if msg_dict.has_key('uid'):
+	    #if uid has been set, the variable will be set already
+            collection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.time()-starttime)}})
+    except:
+        logging.logfile("While closing mongo")
 
-    mongoconn.close()
     ch.basic_ack(delivery_tag=method.delivery_tag)
-
-    if msg_dict.has_key('uid'):
-	#if uid has been set, the variable will be set already
-        collection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.time()-starttime)}})
 
 channel.basic_consume(callback,
                       queue='ftpupload')

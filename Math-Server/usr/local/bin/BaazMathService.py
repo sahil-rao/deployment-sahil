@@ -6,6 +6,7 @@ Usage : FPProcessing.py <tenant> <log Directory>
 """
 from flightpath.parsing.hadoop.HadoopConnector import *
 from flightpath.MongoConnector import *
+from flightpath.utils import *
 from json import *
 from baazmath.interface.BaazCSV import *
 from subprocess import Popen, PIPE
@@ -20,7 +21,6 @@ import baazmath.workflows.compute_table_popularity as TablePopularity
 import baazmath.workflows.summarize_hive_exceptions as SummarizeHiveExceptions
 import baazmath.workflows.form_join_supersets as FormJoinSupersets
 import baazmath.workflows.form_complexity_treemap as FormComplexityTreemap
-import baazmath.workflows.overall_stats as OverallStats
 import sys
 import pika
 import shutil
@@ -129,6 +129,7 @@ def callback(ch, method, properties, body):
         endTime = time.time()
         if msg_dict.has_key('uid'):
             collection.update({'uid':uid},{'$inc':{"Math.tmpcount":1, "Math.time":(endTime-startTime)}})
+            decrementPendingMessage(collection, uid)
 
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
@@ -161,6 +162,7 @@ def callback(ch, method, properties, body):
         """ Compute single table profile of SQL queries
         """
         logging.info("Generating BaseStats for {0}\n".format(tenant))     
+        decrementPendingMessage(collection, uid)
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
         endTime = time.time()
@@ -191,6 +193,7 @@ def callback(ch, method, properties, body):
                 collection.update({'uid':uid},{"$inc": {"Math.updateTableProfile.success": 0, "Math.updateTableProfile.failure": 1}})
             #traceback.print_exc()
             logging.exception("Update table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
+        decrementPendingMessage(collection, uid)
         ch.basic_ack(delivery_tag=method.delivery_tag)
 
         endTime = time.time()
@@ -301,12 +304,12 @@ def callback(ch, method, properties, body):
                 collection.update({'uid':uid},{"$inc": {"Math.FormComplexityTreemap.success": 0, "Math.FormComplexityTreemap.failure": 1}})
             logging.exception("Form Complexity Treemap: Tenant {0}\n".format(tenant))
 
-	try:
+        try:
             OverallStats.updateOrgs()
-	    if msg_dict.has_key('uid'):
+            if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.OverallStats.success": 1, "Math.OverallStats.failure": 0}})
         except:
-	    if msg_dict.has_key('uid'):
+            if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.OverallStats.success": 0, "Math.OverallStats.failure": 1}})
             logging.exception("Overall Stats: Tenant {0}\n".format(tenant))
 
@@ -315,12 +318,14 @@ def callback(ch, method, properties, body):
 	    #if uid has been set, the variable will be set already
             collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
 
+        decrementPendingMessage(collection, uid)
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
     try:
         if not msg_dict.has_key("job_instances"):
             logging.error("Invalid message received\n")     
+            decrementPendingMessage(collection, uid)
             ch.basic_ack(delivery_tag=method.delivery_tag)
 
             endTime = time.time()
@@ -362,6 +367,7 @@ def callback(ch, method, properties, body):
             
 
     logging.info("Event Processing Complete")     
+    decrementPendingMessage(collection, uid)
     ch.basic_ack(delivery_tag=method.delivery_tag)
 
     endTime = time.time()

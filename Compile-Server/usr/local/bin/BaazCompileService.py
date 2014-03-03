@@ -4,6 +4,7 @@
 Compile Service:
 """
 from flightpath.MongoConnector import *
+from flightpath.utils import *
 from subprocess import Popen, PIPE
 from json import *
 import sys
@@ -177,7 +178,6 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict["tenant"]
     instances = msg_dict["job_instances"]
-
     uid = None
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
@@ -259,6 +259,7 @@ def callback(ch, method, properties, body):
                         tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], mongoconn, tenant, entity, True,  tableEidList)
 			if msg_dict.has_key('uid'):
                 	    collection.update({'uid':uid},{"$inc": {"Compiler.hive.newDBs": tmpAdditions[0], "Compiler.hive.newTables": tmpAdditions[1]}})
+                        
                     if compile_doc[key].has_key("OutputTableList"):
                         tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, tenant, entity, False, tableEidList)
 			if msg_dict.has_key('uid'):
@@ -316,7 +317,8 @@ def callback(ch, method, properties, body):
         channel.basic_publish(exchange='',
                           routing_key='mathqueue',
                           body=message)
-       
+        incrementPendingMessage(collection, uid)
+
         #Inject event for table profile.
         msg_dict = {'tenant':tenant, 'opcode':"GenerateTableProfile"}
         if uid is not None:
@@ -329,6 +331,7 @@ def callback(ch, method, properties, body):
             channel.basic_publish(exchange='',
                               routing_key='mathqueue',
                               body=message)
+            incrementPendingMessage(collection, uid)
 
     #errlog.write("Event received for {0}, {1} total runs with {1} unique jobs \n".format\
     #                (tenant, len(prog_collector.keys()), counter))     
@@ -354,6 +357,7 @@ def callback(ch, method, properties, body):
 	
     mongoconn.close()
     ch.basic_ack(delivery_tag=method.delivery_tag)
+    decrementPendingMessage(collection, uid)
 
 channel.basic_consume(callback,
                       queue='compilerqueue')
