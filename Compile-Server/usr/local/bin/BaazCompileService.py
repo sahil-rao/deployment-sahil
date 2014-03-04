@@ -179,11 +179,30 @@ def callback(ch, method, properties, body):
     tenant = msg_dict["tenant"]
     instances = msg_dict["job_instances"]
     uid = None
+    db = None
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
 	
+        """
+        Check if this is a valid UID. If it so happens that this flow has been deleted,
+        then drop the message.
+        """
+	db = MongoClient(mongo_url)[tenant]
+        if not checkUID(db, uid):
+            """
+            Just drain the queue.
+            """
+    	    ch.basic_ack(delivery_tag=method.delivery_tag)
+            return
+      
         collection = MongoClient(mongo_url)[tenant].uploadStats
         collection.update({'uid':uid},{'$inc':{"Compiler.count":1}})
+    else:
+        """
+        We do not expect anything without UID. Discard message if not present.
+        """
+    	ch.basic_ack(delivery_tag=method.delivery_tag)
+        return
 
     mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
@@ -252,6 +271,18 @@ def callback(ch, method, properties, body):
             #print "Loading file : ", output_file_name
             with open(output_file_name) as data_file:    
                 compile_doc = load(data_file)
+
+            """
+            It is possible the tenant has been cleared. If this is the case then do not add an new entities.
+            """
+            if not checkUID(db, uid):
+                """
+                Just drain the queue.
+                """
+                mongoconn.close()
+    	        ch.basic_ack(delivery_tag=method.delivery_tag)
+                return
+
             if compile_doc is not None:
                 for key in compile_doc:
                     mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
@@ -272,6 +303,18 @@ def callback(ch, method, properties, body):
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Compiler.hive.failure": 1, "Compiler.hive.success": 0}})
 
+        """
+        Check if this is still valid UID. If it so happens that this flow has been deleted,
+        then drop the message.
+        """
+        #if not checkUID(db, uid):
+        #    """
+        #    Just drain the queue.
+        #    """
+    	#    ch.basic_ack(delivery_tag=method.delivery_tag)
+        #    mongoconn.close()
+        #   return
+      
         try:
             """ Call GSP Compiler
             """ 
@@ -290,6 +333,18 @@ def callback(ch, method, properties, body):
             #print "Loading file : ", output_file_name
             with open(output_file_name) as data_file:    
                 compile_doc = load(data_file)
+
+            """
+            It is possible the tenant has been cleared. If this is the case then do not add an new entities.
+            """
+            if not checkUID(db, uid):
+                """
+                Just drain the queue.
+                """
+                mongoconn.close()
+    	        ch.basic_ack(delivery_tag=method.delivery_tag)
+                return
+
             if compile_doc is not None:
                 for key in compile_doc:
                     mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])

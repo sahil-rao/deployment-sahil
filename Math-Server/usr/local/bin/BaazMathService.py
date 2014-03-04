@@ -142,8 +142,26 @@ def callback(ch, method, properties, body):
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
 
+        """
+        Check if this is a valid UID. If it so happens that this flow has been deleted,
+        then drop the message.
+        """
+	db = MongoClient(mongo_url)[tenant]
+        if not checkUID(db, uid):
+            """
+            Just drain the queue.
+            """
+    	    ch.basic_ack(delivery_tag=method.delivery_tag)
+            return
+      
         collection = MongoClient(mongo_url)[tenant].uploadStats
         collection.update({'uid':uid},{'$inc':{"Math.count":1}})
+    else:
+        """
+        We do not expect anything without UID. Discard message if not present.
+        """
+    	ch.basic_ack(delivery_tag=method.delivery_tag)
+        return
 
     if opcode == "BaseStats":
         logging.info("Got Base Stats\n")     
