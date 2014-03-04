@@ -21,6 +21,7 @@ import baazmath.workflows.compute_table_popularity as TablePopularity
 import baazmath.workflows.summarize_hive_exceptions as SummarizeHiveExceptions
 import baazmath.workflows.form_join_supersets as FormJoinSupersets
 import baazmath.workflows.form_complexity_treemap as FormComplexityTreemap
+import baazmath.workflows.overall_stats as OverallStats
 import sys
 import pika
 import shutil
