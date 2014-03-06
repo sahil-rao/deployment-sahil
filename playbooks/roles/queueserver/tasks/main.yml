@@ -13,4 +13,11 @@
 - name: Install Rabbit MQ
   apt: pkg=rabbitmq-server state=present
   sudo: yes
+# Defaulting to /var/lib/rabbitmq
+- name: create cookie directory
+  file: path={{rabbitmq_cookie_dir}} owner=rabbitmq group=rabbitmq mode=0755 state=directory
 
+
+- name: add rabbitmq erlang cookie
+  template: src=erlang.cookie.j2 dest={{rabbitmq_cookie_location}} owner=rabbitmq group=rabbitmq mode=0400
+  register: erlang_cookie
