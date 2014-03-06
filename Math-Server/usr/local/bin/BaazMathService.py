@@ -12,7 +12,6 @@ from baazmath.interface.BaazCSV import *
 from subprocess import Popen, PIPE
 import baazmath.workflows.estimate_frequency as EF
 import baazmath.workflows.create_profiles as CP
-import baazmath.workflows.exception_heatmap as ExceptionHeatmap
 import baazmath.workflows.generate_dashboard as Dashboard
 import baazmath.workflows.form_join_groups as JoinGroup
 import baazmath.workflows.base_stats as BaseStats
@@ -240,15 +239,6 @@ def callback(ch, method, properties, body):
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.updateSingleTableProfile.success": 0, "Math.updateSingleTableProfile.failure": 1}})
             logging.exception("Single table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
- 
-        try:
-            ExceptionHeatmap.run_workflow(tenant, None, None)
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.ExceptionHeatmap.success": 1, "Math.ExceptionHeatmap.failure": 0}})
-        except:
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.ExceptionHeatmap.success": 0, "Math.ExceptionHeatmap.failure": 1}})
-            logging.exception("Exception Heatmap: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
  
         try:
             Dashboard.run_workflow(tenant, None, None)
