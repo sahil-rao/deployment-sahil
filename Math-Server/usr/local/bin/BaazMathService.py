@@ -21,6 +21,7 @@ import baazmath.workflows.summarize_hive_exceptions as SummarizeHiveExceptions
 import baazmath.workflows.form_join_supersets as FormJoinSupersets
 import baazmath.workflows.form_complexity_treemap as FormComplexityTreemap
 import baazmath.workflows.overall_stats as OverallStats
+import baazmath.workflows.joinScore as JoinScore
 import sys
 import pika
 import shutil
@@ -321,6 +322,15 @@ def callback(ch, method, properties, body):
             if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.OverallStats.success": 0, "Math.OverallStats.failure": 1}})
             logging.exception("Overall Stats: Tenant {0}\n".format(tenant))
+
+        try:
+            JoinScore.compute_join_score(tenant)
+            if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.OverallStats.success": 1, "Math.OverallStats.failure": 0}})
+        except:
+            if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Math.OverallStats.success": 0, "Math.OverallStats.failure": 1}})
+            logging.exception("Join Score: Tenant {0}\n".format(tenant))
 
         endTime = time.time()
         if msg_dict.has_key('uid'):
