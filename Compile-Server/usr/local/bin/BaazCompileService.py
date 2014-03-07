@@ -45,7 +45,9 @@ logging.basicConfig(filename=BAAZ_COMPILER_LOG_FILE,level=logging.INFO,)
 connection = pika.BlockingConnection(pika.ConnectionParameters(
         rabbitserverIP))
 channel = connection.channel()
-channel.queue_declare(queue='compilerqueue')
+
+client_params = {"x-ha-policy":"all"}
+channel.queue_declare(queue='compilerqueue',arguments = client_params)
 
 COMPILER_MODULES='/usr/lib/baaz_compiler'
 dirList=os.listdir(COMPILER_MODULES)

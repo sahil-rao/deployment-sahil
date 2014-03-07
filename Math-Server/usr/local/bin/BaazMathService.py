@@ -60,7 +60,9 @@ logging.basicConfig(filename=BAAZ_MATH_LOG_FILE,level=logging.INFO,)
 connection = pika.BlockingConnection(pika.ConnectionParameters(
         rabbitserverIP))
 channel = connection.channel()
-channel.queue_declare(queue='mathqueue')
+
+client_params = {"x-ha-policy":"all"}
+channel.queue_declare(queue='mathqueue',arguments = client_params)
 
 def generateBaseStats(tenant):
     """
