@@ -46,7 +46,8 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(
         rabbitserverIP))
 channel = connection.channel()
 
-client_params = {"x-ha-policy":"all"}
+#client_params = {"x-ha-policy":"all"}
+client_params = {}
 channel.queue_declare(queue='compilerqueue',arguments = client_params)
 
 COMPILER_MODULES='/usr/lib/baaz_compiler'
