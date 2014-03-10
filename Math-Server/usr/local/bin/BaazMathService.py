@@ -61,7 +61,8 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(
         rabbitserverIP))
 channel = connection.channel()
 
-client_params = {"x-ha-policy":"all"}
+#client_params = {"x-ha-policy":"all"}
+client_params = {}
 channel.queue_declare(queue='mathqueue',arguments = client_params)
 
 def generateBaseStats(tenant):
