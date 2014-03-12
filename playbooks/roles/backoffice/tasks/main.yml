@@ -28,12 +28,12 @@
   copy: src=/home/ubuntu/.boto dest=~root/.boto
   sudo: yes
 - name: Get Flightpath
-  shell: s3cmd sync s3://baaz-deployment/flightpath-deployment.tar.gz .
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}flightpath-deployment.tar.gz .
 - name: Untar flightpath
   shell: tar -zxf /home/ubuntu/flightpath-deployment.tar.gz chdir=/
   sudo: yes
 - name: Get Data Acquisition service
-  shell: s3cmd sync s3://baaz-deployment/Baaz-DataAcquisition-Service.tar.gz .
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-DataAcquisition-Service.tar.gz .
 - name: Copy the service files
   shell: tar -zxf /home/ubuntu/Baaz-DataAcquisition-Service.tar.gz chdir=/
   sudo: yes
@@ -49,14 +49,14 @@
 
 #Start of Analytics module deployment.
 - name: Get Analytics Module
-  shell: s3cmd sync s3://baaz-deployment/Baaz-Analytics.tar.gz .
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Analytics.tar.gz .
 - name: Untar Analytics
   shell: tar -zxf /home/ubuntu/Baaz-Analytics.tar.gz chdir=/
   sudo: yes
 - name: Get Analytics Service
-  shell: s3cmd sync s3://baaz-deployment/Baaz-Analytics-Service.tar.gz .
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Analytics-Service.tar.gz .
 - name: Get Basestats 
-  shell: s3cmd sync s3://baaz-deployment/Baaz-Basestats-Report.tar.gz .
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Basestats-Report.tar.gz .
 - name: Install Basestats scripts
   shell: tar -zxf /home/ubuntu/Baaz-Basestats-Report.tar.gz chdir=/usr/lib
   sudo: yes
@@ -106,12 +106,12 @@
 #  shell: mv /home/ubuntu/hive-0.11.0 /usr/lib/hive
 #  sudo: yes
 - name: Get Compiler Module
-  shell: s3cmd sync s3://baaz-deployment/Baaz-Compiler.tar.gz .
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Compiler.tar.gz .
 - name: Untar Compiler binaries
   shell: tar -zxf /home/ubuntu/Baaz-Compiler.tar.gz chdir=/usr/lib
   sudo: yes
 - name: Get Compiler Service
-  shell: s3cmd sync s3://baaz-deployment/Baaz-Compile-Service.tar.gz .
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Compile-Service.tar.gz .
 - name: Install Compiler Service
   shell: tar -zxf /home/ubuntu/Baaz-Compile-Service.tar.gz chdir=/
   sudo: yes
