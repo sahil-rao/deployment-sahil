@@ -17,7 +17,6 @@ rm -rf /home/ubuntu/build
 mkdir /home/ubuntu/build 
 
 cd  /home/ubuntu/build
-git config --global credential.helper cache
 
 #Checkout deployment
 git clone https://github.com/baazdata/deployment.git
