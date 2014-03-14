@@ -11,4 +11,4 @@ done < BuildInfo
 echo "Deploying Build $buildversion"
 
 cd /home/ubuntu/build/deployment/playbooks/
-/usr/local/bin/ansible-playbook site.yml --limit 'tag_Name_Backoffice,tag_Name_NodeJS,' --extra-vars "BuildVersion=$buildversion"
+/usr/local/bin/ansible-playbook site.yml --limit 'tag_Name_Backoffice,tag_Name_NodeJS,' --extra-vars "BuildVersion=$buildversion/"
