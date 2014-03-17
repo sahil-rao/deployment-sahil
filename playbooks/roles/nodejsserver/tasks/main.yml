@@ -2,6 +2,11 @@
 - name: Stop the apache service
   shell: /opt/bitnami/ctlscript.sh stop apache
   sudo: yes
+- name: Set the timezone
+  shell: echo "America/Los_Angeles" | sudo tee /etc/timezone 
+- name: Reset the system time to new timezone.
+  shell: dpkg-reconfigure --frontend noninteractive tzdata
+  sudo: yes
 - name: Create the Baaz config directory
   file: path=/var/Baaz state=directory
   sudo: yes

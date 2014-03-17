@@ -17,3 +17,8 @@
 - name: Save configuration file
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
   sudo: yes
+- name: Set the timezone
+  shell: echo "America/Los_Angeles" | sudo tee /etc/timezone 
+- name: Reset the system time to new timezone.
+  shell: dpkg-reconfigure --frontend noninteractive tzdata
+  sudo: yes
