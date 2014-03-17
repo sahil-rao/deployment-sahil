@@ -37,6 +37,8 @@
 - name: Move the new code
   shell: mv /home/bitnami/xplain.io /var/xplain
   sudo: yes
+- name: Get the npm modules.
+  npm: path=/var/xplain
 - name: Stop the service
   shell: stop nodejs
   sudo: yes
