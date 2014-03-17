@@ -63,5 +63,7 @@
     file: path=/var/xplain state=absent
   - name: Move the new code
     shell: mv /home/ubuntu/xplain.io /var/xplain
+  - name: Install npm modules.
+    npm: path=/var/xplain
   - name: copy monitrc file
     copy: src=/home/ubuntu/monitrc dest=/etc/monit/monitrc
