@@ -5,6 +5,7 @@ Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenant> <log Directory>
 """
 #from flightpath.parsing.hadoop.HadoopConnector import *
+from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.utils import *
 from flightpath.parsing.ParseDemux import *
 import sys
@@ -47,22 +48,6 @@ if os.path.isfile(BAAZ_FP_LOG_FILE):
 
 logging.basicConfig(filename=BAAZ_FP_LOG_FILE,level=logging.INFO,)
 
-#errlog = open("/var/log/FPProcessing.err", "w+")
-connection = pika.BlockingConnection(pika.ConnectionParameters(
-        rabbitserverIP))
-channel = connection.channel()
-channel.queue_declare(queue='ftpupload')
-
-channel.exchange_declare("Fanout", type="fanout")
-result = channel.queue_declare(exclusive=True)
-queue_name = result.method.queue
-channel.queue_bind(exchange="Fanout", queue=queue_name)
-
-channel1 = connection.channel()
-channel1.queue_declare(queue='mathqueue')
-channel2 = connection.channel()
-channel2.queue_declare(queue='compilerqueue')
-
 if usingAWS:
     boto_conn = boto.connect_s3()
     bucket = boto_conn.get_bucket('partner-logs') 
@@ -93,7 +78,7 @@ def callback(ch, method, properties, body):
         not msg_dict.has_key("opcode")):
         logging.error("Invalid message received\n")     
         logging.error(body)
-        ch.basic_ack(delivery_tag=method.delivery_tag)
+        connection1.basicAck(ch,method)
         return
 
     try:
@@ -125,7 +110,8 @@ def callback(ch, method, properties, body):
             file_key = bucket.get_key(source)
             if file_key is None:
                 logging.error("NOT FOUND: {0} not in S3\n".format(source))     
-                ch.basic_ack(delivery_tag=method.delivery_tag)
+                connection1.basicAck(ch,method)
+                
                 return
 
             """
@@ -218,9 +204,7 @@ def callback(ch, method, properties, body):
             if uid is not None:
                 compiler_msg['uid'] = uid
     	    message = dumps(compiler_msg)
-    	    channel2.basic_publish(exchange='',
-                          routing_key='compilerqueue',
-                       body=message)
+            connection1.publish(ch,'','compilerqueue',message)
             incrementPendingMessage(collection, uid)
     	    logging.info("Published Compiler Message {0}\n".format(message))
 
@@ -236,9 +220,7 @@ def callback(ch, method, properties, body):
             if uid is not None:
                 compiler_msg['uid'] = uid
             message = dumps(compiler_msg)
-            channel2.basic_publish(exchange='',
-                      routing_key='compilerqueue',
-                      body=message)
+            connection1.publish(ch,'','compilerqueue',message)
             incrementPendingMessage(collection, uid)
     	    logging.info("Published Compiler Message {0}\n".format(message))
     except:
@@ -256,9 +238,7 @@ def callback(ch, method, properties, body):
             job_insts[entity.eid] = {'program_id':entity.eid}
         math_msg['job_instances'] = job_insts.values()
         message = dumps(math_msg)
-        channel1.basic_publish(exchange='',
-                          routing_key='mathqueue',
-                          body=message)
+        connection1.publish(ch,'','mathqueue',message)
         incrementPendingMessage(collection, uid)
 
         logging.info("Published Message {0}\n".format(message))
@@ -267,9 +247,7 @@ def callback(ch, method, properties, body):
         if uid is not None:
             math_msg['uid'] = uid
         message = dumps(math_msg)
-        channel1.basic_publish(exchange='',
-                          routing_key='mathqueue',
-                          body=message)
+        connection1.publish(ch,'','mathqueue',message)
         incrementPendingMessage(collection, uid)
         logging.info("Published Message {0}\n".format(message))
     except:
@@ -283,18 +261,14 @@ def callback(ch, method, properties, body):
     except:
         logging.logfile("While closing mongo")
 
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+    connection1.basicAck(ch,method)
 
-channel.basic_consume(callback,
-                      queue='ftpupload')
-
-channel.basic_consume(callback,
-                      queue=queue_name,
-                      no_ack=True)
+connection1 = RabbitConnection(callback, ['ftpupload'],['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}},BAAZ_FP_LOG_FILE)
 
 print "FPProcessingService going to start consuming"
-channel.start_consuming()
-if usingAWS:
-    boto_conn.close()
-print "OOps I am done"
+
+connection1.run()
+
+
+print "Oops I'm done"
 

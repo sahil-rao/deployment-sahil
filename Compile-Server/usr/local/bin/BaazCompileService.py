@@ -4,6 +4,7 @@
 Compile Service:
 """
 from flightpath.MongoConnector import *
+from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.utils import *
 from subprocess import Popen, PIPE
 from json import *
@@ -40,15 +41,6 @@ if os.path.isfile(BAAZ_COMPILER_LOG_FILE):
     shutil.copy(BAAZ_COMPILER_LOG_FILE, BAAZ_COMPILER_LOG_FILE+timestr)
 
 logging.basicConfig(filename=BAAZ_COMPILER_LOG_FILE,level=logging.INFO,)
-
-#errlog = open("/var/log/BaazCompileService.err", "w+")
-connection = pika.BlockingConnection(pika.ConnectionParameters(
-        rabbitserverIP))
-channel = connection.channel()
-
-#client_params = {"x-ha-policy":"all"}
-client_params = {}
-channel.queue_declare(queue='compilerqueue',arguments = client_params)
 
 COMPILER_MODULES='/usr/lib/baaz_compiler'
 dirList=os.listdir(COMPILER_MODULES)
@@ -195,7 +187,7 @@ def callback(ch, method, properties, body):
             """
             Just drain the queue.
             """
-    	    ch.basic_ack(delivery_tag=method.delivery_tag)
+            connection1.basicAck(ch,method)
             return
       
         collection = MongoClient(mongo_url)[tenant].uploadStats
@@ -204,7 +196,8 @@ def callback(ch, method, properties, body):
         """
         We do not expect anything without UID. Discard message if not present.
         """
-    	ch.basic_ack(delivery_tag=method.delivery_tag)
+        connection1.basicAck(ch,method)
+           
         return
 
     mongoconn = Connector.getConnector(tenant)
@@ -283,7 +276,7 @@ def callback(ch, method, properties, body):
                 Just drain the queue.
                 """
                 mongoconn.close()
-    	        ch.basic_ack(delivery_tag=method.delivery_tag)
+                connection1.basicAck(ch,method)   
                 return
 
             if compile_doc is not None:
@@ -345,7 +338,8 @@ def callback(ch, method, properties, body):
                 Just drain the queue.
                 """
                 mongoconn.close()
-    	        ch.basic_ack(delivery_tag=method.delivery_tag)
+                connection1.basicAck(ch,method)   
+                
                 return
 
             if compile_doc is not None:
@@ -372,9 +366,7 @@ def callback(ch, method, properties, body):
         if uid is not None:
             msg_dict['uid'] = uid
         message = dumps(msg_dict)
-        channel.basic_publish(exchange='',
-                          routing_key='mathqueue',
-                          body=message)
+        connection1.publish(ch,'','mathqueue',message) 
         incrementPendingMessage(collection, uid)
 
         #Inject event for table profile.
@@ -386,9 +378,7 @@ def callback(ch, method, properties, body):
             #Inject event for profile updation for query
             msg_dict["entityid"] = eid
             message = dumps(msg_dict)
-            channel.basic_publish(exchange='',
-                              routing_key='mathqueue',
-                              body=message)
+            connection1.publish(ch,'','mathqueue',message)
             incrementPendingMessage(collection, uid)
 
     #errlog.write("Event received for {0}, {1} total runs with {1} unique jobs \n".format\
@@ -414,13 +404,14 @@ def callback(ch, method, properties, body):
         collection.update({'uid':uid},{"$inc": {"Compiler.time":(endTime-startTime)}})
 	
     mongoconn.close()
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+    connection1.basicAck(ch,method)
     decrementPendingMessage(collection, uid)
 
-channel.basic_consume(callback,
-                      queue='compilerqueue')
 
-print "Going to start consuming"
-channel.start_consuming()
-print "OOps I am done"
+connection1 = RabbitConnection(callback, ['compilerqueue'],['mathqueue'], {},BAAZ_COMPILER_LOG_FILE)
 
+print "BaazCompiler going to start Consuming"
+
+connection1.run()
+
+print "Oops I'm done"
