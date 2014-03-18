@@ -291,13 +291,17 @@ def callback(ch, method, properties, body):
                         tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, tenant, entity, False, tableEidList)
 			if msg_dict.has_key('uid'):
                 	    collection.update({'uid':uid},{"$inc": {"Compiler.hive.newDBs": tmpAdditions[0], "Compiler.hive.newTables": tmpAdditions[1]}})
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Compiler.hive.success": 1, "Compiler.hive.failure": 0}})
-
+            if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Compiler.hive.run_success": 1, "Compiler.hive.run_failure": 0}})
+                if compile_doc[key].has_key("ErrorSignature") and\
+                   len(compile_doc[key]["ErrorSignature"]) > 0:
+                    collection.update({'uid':uid},{"$inc": {"Compiler.hive.success":0, "Compiler.hive.failure": 1}})
+                else:
+                    collection.update({'uid':uid},{"$inc": {"Compiler.hive.success":1, "Compiler.hive.failure": 0}})
         except:
             logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
 	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Compiler.hive.failure": 1, "Compiler.hive.success": 0}})
+                collection.update({'uid':uid},{"$inc": {"Compiler.hive.run_failure": 1, "Compiler.hive.run_success": 0}})
 
         """
         Check if this is still valid UID. If it so happens that this flow has been deleted,
@@ -353,12 +357,17 @@ def callback(ch, method, properties, body):
                         tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, tenant, entity, False, tableEidList)
 			if msg_dict.has_key('uid'):
                 	    collection.update({'uid':uid},{"$inc": {"Compiler.gsp.newDBs": tmpAdditions[0], "Compiler.gsp.newTables": tmpAdditions[1]}})
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Compiler.gsp.success": 1, "Compiler.gsp.failure": 0}})
+            if msg_dict.has_key('uid'):
+                collection.update({'uid':uid},{"$inc": {"Compiler.gsp.run_success": 1, "Compiler.gsp.run_failure": 0}})
+                if compile_doc[key].has_key("ErrorSignature") and\
+                   len(compile_doc[key]["ErrorSignature"]) > 0:
+                    collection.update({'uid':uid},{"$inc": {"Compiler.gsp.success":0, "Compiler.gsp.failure": 1}})
+                else:
+                    collection.update({'uid':uid},{"$inc": {"Compiler.gsp.success":1, "Compiler.gsp.failure": 0}})
         except:
             logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
 	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Compiler.gsp.failure": 1, "Compiler.gsp.success": 0}})
+                collection.update({'uid':uid},{"$inc": {"Compiler.gsp.run_failure": 1, "Compiler.gsp.run_success": 0}})
 
         #Inject event for profile updation for query
         
