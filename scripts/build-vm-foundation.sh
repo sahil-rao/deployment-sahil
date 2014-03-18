@@ -9,6 +9,7 @@ mkdir /home/ubuntu/build/VM-Foundation
 cd  /home/ubuntu/build/VM-Foundation
 cp /home/ubuntu/build/deployment/VM/hosts .
 cp /home/ubuntu/build/deployment/VM/hosts.cfg .
+cp /home/ubuntu/build/deployment/VM/ga.cfg . 
 cp /home/ubuntu/build/deployment/VM/setup-foundation.sh .
 cp /home/ubuntu/build/deployment/VM/vm-foundation.yml .
 cp /home/ubuntu/build/deployment/VM/nodejs.conf .

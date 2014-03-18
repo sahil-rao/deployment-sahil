@@ -10,16 +10,22 @@
     shell: apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
   - name: Set Mongodb repo list
     shell: echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | tee /etc/apt/sources.list.d/mongodb.list 
+  - name: Add repo for nodejs
+    apt_repository: repo='ppa:chris-lea/node.js' state=present
   - name: Update apt
     shell: apt-get update
   - name: Install Mongodb
     shell: apt-get install mongodb-10gen
+  - name: Install Nodejs
+    apt: pkg=nodejs state=present
   - name: Create Mongo log
     file: path=/mnt/volume1/mongo/log owner=ubuntu group=ubuntu state=directory
   - name: Create Mongo db
     file: path=/mnt/volume1/mongo/db owner=ubuntu group=ubuntu state=directory
   - name: Install python setuptools
     apt: pkg=python-setuptools state=present
+  - name: Install python dev
+    apt: pkg=python-dev state=present
   - name: Install pip
     shell: easy_install pip
   - name: Disable wheels (pip 1.5 bug workaround)
@@ -32,6 +38,8 @@
     shell: pip install networkx
   - name: Install pika
     shell: pip install pika==0.9.8
+  - name: Install numpy
+    shell: pip install numpy
 
     #Start of Analytics module deployment.
   - name: Install gcc needed for numpy
@@ -82,3 +90,4 @@
     apt: pkg=monit state=present
   - name: Change desktop background
     shell: gsettings set org.gnome.desktop.background picture-uri file://home/ubuntu/Slpash.png
+  

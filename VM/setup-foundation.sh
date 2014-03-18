@@ -6,7 +6,9 @@ echo "Installed Hive"
 echo "Making directories..."
 sudo mkdir /var/Baaz
 sudo cp hosts.cfg /var/Baaz
+sudo cp ga.cfg /var/Baaz
 sudo chmod a+r /var/Baaz/hosts.cfg
+sudo chmod a+r /var/Baaz/ga.cfg
 sudo add-apt-repository ppa:rquillo/ansible
 echo "Adding Ansible Repository"
 sudo apt-get -y update
