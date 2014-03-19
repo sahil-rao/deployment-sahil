@@ -11,7 +11,7 @@
   file: path=/var/Baaz state=directory
   sudo: yes
 - name: Copy node upload configuration file
-  copy: src=roles/nodejsserver/files/nodejs.conf dest=/etc/init/nodejs.conf
+  template: src=nodejs.conf dest=/etc/init/nodejs.conf
   sudo: yes
 - name: Update apt
   shell: apt-get update
