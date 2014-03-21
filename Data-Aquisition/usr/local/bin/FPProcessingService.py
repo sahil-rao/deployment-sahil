@@ -33,6 +33,7 @@ if usingAWS:
 
 rabbitserverIP = config.get("RabbitMQ", "server")
 mongoserverIP = config.get("MongoDB", "server")
+metrics_url = None
 try:
     replicationGroup = config.get("MongoDB", "replicationGroup")
 except:
@@ -91,6 +92,7 @@ def callback(ch, method, properties, body):
     except:
         logging.exception("Testing Cleanup")
 
+    r_collection = None
     try:
         filename = msg_dict["filename"]
 
@@ -100,6 +102,13 @@ def callback(ch, method, properties, body):
 
             collection = MongoClient(mongo_url)[tenant].uploadStats
             collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}})
+            if metrics_url is not None:
+                try:
+                    r_collection = MongoClient(metrics_url)["remote_"+tenant].uploadStats
+                    r_collection.insert({'uid':uid, "FPProcessing": {"count":1}})
+                except:
+                    logging.exception("Remote collection:")
+                    r_collection = None
 
         source = tenant + "/" + filename
 
@@ -197,16 +206,16 @@ def callback(ch, method, properties, body):
                 jinst_dict['program_type'] = "Pig"
                 jinst_dict['pig_features'] = int(entity.instances[0].config_data['pig.script.features'])
             else:
-    	        logging.info("Progname found {0}\n".format(entity.name))
-	        continue
+                logging.info("Progname found {0}\n".format(entity.name))
+                continue
 
-	    compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
+            compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
             if uid is not None:
                 compiler_msg['uid'] = uid
-    	    message = dumps(compiler_msg)
+            message = dumps(compiler_msg)
             connection1.publish(ch,'','compilerqueue',message)
             incrementPendingMessage(collection, uid)
-    	    logging.info("Published Compiler Message {0}\n".format(message))
+            logging.info("Published Compiler Message {0}\n".format(message))
 
         for en in mongoconn.entities:
             entity = mongoconn.getEntity(en)
@@ -216,13 +225,13 @@ def callback(ch, method, properties, body):
             jinst_dict = {'entity_id':entity.eid} 
             jinst_dict['program_type'] = "SQL"
             jinst_dict['query'] = entity.name
-    	    compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
+            compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
             if uid is not None:
                 compiler_msg['uid'] = uid
             message = dumps(compiler_msg)
             connection1.publish(ch,'','compilerqueue',message)
             incrementPendingMessage(collection, uid)
-    	    logging.info("Published Compiler Message {0}\n".format(message))
+            logging.info("Published Compiler Message {0}\n".format(message))
     except:
         logging.exception("Parsing the input and Compiler Message")
 
@@ -256,8 +265,10 @@ def callback(ch, method, properties, body):
     try:
         mongoconn.close()
         if msg_dict.has_key('uid'):
-	    #if uid has been set, the variable will be set already
+            #if uid has been set, the variable will be set already
             collection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.time()-starttime)}})
+            if r_collection is not None:
+                r_collection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.time()-starttime)}})
     except:
         logging.logfile("While closing mongo")
 
