@@ -93,6 +93,7 @@ def callback(ch, method, properties, body):
         logging.exception("Testing Cleanup")
 
     r_collection = None
+    dest_file = None
     try:
         filename = msg_dict["filename"]
 
