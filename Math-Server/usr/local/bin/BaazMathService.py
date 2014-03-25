@@ -322,10 +322,10 @@ def callback(ch, method, properties, body):
         try:
             JoinScore.compute_join_score(tenant)
             if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.OverallStats.success": 1, "Math.OverallStats.failure": 0}})
+                collection.update({'uid':uid},{"$inc": {"Math.JoinScore.success": 1, "Math.JoinScore.failure": 0}})
         except:
             if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.OverallStats.success": 0, "Math.OverallStats.failure": 1}})
+                collection.update({'uid':uid},{"$inc": {"Math.JoinScore.success": 0, "Math.JoinScore.failure": 1}})
             logging.exception("Join Score: Tenant {0}\n".format(tenant))
 
         endTime = time.time()
