@@ -12,7 +12,8 @@ from json import *
 from baazmath.interface.BaazCSV import *
 from subprocess import Popen, PIPE
 import baazmath.workflows.estimate_frequency as EF
-import baazmath.workflows.create_profiles as CP
+import baazmath.workflows.update_table_profile as TableProfile
+import baazmath.workflows.update_single_table_profile as SingleTableProfile
 import baazmath.workflows.generate_dashboard as Dashboard
 import baazmath.workflows.form_join_groups as JoinGroup
 import baazmath.workflows.base_stats as BaseStats
@@ -200,7 +201,7 @@ def callback(ch, method, properties, body):
             entityid = msg_dict["entityid"]    
 
         try:
-            CP.updateTableProfile(tenant, entityid)
+            UpdateTableProfile.run_workflow(tenant, entityid)
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.updateTableProfile.success": 1, "Math.updateTableProfile.failure": 0}})
         except:
@@ -229,7 +230,7 @@ def callback(ch, method, properties, body):
             entityid = msg_dict["entityid"]    
 
 	try:
-            CP.updateSingleTableProfile(tenant, entityid)
+            SingleTableProfile.run_workflow(tenant, entityid)
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.updateSingleTableProfile.success": 1, "Math.updateSingleTableProfile.failure": 0}})
         except:
@@ -238,7 +239,7 @@ def callback(ch, method, properties, body):
             logging.exception("Single table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
  
         try:
-            Dashboard.run_workflow(tenant, None, None)
+            Dashboard.run_workflow(tenant, None)
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.Dashboard.success": 1, "Math.Dashboard.failure": 0}})
         except:
@@ -248,7 +249,7 @@ def callback(ch, method, properties, body):
  
         logging.info("Going to form Join Groups {0}\n".format(tenant))     
         try:
-            JoinGroup.formJoinGroup(tenant, entityid)
+            JoinGroup.run_workflow(tenant, entityid)
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.JoinGroup.success": 1, "Math.JoinGroup.failure": 0}})
         except:
@@ -257,7 +258,7 @@ def callback(ch, method, properties, body):
             logging.exception("Join Group: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
-            BaseStats.run_workflow(tenant, None, None)
+            BaseStats.run_workflow(tenant, None)
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.BaseStats.success": 1, "Math.BaseStats.failure": 0}})
         except:
@@ -266,7 +267,7 @@ def callback(ch, method, properties, body):
             logging.exception("Base Stats: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
-            JoinPopularity.run_workflow(tenant, None, None)
+            JoinPopularity.run_workflow(tenant, None)
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.JoinPopularity.success": 1, "Math.JoinPopularity.failure": 0}})
         except:
@@ -275,7 +276,7 @@ def callback(ch, method, properties, body):
             logging.exception("Join Popularity: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
-            TablePopularity.run_workflow(tenant, None, None)
+            TablePopularity.run_workflow(tenant, None)
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.TablePopularity.success": 1, "Math.TablePopularity.failure": 0}})
         except:
@@ -284,7 +285,7 @@ def callback(ch, method, properties, body):
             logging.exception("Table Popularity: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
-            SummarizeHiveExceptions.run_workflow(tenant, None, None)
+            SummarizeHiveExceptions.run_workflow(tenant, None)
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.SummarizeHiveExceptions.success": 1, "Math.SummarizeHiveExceptions.failure": 0}})
         except:
@@ -293,7 +294,7 @@ def callback(ch, method, properties, body):
             logging.exception("Summarize Hive Exceptions: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
 
         try:
-            FormJoinSupersets.buildJoinSuperSets(tenant)
+            FormJoinSupersets.run_workflow(tenant, None)
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.FormJoinSupersets.success": 1, "Math.FormJoinSupersets.failure": 0}})
         except:
@@ -302,7 +303,7 @@ def callback(ch, method, properties, body):
             logging.exception("Build Join Supersets: Tenant {0}\n".format(tenant))
 
         try:
-            FormComplexityTreemap.buildComplexityTreemap(tenant)
+            FormComplexityTreemap.run_workflow(tenant, None)
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.FormComplexityTreemap.success": 1, "Math.FormComplexityTreemap.failure": 0}})
         except:
@@ -311,7 +312,7 @@ def callback(ch, method, properties, body):
             logging.exception("Form Complexity Treemap: Tenant {0}\n".format(tenant))
 
         try:
-            OverallStats.updateOrgs()
+            OverallStats.run_workflow(tenant, None)
             if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.OverallStats.success": 1, "Math.OverallStats.failure": 0}})
         except:
@@ -320,7 +321,7 @@ def callback(ch, method, properties, body):
             logging.exception("Overall Stats: Tenant {0}\n".format(tenant))
 
         try:
-            JoinScore.compute_join_score(tenant)
+            JoinScore.run_workflow(tenant, None)
             if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {"Math.JoinScore.success": 1, "Math.JoinScore.failure": 0}})
         except:
