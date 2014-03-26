@@ -11,19 +11,6 @@ from flightpath.utils import *
 from json import *
 from baazmath.interface.BaazCSV import *
 from subprocess import Popen, PIPE
-import baazmath.workflows.estimate_frequency as EF
-import baazmath.workflows.update_table_profile as TableProfile
-import baazmath.workflows.update_single_table_profile as SingleTableProfile
-import baazmath.workflows.generate_dashboard as Dashboard
-import baazmath.workflows.form_join_groups as JoinGroup
-import baazmath.workflows.base_stats as BaseStats
-import baazmath.workflows.compute_join_popularity as JoinPopularity
-import baazmath.workflows.compute_table_popularity as TablePopularity
-import baazmath.workflows.summarize_hive_exceptions as SummarizeHiveExceptions
-import baazmath.workflows.form_join_supersets as FormJoinSupersets
-import baazmath.workflows.form_complexity_treemap as FormComplexityTreemap
-import baazmath.workflows.overall_stats as OverallStats
-import baazmath.workflows.joinScore as JoinScore
 import sys
 import pika
 import shutil
@@ -34,6 +21,7 @@ import datetime
 import ConfigParser
 import traceback
 import logging
+import importlib
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -187,200 +175,41 @@ def callback(ch, method, properties, body):
             collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
 
         return
-        
-    if opcode == "GenerateTableProfile":
-        logging.info("Got GenerateTableProfile {0}\n".format(tenant))     
 
-        """ Compute single table profile of SQL queries
-        TODO: If a single or a set of table is given then perform the
-        operation only on that set.
-        """
-        logging.info("Generating Single Table profile for {0}\n".format(tenant))     
-        entityid = None
-        if "entityid" in msg_dict:
-            entityid = msg_dict["entityid"]    
+    mathconfig = ConfigParser.RawConfigParser()
+    mathconfig.read("/etc/xplain/analytics.cfg")
 
-        try:
-            UpdateTableProfile.run_workflow(tenant, entityid)
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.updateTableProfile.success": 1, "Math.updateTableProfile.failure": 0}})
-        except:
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.updateTableProfile.success": 0, "Math.updateTableProfile.failure": 1}})
-            #traceback.print_exc()
-            logging.exception("Update table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-        decrementPendingMessage(collection, uid)
-        connection1.basicAck(ch,method)
-
-        endTime = time.time()
-        if msg_dict.has_key('uid'):
-	    #if uid has been set, the variable will be set already
-            collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
-
-        return
-
-    if opcode == "GenerateQueryProfile":
-        logging.info("Got GenerateTableProfile for {0}\n".format(tenant))     
-
-        """ Compute single table profile of SQL queries
-        """
-        logging.info("Generating Single Table profile for {0}\n".format(tenant))     
-        entityid = None
-        if "entityid" in msg_dict:
-            entityid = msg_dict["entityid"]    
-
-	try:
-            SingleTableProfile.run_workflow(tenant, entityid)
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.updateSingleTableProfile.success": 1, "Math.updateSingleTableProfile.failure": 0}})
-        except:
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.updateSingleTableProfile.success": 0, "Math.updateSingleTableProfile.failure": 1}})
-            logging.exception("Single table Profile: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
+    for section in mathconfig.sections():
+        if not mathconfig.has_option(section, "Opcode") or\
+           not mathconfig.has_option(section, "Import") or\
+           not mathconfig.has_option(section, "Function"):
+            logging.info("Section "+ section + " Does not have all params")
+            continue
  
+        if not opcode == mathconfig.get(section, "Opcode"):
+            continue
+
+        stats_success_key = "Math." + section + ".success"
+        stats_failure_key = "Math." + section + ".failure"
         try:
-            Dashboard.run_workflow(tenant, None)
+            entityid = None
+            if "entityid" in msg_dict:
+                entityid = msg_dict["entityid"]    
+
+            mod = importlib.import_module(mathconfig.get(section, "Import"))
+            methodToCall = getattr(mod, mathconfig.get(section, "Function"))
+            logging.info("Executing " + section + " for " + tenant)
+            if mathconfig.get(section, "NumParms") == "1":
+                methodToCall(tenant)
+            else:
+                methodToCall(tenant, entityid)
+
 	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.Dashboard.success": 1, "Math.Dashboard.failure": 0}})
+                collection.update({'uid':uid},{"$inc": {stats_success_key: 1, stats_failure_key: 0}})
         except:
+            logging.exception("Section :"+section)
 	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.Dashboard.success": 0, "Math.Dashboard.failure": 1}})
-            logging.exception("Dashboard: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
- 
-        logging.info("Going to form Join Groups {0}\n".format(tenant))     
-        try:
-            JoinGroup.run_workflow(tenant, entityid)
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.JoinGroup.success": 1, "Math.JoinGroup.failure": 0}})
-        except:
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.JoinGroup.success": 0, "Math.JoinGroup.failure": 1}})
-            logging.exception("Join Group: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-
-        try:
-            BaseStats.run_workflow(tenant, None)
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.BaseStats.success": 1, "Math.BaseStats.failure": 0}})
-        except:
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.BaseStats.success": 0, "Math.BaseStats.failure": 1}})
-            logging.exception("Base Stats: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-
-        try:
-            JoinPopularity.run_workflow(tenant, None)
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.JoinPopularity.success": 1, "Math.JoinPopularity.failure": 0}})
-        except:
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.JoinPopularity.success": 0, "Math.JoinPopularity.failure": 1}})
-            logging.exception("Join Popularity: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-
-        try:
-            TablePopularity.run_workflow(tenant, None)
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.TablePopularity.success": 1, "Math.TablePopularity.failure": 0}})
-        except:
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.TablePopularity.success": 0, "Math.TablePopularity.failure": 1}})
-            logging.exception("Table Popularity: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-
-        try:
-            SummarizeHiveExceptions.run_workflow(tenant, None)
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.SummarizeHiveExceptions.success": 1, "Math.SummarizeHiveExceptions.failure": 0}})
-        except:
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.SummarizeHiveExceptions.success": 0, "Math.SummarizeHiveExceptions.failure": 1}})
-            logging.exception("Summarize Hive Exceptions: Tenant {0}, Entity {1}, {2}\n".format(tenant, entityid, sys.exc_info()[2]))     
-
-        try:
-            FormJoinSupersets.run_workflow(tenant, None)
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.FormJoinSupersets.success": 1, "Math.FormJoinSupersets.failure": 0}})
-        except:
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.FormJoinSupersets.success": 0, "Math.FormJoinSupersets.failure": 1}})
-            logging.exception("Build Join Supersets: Tenant {0}\n".format(tenant))
-
-        try:
-            FormComplexityTreemap.run_workflow(tenant, None)
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.FormComplexityTreemap.success": 1, "Math.FormComplexityTreemap.failure": 0}})
-        except:
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.FormComplexityTreemap.success": 0, "Math.FormComplexityTreemap.failure": 1}})
-            logging.exception("Form Complexity Treemap: Tenant {0}\n".format(tenant))
-
-        try:
-            OverallStats.run_workflow(tenant, None)
-            if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.OverallStats.success": 1, "Math.OverallStats.failure": 0}})
-        except:
-            if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.OverallStats.success": 0, "Math.OverallStats.failure": 1}})
-            logging.exception("Overall Stats: Tenant {0}\n".format(tenant))
-
-        try:
-            JoinScore.run_workflow(tenant, None)
-            if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.JoinScore.success": 1, "Math.JoinScore.failure": 0}})
-        except:
-            if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.JoinScore.success": 0, "Math.JoinScore.failure": 1}})
-            logging.exception("Join Score: Tenant {0}\n".format(tenant))
-
-        endTime = time.time()
-        if msg_dict.has_key('uid'):
-	    #if uid has been set, the variable will be set already
-            collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
-
-        decrementPendingMessage(collection, uid)
-        connection1.basicAck(ch,method)
-        return
-
-    try:
-        if not msg_dict.has_key("job_instances"):
-            logging.error("Invalid message received\n")     
-            decrementPendingMessage(collection, uid)
-            connection1.basicAck(ch,method)
-
-            endTime = time.time()
-            if msg_dict.has_key('uid'):
-	        #if uid has been set, the variable will be set already
-                collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
-            return
-
-        instances = msg_dict["job_instances"]
-
-        """
-        Generate the CSV from the job instances.
-        """
-        counter = 0
-        for inst in instances:
-    	    """
-        	Create a destination/processing folder.
-            """
-            timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-            destination = '/mnt/volume1/' + tenant + "/" + timestr 
-            if not os.path.exists(destination):
-                os.makedirs(destination)
-
-            dest_file_name = destination + "/input.csv"
-
-            prog_id = inst["program_id"] 
-            logging.info("Event received for {0}, entity {1}\n".format(tenant, prog_id))     
-            dest_file = open(dest_file_name, "w+")
-            generateCSV1Header(prog_id, dest_file)
-            generateCSV1(tenant, prog_id, None, dest_file)
-            dest_file.flush()
-	    dest_file.close()
-	    try:
-                EF.run_workflow(tenant, dest_file_name, destination)
-            except:
-                logging.exception("Estimate Frequency: Tenant {0}, Entity {1}, {2}\n".format(tenant, prog_id, sys.exc_info()[2]))     
-    except:
-        logging.exception("{0}, Entity {1}, {2}\n".format(tenant, prog_id, sys.exc_info()[2]))     
-            
+                collection.update({'uid':uid},{"$inc": {stats_success_key: 0, stats_failure_key: 1}})
 
     logging.info("Event Processing Complete")     
     decrementPendingMessage(collection, uid)
