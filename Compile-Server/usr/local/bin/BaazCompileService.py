@@ -177,12 +177,12 @@ def callback(ch, method, properties, body):
     db = None
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
-	
+
         """
         Check if this is a valid UID. If it so happens that this flow has been deleted,
         then drop the message.
         """
-	db = MongoClient(mongo_url)[tenant]
+        db = MongoClient(mongo_url)[tenant]
         if not checkUID(db, uid):
             """
             Just drain the queue.
@@ -204,6 +204,10 @@ def callback(ch, method, properties, body):
     if mongoconn is None:
         mongoconn = MongoConnector({'host':mongo_url, 'context':tenant, \
                                     'create_db_if_not_exist':True})
+
+    compconfig = ConfigParser.RawConfigParser()
+    compconfig.read("/etc/xplain/compiler.cfg")
+
     """
     Generate the CSV from the job instances.
     """
@@ -224,17 +228,17 @@ def callback(ch, method, properties, body):
             mongoconn.updateProfile(entity, "Compiler", "Pig", compile_doc)
             continue
 
-	query = inst["query"].encode('utf-8').strip()
+        query = inst["query"].encode('utf-8').strip()
         logging.info("Program Entity : {0}, eid {1}\n".format(query, prog_id))
-    	"""
-    	Create a destination/processing folder.
-    	"""
-    	timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-    	destination = '/mnt/volume1/compile-' + tenant + "/" + timestr 
-    	if not os.path.exists(destination):
-        	os.makedirs(destination)
+        """
+        Create a destination/processing folder.
+        """
+        timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
+        destination = '/mnt/volume1/compile-' + tenant + "/" + timestr 
+        if not os.path.exists(destination):
+            os.makedirs(destination)
 
-    	dest_file_name = destination + "/input.query"
+        dest_file_name = destination + "/input.query"
 
         #inst_id = inst["inst_id"] 
         #if prog_collector.has_key(prog_id):
@@ -246,131 +250,91 @@ def callback(ch, method, properties, body):
         dest_file = open(dest_file_name, "w+")
         dest_file.write(query)
         dest_file.flush()
-	dest_file.close()
+        dest_file.close()
 
         tableEidList = set()
-	try:
-            """ Call Hive Compiler
-            """ 
-            output_file_name = destination + "/hive.out"
-            proc = Popen('java com.baaz.query.BaazQueryAnalyzer -input {0} -output {1} -tenant 100 -program {2} -compiler hive'.format(dest_file_name, output_file_name, prog_id),\
-                 stdout=PIPE, shell=True, env=dict(os.environ, CLASSPATH=classpath))
-
-            wait_count = 0
-            while wait_count < 25 and proc.poll() is None:
-                time.sleep(.2)
-                wait_count = wait_count + 1
-
-            for line in proc.stdout:
-                logging.info(line)
-            compile_doc = None
-            #print "Loading file : ", output_file_name
-            with open(output_file_name) as data_file:    
-                compile_doc = load(data_file)
-
-            """
-            It is possible the tenant has been cleared. If this is the case then do not add an new entities.
-            """
-            if not checkUID(db, uid):
-                """
-                Just drain the queue.
-                """
-                mongoconn.close()
-                connection1.basicAck(ch,method)   
-                return
-
-            if compile_doc is not None:
-                for key in compile_doc:
-                    mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
-                    if compile_doc[key].has_key("InputTableList"):
-                        tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], mongoconn, tenant, entity, True,  tableEidList)
-			if msg_dict.has_key('uid'):
-                	    collection.update({'uid':uid},{"$inc": {"Compiler.hive.newDBs": tmpAdditions[0], "Compiler.hive.newTables": tmpAdditions[1]}})
-                        
-                    if compile_doc[key].has_key("OutputTableList"):
-                        tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, tenant, entity, False, tableEidList)
-			if msg_dict.has_key('uid'):
-                	    collection.update({'uid':uid},{"$inc": {"Compiler.hive.newDBs": tmpAdditions[0], "Compiler.hive.newTables": tmpAdditions[1]}})
-            if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Compiler.hive.run_success": 1, "Compiler.hive.run_failure": 0}})
-                if compile_doc[key].has_key("ErrorSignature") and\
-                   len(compile_doc[key]["ErrorSignature"]) > 0:
-                    collection.update({'uid':uid},{"$inc": {"Compiler.hive.success":0, "Compiler.hive.failure": 1}})
-                else:
-                    collection.update({'uid':uid},{"$inc": {"Compiler.hive.success":1, "Compiler.hive.failure": 0}})
-        except:
-            logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Compiler.hive.run_failure": 1, "Compiler.hive.run_success": 0}})
-
         """
-        Check if this is still valid UID. If it so happens that this flow has been deleted,
-        then drop the message.
+          Get the list of compilers we need to run. 
+          Run each valid compiler we find.
         """
-        #if not checkUID(db, uid):
-        #    """
-        #    Just drain the queue.
-        #    """
-    	#    ch.basic_ack(delivery_tag=method.delivery_tag)
-        #    mongoconn.close()
-        #   return
-      
-        try:
-            """ Call GSP Compiler
-            """ 
-            output_file_name = destination + "/gsp.out"
-            proc = Popen('java com.baaz.query.BaazQueryAnalyzer -input {0} -output {1} -tenant 100 -program {2} -compiler gsp'.format(dest_file_name, output_file_name, prog_id),\
-                 stdout=PIPE, shell=True, env=dict(os.environ, CLASSPATH=classpath))
+        for section in compconfig.sections():
+            compilername = ""
+            additonalparams = ""
+            if not compconfig.has_option(section, "CompilerType"):
+                continue
 
-            wait_count = 0
-            while wait_count < 25 and proc.poll() is None:
-                time.sleep(.2)
-                wait_count = wait_count + 1
+            compilername = compconfig.get(section, "CompilerType")
+            if compconfig.has_option(section, "AdditionalParameter") and\
+                len(compconfig.get(section, "AdditionalParameter")) > 0:
+                additonalparmas = compconfig.get(section, "AdditionalParameter")
 
-            for line in proc.stdout:
-                logging.info(line)
-            compile_doc = None
-            #print "Loading file : ", output_file_name
-            with open(output_file_name) as data_file:    
-                compile_doc = load(data_file)
+            try:
+                """ Call the Compiler
+                """ 
+                output_file_name = destination + "/" + compilername + ".out"
+                stats_newdbs_key = "Compiler." + compilername + ".newDBs"
+                stats_newtables_key = "Compiler." + compilername + ".newTables"
+                stats_runsuccess_key = "Compiler." + compilername + ".run_success"
+                stats_runfailure_key = "Compiler." + compilername + ".run_failure"
+                stats_success_key = "Compiler." + compilername + ".success"
+                stats_failure_key = "Compiler." + compilername + ".failure"
 
-            """
-            It is possible the tenant has been cleared. If this is the case then do not add an new entities.
-            """
-            if not checkUID(db, uid):
+                proc = Popen('java com.baaz.query.BaazQueryAnalyzer -input {0} -output {1} '\
+                                '-tenant 100 -program {2} '\
+                                '-compiler {3}'.format(dest_file_name, output_file_name,\
+                                                       prog_id, compilername),\
+                               stdout=PIPE, shell=True, env=dict(os.environ, CLASSPATH=classpath))
+
+                wait_count = 0
+                while wait_count < 25 and proc.poll() is None:
+                    time.sleep(.2)
+                    wait_count = wait_count + 1
+
+                for line in proc.stdout:
+                    logging.info(line)
+                compile_doc = None
+                #print "Loading file : ", output_file_name
+                with open(output_file_name) as data_file:    
+                    compile_doc = load(data_file)
+
                 """
-                Just drain the queue.
+                It is possible the tenant has been cleared. If this is the case then do not add an new entities.
                 """
-                mongoconn.close()
-                connection1.basicAck(ch,method)   
-                
-                return
+                if not checkUID(db, uid):
+                    """
+                    Just drain the queue.
+                    """
+                    mongoconn.close()
+                    connection1.basicAck(ch,method)   
+                    return
 
-            if compile_doc is not None:
-                for key in compile_doc:
-                    mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
-                    if compile_doc[key].has_key("InputTableList"):
-                        tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], mongoconn, tenant, entity, True, tableEidList)
-			if msg_dict.has_key('uid'):
-                	    collection.update({'uid':uid},{"$inc": {"Compiler.gsp.newDBs": tmpAdditions[0], "Compiler.gsp.newTables": tmpAdditions[1]}})
-                    if compile_doc[key].has_key("OutputTableList"):
-                        tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, tenant, entity, False, tableEidList)
-			if msg_dict.has_key('uid'):
-                	    collection.update({'uid':uid},{"$inc": {"Compiler.gsp.newDBs": tmpAdditions[0], "Compiler.gsp.newTables": tmpAdditions[1]}})
-            if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Compiler.gsp.run_success": 1, "Compiler.gsp.run_failure": 0}})
-                if compile_doc[key].has_key("ErrorSignature") and\
-                   len(compile_doc[key]["ErrorSignature"]) > 0:
-                    collection.update({'uid':uid},{"$inc": {"Compiler.gsp.success":0, "Compiler.gsp.failure": 1}})
-                else:
-                    collection.update({'uid':uid},{"$inc": {"Compiler.gsp.success":1, "Compiler.gsp.failure": 0}})
-        except:
-            logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Compiler.gsp.run_failure": 1, "Compiler.gsp.run_success": 0}})
+                if compile_doc is not None:
+                    for key in compile_doc:
+                        mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
+                        if compile_doc[key].has_key("InputTableList"):
+                            tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], 
+                                                           mongoconn, tenant, entity, True,  
+                                                           tableEidList)
+                            if msg_dict.has_key('uid'):
+                                collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
+                                                  stats_newtables_key: tmpAdditions[1]}})
 
-        #Inject event for profile updation for query
-        
+                        if compile_doc[key].has_key("OutputTableList"):
+                            tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, tenant, entity, False, tableEidList)
+                            if msg_dict.has_key('uid'):
+                                collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
+                if msg_dict.has_key('uid'):
+                    collection.update({'uid':uid},{"$inc": {stats_runsuccess_key: 1, stats_runfailure_key: 0}})
+                    if compile_doc[key].has_key("ErrorSignature") and\
+                       len(compile_doc[key]["ErrorSignature"]) > 0:
+                        collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1}})
+                    else:
+                        collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0}})
+            except:
+                logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
+                if msg_dict.has_key('uid'):
+                    collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+
         msg_dict = {'tenant':tenant, 'opcode':"GenerateQueryProfile", "entityid":entity.eid} 
         if uid is not None:
             msg_dict['uid'] = uid
@@ -390,28 +354,15 @@ def callback(ch, method, properties, body):
             connection1.publish(ch,'','mathqueue',message)
             incrementPendingMessage(collection, uid)
 
-    #errlog.write("Event received for {0}, {1} total runs with {1} unique jobs \n".format\
-    #                (tenant, len(prog_collector.keys()), counter))     
-
-    #for prog_id in prog_collector:
-    #    dest_file = open(dest_file_name, "w+")
-    #    generateCSV1Header(prog_id, dest_file)
-    #    for inst in prog_collector[prog_id]:
-    #        generateCSV1Header(prog_id, inst, dest_file)
-        
-    #    """
-    #    Now start the analytics module.
-    #    """
-    #    dest_file.close()
 
     logging.info("Event Processing Complete")     
     
     endTime = time.time()
 
     if msg_dict.has_key('uid'):
-	#if uid has been set, the variable will be set already
+        #if uid has been set, the variable will be set already
         collection.update({'uid':uid},{"$inc": {"Compiler.time":(endTime-startTime)}})
-	
+        
     mongoconn.close()
     connection1.basicAck(ch,method)
     decrementPendingMessage(collection, uid)
