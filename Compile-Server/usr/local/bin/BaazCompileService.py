@@ -4,7 +4,8 @@
 Compile Service:
 """
 from flightpath.MongoConnector import *
-from flightpath.services.RabbitMQConnectionManager import *
+#from flightpath.services.RabbitMQConnectionManager import *
+from flightpath.services.XplainBlockingConnection import *
 from flightpath.utils import *
 from subprocess import Popen, PIPE
 from json import *
@@ -42,7 +43,15 @@ if os.path.isfile(BAAZ_COMPILER_LOG_FILE):
 
 logging.basicConfig(filename=BAAZ_COMPILER_LOG_FILE,level=logging.INFO,)
 
+connection = BlockingConnection(pika.ConnectionParameters(
+        rabbitserverIP))
+channel = connection.channel()
+channel.queue_declare(queue='compilerqueue')
 COMPILER_MODULES='/usr/lib/baaz_compiler'
+
+channel1 = connection.channel()
+channel1.queue_declare(queue='mathqueue')
+
 dirList=os.listdir(COMPILER_MODULES)
 classpath = ""
 for fname in dirList:
@@ -105,7 +114,6 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
         table_entity = mongoconn.getEntityByName(tablename)
         if table_entity is None:
             logging.info("Creating table entity for {0}\n".format(tablename))     
-            #print "Creating table entity for {0}\n".format(tablename)    
             eid = IdentityService.getNewIdentity(tenant, True)
             mongoconn.addEn(eid, tablename, tenant,\
                       EntityType.SQL_TABLE, endict, None)
@@ -122,7 +130,6 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
             database_entity = mongoconn.getEntityByName(database_name)
             if database_entity is None:
                 logging.info("Creating database entity for {0}\n".format(database_name))     
-                #print "Creating table entity for {0}\n".format(tablename)    
                 eid = IdentityService.getNewIdentity(tenant, True)
                 mongoconn.addEn(eid, database_name, tenant,\
                           EntityType.SQL_DATABASE, endict, None)
@@ -162,7 +169,8 @@ def callback(ch, method, properties, body):
     tmpAdditions = [0,0]
     msg_dict = loads(body)
 
-    #print "compiler Got message ", msg_dict
+    logging.info("compiler Got message "+ str(msg_dict))
+     
 
     """
     Validate the message.
@@ -173,6 +181,7 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict["tenant"]
     instances = msg_dict["job_instances"]
+    received_msgID = msg_dict["message_id"]
     uid = None
     db = None
     if msg_dict.has_key('uid'):
@@ -187,7 +196,8 @@ def callback(ch, method, properties, body):
             """
             Just drain the queue.
             """
-            connection1.basicAck(ch,method)
+            #connection1.basicAck(ch,method)
+            ch.basic_ack(delivery_tag=method.delivery_tag)
             return
       
         collection = MongoClient(mongo_url)[tenant].uploadStats
@@ -196,7 +206,8 @@ def callback(ch, method, properties, body):
         """
         We do not expect anything without UID. Discard message if not present.
         """
-        connection1.basicAck(ch,method)
+        #connection1.basicAck(ch,method)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
            
         return
 
@@ -291,9 +302,9 @@ def callback(ch, method, properties, body):
                     wait_count = wait_count + 1
 
                 for line in proc.stdout:
-                    logging.info(line)
+                    logging.info(str(line))
                 compile_doc = None
-                #print "Loading file : ", output_file_name
+                logging.info("Loading file : "+ output_file_name)
                 with open(output_file_name) as data_file:    
                     compile_doc = load(data_file)
 
@@ -305,7 +316,8 @@ def callback(ch, method, properties, body):
                     Just drain the queue.
                     """
                     mongoconn.close()
-                    connection1.basicAck(ch,method)   
+                    #connection1.basicAck(ch,method)
+                    ch.basic_ack(delivery_tag=method.delivery_tag)   
                     return
 
                 if compile_doc is not None:
@@ -338,10 +350,17 @@ def callback(ch, method, properties, body):
         msg_dict = {'tenant':tenant, 'opcode':"GenerateQueryProfile", "entityid":entity.eid} 
         if uid is not None:
             msg_dict['uid'] = uid
+        message_id = genMessageID(received_msgID, entity.eid)
+        msg_dict['message_id'] = message_id
         message = dumps(msg_dict)
-        connection1.publish(ch,'','mathqueue',message) 
-        incrementPendingMessage(collection, uid)
-
+        #connection1.publish(ch,'','mathqueue',message)
+        channel.basic_publish(exchange='',
+                          routing_key='mathqueue',
+                          body=message)
+        logging.info("Sent message to Math pos1:" + str(msg_dict))
+         
+        incrementPendingMessage(collection, uid,message_id)
+        collection.update({'uid':uid},{'$inc':{"Math3MessageCount":1}})
         #Inject event for table profile.
         msg_dict = {'tenant':tenant, 'opcode':"GenerateTableProfile"}
         if uid is not None:
@@ -350,9 +369,16 @@ def callback(ch, method, properties, body):
         for eid in list(tableEidList):
             #Inject event for profile updation for query
             msg_dict["entityid"] = eid
+            message_id = genMessageID(received_msgID, eid)
+            msg_dict['message_id'] = message_id
             message = dumps(msg_dict)
-            connection1.publish(ch,'','mathqueue',message)
-            incrementPendingMessage(collection, uid)
+            #connection1.publish(ch,'','mathqueue',message)
+            channel1.basic_publish(exchange='',
+                          routing_key='mathqueue',
+                          body=message)
+            logging.info("Sending message to Math pos2:" + str(msg_dict))
+            incrementPendingMessage(collection, uid,message_id)
+            collection.update({'uid':uid},{'$inc':{"Math4MessageCount":1}})
 
 
     logging.info("Event Processing Complete")     
@@ -364,14 +390,19 @@ def callback(ch, method, properties, body):
         collection.update({'uid':uid},{"$inc": {"Compiler.time":(endTime-startTime)}})
         
     mongoconn.close()
-    connection1.basicAck(ch,method)
-    decrementPendingMessage(collection, uid)
+    #connection1.basicAck(ch,method)
+    ch.basic_ack(delivery_tag=method.delivery_tag)
+    collection.update({'uid':uid},{'$inc':{"RemoveCompilerMessageCount":1}})
+    decrementPendingMessage(collection, uid, received_msgID)
 
 
-connection1 = RabbitConnection(callback, ['compilerqueue'],['mathqueue'], {},BAAZ_COMPILER_LOG_FILE)
+#connection1 = RabbitConnection(callback, ['compilerqueue'],['mathqueue'], {},BAAZ_COMPILER_LOG_FILE)
+channel.basic_consume(callback,
+                      queue='compilerqueue')
 
-print "BaazCompiler going to start Consuming"
+logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time()))+  " BaazCompiler going to start Consuming")
 
-connection1.run()
+channel.start_consuming()
+#connection1.run()
 
-print "Oops I'm done"
+logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time()))+ " Closing BaazCompiler")

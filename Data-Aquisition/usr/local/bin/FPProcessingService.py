@@ -5,7 +5,8 @@ Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenant> <log Directory>
 """
 #from flightpath.parsing.hadoop.HadoopConnector import *
-from flightpath.services.RabbitMQConnectionManager import *
+#from flightpath.services.RabbitMQConnectionManager import *
+from flightpath.services.XplainBlockingConnection import *
 from flightpath.utils import *
 from flightpath.parsing.ParseDemux import *
 import sys
@@ -49,12 +50,27 @@ if os.path.isfile(BAAZ_FP_LOG_FILE):
 
 logging.basicConfig(filename=BAAZ_FP_LOG_FILE,level=logging.INFO,)
 
+connection = BlockingConnection(pika.ConnectionParameters(
+        rabbitserverIP))
+channel = connection.channel()
+channel.queue_declare(queue='ftpupload')
+
+channel.exchange_declare("Fanout", type="fanout")
+result = channel.queue_declare(exclusive=True)
+queue_name = result.method.queue
+channel.queue_bind(exchange="Fanout", queue=queue_name)
+
+channel1 = connection.channel()
+channel1.queue_declare(queue='mathqueue')
+channel2 = connection.channel()
+channel2.queue_declare(queue='compilerqueue')
+
 if usingAWS:
     boto_conn = boto.connect_s3()
     bucket = boto_conn.get_bucket('partner-logs') 
 
 def performTenantCleanup(tenant):
-    print "Cleaning Tenant ", tenant
+    logging.info("Cleaning Tenant "+ tenant) 
     destination = BAAZ_DATA_ROOT + tenant     
     if os.path.exists(destination):
         shutil.rmtree(destination)
@@ -70,7 +86,7 @@ def callback(ch, method, properties, body):
     except:
         logging.exception("Could not load the message JSON")
 
-    print "FPPS Got message ", msg_dict
+    logging.info("FPPS Got message "+ str( msg_dict))
     """
     Validate the message.
     """ 
@@ -79,7 +95,8 @@ def callback(ch, method, properties, body):
         not msg_dict.has_key("opcode")):
         logging.error("Invalid message received\n")     
         logging.error(body)
-        connection1.basicAck(ch,method)
+        #connection1.basicAck(ch,method)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
     try:
@@ -120,7 +137,8 @@ def callback(ch, method, properties, body):
             file_key = bucket.get_key(source)
             if file_key is None:
                 logging.error("NOT FOUND: {0} not in S3\n".format(source))     
-                connection1.basicAck(ch,method)
+                #connection1.basicAck(ch,method)
+                ch.basic_ack(delivery_tag=method.delivery_tag)
                 
                 return
 
@@ -134,14 +152,14 @@ def callback(ch, method, properties, body):
             #    errlog.flush()
             #    return
         else:
-            print "Downloading and extracting file"
+            logging.info("Downloading and extracting file")
 
         """
         Download the file and extract:
         """ 
         dest_file = BAAZ_DATA_ROOT + tenant + "/" + filename
         destination = os.path.dirname(dest_file)
-        print destination
+        logging.info("Destination: "+str(destination))
         if not os.path.exists(destination):
             os.makedirs(destination)
 
@@ -170,7 +188,7 @@ def callback(ch, method, properties, body):
 
     logging.info("Extracted file : {0} \n".format(dest_file))     
     if not usingAWS:
-        print "Extracted file to /mnt/volume1/[tenent]/processing"
+        logging.info("Extracted file to /mnt/volume1/[tenent]/processing")
    
     try:
         """
@@ -213,9 +231,15 @@ def callback(ch, method, properties, body):
             compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
             if uid is not None:
                 compiler_msg['uid'] = uid
+            message_id = genMessageID()
+            compiler_msg['message_id'] = message_id 
             message = dumps(compiler_msg)
-            connection1.publish(ch,'','compilerqueue',message)
-            incrementPendingMessage(collection, uid)
+            #connection1.publish(ch,'','compilerqueue',message)
+            channel2.basic_publish(exchange='',
+                      routing_key='compilerqueue',
+                      body=message)
+            incrementPendingMessage(collection, uid, message_id)
+            collection.update({'uid':uid},{'$inc':{"Compiler1MessageCount":1}})
             logging.info("Published Compiler Message {0}\n".format(message))
 
         for en in mongoconn.entities:
@@ -229,9 +253,15 @@ def callback(ch, method, properties, body):
             compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
             if uid is not None:
                 compiler_msg['uid'] = uid
+            message_id = genMessageID()
+            compiler_msg['message_id'] = message_id
             message = dumps(compiler_msg)
-            connection1.publish(ch,'','compilerqueue',message)
-            incrementPendingMessage(collection, uid)
+            #connection1.publish(ch,'','compilerqueue',message)
+            channel2.basic_publish(exchange='',
+                      routing_key='compilerqueue',
+                      body=message)
+            collection.update({'uid':uid},{'$inc':{"Compiler2MessageCount":1}})
+            incrementPendingMessage(collection, uid,message_id)
             logging.info("Published Compiler Message {0}\n".format(message))
     except:
         logging.exception("Parsing the input and Compiler Message")
@@ -247,18 +277,30 @@ def callback(ch, method, properties, body):
                 continue
             job_insts[entity.eid] = {'program_id':entity.eid}
         math_msg['job_instances'] = job_insts.values()
+        message_id = genMessageID()
+        math_msg['message_id'] = message_id
         message = dumps(math_msg)
-        connection1.publish(ch,'','mathqueue',message)
-        incrementPendingMessage(collection, uid)
+        #connection1.publish(ch,'','mathqueue',message)
+        channel1.basic_publish(exchange='',
+                          routing_key='mathqueue',
+                          body=message)
+        collection.update({'uid':uid},{'$inc':{"Math1MessageCount":1}})
+        incrementPendingMessage(collection, uid,message_id)
 
         logging.info("Published Message {0}\n".format(message))
 
         math_msg = {'tenant':tenant, 'opcode':"BaseStats"}
         if uid is not None:
             math_msg['uid'] = uid
+        message_id = genMessageID()
+        math_msg['message_id'] = message_id
         message = dumps(math_msg)
-        connection1.publish(ch,'','mathqueue',message)
-        incrementPendingMessage(collection, uid)
+        #connection1.publish(ch,'','mathqueue',message)
+        channel1.basic_publish(exchange='',
+                          routing_key='mathqueue',
+                          body=message)
+        collection.update({'uid':uid},{'$inc':{"Math2MessageCount":1}})
+        incrementPendingMessage(collection, uid,message_id)
         logging.info("Published Message {0}\n".format(message))
     except:
         logging.exception("Publishing Math Message")
@@ -273,14 +315,23 @@ def callback(ch, method, properties, body):
     except:
         logging.logfile("While closing mongo")
 
-    connection1.basicAck(ch,method)
+    #connection1.basicAck(ch,method)
+    ch.basic_ack(delivery_tag=method.delivery_tag)
 
-connection1 = RabbitConnection(callback, ['ftpupload'],['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}},BAAZ_FP_LOG_FILE)
+#connection1 = RabbitConnection(callback, ['ftpupload'],['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}},BAAZ_FP_LOG_FILE)
 
-print "FPProcessingService going to start consuming"
+channel.basic_consume(callback,
+                      queue='ftpupload')
 
-connection1.run()
+channel.basic_consume(callback,
+                      queue=queue_name,
+                      no_ack=True)
 
+logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time())) + " FPProcessingService going to start consuming")
 
-print "Oops I'm done"
+#connection1.run()
 
+channel.start_consuming()
+if usingAWS:
+    boto_conn.close()
+logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time()))+ " Closing FPProcessingService")

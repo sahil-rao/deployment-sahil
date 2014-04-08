@@ -5,7 +5,8 @@ Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenant> <log Directory>
 """
 from flightpath.parsing.hadoop.HadoopConnector import *
-from flightpath.services.RabbitMQConnectionManager import *
+#from flightpath.services.RabbitMQConnectionManager import *
+from flightpath.services.XplainBlockingConnection import *
 from flightpath.MongoConnector import *
 from flightpath.utils import *
 from json import *
@@ -46,6 +47,11 @@ if os.path.isfile(BAAZ_MATH_LOG_FILE):
 
 logging.basicConfig(filename=BAAZ_MATH_LOG_FILE,level=logging.INFO,)
 
+connection = BlockingConnection(pika.ConnectionParameters(
+        rabbitserverIP))
+channel = connection.channel()
+channel.queue_declare(queue='mathqueue')
+
 def generateBaseStats(tenant):
     """
     Create a destination/processing folder.
@@ -67,11 +73,11 @@ def generateBaseStats(tenant):
     """ 
 
 def storeResourceProfile(tenant):
-    print "Going to store resource profile\n"    
+    logging.info("Going to store resource profile\n")    
     if not os.path.isfile("/tmp/test_hadoop_job_resource_share.out"):
         return
 
-    print "Resource profile file found\n"    
+    logging.info("Resource profile file found\n")
     mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
         mongoconn = MongoConnector({'host':mongoserverIP, 'context':tenant, \
@@ -79,7 +85,7 @@ def storeResourceProfile(tenant):
 
     with open("/tmp/test_hadoop_job_resource_share.out", "r") as resource_file:
         for line in resource_file:
-            print "Resource profile line :", line    
+            logging.info("Resource profile line :"+str(line) )
             if line.strip().startswith("Entity"):
                 continue
 
@@ -102,7 +108,7 @@ def callback(ch, method, properties, body):
     startTime = time.time()
     msg_dict = loads(body)
 
-    print "Analytics: Got message ", msg_dict
+    logging.info("Analytics: Got message "+ str(msg_dict))
 
     """
     Validate the message.
@@ -113,15 +119,19 @@ def callback(ch, method, properties, body):
 
         endTime = time.time()
         if msg_dict.has_key('uid'):
+            uid = msg_dict['uid']
+            received_msgID = msg_dict['message_id']
             collection.update({'uid':uid},{'$inc':{"Math.tmpcount":1, "Math.time":(endTime-startTime)}})
-            decrementPendingMessage(collection, uid)
+            decrementPendingMessage(collection, uid, received_msgID)
+            collection.update({'uid':uid},{'$inc':{"DecrementMath1MessageCount":1}})
 
-        connection1.basicAck(ch,method)
+        #connection1.basicAck(ch,method)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
     tenant = msg_dict['tenant']
     opcode = msg_dict['opcode']
-
+    received_msgID = msg_dict['message_id']
     uid = None
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
@@ -135,7 +145,8 @@ def callback(ch, method, properties, body):
             """
             Just drain the queue.
             """
-            connection1.basicAck(ch,method)
+            #connection1.basicAck(ch,method)
+            ch.basic_ack(delivery_tag=method.delivery_tag)
             return
       
         collection = MongoClient(mongo_url)[tenant].uploadStats
@@ -144,7 +155,8 @@ def callback(ch, method, properties, body):
         """
         We do not expect anything without UID. Discard message if not present.
         """
-    	connection1.basicAck(ch,method)
+    	#connection1.basicAck(ch,method)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
     if opcode == "BaseStats":
@@ -165,9 +177,11 @@ def callback(ch, method, properties, body):
         """ Compute single table profile of SQL queries
         """
         logging.info("Generating BaseStats for {0}\n".format(tenant))     
-        decrementPendingMessage(collection, uid)
+        decrementPendingMessage(collection, uid, received_msgID)
+        collection.update({'uid':uid},{'$inc':{"DecrementMath2MessageCount":1}})
         
-        connection1.basicAck(ch,method)
+        #connection1.basicAck(ch,method)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
 
         endTime = time.time()
         if msg_dict.has_key('uid'):
@@ -212,18 +226,23 @@ def callback(ch, method, properties, body):
                 collection.update({'uid':uid},{"$inc": {stats_success_key: 0, stats_failure_key: 1}})
 
     logging.info("Event Processing Complete")     
-    decrementPendingMessage(collection, uid)
-    connection1.basicAck(ch,method)
+    decrementPendingMessage(collection, uid, received_msgID)
+    collection.update({'uid':uid},{'$inc':{"DecrementMath3MessageCount":1}})
+    #connection1.basicAck(ch,method)
+    ch.basic_ack(delivery_tag=method.delivery_tag)
 
     endTime = time.time()
     if msg_dict.has_key('uid'):
 	#if uid has been set, the variable will be set already
         collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
 
-connection1 = RabbitConnection(callback, ['mathqueue'],[], {},BAAZ_MATH_LOG_FILE)
+#connection1 = RabbitConnection(callback, ['mathqueue'],[], {},BAAZ_MATH_LOG_FILE)
 
-print "BaazMath going to start consuming"
+channel.basic_consume(callback,
+                      queue='mathqueue')
+ 
+logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time())) +" BaazMath going to start consuming")
 
-connection1.run()
-
-print "Oops I'm done"
+#connection1.run()
+channel.start_consuming()
+logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time())) + " Closing BaazMath")
