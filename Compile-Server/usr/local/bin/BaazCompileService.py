@@ -4,8 +4,7 @@
 Compile Service:
 """
 from flightpath.MongoConnector import *
-#from flightpath.services.RabbitMQConnectionManager import *
-from flightpath.services.XplainBlockingConnection import *
+from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.utils import *
 from subprocess import Popen, PIPE
 from json import *
@@ -43,14 +42,7 @@ if os.path.isfile(BAAZ_COMPILER_LOG_FILE):
 
 logging.basicConfig(filename=BAAZ_COMPILER_LOG_FILE,level=logging.INFO,)
 
-connection = BlockingConnection(pika.ConnectionParameters(
-        rabbitserverIP))
-channel = connection.channel()
-channel.queue_declare(queue='compilerqueue')
 COMPILER_MODULES='/usr/lib/baaz_compiler'
-
-channel1 = connection.channel()
-channel1.queue_declare(queue='mathqueue')
 
 dirList=os.listdir(COMPILER_MODULES)
 classpath = ""
@@ -353,10 +345,7 @@ def callback(ch, method, properties, body):
         message_id = genMessageID(received_msgID, entity.eid)
         msg_dict['message_id'] = message_id
         message = dumps(msg_dict)
-        #connection1.publish(ch,'','mathqueue',message)
-        channel.basic_publish(exchange='',
-                          routing_key='mathqueue',
-                          body=message)
+        connection1.publish(ch,'','mathqueue',message)
         logging.info("Sent message to Math pos1:" + str(msg_dict))
          
         incrementPendingMessage(collection, uid,message_id)
@@ -372,10 +361,7 @@ def callback(ch, method, properties, body):
             message_id = genMessageID(received_msgID, eid)
             msg_dict['message_id'] = message_id
             message = dumps(msg_dict)
-            #connection1.publish(ch,'','mathqueue',message)
-            channel1.basic_publish(exchange='',
-                          routing_key='mathqueue',
-                          body=message)
+            connection1.publish(ch,'','mathqueue',message)
             logging.info("Sending message to Math pos2:" + str(msg_dict))
             incrementPendingMessage(collection, uid,message_id)
             collection.update({'uid':uid},{'$inc':{"Math4MessageCount":1}})
@@ -390,19 +376,15 @@ def callback(ch, method, properties, body):
         collection.update({'uid':uid},{"$inc": {"Compiler.time":(endTime-startTime)}})
         
     mongoconn.close()
-    #connection1.basicAck(ch,method)
-    ch.basic_ack(delivery_tag=method.delivery_tag)
+    connection1.basicAck(ch,method)
     collection.update({'uid':uid},{'$inc':{"RemoveCompilerMessageCount":1}})
     decrementPendingMessage(collection, uid, received_msgID)
 
 
-#connection1 = RabbitConnection(callback, ['compilerqueue'],['mathqueue'], {},BAAZ_COMPILER_LOG_FILE)
-channel.basic_consume(callback,
-                      queue='compilerqueue')
+connection1 = RabbitConnection(callback, ['compilerqueue'],['mathqueue'], {},BAAZ_COMPILER_LOG_FILE)
 
 logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time()))+  " BaazCompiler going to start Consuming")
 
-channel.start_consuming()
-#connection1.run()
+connection1.run()
 
 logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time()))+ " Closing BaazCompiler")
