@@ -103,6 +103,7 @@ def callback(ch, method, properties, body):
 
             collection = MongoClient(mongo_url)[tenant].uploadStats
             collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}})
+            startProcessingPhase(collection, uid)
             if metrics_url is not None:
                 try:
                     r_collection = MongoClient(metrics_url)["remote_"+tenant].uploadStats

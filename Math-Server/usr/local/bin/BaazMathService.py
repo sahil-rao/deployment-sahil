@@ -97,7 +97,18 @@ def storeResourceProfile(tenant):
             resource_doc = { "Resource_share": splits[1]}
             mongoconn.updateProfile(entity, "Resource", resource_doc)
     mongoconn.close()
-            
+
+def end_of_phase_callback(params, current_phase):
+    if current_phase > 1:
+        return
+
+    print "Changing processing Phase"
+    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"} 
+    msg_dict['uid'] = params['uid']
+    message = dumps(msg_dict)
+    params['connection'].publish(params['channel'],'',params['queuename'],message) 
+    return
+
 def callback(ch, method, properties, body):
 
     startTime = time.time()
@@ -151,6 +162,7 @@ def callback(ch, method, properties, body):
     	connection1.basicAck(ch,method)
         return
 
+    callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
     if opcode == "BaseStats":
         logging.info("Got Base Stats\n")     
         try:
@@ -169,8 +181,7 @@ def callback(ch, method, properties, body):
         """ Compute single table profile of SQL queries
         """
         logging.info("Generating BaseStats for {0}\n".format(tenant))     
-        decrementPendingMessage(collection, uid, received_msgID)
-        collection.update({'uid':uid},{'$inc':{"DecrementMath2MessageCount":1}})
+        decrementPendingMessage(collection, uid, received_msgID, end_of_phase_callback, callback_params)
         
         connection1.basicAck(ch,method)
 
@@ -217,8 +228,7 @@ def callback(ch, method, properties, body):
                 collection.update({'uid':uid},{"$inc": {stats_success_key: 0, stats_failure_key: 1}})
 
     logging.info("Event Processing Complete")     
-    decrementPendingMessage(collection, uid, received_msgID)
-    collection.update({'uid':uid},{'$inc':{"DecrementMath3MessageCount":1}})
+    decrementPendingMessage(collection, uid, received_msgID, end_of_phase_callback, callback_params)
     connection1.basicAck(ch,method)
 
     endTime = time.time()
