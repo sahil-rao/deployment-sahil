@@ -217,6 +217,7 @@ def callback(ch, method, properties, body):
             message_id = genMessageID()
             compiler_msg['message_id'] = message_id 
             message = dumps(compiler_msg)
+            print "Sending message id : ", message_id
             connection1.publish(ch,'','compilerqueue',message)
             incrementPendingMessage(collection, uid, message_id)
             collection.update({'uid':uid},{'$inc':{"Compiler1MessageCount":1}})

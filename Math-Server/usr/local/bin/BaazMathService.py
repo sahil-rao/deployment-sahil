@@ -126,7 +126,10 @@ def callback(ch, method, properties, body):
         endTime = time.time()
         if msg_dict.has_key('uid'):
             uid = msg_dict['uid']
-            received_msgID = msg_dict['message_id']
+            try:
+                received_msgID = msg_dict['message_id']
+            except:
+                received_msgID = None
             collection.update({'uid':uid},{'$inc':{"Math.tmpcount":1, "Math.time":(endTime-startTime)}})
             decrementPendingMessage(collection, uid, received_msgID)
             collection.update({'uid':uid},{'$inc':{"DecrementMath1MessageCount":1}})
@@ -136,7 +139,10 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict['tenant']
     opcode = msg_dict['opcode']
-    received_msgID = msg_dict['message_id']
+    try:
+        received_msgID = msg_dict['message_id']
+    except:
+        received_msgID = None
     uid = None
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']

@@ -173,7 +173,10 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict["tenant"]
     instances = msg_dict["job_instances"]
-    received_msgID = msg_dict["message_id"]
+    try:
+        received_msgID = msg_dict["message_id"]
+    except:
+        received_msgID = None
     uid = None
     db = None
     if msg_dict.has_key('uid'):
