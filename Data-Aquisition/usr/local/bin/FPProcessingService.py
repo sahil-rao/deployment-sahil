@@ -62,6 +62,51 @@ def performTenantCleanup(tenant):
     if os.path.exists(destination):
         shutil.rmtree(destination)
 
+def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection):
+
+    entity = mongoconn.getEntity(eid)
+    if entity.etype == 'HADOOP_JOB':
+
+        pub = True
+        jinst_dict = {'entity_id':entity.eid} 
+        prog_type = ""
+        if entity.instances[0].config_data.has_key("hive.query.string"):
+            jinst_dict['program_type'] = "Hive"
+            jinst_dict['query'] = entity.name
+        elif entity.instances[0].config_data.has_key("pig.script.features"):
+            jinst_dict['program_type'] = "Pig"
+            jinst_dict['pig_features'] = int(entity.instances[0].config_data['pig.script.features'])
+        else:
+            logging.info("Progname found {0}\n".format(entity.name))
+            pub = False
+        if pub == True:
+            compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
+            if uid is not None:
+                compiler_msg['uid'] = uid
+            message_id = genMessageID()
+            compiler_msg['message_id'] = message_id
+            message = dumps(compiler_msg)
+            connection1.publish(ch,'','compilerqueue',message)
+            incrementPendingMessage(collection, uid, message_id)
+            logging.info("Published Compiler Message {0}\n".format(message))
+
+    
+    if entity.etype == 'SQL_QUERY': 
+        
+        jinst_dict = {'entity_id':entity.eid} 
+        jinst_dict['program_type'] = "SQL"
+        jinst_dict['query'] = entity.name
+        compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
+        if uid is not None:
+            compiler_msg['uid'] = uid
+        message_id = genMessageID()
+        compiler_msg['message_id'] = message_id
+        message = dumps(compiler_msg)
+        connection1.publish(ch,'','compilerqueue',message)
+        incrementPendingMessage(collection, uid, message_id)
+        logging.info("Published Compiler Message {0}\n".format(message))
+
+
 def callback(ch, method, properties, body):
     starttime = time.time()
     
@@ -183,7 +228,7 @@ def callback(ch, method, properties, body):
             mongoconn = MongoConnector({'host':mongo_url, 'context':context, \
                                     'create_db_if_not_exist':True})
 
-        parseDir(tenant, logpath, mongoconn)
+        parseDir(tenant, logpath, mongoconn, sendToCompiler, uid, ch, collection)
 
         if usingAWS:
             """
@@ -194,53 +239,6 @@ def callback(ch, method, properties, body):
             chkpoint_key.set_contents_from_string("Processed")
             logging.info("Processed file : {0} \n".format(dest_file))     
 
-        for en in mongoconn.entities:
-            entity = mongoconn.getEntity(en)
-            if not entity.etype == 'HADOOP_JOB': 
-                continue
-
-            jinst_dict = {'entity_id':entity.eid} 
-            prog_type = ""
-            if entity.instances[0].config_data.has_key("hive.query.string"):
-                jinst_dict['program_type'] = "Hive"
-                jinst_dict['query'] = entity.name
-            elif entity.instances[0].config_data.has_key("pig.script.features"):
-                jinst_dict['program_type'] = "Pig"
-                jinst_dict['pig_features'] = int(entity.instances[0].config_data['pig.script.features'])
-            else:
-                logging.info("Progname found {0}\n".format(entity.name))
-                continue
-
-            compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
-            if uid is not None:
-                compiler_msg['uid'] = uid
-            message_id = genMessageID()
-            compiler_msg['message_id'] = message_id 
-            message = dumps(compiler_msg)
-            print "Sending message id : ", message_id
-            connection1.publish(ch,'','compilerqueue',message)
-            incrementPendingMessage(collection, uid, message_id)
-            collection.update({'uid':uid},{'$inc':{"Compiler1MessageCount":1}})
-            logging.info("Published Compiler Message {0}\n".format(message))
-
-        for en in mongoconn.entities:
-            entity = mongoconn.getEntity(en)
-            if not entity.etype == 'SQL_QUERY': 
-                continue
-
-            jinst_dict = {'entity_id':entity.eid} 
-            jinst_dict['program_type'] = "SQL"
-            jinst_dict['query'] = entity.name
-            compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
-            if uid is not None:
-                compiler_msg['uid'] = uid
-            message_id = genMessageID()
-            compiler_msg['message_id'] = message_id
-            message = dumps(compiler_msg)
-            connection1.publish(ch,'','compilerqueue',message)
-            collection.update({'uid':uid},{'$inc':{"Compiler2MessageCount":1}})
-            incrementPendingMessage(collection, uid,message_id)
-            logging.info("Published Compiler Message {0}\n".format(message))
     except:
         logging.exception("Parsing the input and Compiler Message")
 
