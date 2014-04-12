@@ -127,7 +127,7 @@
     copy: src=/home/ubuntu/hive.conf dest=/etc/init/
     sudo: yes
   - name: Start hive server
-    action: service name=hive state=startedopy: src=/home/ubuntu/nodejs.conf dest=/etc/init/nodejs.conf
+    action: service name=hive state=started
   - name: Install Monit service
     apt: pkg=monit state=present
   - name: Change desktop background
