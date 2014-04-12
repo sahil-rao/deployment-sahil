@@ -110,6 +110,8 @@
     sudo: yes 
   - name: Create hive directory
     file: dest=/mnt/volume1/hive 
+  - name: Create hive log directory
+    file: dest=/var/log/hive 
   - name: Create hive warehouse directory
     file: dest=/mnt/volume1/warehouse mode=0777
     sudo: yes
