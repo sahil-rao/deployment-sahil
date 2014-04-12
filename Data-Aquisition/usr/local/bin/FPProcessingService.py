@@ -243,7 +243,7 @@ def callback(ch, method, properties, body):
         logging.exception("Parsing the input and Compiler Message")
 
     try:
-        math_msg = {'tenant':tenant, 'opcode':"Frequency-Estimation"}
+        '''math_msg = {'tenant':tenant, 'opcode':"Frequency-Estimation"}
         if uid is not None:
             math_msg['uid'] = uid
         job_insts = {}
@@ -261,6 +261,7 @@ def callback(ch, method, properties, body):
         incrementPendingMessage(collection, uid,message_id)
 
         logging.info("Published Message {0}\n".format(message))
+        '''
 
         math_msg = {'tenant':tenant, 'opcode':"BaseStats"}
         if uid is not None:
