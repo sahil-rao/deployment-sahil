@@ -86,8 +86,49 @@
     apt: pkg=rabbitmq-server state=present
   - name: Copy node upstart configuration file
     copy: src=/home/ubuntu/nodejs.conf dest=/etc/init/nodejs.conf
+  - name: Download Hive in /usr/local/
+    command: chdir=/usr/local/ wget http://mirror.olnevhost.net/pub/apache/hive/hive-0.12.0/hive-0.12.0-bin.tar.gz
+    sudo: yes
+  - name: Untar Hive in /usr/local/
+    command: chdir=/usr/local/ tar -xzf hive-0.12.0-bin.tar.gz
+    sudo: yes
+  - name: Delete Hive tar file in /usr/local/
+    command: chdir=/usr/local/ rm hive-0.12.0-bin.tar.gz
+    sudo: yes
+  - name: Download Hadoop in /usr/local/
+    command: chdir=/usr/local/ wget http://mirrors.advancedhosters.com/apache/hadoop/common/hadoop-0.23.10/hadoop-0.23.10.tar.gz
+    sudo: yes
+  - name: Untar hadoop in /usr/local/
+    command: chdir=/usr/local/ tar -xzf hadoop-0.23.10.tar.gz
+    sudo: yes
+  - name: Delete Hadoop tar file in /usr/local/
+    command: chdir=/usr/local/ rm hadoop-0.23.10.tar.gz
+    sudo: yes
+  - name: Create symbolic link for hadoop
+    command: chdir=/usr/local/ ln -s hadoop-0.23.10 hadoop
+    ignore_errors: True
+    sudo: yes 
+  - name: Create hive directory
+    file: dest=/mnt/volume1/hive 
+  - name: Create hive warehouse directory
+    file: dest=/mnt/volume1/warehouse mode=0777
+    sudo: yes
+  - name: Copy hive-site.xml to /usr/local/hive-0.12.0-bin/conf/
+    copy: src=/home/ubuntu/hive-site.xml dest=/usr/local/hive-0.12.0-bin/conf/hive-site.xml
+  - name: Change mysql root user password
+    mysql_user: name=root password=mysql
+  - name: Mysql DB
+    mysql_db: name=hadoop login_user=root login_password=mysql state=present
+  - name: Install mysql connector into hive lib directory
+    copy: src=/home/ubuntu/mysql-connector-java-5.1.30-bin.jar dest=/usr/local/hive-0.12.0-bin/lib/
+  - name: install python hive client libraries
+    synchronize: src=/usr/local/hive-0.12.0-bin/lib/py/ dest=/usr/local/lib/python2.7/dist-packages/
+  - name: Install hive upstart script
+    copy: src=/home/ubuntu/hive.conf dest=/etc/init/
+    sudo: yes
+  - name: Start hive server
+    action: service name=hive state=startedopy: src=/home/ubuntu/nodejs.conf dest=/etc/init/nodejs.conf
   - name: Install Monit service
     apt: pkg=monit state=present
   - name: Change desktop background
     shell: gsettings set org.gnome.desktop.background picture-uri file://home/ubuntu/Slpash.png
-  

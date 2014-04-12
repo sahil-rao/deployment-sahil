@@ -14,6 +14,9 @@ cp /home/ubuntu/build/deployment/VM/setup-foundation.sh .
 cp /home/ubuntu/build/deployment/VM/vm-foundation.yml .
 cp /home/ubuntu/build/deployment/VM/nodejs.conf .
 cp /home/ubuntu/build/deployment/VM/Splash.png .
+cp /home/ubuntu/build/deployment/VM/hive.conf . 
+cp /home/ubuntu/build/deployment/VM/hive-site.xml . 
+cp /home/ubuntu/build/deployment/VM/mysql-connector-java-5.1.30-bin.jar .
 
 tar -cvf ExplainIO-Foundation.tar ./*
 gzip ExplainIO-Foundation.tar
