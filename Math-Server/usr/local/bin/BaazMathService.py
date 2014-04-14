@@ -45,7 +45,7 @@ if os.path.isfile(BAAZ_MATH_LOG_FILE):
     timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
     shutil.copy(BAAZ_MATH_LOG_FILE, BAAZ_MATH_LOG_FILE+timestr)
 
-logging.basicConfig(filename=BAAZ_MATH_LOG_FILE,level=logging.INFO,)
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_MATH_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
 
 def generateBaseStats(tenant):
     """
