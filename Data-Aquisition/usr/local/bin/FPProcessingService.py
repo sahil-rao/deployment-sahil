@@ -291,10 +291,10 @@ def callback(ch, method, properties, body):
 connection1 = RabbitConnection(callback, ['ftpupload'],['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}},BAAZ_FP_LOG_FILE)
 
 
-logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time())) + " FPProcessingService going to start consuming")
+logging.info("FPProcessingService going to start consuming")
 
 connection1.run()
 
 if usingAWS:
     boto_conn.close()
-logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time()))+ " Closing FPProcessingService")
+logging.info(time.strftime("Closing FPProcessingService")

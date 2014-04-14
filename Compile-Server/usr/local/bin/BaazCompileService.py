@@ -386,8 +386,8 @@ def callback(ch, method, properties, body):
 
 connection1 = RabbitConnection(callback, ['compilerqueue'],['mathqueue'], {},BAAZ_COMPILER_LOG_FILE)
 
-logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time()))+  " BaazCompiler going to start Consuming")
+logging.info("BaazCompiler going to start Consuming")
 
 connection1.run()
 
-logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time()))+ " Closing BaazCompiler")
+logging.info("Closing BaazCompiler")
