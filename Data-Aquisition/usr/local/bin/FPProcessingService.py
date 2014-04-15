@@ -297,4 +297,4 @@ connection1.run()
 
 if usingAWS:
     boto_conn.close()
-logging.info(time.strftime("Closing FPProcessingService")
+logging.info("Closing FPProcessingService")

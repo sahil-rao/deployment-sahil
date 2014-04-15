@@ -244,7 +244,7 @@ def callback(ch, method, properties, body):
 
 connection1 = RabbitConnection(callback, ['mathqueue'],[], {},BAAZ_MATH_LOG_FILE)
 
-logging.info(time.strftime("BaazMath going to start consuming")
+logging.info("BaazMath going to start consuming")
 
 connection1.run()
-logging.info(time.strftime("Closing BaazMath")
+logging.info("Closing BaazMath")
