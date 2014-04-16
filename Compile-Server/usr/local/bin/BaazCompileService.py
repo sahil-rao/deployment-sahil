@@ -93,6 +93,7 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
     for tableentry in tableset:
         database_name = None
         entryname = tableentry["TableName"].lower()
+        entryname = entryname.replace('"', '')
         matches = table_regex.search(entryname)
         if matches is not None:
             database_name = matches.group(1)
