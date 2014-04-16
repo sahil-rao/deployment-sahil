@@ -45,7 +45,7 @@ if os.path.isfile(BAAZ_MATH_LOG_FILE):
     timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
     shutil.copy(BAAZ_MATH_LOG_FILE, BAAZ_MATH_LOG_FILE+timestr)
 
-logging.basicConfig(filename=BAAZ_MATH_LOG_FILE,level=logging.INFO,)
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_MATH_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
 
 def generateBaseStats(tenant):
     """
@@ -244,7 +244,7 @@ def callback(ch, method, properties, body):
 
 connection1 = RabbitConnection(callback, ['mathqueue'],[], {},BAAZ_MATH_LOG_FILE)
 
-logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time())) +" BaazMath going to start consuming")
+logging.info("BaazMath going to start consuming")
 
 connection1.run()
-logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time())) + " Closing BaazMath")
+logging.info("Closing BaazMath")

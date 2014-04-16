@@ -40,7 +40,7 @@ if os.path.isfile(BAAZ_COMPILER_LOG_FILE):
     timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
     shutil.copy(BAAZ_COMPILER_LOG_FILE, BAAZ_COMPILER_LOG_FILE+timestr)
 
-logging.basicConfig(filename=BAAZ_COMPILER_LOG_FILE,level=logging.INFO,)
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_COMPILER_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
 
 COMPILER_MODULES='/usr/lib/baaz_compiler'
 
@@ -386,8 +386,8 @@ def callback(ch, method, properties, body):
 
 connection1 = RabbitConnection(callback, ['compilerqueue'],['mathqueue'], {},BAAZ_COMPILER_LOG_FILE)
 
-logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time()))+  " BaazCompiler going to start Consuming")
+logging.info("BaazCompiler going to start Consuming")
 
 connection1.run()
 
-logging.info(time.strftime('%m/%d/%Y %H:%M:%S', time.gmtime(time.time()))+ " Closing BaazCompiler")
+logging.info("Closing BaazCompiler")
