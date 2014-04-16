@@ -105,6 +105,64 @@
 #- name: Instal Hive
 #  shell: mv /home/ubuntu/hive-0.11.0 /usr/lib/hive
 #  sudo: yes
+- name: Download Hive in /usr/local/
+  command: chdir=/usr/local/ wget http://mirror.olnevhost.net/pub/apache/hive/hive-0.12.0/hive-0.12.0-bin.tar.gz
+  sudo: yes
+- name: Remove any existing hive directory
+  file: path=/usr/local/hive-0.12.0-bin/ state=absent
+  sudo: yes
+  ignore_errors: True
+- name: Untar Hive in /usr/local/
+  command: chdir=/usr/local/ tar -xzf hive-0.12.0-bin.tar.gz
+  sudo: yes
+- name: Delete Hive tar file in /usr/local/
+  command: chdir=/usr/local/ rm hive-0.12.0-bin.tar.gz
+  sudo: yes
+- name: Download Hadoop in /usr/local/
+  command: chdir=/usr/local/ wget http://mirrors.advancedhosters.com/apache/hadoop/common/hadoop-0.23.10/hadoop-0.23.10.tar.gz
+  sudo: yes
+- name: Remove any existing hadoop directory
+  file: path=/usr/local/hadoop-0.23.10/ state=absent
+  sudo: yes
+  ignore_errors: True
+- name: Remove any existing hadoop link directory
+  file: path=/usr/local/hadoop/ state=absent
+  sudo: yes
+  ignore_errors: True
+- name: Untar hadoop in /usr/local/
+  command: chdir=/usr/local/ tar -xzf hadoop-0.23.10.tar.gz
+  sudo: yes
+- name: Delete Hadoop tar file in /usr/local/
+  command: chdir=/usr/local/ rm hadoop-0.23.10.tar.gz
+  sudo: yes
+- name: Create symbolic link for hadoop
+  command: chdir=/usr/local/ ln -s hadoop-0.23.10 hadoop
+  ignore_errors: True
+  sudo: yes
+- name: Create hive directory
+  file: dest=/mnt/volume1/hive/ mode=0777 state=directory
+  sudo: yes
+- name: Create hive log directory
+  file: dest=/var/log/hive/ mode=0777 state=directory
+  sudo: yes
+- name: Create hive warehouse directory
+  file: dest=/mnt/volume1/warehouse/ mode=0777 state=directory
+  sudo: yes
+- name: Copy hive-site.xml to /usr/local/hive-0.12.0-bin/conf/
+  copy: src=roles/backoffice/files/hive-site.xml dest=/usr/local/hive-0.12.0-bin/conf/hive-site.xml
+  sudo: yes
+- name: Mysql DB
+  mysql_db: name=hadoop state=present
+- name: Install mysql connector into hive lib directory
+  copy: src=roles/backoffice/files/mysql-connector-java-5.1.30-bin.jar dest=/usr/local/hive-0.12.0-bin/lib/
+  sudo: yes
+- name: install python hive client libraries
+  shell: cp -r /usr/local/hive-0.12.0-bin/lib/py/* /usr/local/lib/python2.7/dist-packages/
+  sudo: yes
+- name: Install hive upstart script
+  copy: src=roles/backoffice/files/hive.conf dest=/etc/init/
+  sudo: yes
+
 - name: Get Compiler Module
   shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Compiler.tar.gz .
 - name: Untar Compiler binaries
@@ -126,6 +184,9 @@
   sudo: yes
 - name: copy monitrc file
   template: src=roles/backoffice/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+- name: Start hive server
+  action: service name=hive state=started
   sudo: yes
 - name: Start monit service
   shell: monit reload
