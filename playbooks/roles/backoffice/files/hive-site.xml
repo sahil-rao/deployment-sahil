@@ -18,8 +18,13 @@
 </property>
 <property>
 <name>javax.jdo.option.ConnectionUserName</name>
-<value>root</value>
+<value>hive</value>
 <description>Username to use against metastore database</description>
+</property>
+<property>
+<name>javax.jdo.option.ConnectionPassword</name>
+<value>hive</value>
+<description>Password to use against metastore database</description>
 </property>
 
 

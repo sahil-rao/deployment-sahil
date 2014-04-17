@@ -153,6 +153,8 @@
   sudo: yes
 - name: Mysql DB
   mysql_db: name=hadoop state=present
+- name: Create mysql user hive 
+  mysql_user: name=hive password=hive priv=hadoop.*:ALL state=present
 - name: Install mysql connector into hive lib directory
   copy: src=roles/backoffice/files/mysql-connector-java-5.1.30-bin.jar dest=/usr/local/hive-0.12.0-bin/lib/
   sudo: yes
