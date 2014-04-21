@@ -6,6 +6,7 @@ Usage : FPProcessing.py <tenant> <log Directory>
 """
 #from flightpath.parsing.hadoop.HadoopConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
+from flightpath.services.RotatingS3FileHandler import *
 from flightpath.utils import *
 from flightpath.parsing.ParseDemux import *
 import sys
@@ -43,15 +44,25 @@ mongo_url = "mongodb://" + mongoserverIP + "/"
 if replicationGroup is not None:
     mongo_url = mongo_url + "?replicaset=" + replicationGroup
 
-if os.path.isfile(BAAZ_FP_LOG_FILE):
-    timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-    shutil.copy(BAAZ_FP_LOG_FILE, BAAZ_FP_LOG_FILE+timestr)
+"""
+For VM there is not S3 connectivity. Save the logs with a timestamp. 
+At some point we should move to using a log rotate handler in the VM.
+"""
+if not usingAWS:
+    if os.path.isfile(BAAZ_FP_LOG_FILE):
+        timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
+        shutil.copy(BAAZ_FP_LOG_FILE, BAAZ_FP_LOG_FILE+timestr)
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_FP_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
 
+"""
+In AWS use S3 log rotate to save the log files.
+"""
 if usingAWS:
     boto_conn = boto.connect_s3()
     bucket = boto_conn.get_bucket('partner-logs') 
+    log_bucket = boto_conn.get_bucket('xplain-servicelogs')
+    logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_FP_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
 
 def performTenantCleanup(tenant):
     logging.info("Cleaning Tenant "+ tenant) 

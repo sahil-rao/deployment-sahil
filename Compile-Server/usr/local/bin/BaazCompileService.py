@@ -5,6 +5,7 @@ Compile Service:
 """
 from flightpath.MongoConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
+from flightpath.services.RotatingS3FileHandler import *
 from flightpath.utils import *
 from subprocess import Popen, PIPE
 from json import *
@@ -19,6 +20,8 @@ import re
 import ConfigParser
 import logging
 
+#104857600
+
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
 BAAZ_COMPILER_LOG_FILE = "/var/log/BaazCompileService.err"
@@ -32,15 +35,33 @@ try:
 except:
    replicationGroup = None
 
+usingAWS = config.getboolean("mode", "usingAWS")
+if usingAWS:
+    from boto.s3.key import Key
+    import boto
+
 mongo_url = "mongodb://" + mongoserverIP + "/"
 if replicationGroup is not None:
     mongo_url = mongo_url + "?replicaset=" + replicationGroup
 
-if os.path.isfile(BAAZ_COMPILER_LOG_FILE):
-    timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-    shutil.copy(BAAZ_COMPILER_LOG_FILE, BAAZ_COMPILER_LOG_FILE+timestr)
+"""
+For VM there is not S3 connectivity. Save the logs with a timestamp. 
+At some point we should move to using a log rotate handler in the VM.
+"""
+if not usingAWS:
+    if os.path.isfile(BAAZ_COMPILER_LOG_FILE):
+        timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
+        shutil.copy(BAAZ_COMPILER_LOG_FILE, BAAZ_COMPILER_LOG_FILE+timestr)
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_COMPILER_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
+
+"""
+In AWS use S3 log rotate to save the log files.
+"""
+if usingAWS:
+    boto_conn = boto.connect_s3()
+    log_bucket = boto_conn.get_bucket('xplain-servicelogs')
+    logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_COMPILER_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
 
 COMPILER_MODULES='/usr/lib/baaz_compiler'
 
