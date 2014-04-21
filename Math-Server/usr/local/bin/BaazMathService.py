@@ -121,7 +121,7 @@ def end_of_phase_callback(params, current_phase):
     if current_phase > 1:
         return
 
-    print "Changing processing Phase"
+    logging.info("Changing processing Phase")
     msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"} 
     msg_dict['uid'] = params['uid']
     message = dumps(msg_dict)
