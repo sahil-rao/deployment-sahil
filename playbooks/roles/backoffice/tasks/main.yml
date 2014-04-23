@@ -1,4 +1,7 @@
 ---
+- name: Update apt
+  shell: apt-get update
+  sudo: yes
 - name: Install python setuptools
   apt: pkg=python-setuptools state=present
   sudo: yes

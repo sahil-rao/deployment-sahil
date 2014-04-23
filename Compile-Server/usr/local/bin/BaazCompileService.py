@@ -375,6 +375,7 @@ def callback(ch, method, properties, body):
          
         incrementPendingMessage(collection, uid,message_id)
         collection.update({'uid':uid},{'$inc':{"Math3MessageCount":1}})
+        """
         #Inject event for table profile.
         msg_dict = {'tenant':tenant, 'opcode':"GenerateTableProfile"}
         if uid is not None:
@@ -390,7 +391,7 @@ def callback(ch, method, properties, body):
             logging.info("Sending message to Math pos2:" + str(msg_dict))
             incrementPendingMessage(collection, uid,message_id)
             collection.update({'uid':uid},{'$inc':{"Math4MessageCount":1}})
-
+        """
 
     logging.info("Event Processing Complete")     
     
