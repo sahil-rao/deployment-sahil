@@ -17,6 +17,8 @@
   shell: sudo pip install peewee
 - name: Install sqlparse
   shell: sudo pip install sqlparse
+- name: Install boto
+  shell: sudo pip install boto
 - name: Install S3 CMD
   apt: pkg=s3cmd state=present
   sudo: yes

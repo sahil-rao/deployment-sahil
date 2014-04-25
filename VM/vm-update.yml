@@ -9,9 +9,9 @@
     ignore_errors: True
 
   - name: Untar flightpath
-    shell: tar -zxf /home/ubuntu/flightpath-deployment.tar.gz chdir=/
+    shell: tar -zxf /home/xplain/flightpath-deployment.tar.gz chdir=/
   - name: Copy the service files
-    shell: tar -zxf /home/ubuntu/Baaz-DataAcquisition-Service.tar.gz chdir=/
+    shell: tar -zxf /home/xplain/Baaz-DataAcquisition-Service.tar.gz chdir=/
   - name: Remove any previous service that may be installed.
     shell: update-rc.d -f baazdataacquisition remove
   - name: Install baazdataacquisition Service.
@@ -21,15 +21,15 @@
 
     #Start of Analytics module deployment.
   - name: Untar Analytics
-    shell: tar -zxf /home/ubuntu/Baaz-Analytics.tar.gz chdir=/
+    shell: tar -zxf /home/xplain/Baaz-Analytics.tar.gz chdir=/
   - name: Install Basestats scripts
-    shell: tar -zxf /home/ubuntu/Baaz-Basestats-Report.tar.gz chdir=/usr/lib
+    shell: tar -zxf /home/xplain/Baaz-Basestats-Report.tar.gz chdir=/usr/lib
   - name: Mysql user addition
-    mysql_user: name=baazdep password=baazdep priv=*.*:ALL state=present
+    mysql_user: name=baazdep password=baazdep login_user=root login_password=mysql priv=*.*:ALL state=present
   - name: Mysql DB
-    mysql_db: name=HADOOP_DEV state=present
+    mysql_db: name=HADOOP_DEV login_user=root login_password=mysql state=present
   - name: Install Analytics Service
-    shell: tar -zxf /home/ubuntu/Baaz-Analytics-Service.tar.gz chdir=/
+    shell: tar -zxf /home/xplain/Baaz-Analytics-Service.tar.gz chdir=/
   - name: Remove any previous service that may be installed.
     shell: update-rc.d -f baazmath remove
   - name: Install baazmath Service.
@@ -39,9 +39,9 @@
 
     #Start of Compiler module deployment.
   - name: Untar Compiler binaries
-    shell: tar -zxf /home/ubuntu/Baaz-Compiler.tar.gz chdir=/usr/lib
+    shell: tar -zxf /home/xplain/Baaz-Compiler.tar.gz chdir=/usr/lib
   - name: Install Compiler Service
-    shell: tar -zxf /home/ubuntu/Baaz-Compile-Service.tar.gz chdir=/
+    shell: tar -zxf /home/xplain/Baaz-Compile-Service.tar.gz chdir=/
   - name: Remove any previous service that may be installed.
     shell: update-rc.d -f baazcompile remove
   - name: Install baazxompile Service.
@@ -50,20 +50,20 @@
     service: name=baazcompile state=started
 
   - name: Create mysql user
-    mysql_user: name=baaz password=baaz priv=*.*:ALL state=present
+    mysql_user: name=baaz password=baaz login_user=root login_password=mysql priv=*.*:ALL state=present
   - name: Create mysql DB
-    mysql_db: name=baazdata state=present
+    mysql_db: name=baazdata login_user=root login_password=mysql state=present
   - name: Untar flightpath
-    shell: tar -zxf /home/ubuntu/flightpath-deployment.tar.gz chdir=/
+    shell: tar -zxf /home/xplain/flightpath-deployment.tar.gz chdir=/
   - name: Copy node upstart configuration file
-    copy: src=/home/ubuntu/nodejs.conf dest=/etc/init/nodejs.conf
+    copy: src=/home/xplain/nodejs.conf dest=/etc/init/nodejs.conf
   - name: Untar Baazdata App
-    shell: tar -zxf /home/ubuntu/xplain.io.tar.gz
+    shell: tar -zxf /home/xplain/xplain.io.tar.gz
   - name: Remove the existing deployed code
     file: path=/var/xplain state=absent
   - name: Move the new code
-    shell: mv /home/ubuntu/xplain.io /var/xplain
+    shell: mv /home/xplain/xplain.io /var/xplain
   - name: Install npm modules.
     npm: path=/var/xplain
   - name: copy monitrc file
-    copy: src=/home/ubuntu/monitrc dest=/etc/monit/monitrc
+    copy: src=/home/xplain/monitrc dest=/etc/monit/monitrc

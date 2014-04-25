@@ -5,7 +5,7 @@
 - hosts: localhost
   tasks:
   - name: Create mount point
-    file: path=/mnt/volume1 owner=ubuntu group=ubuntu state=directory
+    file: path=/mnt/volume1 owner=xplain group=xplain state=directory
   - name: Set Mongodb Repo Keyserver
     shell: apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
   - name: Set Mongodb repo list
@@ -19,9 +19,9 @@
   - name: Install Nodejs
     apt: pkg=nodejs state=present
   - name: Create Mongo log
-    file: path=/mnt/volume1/mongo/log owner=ubuntu group=ubuntu state=directory
+    file: path=/mnt/volume1/mongo/log owner=xplain group=xplain state=directory
   - name: Create Mongo db
-    file: path=/mnt/volume1/mongo/db owner=ubuntu group=ubuntu state=directory
+    file: path=/mnt/volume1/mongo/db owner=xplain group=xplain state=directory
   - name: Install python setuptools
     apt: pkg=python-setuptools state=present
   - name: Install python dev
@@ -85,7 +85,7 @@
   - name: Install Rabbit MQ
     apt: pkg=rabbitmq-server state=present
   - name: Copy node upstart configuration file
-    copy: src=/home/ubuntu/nodejs.conf dest=/etc/init/nodejs.conf
+    copy: src=/home/xplain/nodejs.conf dest=/etc/init/nodejs.conf
   - name: Download Hive in /usr/local/
     command: chdir=/usr/local/ wget http://mirror.olnevhost.net/pub/apache/hive/hive-0.12.0/hive-0.12.0-bin.tar.gz
     sudo: yes
@@ -116,21 +116,21 @@
     file: dest=/mnt/volume1/warehouse mode=0777
     sudo: yes
   - name: Copy hive-site.xml to /usr/local/hive-0.12.0-bin/conf/
-    copy: src=/home/ubuntu/hive-site.xml dest=/usr/local/hive-0.12.0-bin/conf/hive-site.xml
+    copy: src=/home/xplain/hive-site.xml dest=/usr/local/hive-0.12.0-bin/conf/hive-site.xml
   - name: Change mysql root user password
     mysql_user: name=root password=mysql
   - name: Mysql DB
     mysql_db: name=hadoop login_user=root login_password=mysql state=present
   - name: Install mysql connector into hive lib directory
-    copy: src=/home/ubuntu/mysql-connector-java-5.1.30-bin.jar dest=/usr/local/hive-0.12.0-bin/lib/
+    copy: src=/home/xplain/mysql-connector-java-5.1.30-bin.jar dest=/usr/local/hive-0.12.0-bin/lib/
   - name: install python hive client libraries
     synchronize: src=/usr/local/hive-0.12.0-bin/lib/py/ dest=/usr/local/lib/python2.7/dist-packages/
   - name: Install hive upstart script
-    copy: src=/home/ubuntu/hive.conf dest=/etc/init/
+    copy: src=/home/xplain/hive.conf dest=/etc/init/
     sudo: yes
   - name: Start hive server
     action: service name=hive state=started
   - name: Install Monit service
     apt: pkg=monit state=present
   - name: Change desktop background
-    shell: gsettings set org.gnome.desktop.background picture-uri file://home/ubuntu/Slpash.png
+    shell: gsettings set org.gnome.desktop.background picture-uri file://home/xplain/Slpash.png
