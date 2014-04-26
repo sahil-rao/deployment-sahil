@@ -221,6 +221,7 @@ def callback(ch, method, properties, body):
     mathconfig.read("/etc/xplain/analytics.cfg")
 
     for section in mathconfig.sections():
+        sectionStartTime = time.time()
         if not mathconfig.has_option(section, "Opcode") or\
            not mathconfig.has_option(section, "Import") or\
            not mathconfig.has_option(section, "Function"):
@@ -232,6 +233,7 @@ def callback(ch, method, properties, body):
 
         stats_success_key = "Math." + section + ".success"
         stats_failure_key = "Math." + section + ".failure"
+        stats_time_key = "Math." + section + ".time"
         try:
             entityid = None
             if "entityid" in msg_dict:
@@ -251,6 +253,9 @@ def callback(ch, method, properties, body):
             logging.exception("Section :"+section)
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {stats_success_key: 0, stats_failure_key: 1}})
+        if msg_dict.has_key('uid'):
+            sectionEndTime = time.time()
+            collection.update({'uid':uid},{"$inc": {stats_time_key: (sectionEndTime-sectionStartTime)}})
 
     logging.info("Event Processing Complete")     
     decrementPendingMessage(collection, uid, received_msgID, end_of_phase_callback, callback_params)
