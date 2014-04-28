@@ -115,7 +115,8 @@ set mmonit http://monit:monit@{{ groups['tag_Name_Deployment-Root'][0] }}:8080/c
 # set alert manager@foo.bar only on { timeout }  # receive just service-
 #                                                # timeout alert
 #
-set alert parna@baazdata.com # receive all alerts
+set alert parna@xplain.io # receive all alerts
+set alert samir@xplain.io # receive all alerts
 #
 ## Monit has an embedded web server which can be used to view status of 
 ## services monitored and manage services from a web interface. See the
@@ -258,7 +259,8 @@ set httpd port 2812
 check process baazdataacquisition with pidfile /var/run/FPProcessingService.pid
     start program = "/etc/init.d/baazdataacquisition start"
     stop program = "/etc/init.d/baazdataacquisition  stop"
-    alert parna@baazdata.com only on { nonexist }
+    alert parna@xplain.io only on { nonexist }
+    alert samir@xplain.io only on { nonexist }
 
 check process baazcompile with pidfile /var/run/BaazCompileService.pid
     start program = "/etc/init.d/baazcompile start"
