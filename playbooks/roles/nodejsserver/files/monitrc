@@ -115,7 +115,8 @@ set mmonit http://monit:monit@{{ groups['tag_Name_Deployment-Root'][0] }}:8080/c
 # set alert manager@foo.bar only on { timeout }  # receive just service-
 #                                                # timeout alert
 #
-set alert sean@baazdata.com # receive all alerts
+set alert sean@xplain.io # receive all alerts
+set alert samir@xplain.io # receive all alerts
 
 #
 ## Monit has an embedded web server which can be used to view status of 
@@ -259,5 +260,6 @@ set httpd port 2812
 check process node with pidfile /var/run/nodejs.pid
     start program = "/sbin/start nodejs"
     stop program = "/sbin/stop nodejs"
-    alert sean@baazdata.com only on { nonexist }
+    alert sean@xplain.io only on { nonexist }
+    alert samir@xplain.io only on { nonexist }
 
