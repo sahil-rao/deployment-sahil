@@ -73,7 +73,7 @@ def performTenantCleanup(tenant):
     if os.path.exists(destination):
         shutil.rmtree(destination)
 
-def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection):
+def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection, update=False):
 
     entity = mongoconn.getEntity(eid)
     if entity.etype == 'HADOOP_JOB':
@@ -100,23 +100,37 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection):
             connection1.publish(ch,'','compilerqueue',message)
             incrementPendingMessage(collection, uid, message_id)
             logging.info("Published Compiler Message {0}\n".format(message))
-
     
+    """
+    For SQL query, send any new query to compiler first.
+    If this is an update to existing query, send a message to math,
+       for update analysis.
+    """
     if entity.etype == 'SQL_QUERY': 
-        
-        jinst_dict = {'entity_id':entity.eid} 
-        jinst_dict['program_type'] = "SQL"
-        jinst_dict['query'] = entity.name
-        compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
-        if uid is not None:
-            compiler_msg['uid'] = uid
-        message_id = genMessageID()
-        compiler_msg['message_id'] = message_id
-        message = dumps(compiler_msg)
-        connection1.publish(ch,'','compilerqueue',message)
-        incrementPendingMessage(collection, uid, message_id)
-        logging.info("Published Compiler Message {0}\n".format(message))
-
+        if update == False:
+            jinst_dict = {'entity_id':entity.eid} 
+            jinst_dict['program_type'] = "SQL"
+            jinst_dict['query'] = entity.name
+            compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
+            if uid is not None:
+                compiler_msg['uid'] = uid
+            message_id = genMessageID()
+            compiler_msg['message_id'] = message_id
+            message = dumps(compiler_msg)
+            connection1.publish(ch,'','compilerqueue',message)
+            incrementPendingMessage(collection, uid, message_id)
+            logging.info("Published Compiler Message {0}\n".format(message))
+        else:
+            math_msg = {'tenant':tenant, 'entityid': eid, 'opcode':"UpdateSQLRelations"}
+            if uid is not None:
+                math_msg['uid'] = uid
+            message_id = genMessageID()
+            math_msg['message_id'] = message_id
+            message = dumps(math_msg)
+            connection1.publish(ch,'','mathqueue',message)
+            collection.update({'uid':uid},{'$inc':{"Math2MessageCount":1}})
+            incrementPendingMessage(collection, uid,message_id)
+            logging.info("Published Message {0}\n".format(message))
 
 def callback(ch, method, properties, body):
     starttime = time.time()
