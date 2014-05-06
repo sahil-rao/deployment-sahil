@@ -297,8 +297,6 @@ def callback(ch, method, properties, body):
                 additonalparmas = compconfig.get(section, "AdditionalParameter")
 
             try:
-                """ Call the Compiler
-                """ 
                 output_file_name = destination + "/" + compilername + ".out"
                 stats_newdbs_key = "Compiler." + compilername + ".newDBs"
                 stats_newtables_key = "Compiler." + compilername + ".newTables"
@@ -307,6 +305,7 @@ def callback(ch, method, properties, body):
                 stats_success_key = "Compiler." + compilername + ".success"
                 stats_failure_key = "Compiler." + compilername + ".failure"
 
+                """ Call the Compiler
                 proc = Popen('java com.baaz.query.BaazQueryAnalyzer -input {0} -output {1} '\
                                 '-tenant 100 -program {2} '\
                                 '-compiler {3}'.format(dest_file_name, output_file_name,\
@@ -320,6 +319,23 @@ def callback(ch, method, properties, body):
 
                 for line in proc.stdout:
                     logging.info(str(line))
+                """ 
+                client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client_socket.connect(("localhost", 12121))
+
+                data_dict = { "InputFile": dest_file_name, "OutputFile": output_file_name, 
+                              "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
+                data = dumps(data_dict)
+                client_socket.send("1\n");
+                data = data + "\n"
+                client_socket.send(data)
+                rx_data = client_socket.recv(512)
+
+                if rx_data == "Done":
+                    print "Got Done"
+
+                client_socket.close()
+
                 compile_doc = None
                 logging.info("Loading file : "+ output_file_name)
                 with open(output_file_name) as data_file:    
@@ -375,23 +391,6 @@ def callback(ch, method, properties, body):
          
         incrementPendingMessage(collection, uid,message_id)
         collection.update({'uid':uid},{'$inc':{"Math3MessageCount":1}})
-        """
-        #Inject event for table profile.
-        msg_dict = {'tenant':tenant, 'opcode':"GenerateTableProfile"}
-        if uid is not None:
-            msg_dict['uid'] = uid
-
-        for eid in list(tableEidList):
-            #Inject event for profile updation for query
-            msg_dict["entityid"] = eid
-            message_id = genMessageID(received_msgID, eid)
-            msg_dict['message_id'] = message_id
-            message = dumps(msg_dict)
-            connection1.publish(ch,'','mathqueue',message)
-            logging.info("Sending message to Math pos2:" + str(msg_dict))
-            incrementPendingMessage(collection, uid,message_id)
-            collection.update({'uid':uid},{'$inc':{"Math4MessageCount":1}})
-        """
 
     logging.info("Event Processing Complete")     
     

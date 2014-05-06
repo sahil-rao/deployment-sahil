@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+SERVICE=""
+HELP=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --sever)
+      shift
+      SERVICE=$1
+      shift
+      ;;
+    --help)
+      HELP=_help
+      shift
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
+
+if [ "$SERVICE" = "" ] ; then
+  if [ "$HELP" = "_help" ] ; then
+    SERVICE="help"
+  fi
+fi
+
+CLASSPATH="/usr/lib/baaz_compiler"
+XPLAIN_HOME="/usr/lib/baaz_compiler"
+
+# needed for execution
+if [ ! -f ${XPLAIN_HOME}/baaz_compiler.jar ]; then
+  echo "Missing Hive Execution Jar: ${XPLAIN_HOME}/baaz_compiler.jar"
+  exit 1;
+fi
+
+for f in ${XPLAIN_HOME}/*.jar; do
+  CLASSPATH=${CLASSPATH}:$f;
+done
+
+HIVE_MODULES='/usr/lib/hive/lib'
+for f in ${HIVE_MODULES}/*.jar; do
+  CLASSPATH=${CLASSPATH}:$f;
+done
+
+java -classpath $CLASSPATH com.baaz.query.BaazQueryServer
+
