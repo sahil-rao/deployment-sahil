@@ -305,7 +305,6 @@ def callback(ch, method, properties, body):
                 stats_success_key = "Compiler." + compilername + ".success"
                 stats_failure_key = "Compiler." + compilername + ".failure"
 
-                """ Call the Compiler
                 proc = Popen('java com.baaz.query.BaazQueryAnalyzer -input {0} -output {1} '\
                                 '-tenant 100 -program {2} '\
                                 '-compiler {3}'.format(dest_file_name, output_file_name,\
@@ -335,6 +334,7 @@ def callback(ch, method, properties, body):
                     print "Got Done"
 
                 client_socket.close()
+                """ 
 
                 compile_doc = None
                 logging.info("Loading file : "+ output_file_name)
