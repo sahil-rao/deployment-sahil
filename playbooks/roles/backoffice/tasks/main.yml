@@ -169,6 +169,9 @@
 - name: Install hive upstart script
   copy: src=roles/backoffice/files/hive.conf dest=/etc/init/
   sudo: yes
+- name: Install xplaincompile server upstart script
+  copy: src=roles/backoffice/files/xplaincompile.conf dest=/etc/init/
+  sudo: yes
 
 - name: Get Compiler Module
   shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Compiler.tar.gz .
@@ -183,8 +186,11 @@
 - name: Remove any previous service that may be installed.
   shell: update-rc.d -f baazcompile remove
   sudo: yes
-- name: Install baazxompile Service.
+- name: Install baazcompile Service.
   shell: update-rc.d baazcompile defaults
+  sudo: yes
+- name: Start xplain compile server server
+  action: service name=xplaincompile state=started
   sudo: yes
 - name: Start Baaz Compiler Service.
   service: name=baazcompile state=restarted

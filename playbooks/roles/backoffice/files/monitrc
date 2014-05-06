@@ -269,3 +269,7 @@ check process baazcompile with pidfile /var/run/BaazCompileService.pid
 check process baazmath with pidfile /var/run/BaazMathService.pid
     start program = "/etc/init.d/baazmath start"
     stop program = "/etc/init.d/baazmath stop"
+
+check process xplaincompile with pidfile /var/run/xplaincompile.pid
+    start program = "/sbin/start xplaincompile"
+    stop program = "/sbin/stop xplaincompile"
