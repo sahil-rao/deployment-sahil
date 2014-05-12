@@ -19,6 +19,7 @@ import traceback
 import re
 import ConfigParser
 import logging
+import socket
 
 #104857600
 
@@ -61,6 +62,7 @@ In AWS use S3 log rotate to save the log files.
 if usingAWS:
     boto_conn = boto.connect_s3()
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
+    file_bucket = boto_conn.get_bucket('xplain-compile')
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_COMPILER_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
 
 COMPILER_MODULES='/usr/lib/baaz_compiler'
@@ -91,6 +93,7 @@ PIG_FEATURE = ['UNKNOWN', 'MERGE_JOIN', 'REPLICATED_JOIN', 'SKEWED_JOIN', 'HASH_
      'COMBINER']
 
 table_regex = re.compile("([\w]*)\.([\w]*)")
+myip = socket.gethostbyname(socket.gethostname())
 
 def generatePigSignature(pig_data, tenant, entity_id):
     operations = []
@@ -391,6 +394,26 @@ def callback(ch, method, properties, body):
          
         incrementPendingMessage(collection, uid,message_id)
         collection.update({'uid':uid},{'$inc':{"Math3MessageCount":1}})
+
+        if not usingAWS:
+            continue
+
+        """
+        Copy over any intermediate file to S3 and remove the directory.
+        """
+        try:
+            s3_dest = tenant + "/" + myip + "/" + timestr + "/" 
+            for (sourceDir, dirname, filename) in os.walk(destination):
+                for f in filename:
+                    src_path = os.path.join(sourceDir, f)
+                    s3_obj_name = s3_dest + f
+                    k = file_bucket.new_key(s3_obj_name)
+                    k.set_contents_from_filename(src_path) 
+
+            shutil.rmtree(destination)     
+        except:
+            logging.exception("Tenent {0} S3 upload of intermediate file failed.\n".format(tenant))    
+
 
     logging.info("Event Processing Complete")     
     
