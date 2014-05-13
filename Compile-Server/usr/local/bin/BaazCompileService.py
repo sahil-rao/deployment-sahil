@@ -386,7 +386,7 @@ def callback(ch, method, properties, body):
         msg_dict = {'tenant':tenant, 'opcode':"GenerateQueryProfile", "entityid":entity.eid} 
         if uid is not None:
             msg_dict['uid'] = uid
-        message_id = genMessageID(received_msgID, entity.eid)
+        message_id = genMessageID("Comp", collection, entity.eid)
         msg_dict['message_id'] = message_id
         message = dumps(msg_dict)
         connection1.publish(ch,'','mathqueue',message)

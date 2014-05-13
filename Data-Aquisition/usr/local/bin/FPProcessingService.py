@@ -94,7 +94,7 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection, update=False):
             compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
             if uid is not None:
                 compiler_msg['uid'] = uid
-            message_id = genMessageID()
+            message_id = genMessageID("FP", collection)
             compiler_msg['message_id'] = message_id
             message = dumps(compiler_msg)
             connection1.publish(ch,'','compilerqueue',message)
@@ -114,7 +114,7 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection, update=False):
             compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
             if uid is not None:
                 compiler_msg['uid'] = uid
-            message_id = genMessageID()
+            message_id = genMessageID("FP", collection)
             compiler_msg['message_id'] = message_id
             message = dumps(compiler_msg)
             connection1.publish(ch,'','compilerqueue',message)
@@ -124,7 +124,7 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection, update=False):
             math_msg = {'tenant':tenant, 'entityid': eid, 'opcode':"UpdateSQLRelations"}
             if uid is not None:
                 math_msg['uid'] = uid
-            message_id = genMessageID()
+            message_id = genMessageID("FP", collection)
             math_msg['message_id'] = message_id
             message = dumps(math_msg)
             connection1.publish(ch,'','mathqueue',message)
@@ -291,7 +291,7 @@ def callback(ch, method, properties, body):
         math_msg = {'tenant':tenant, 'opcode':"BaseStats"}
         if uid is not None:
             math_msg['uid'] = uid
-        message_id = genMessageID()
+        message_id = genMessageID("FP", collection)
         math_msg['message_id'] = message_id
         message = dumps(math_msg)
         connection1.publish(ch,'','mathqueue',message)

@@ -234,6 +234,12 @@ def callback(ch, method, properties, body):
         stats_success_key = "Math." + section + ".success"
         stats_failure_key = "Math." + section + ".failure"
         stats_time_key = "Math." + section + ".time"
+        if mathconfig.has_option(section, "BatchMode") and\
+            mathconfig.get(section, "BatchMode") == "True" and\
+            received_msgID is not None:
+            if (int(received_msgID.split("-")[1])%40) > 0:
+                continue
+
         try:
             entityid = None
             if "entityid" in msg_dict:
