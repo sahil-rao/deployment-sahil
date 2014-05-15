@@ -105,6 +105,18 @@ def generatePigSignature(pig_data, tenant, entity_id):
                  'InputTableList': [], 'OutputTableList': [],\
                  'Operations': operations}
     return ret_dict
+
+def end_of_phase_callback(params, current_phase):
+    if current_phase > 1:
+        logging.info("Attempted end of phase callback, but current phase > 1")
+        return
+
+    logging.info("Changing processing Phase")
+    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"} 
+    msg_dict['uid'] = params['uid']
+    message = dumps(msg_dict)
+    params['connection'].publish(params['channel'],'',params['queuename'],message) 
+    return
     
 def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=None):
     dbCount = 0
@@ -426,7 +438,8 @@ def callback(ch, method, properties, body):
     mongoconn.close()
     connection1.basicAck(ch,method)
     collection.update({'uid':uid},{'$inc':{"RemoveCompilerMessageCount":1}})
-    decrementPendingMessage(collection, uid, received_msgID)
+    callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
+    decrementPendingMessage(collection, uid, received_msgID, end_of_phase_callback, callback_params)
 
 
 connection1 = RabbitConnection(callback, ['compilerqueue'],['mathqueue'], {},BAAZ_COMPILER_LOG_FILE)

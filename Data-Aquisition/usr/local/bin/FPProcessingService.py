@@ -64,6 +64,18 @@ if usingAWS:
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_FP_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
 
+def end_of_phase_callback(params, current_phase):
+    if current_phase > 1:
+        logging.info("Attempted end of phase callback, but current phase > 1")
+        return
+
+    logging.info("Changing processing Phase")
+    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"} 
+    msg_dict['uid'] = params['uid']
+    message = dumps(msg_dict)
+    params['connection'].publish(params['channel'],'',params['queuename'],message) 
+    return
+
 def performTenantCleanup(tenant):
     logging.info("Cleaning Tenant "+ tenant) 
     destination = BAAZ_DATA_ROOT + tenant     
@@ -253,7 +265,18 @@ def callback(ch, method, properties, body):
             mongoconn = MongoConnector({'host':mongo_url, 'context':context, \
                                     'create_db_if_not_exist':True})
 
+        '''
+        Incrmements an Pre-Processing count, sends to compiler, then decrements the count
+        '''
+        message_id = genMessageID("Pre", collection)
+        incrementPendingMessage(collection, uid, message_id)
+        logging.info("Incremementing message count: " + message_id)
+
         parseDir(tenant, logpath, mongoconn, sendToCompiler, uid, ch, collection)
+
+        callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
+        decrementPendingMessage(collection, uid, message_id, end_of_phase_callback, )
+        logging.info("Decrementing message count: " + message_id)
 
         if usingAWS:
             """

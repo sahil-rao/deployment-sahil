@@ -119,6 +119,7 @@ def storeResourceProfile(tenant):
 
 def end_of_phase_callback(params, current_phase):
     if current_phase > 1:
+        logging.info("Attempted end of phase callback, but current phase > 1")
         return
 
     logging.info("Changing processing Phase")
