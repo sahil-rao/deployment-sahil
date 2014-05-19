@@ -189,6 +189,9 @@
 - name: Install baazcompile Service.
   shell: update-rc.d baazcompile defaults
   sudo: yes
+- name: Stop xplain compile server server
+  action: service name=xplaincompile state=stopped
+  sudo: yes
 - name: Start xplain compile server server
   action: service name=xplaincompile state=started
   sudo: yes
