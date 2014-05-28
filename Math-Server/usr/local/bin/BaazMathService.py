@@ -24,6 +24,7 @@ import ConfigParser
 import traceback
 import logging
 import importlib
+import socket
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -70,7 +71,6 @@ def generateBaseStats(tenant):
     """
     Create a destination/processing folder.
     """
-    timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
     destination = "/tmp"
     #destination = '/mnt/volume1/base-stats-' + tenant + "/" + timestr 
     #if not os.path.exists(destination):
@@ -265,7 +265,10 @@ def callback(ch, method, properties, body):
             sectionEndTime = time.time()
             collection.update({'uid':uid},{"$inc": {stats_time_key: (sectionEndTime-sectionStartTime)}})
             if opcode == "PhaseTwoAnalysis":
-                collection.update({'uid':uid},{"$set": {stats_phase_key: 2}})
+                stats_ip_key = "Math." + section + ".socket"
+                
+                collection.update({'uid':uid},{"$set": {stats_phase_key: 2, stats_ip_key: socket.gethostbyname(socket.gethostname())}})
+
             else:
                 collection.update({'uid':uid},{"$set": {stats_phase_key: 1}})
 
