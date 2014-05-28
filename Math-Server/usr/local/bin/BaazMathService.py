@@ -235,6 +235,7 @@ def callback(ch, method, properties, body):
         stats_success_key = "Math." + section + ".success"
         stats_failure_key = "Math." + section + ".failure"
         stats_time_key = "Math." + section + ".time"
+        stats_phase_key = "Math." + section + ".phase"
         if mathconfig.has_option(section, "BatchMode") and\
             mathconfig.get(section, "BatchMode") == "True" and\
             received_msgID is not None:
@@ -263,6 +264,10 @@ def callback(ch, method, properties, body):
         if msg_dict.has_key('uid'):
             sectionEndTime = time.time()
             collection.update({'uid':uid},{"$inc": {stats_time_key: (sectionEndTime-sectionStartTime)}})
+            if opcode == "PhaseTwoAnalysis":
+                collection.update({'uid':uid},{"$set": {stats_phase_key: 2}})
+            else:
+                collection.update({'uid':uid},{"$set": {stats_phase_key: 1}})
 
     logging.info("Event Processing Complete")     
     decrementPendingMessage(collection, uid, received_msgID, end_of_phase_callback, callback_params)
