@@ -9,7 +9,6 @@
 
 - hosts: tag_Name_Backoffice
   roles:
-  - role: common
   - role: backoffice
 
 - hosts: tag_Name_Webserver1
@@ -24,3 +23,7 @@
 - hosts: tag_Name_NodeJS
   roles:
   - role: nodejsserver
+
+- hosts: tag_Name_Foundation
+  roles:
+  - role: foundation
