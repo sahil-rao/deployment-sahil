@@ -24,6 +24,7 @@ import ConfigParser
 import traceback
 import logging
 import importlib
+import socket
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -70,7 +71,6 @@ def generateBaseStats(tenant):
     """
     Create a destination/processing folder.
     """
-    timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
     destination = "/tmp"
     #destination = '/mnt/volume1/base-stats-' + tenant + "/" + timestr 
     #if not os.path.exists(destination):
@@ -235,6 +235,7 @@ def callback(ch, method, properties, body):
         stats_success_key = "Math." + section + ".success"
         stats_failure_key = "Math." + section + ".failure"
         stats_time_key = "Math." + section + ".time"
+        stats_phase_key = "Math." + section + ".phase"
         if mathconfig.has_option(section, "BatchMode") and\
             mathconfig.get(section, "BatchMode") == "True" and\
             received_msgID is not None:
@@ -263,6 +264,13 @@ def callback(ch, method, properties, body):
         if msg_dict.has_key('uid'):
             sectionEndTime = time.time()
             collection.update({'uid':uid},{"$inc": {stats_time_key: (sectionEndTime-sectionStartTime)}})
+            if opcode == "PhaseTwoAnalysis":
+                stats_ip_key = "Math." + section + ".socket"
+                
+                collection.update({'uid':uid},{"$set": {stats_phase_key: 2, stats_ip_key: socket.gethostbyname(socket.gethostname())}})
+
+            else:
+                collection.update({'uid':uid},{"$set": {stats_phase_key: 1}})
 
     logging.info("Event Processing Complete")     
     decrementPendingMessage(collection, uid, received_msgID, end_of_phase_callback, callback_params)

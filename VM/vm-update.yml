@@ -44,8 +44,14 @@
     shell: tar -zxf /home/xplain/Baaz-Compile-Service.tar.gz chdir=/
   - name: Remove any previous service that may be installed.
     shell: update-rc.d -f baazcompile remove
-  - name: Install baazxompile Service.
+  - name: Install baazcompile Service.
     shell: update-rc.d baazcompile defaults
+  - name: Install xplaincompile server upstart script
+    copy: src=/home/xplain/xplaincompile.conf dest=/etc/init/
+  - name: Stop xplain compile server server
+    action: service name=xplaincompile state=stopped
+  - name: Start xplain compile server
+    action: service name=xplaincompile state=started
   - name: Start Baaz Compiler Service.
     service: name=baazcompile state=started
 
