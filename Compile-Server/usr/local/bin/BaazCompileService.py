@@ -118,6 +118,46 @@ def end_of_phase_callback(params, current_phase):
     params['connection'].publish(params['channel'],'',params['queuename'],message) 
     return
     
+def processColumns(columnset, mongoconn, tenant, entity):
+    tableCount = 0
+    table_entity = None
+    for column_entry in columnset:
+        if "tableName" not in column_entry:
+            continue
+
+        tablename = column_entry["tableName"]
+        columnname = column_entry["columnName"]
+        table_entity = mongoconn.getEntityByName(tablename)
+
+        column_entity_name = tablename.lower() + "." + columnname.lower()
+        column_entity = mongoconn.getEntityByName(column_entity_name)
+
+        if table_entity is None:
+            logging.info("Creating table entity for {0}\n".format(tablename))     
+            eid = IdentityService.getNewIdentity(tenant, True)
+            table_entity = mongoconn.addEn(eid, tablename, tenant,\
+                      EntityType.SQL_TABLE, {}, None)
+            tableCount = tableCount + 1
+
+        if column_entity is None:
+            logging.info("Creating Column entity for {0}\n".format(column_entity_name))     
+            eid = IdentityService.getNewIdentity(tenant, True)
+            column_entity = mongoconn.addEn(eid, column_entity_name, tenant,\
+                            EntityType.SQL_TABLE_COLUMN, column_entry, None)
+
+            if column_entity is not None:
+                logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))     
+                #print "Form relation : ", join_entity.name, " ", m_query_entity.name
+                mongoconn.formRelation(table_entity, column_entity, "TABLE_COLUMN", weight=1)
+
+    """
+    Create relationships.
+    """
+    if entity is not None and table_entity is not None:
+        mongoconn.formRelation(entity, table_entity, "CREATE", weight=1)
+        logging.info(" CREATE Relation between {0} {1}\n".format(entity.eid, table_entity.eid))     
+    return [0, tableCount]
+
 def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=None):
     dbCount = 0
     tableCount = 0
@@ -320,21 +360,6 @@ def callback(ch, method, properties, body):
                 stats_success_key = "Compiler." + compilername + ".success"
                 stats_failure_key = "Compiler." + compilername + ".failure"
 
-                """
-                proc = Popen('java com.baaz.query.BaazQueryAnalyzer -input {0} -output {1} '\
-                                '-tenant 100 -program {2} '\
-                                '-compiler {3}'.format(dest_file_name, output_file_name,\
-                                                       prog_id, compilername),\
-                               stdout=PIPE, shell=True, env=dict(os.environ, CLASSPATH=classpath))
-
-                wait_count = 0
-                while wait_count < 25 and proc.poll() is None:
-                    time.sleep(.2)
-                    wait_count = wait_count + 1
-
-                for line in proc.stdout:
-                    logging.info(str(line))
-                """ 
                 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 client_socket.connect(("localhost", 12121))
 
@@ -383,6 +408,13 @@ def callback(ch, method, properties, body):
                             tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, tenant, entity, False, tableEidList)
                             if msg_dict.has_key('uid'):
                                 collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
+
+                        if compile_doc[key].has_key("ddlcolumns"):
+                            tmpAdditions = processColumns(compile_doc[key]["ddlcolumns"], 
+                                                           mongoconn, tenant, entity) 
+                            if msg_dict.has_key('uid'):
+                                collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
+                                                  stats_newtables_key: tmpAdditions[1]}})
                 if msg_dict.has_key('uid'):
                     collection.update({'uid':uid},{"$inc": {stats_runsuccess_key: 1, stats_runfailure_key: 0}})
                     if compile_doc[key].has_key("ErrorSignature") and\
