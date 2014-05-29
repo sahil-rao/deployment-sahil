@@ -1,143 +1,141 @@
 ---
-- hosts: Foundation
-  tasks:
-   - name: Update apt
-     shell: apt-get update
-     sudo: yes
-   - name: Create the Baaz config directory
-     file: path=/var/Baaz state=directory
-     sudo: yes
-   - name: Set the timezone
-     shell: echo "America/Los_Angeles" | sudo tee /etc/timezone 
-   - name: Reset the system time to new timezone.
-     shell: dpkg-reconfigure --frontend noninteractive tzdata
-     sudo: yes
-   - name: Create mount point
-     file: path=/mnt/volume1 owner=ubuntu group=ubuntu state=directory
-     sudo: yes
-   - name: Mount /dev/xvdc
-     mount: name=/mnt/volume1 src=/dev/xvdc fstype=ext3 state=mounted
-     sudo: yes
-   - name: Install python setuptools
-     apt: pkg=python-setuptools state=present
-     sudo: yes
-   - name: Install pip
-     shell: sudo easy_install pip
-   - name: Install pymongo
-     shell: sudo pip install pymongo
-   - name: Install networkx
-     shell: sudo pip install networkx
-   - name: Install pika
-     shell: sudo pip install pika==0.9.8
-   - name: Install peewee
-     shell: sudo pip install peewee
-   - name: Install sqlparse
-     shell: sudo pip install sqlparse
-   - name: Install boto
-     shell: sudo pip install boto
-   - name: Install S3 CMD
-     apt: pkg=s3cmd state=present
-     sudo: yes
-   - name: Copy s3cmd config file
-     copy: src=/home/ubuntu/.s3cfg dest=/home/ubuntu/.s3cfg
-   - name: Copy s3cmd config file
-     copy: src=/home/ubuntu/.s3cfg dest=~root/.s3cfg
-     sudo: yes
-   - name: Copy boto config file
-     copy: src=/home/ubuntu/.boto dest=/home/ubuntu/.boto
-   - name: Copy boto config file
-     copy: src=/home/ubuntu/.boto dest=~root/.boto
-     sudo: yes
-   
-   - name: Install Monit service
-     apt: pkg=monit state=present
-     sudo: yes
-   - name: Install gcc needed for numpy
-     apt: pkg=gcc state=present
-     sudo: yes
-   - name: Install python-dev needed for numpy
-     apt: pkg=python-dev state=present
-     sudo: yes
-   - name: Install Mysql
-     apt: pkg=mysql-server state=present
-     sudo: yes
-   - name: Install python mysqldb
-     apt: pkg=python-mysqldb state=present
-     sudo: yes
-   - name: Mysql user addition
-     mysql_user: name=baazdep password=baazdep priv=*.*:ALL state=present
-   - name: Mysql DB
-     mysql_db: name=HADOOP_DEV state=present
-   - name: Install pika
-     shell: sudo pip install numpy
-   #Start of Compiler module deployment.
-   - name: Install Java7
-     apt: pkg=openjdk-7-jdk state=present
-     sudo: yes
-   - name: Download Hive-0.13
-     get_url: url=http://apache.tradebit.com/pub/hive/stable/apache-hive-0.13.0-bin.tar.gz  dest=/home/ubuntu/hive-0.13.0.tar.gz
-   - name: Untar Hive 
-     shell: tar -zxf /home/ubuntu/hive-0.13.0.tar.gz chdir=/home/ubuntu/
-   - name: Instal Hive
-     shell: mv /home/ubuntu/apache-hive-0.13.0-bin /usr/lib/hive
-     sudo: yes
-   - name: Download Hive in /usr/local/
-     command: chdir=/usr/local/ wget http://mirror.olnevhost.net/pub/apache/hive/hive-0.12.0/hive-0.12.0-bin.tar.gz
-     sudo: yes
-   - name: Remove any existing hive directory
-     file: path=/usr/local/hive-0.12.0-bin/ state=absent
-     sudo: yes
-     ignore_errors: True
-   - name: Untar Hive in /usr/local/
-     command: chdir=/usr/local/ tar -xzf hive-0.12.0-bin.tar.gz
-     sudo: yes
-   - name: Delete Hive tar file in /usr/local/
-     command: chdir=/usr/local/ rm hive-0.12.0-bin.tar.gz
-     sudo: yes
-   - name: Download Hadoop in /usr/local/
-     command: chdir=/usr/local/ wget http://mirrors.advancedhosters.com/apache/hadoop/common/hadoop-0.23.10/hadoop-0.23.10.tar.gz
-     sudo: yes
-   - name: Remove any existing hadoop directory
-     file: path=/usr/local/hadoop-0.23.10/ state=absent
-     sudo: yes
-     ignore_errors: True
-   - name: Remove any existing hadoop link directory
-     file: path=/usr/local/hadoop/ state=absent
-     sudo: yes
-     ignore_errors: True
-   - name: Untar hadoop in /usr/local/
-     command: chdir=/usr/local/ tar -xzf hadoop-0.23.10.tar.gz
-     sudo: yes
-   - name: Delete Hadoop tar file in /usr/local/
-     command: chdir=/usr/local/ rm hadoop-0.23.10.tar.gz
-     sudo: yes
-   - name: Create symbolic link for hadoop
-     command: chdir=/usr/local/ ln -s hadoop-0.23.10 hadoop
-     ignore_errors: True
-     sudo: yes
-   - name: Create hive directory
-     file: dest=/mnt/volume1/hive/ mode=0777 state=directory
-     sudo: yes
-   - name: Create hive log directory
-     file: dest=/var/log/hive/ mode=0777 state=directory
-     sudo: yes
-   - name: Create hive warehouse directory
-     file: dest=/mnt/volume1/warehouse/ mode=0777 state=directory
-     sudo: yes
-   - name: Copy hive-site.xml to /usr/local/hive-0.12.0-bin/conf/
-     copy: src=roles/backoffice/files/hive-site.xml dest=/usr/local/hive-0.12.0-bin/conf/hive-site.xml
-     sudo: yes
-   - name: Mysql DB
-     mysql_db: name=hadoop state=present
-   - name: Create mysql user hive 
-     mysql_user: name=hive password=hive priv=hadoop.*:ALL state=present
-   - name: Install mysql connector into hive lib directory
-     copy: src=roles/backoffice/files/mysql-connector-java-5.1.30-bin.jar dest=/usr/local/hive-0.12.0-bin/lib/
-     sudo: yes
-   - name: install python hive client libraries
-     shell: cp -r /usr/local/hive-0.12.0-bin/lib/py/* /usr/local/lib/python2.7/dist-packages/
-     sudo: yes
-   - name: Install hive upstart script
-     copy: src=roles/backoffice/files/hive.conf dest=/etc/init/
-     sudo: yes
-   
+- name: Update apt
+  shell: apt-get update
+  sudo: yes
+- name: Create the Baaz config directory
+  file: path=/var/Baaz state=directory
+  sudo: yes
+- name: Set the timezone
+  shell: echo "America/Los_Angeles" | sudo tee /etc/timezone 
+- name: Reset the system time to new timezone.
+  shell: dpkg-reconfigure --frontend noninteractive tzdata
+  sudo: yes
+- name: Create mount point
+  file: path=/mnt/volume1 owner=ubuntu group=ubuntu state=directory
+  sudo: yes
+- name: Mount /dev/xvdc
+  mount: name=/mnt/volume1 src=/dev/xvdc fstype=ext3 state=mounted
+  sudo: yes
+- name: Install python setuptools
+  apt: pkg=python-setuptools state=present
+  sudo: yes
+- name: Install pip
+  shell: sudo easy_install pip
+- name: Install pymongo
+  shell: sudo pip install pymongo
+- name: Install networkx
+  shell: sudo pip install networkx
+- name: Install pika
+  shell: sudo pip install pika==0.9.8
+- name: Install peewee
+  shell: sudo pip install peewee
+- name: Install sqlparse
+  shell: sudo pip install sqlparse
+- name: Install boto
+  shell: sudo pip install boto
+- name: Install S3 CMD
+  apt: pkg=s3cmd state=present
+  sudo: yes
+- name: Copy s3cmd config file
+  copy: src=/home/ubuntu/.s3cfg dest=/home/ubuntu/.s3cfg
+- name: Copy s3cmd config file
+  copy: src=/home/ubuntu/.s3cfg dest=~root/.s3cfg
+  sudo: yes
+- name: Copy boto config file
+  copy: src=/home/ubuntu/.boto dest=/home/ubuntu/.boto
+- name: Copy boto config file
+  copy: src=/home/ubuntu/.boto dest=~root/.boto
+  sudo: yes
+
+- name: Install Monit service
+  apt: pkg=monit state=present
+  sudo: yes
+- name: Install gcc needed for numpy
+  apt: pkg=gcc state=present
+  sudo: yes
+- name: Install python-dev needed for numpy
+  apt: pkg=python-dev state=present
+  sudo: yes
+- name: Install Mysql
+  apt: pkg=mysql-server state=present
+  sudo: yes
+- name: Install python mysqldb
+  apt: pkg=python-mysqldb state=present
+  sudo: yes
+- name: Mysql user addition
+  mysql_user: name=baazdep password=baazdep priv=*.*:ALL state=present
+- name: Mysql DB
+  mysql_db: name=HADOOP_DEV state=present
+- name: Install pika
+  shell: sudo pip install numpy
+#Start of Compiler module deployment.
+- name: Install Java7
+  apt: pkg=openjdk-7-jdk state=present
+  sudo: yes
+- name: Download Hive-0.13
+  get_url: url=http://apache.tradebit.com/pub/hive/stable/apache-hive-0.13.0-bin.tar.gz  dest=/home/ubuntu/hive-0.13.0.tar.gz
+- name: Untar Hive 
+  shell: tar -zxf /home/ubuntu/hive-0.13.0.tar.gz chdir=/home/ubuntu/
+- name: Instal Hive
+  shell: mv /home/ubuntu/apache-hive-0.13.0-bin /usr/lib/hive
+  sudo: yes
+- name: Download Hive in /usr/local/
+  command: chdir=/usr/local/ wget http://mirror.olnevhost.net/pub/apache/hive/hive-0.12.0/hive-0.12.0-bin.tar.gz
+  sudo: yes
+- name: Remove any existing hive directory
+  file: path=/usr/local/hive-0.12.0-bin/ state=absent
+  sudo: yes
+  ignore_errors: True
+- name: Untar Hive in /usr/local/
+  command: chdir=/usr/local/ tar -xzf hive-0.12.0-bin.tar.gz
+  sudo: yes
+- name: Delete Hive tar file in /usr/local/
+  command: chdir=/usr/local/ rm hive-0.12.0-bin.tar.gz
+  sudo: yes
+- name: Download Hadoop in /usr/local/
+  command: chdir=/usr/local/ wget http://mirrors.advancedhosters.com/apache/hadoop/common/hadoop-0.23.10/hadoop-0.23.10.tar.gz
+  sudo: yes
+- name: Remove any existing hadoop directory
+  file: path=/usr/local/hadoop-0.23.10/ state=absent
+  sudo: yes
+  ignore_errors: True
+- name: Remove any existing hadoop link directory
+  file: path=/usr/local/hadoop/ state=absent
+  sudo: yes
+  ignore_errors: True
+- name: Untar hadoop in /usr/local/
+  command: chdir=/usr/local/ tar -xzf hadoop-0.23.10.tar.gz
+  sudo: yes
+- name: Delete Hadoop tar file in /usr/local/
+  command: chdir=/usr/local/ rm hadoop-0.23.10.tar.gz
+  sudo: yes
+- name: Create symbolic link for hadoop
+  command: chdir=/usr/local/ ln -s hadoop-0.23.10 hadoop
+  ignore_errors: True
+  sudo: yes
+- name: Create hive directory
+  file: dest=/mnt/volume1/hive/ mode=0777 state=directory
+  sudo: yes
+- name: Create hive log directory
+  file: dest=/var/log/hive/ mode=0777 state=directory
+  sudo: yes
+- name: Create hive warehouse directory
+  file: dest=/mnt/volume1/warehouse/ mode=0777 state=directory
+  sudo: yes
+- name: Copy hive-site.xml to /usr/local/hive-0.12.0-bin/conf/
+  copy: src=roles/backoffice/files/hive-site.xml dest=/usr/local/hive-0.12.0-bin/conf/hive-site.xml
+  sudo: yes
+- name: Mysql DB
+  mysql_db: name=hadoop state=present
+- name: Create mysql user hive 
+  mysql_user: name=hive password=hive priv=hadoop.*:ALL state=present
+- name: Install mysql connector into hive lib directory
+  copy: src=roles/backoffice/files/mysql-connector-java-5.1.30-bin.jar dest=/usr/local/hive-0.12.0-bin/lib/
+  sudo: yes
+- name: install python hive client libraries
+  shell: cp -r /usr/local/hive-0.12.0-bin/lib/py/* /usr/local/lib/python2.7/dist-packages/
+  sudo: yes
+- name: Install hive upstart script
+  copy: src=roles/backoffice/files/hive.conf dest=/etc/init/
+  sudo: yes
+
