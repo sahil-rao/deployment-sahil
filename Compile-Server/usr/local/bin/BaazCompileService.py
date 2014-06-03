@@ -192,8 +192,72 @@ def addColumns(columnset, mongoconn, tenant, entity, opType, tableIdentifier, co
                 mongoconn.formRelation(table_entity, column_entity, "TABLE_COLUMN", weight=1)
                 columnCount += 1
 
-        mongoconn.formRelation(entity, column_entity, opType.upper(), weight=1)
-        logging.info(" {0} Relation between {1} {2}\n".format(opType.upper(), entity.eid, column_entity.eid))
+        mongoconn.formRelation(entity, column_entity, opType, weight=1)
+        logging.info(" {0} Relation between {1} {2}\n".format(opType, entity.eid, column_entity.eid))
+
+    return columnCount
+
+def addJoinColumns(columnset, mongoconn, tenant, entity, opType):
+    '''
+    Creating this as a separate function because we want to account for both columns
+    and create a join relation between them.
+    '''
+    columnCount = 0
+    LHStable_entity = None
+    RHStable_entity = None
+    for column_entry in columnset:
+        if ("LHSTable" not in column_entry) or ("RHSTable" not in column_entry) or \
+            ("LHSColumn" not in column_entry) or ("RHSColumn" not in column_entry):
+            continue
+
+        LHStablename = column_entry["LHSTable"]
+        RHStablename = column_entry["RHSTable"]
+        LHSColumnName = column_entry["LHSColumn"]
+        RHSColumnName = column_entry["RHSColumn"]
+
+        LHStable_entity = mongoconn.getEntityByName(LHStablename)
+        RHStable_entity = mongoconn.getEntityByName(RHStablename)
+
+        LHScolumn_entity_name = LHStablename.lower() + "." + LHSColumnName.lower()
+        LHScolumn_entity = mongoconn.getEntityByName(LHScolumn_entity_name)
+
+        RHScolumn_entity_name = RHStablename.lower() + "." + RHSColumnName.lower()
+        RHScolumn_entity = mongoconn.getEntityByName(RHScolumn_entity_name)
+
+
+        if LHStable_entity is None:
+            continue
+
+        if RHStable_entity is None:
+            continue
+
+        if LHScolumn_entity is None:
+            logging.info("Creating Column entity for {0}\n".format(LHScolumn_entity_name))     
+            eid = IdentityService.getNewIdentity(tenant, True)
+            LHScolumn_entity = mongoconn.addEn(eid, LHScolumn_entity_name, tenant,\
+                            EntityType.SQL_TABLE_COLUMN, column_entry, None)
+
+            if LHScolumn_entity is not None:
+                logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(LHStable_entity.eid, LHScolumn_entity.eid))     
+                #print "Form relation : ", join_entity.name, " ", m_query_entity.name
+                mongoconn.formRelation(LHStable_entity, LHScolumn_entity, "TABLE_COLUMN", weight=1)
+                columnCount += 1
+
+        if RHScolumn_entity is None:
+            logging.info("Creating Column entity for {0}\n".format(RHScolumn_entity_name))     
+            eid = IdentityService.getNewIdentity(tenant, True)
+            RHScolumn_entity = mongoconn.addEn(eid, RHScolumn_entity_name, tenant,\
+                            EntityType.SQL_TABLE_COLUMN, column_entry, None)
+
+            if RHScolumn_entity is not None:
+                logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(RHStable_entity.eid, RHScolumn_entity.eid))     
+                #print "Form relation : ", join_entity.name, " ", m_query_entity.name
+                mongoconn.formRelation(RHStable_entity, RHScolumn_entity, "TABLE_COLUMN", weight=1)
+                columnCount += 1
+
+        mongoconn.formRelation(LHScolumn_entity, RHScolumn_entity, opType, weight=1)
+        mongoconn.formRelation(entity, LHScolumn_entity, opType, weight=1)
+        logging.info(" {0} Relation between {1} {2}\n".format(opType, entity.eid, column_entity.eid))
 
     return columnCount
 
@@ -458,42 +522,36 @@ def callback(ch, method, properties, body):
 
                         if "selectColumnNames" in compile_doc[key]:
                             tmpAdditions = addColumns(compile_doc[key]["selectColumnNames"], mongoconn, tenant, entity, 
-                                    "select", "tableName", "columnName")
+                                    "SELECT", "tableName", "columnName")
 
                             if msg_dict.has_key('uid'):
                                 collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
 
                         if "groupByColumns" in compile_doc[key]:
                             tmpAdditions = addColumns(compile_doc[key]["groupByColumns"], mongoconn, tenant, entity, 
-                                    "groupby", "tableName", "columnName")
+                                    "GROUPBY", "tableName", "columnName")
 
                             if msg_dict.has_key('uid'):
                                 collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
 
                         if "whereColumns" in compile_doc[key]:
                             tmpAdditions = addColumns(compile_doc[key]["whereColumns"], mongoconn, tenant, entity, 
-                                    "filter", "tableName", "columnName")
+                                    "FILTER", "tableName", "columnName")
 
                             if msg_dict.has_key('uid'):
                                 collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
 
                         if "orderByColumns" in compile_doc[key]:
                             tmpAdditions = addColumns(compile_doc[key]["orderByColumns"], mongoconn, tenant, entity, 
-                                    "orderby", "tableName", "columnName")
+                                    "ORDERBY", "tableName", "columnName")
 
                             if msg_dict.has_key('uid'):
                                 collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
 
                         if "joinPredicates" in compile_doc[key]:
-                            '''
-                            Little bit inefficient because it loops through the joinPredicates twice.
-                            We can potentially fix it by adding another function.
-                            TODO: Fix it
-                            '''
-                            tmpAdditions = addColumns(compile_doc[key]["joinPredicates"], mongoconn, tenant, entity, 
-                                    "join", "LHSTable", "LHSColumn")
-                            tmpAdditions += addColumns(compile_doc[key]["joinPredicates"], mongoconn, tenant, entity, 
-                                    "join", "RHSTable", "RHSColumn")
+                            
+                            tmpAdditions = addJoinColumns(compile_doc[key]["joinPredicates"], mongoconn, tenant, entity, 
+                                    "JOIN")
 
                             if msg_dict.has_key('uid'):
                                 collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
