@@ -158,6 +158,45 @@ def processColumns(columnset, mongoconn, tenant, entity):
         logging.info(" CREATE Relation between {0} {1}\n".format(entity.eid, table_entity.eid))     
     return [0, tableCount]
 
+
+def addColumns(columnset, mongoconn, tenant, entity, opType, tableIdentifier, colIdentifier):
+    '''
+    Creating this as a separate function seperate because I don't want to create a table
+    entity if it doesn't already exist.
+    '''
+    columnCount = 0
+    table_entity = None
+    for column_entry in columnset:
+        if tableIdentifier not in column_entry:
+            continue
+
+        tablename = column_entry[tableIdentifier]
+        columnname = column_entry[colIdentifier]
+        table_entity = mongoconn.getEntityByName(tablename)
+
+        column_entity_name = tablename.lower() + "." + columnname.lower()
+        column_entity = mongoconn.getEntityByName(column_entity_name)
+
+        if table_entity is None:
+            continue
+
+        if column_entity is None:
+            logging.info("Creating Column entity for {0}\n".format(column_entity_name))     
+            eid = IdentityService.getNewIdentity(tenant, True)
+            column_entity = mongoconn.addEn(eid, column_entity_name, tenant,\
+                            EntityType.SQL_TABLE_COLUMN, column_entry, None)
+
+            if column_entity is not None:
+                logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))     
+                #print "Form relation : ", join_entity.name, " ", m_query_entity.name
+                mongoconn.formRelation(table_entity, column_entity, "TABLE_COLUMN", weight=1)
+                columnCount += 1
+
+        mongoconn.formRelation(entity, column_entity, opType.upper(), weight=1)
+        logging.info(" {0} Relation between {1} {2}\n".format(opType.upper(), entity.eid, column_entity.eid))
+
+    return columnCount
+
 def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=None):
     dbCount = 0
     tableCount = 0
@@ -355,6 +394,7 @@ def callback(ch, method, properties, body):
                 output_file_name = destination + "/" + compilername + ".out"
                 stats_newdbs_key = "Compiler." + compilername + ".newDBs"
                 stats_newtables_key = "Compiler." + compilername + ".newTables"
+                stats_newcolumns_key = "Compiler." + compilername + ".newColumns"
                 stats_runsuccess_key = "Compiler." + compilername + ".run_success"
                 stats_runfailure_key = "Compiler." + compilername + ".run_failure"
                 stats_success_key = "Compiler." + compilername + ".success"
@@ -411,10 +451,53 @@ def callback(ch, method, properties, body):
 
                         if compile_doc[key].has_key("ddlcolumns"):
                             tmpAdditions = processColumns(compile_doc[key]["ddlcolumns"], 
-                                                           mongoconn, tenant, entity) 
+                                                           mongoconn, tenant, entity)
                             if msg_dict.has_key('uid'):
                                 collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
                                                   stats_newtables_key: tmpAdditions[1]}})
+
+                        if "selectColumnNames" in compile_doc[key]:
+                            tmpAdditions = addColumns(compile_doc[key]["selectColumnNames"], mongoconn, tenant, entity, 
+                                    "select", "tableName", "columnName")
+
+                            if msg_dict.has_key('uid'):
+                                collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
+
+                        if "groupByColumns" in compile_doc[key]:
+                            tmpAdditions = addColumns(compile_doc[key]["groupByColumns"], mongoconn, tenant, entity, 
+                                    "groupby", "tableName", "columnName")
+
+                            if msg_dict.has_key('uid'):
+                                collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
+
+                        if "whereColumns" in compile_doc[key]:
+                            tmpAdditions = addColumns(compile_doc[key]["whereColumns"], mongoconn, tenant, entity, 
+                                    "filter", "tableName", "columnName")
+
+                            if msg_dict.has_key('uid'):
+                                collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
+
+                        if "orderByColumns" in compile_doc[key]:
+                            tmpAdditions = addColumns(compile_doc[key]["orderByColumns"], mongoconn, tenant, entity, 
+                                    "orderby", "tableName", "columnName")
+
+                            if msg_dict.has_key('uid'):
+                                collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
+
+                        if "joinPredicates" in compile_doc[key]:
+                            '''
+                            Little bit inefficient because it loops through the joinPredicates twice.
+                            We can potentially fix it by adding another function.
+                            TODO: Fix it
+                            '''
+                            tmpAdditions = addColumns(compile_doc[key]["joinPredicates"], mongoconn, tenant, entity, 
+                                    "join", "LHSTable", "LHSColumn")
+                            tmpAdditions += addColumns(compile_doc[key]["joinPredicates"], mongoconn, tenant, entity, 
+                                    "join", "RHSTable", "RHSColumn")
+
+                            if msg_dict.has_key('uid'):
+                                collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
+
                 if msg_dict.has_key('uid'):
                     collection.update({'uid':uid},{"$inc": {stats_runsuccess_key: 1, stats_runfailure_key: 0}})
                     if compile_doc[key].has_key("ErrorSignature") and\
