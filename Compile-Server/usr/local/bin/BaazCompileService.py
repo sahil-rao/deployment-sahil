@@ -257,7 +257,10 @@ def addJoinColumns(columnset, mongoconn, tenant, entity, opType):
 
         mongoconn.formRelation(LHScolumn_entity, RHScolumn_entity, opType, weight=1)
         mongoconn.formRelation(entity, LHScolumn_entity, opType, weight=1)
-        logging.info(" {0} Relation between {1} {2}\n".format(opType, entity.eid, column_entity.eid))
+        mongoconn.formRelation(entity, RHScolumn_entity, opType, weight=1)
+        logging.info(" {0} Relation between {1} {2}\n".format(opType, entity.eid, LHScolumn_entity.eid))
+        logging.info(" {0} Relation between {1} {2}\n".format(opType, entity.eid, RHScolumn_entity.eid))
+        logging.info(" {0} Relation between {1} {2}\n".format(opType, LHScolumn_entity.eid, RHScolumn_entity.eid))
 
     return columnCount
 
