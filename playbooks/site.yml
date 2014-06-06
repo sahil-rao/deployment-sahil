@@ -1,6 +1,6 @@
 ---
 # This Playbook would deploy the whole Baazdata cluster with replication and sharding.
-
+# Before running this playbook, make sure old scripts have been stopped with scripts/stop-old-scripts.yml
 
 - hosts: tag_Name_MongoDBServer 
   roles:

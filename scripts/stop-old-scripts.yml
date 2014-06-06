@@ -1,0 +1,48 @@
+---
+#This script stops all the old init.d scripts. Run this before running the new playbook.
+- hosts: tag_Name_Backoffice
+  sudo: yes
+  tasks:
+
+  - name: Kill Monit so it won't interfere
+    shell: monit quit
+
+  #Remove all baazmath services
+  - name: Kill Baazmath
+    service: name=baazmath state=stopped
+    ignore_errors: yes
+  - name: Remove service baazmath
+    shell: update-rc.d -f baazmath remove
+  - name: Delete baazmath service
+    shell: rm -f /etc/init.d/baazmath
+
+  #Remove all baazcompile services
+  - name: Kill BaazCompileService
+    service: name=baazcompile state=stopped
+    ignore_errors: yes
+  - name: Remove service baazcompile
+    shell: update-rc.d -f baazcompile remove
+  - name: Delete baazcompile service
+    shell: rm -f /etc/init.d/baazcompile
+ 
+  #Remove xplaincompile upstart script and xplainserver init.d script 
+  - name: Kill Query Server
+    shell: ps ax|grep query|awk '{print $1}'|xargs kill
+    ignore_errors: yes
+  - name: Remove xplainserver service
+    shell: update-rc.d -f xplainserver remove
+  - name: Delete xplainserver
+    shell: rm -f /etc/init.d/xplainserver
+
+  - name: Kill FPProcessings
+    service: name=baazdataacquisition state=stopped
+    ignore_errors: yes
+  - name: Remove service baazdataaquisition
+    shell: update-rc.d -f baazdataacquisition remove
+  - name: Delete FPProcessing Service
+    shell: rm -f /etc/init.d/baazdataacquisition
+
+  - name: Remove xplaincompile upstart scripts
+    shell: rm -f /etc/init/xplaincompile.conf
+
+    
