@@ -192,8 +192,8 @@ def addColumns(columnset, mongoconn, tenant, entity, opType, tableIdentifier, co
                 mongoconn.formRelation(table_entity, column_entity, "TABLE_COLUMN", weight=1)
                 columnCount += 1
 
-        mongoconn.formRelation(entity, column_entity, opType, weight=1)
-        logging.info(" {0} Relation between {1} {2}\n".format(opType, entity.eid, column_entity.eid))
+        mongoconn.formRelation(entity, column_entity, "QUERY_"+opType, weight=1)
+        logging.info(" {0} Relation between {1} {2}\n".format("QUERY_"+opType, entity.eid, column_entity.eid))
 
     return columnCount
 
@@ -255,12 +255,12 @@ def addJoinColumns(columnset, mongoconn, tenant, entity, opType):
                 mongoconn.formRelation(RHStable_entity, RHScolumn_entity, "TABLE_COLUMN", weight=1)
                 columnCount += 1
 
-        mongoconn.formRelation(LHScolumn_entity, RHScolumn_entity, opType, weight=1)
-        mongoconn.formRelation(entity, LHScolumn_entity, opType, weight=1)
-        mongoconn.formRelation(entity, RHScolumn_entity, opType, weight=1)
-        logging.info(" {0} Relation between {1} {2}\n".format(opType, entity.eid, LHScolumn_entity.eid))
-        logging.info(" {0} Relation between {1} {2}\n".format(opType, entity.eid, RHScolumn_entity.eid))
-        logging.info(" {0} Relation between {1} {2}\n".format(opType, LHScolumn_entity.eid, RHScolumn_entity.eid))
+        mongoconn.formRelation(LHScolumn_entity, RHScolumn_entity, "COLUMN_"+opType, weight=1)
+        mongoconn.formRelation(entity, LHScolumn_entity, "QUERY_"+opType, weight=1)
+        mongoconn.formRelation(entity, RHScolumn_entity, "QUERY_"+opType, weight=1)
+        logging.info(" {0} Relation between {1} {2}\n".format("QUERY_"+opType, entity.eid, LHScolumn_entity.eid))
+        logging.info(" {0} Relation between {1} {2}\n".format("QUERY_"+opType, entity.eid, RHScolumn_entity.eid))
+        logging.info(" {0} Relation between {1} {2}\n".format("COLUMN_"+opType, LHScolumn_entity.eid, RHScolumn_entity.eid))
 
     return columnCount
 
