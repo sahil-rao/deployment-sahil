@@ -20,6 +20,7 @@ import ConfigParser
 import datetime
 import time
 import logging
+import socket
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -184,7 +185,7 @@ def callback(ch, method, properties, body):
             uid = msg_dict['uid']
 
             collection = MongoClient(mongo_url)[tenant].uploadStats
-            collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}})
+            collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}, '$set':{"FPProcessing.socket":socket.gethostbyname(socket.gethostname())}})
             startProcessingPhase(collection, uid)
             if metrics_url is not None:
                 try:
