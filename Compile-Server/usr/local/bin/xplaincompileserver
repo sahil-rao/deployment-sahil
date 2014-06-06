@@ -1,30 +1,5 @@
 #!/usr/bin/env bash
 
-SERVICE=""
-HELP=""
-while [ $# -gt 0 ]; do
-  case "$1" in
-    --sever)
-      shift
-      SERVICE=$1
-      shift
-      ;;
-    --help)
-      HELP=_help
-      shift
-      ;;
-    *)
-      break
-      ;;
-  esac
-done
-
-if [ "$SERVICE" = "" ] ; then
-  if [ "$HELP" = "_help" ] ; then
-    SERVICE="help"
-  fi
-fi
-
 CLASSPATH="/usr/lib/baaz_compiler"
 XPLAIN_HOME="/usr/lib/baaz_compiler"
 
