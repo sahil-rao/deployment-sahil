@@ -26,14 +26,17 @@
 - name: Copy the service files
   shell: tar -zxf /home/ubuntu/Baaz-DataAcquisition-Service.tar.gz chdir=/
   sudo: yes
+- name: Kill Monit so it won't interfere with installation
+  shell: monit quit
+  sudo: yes
 - name: Remove any previous service that may be installed.
   shell: update-rc.d -f baazdataacquisition remove
   sudo: yes
-- name: Install baazdataacquisition Service.
-  shell: update-rc.d baazdataacquisition defaults
+- name: Stop running upstart script
+  service: name=dataacquisitionservice state=stopped
   sudo: yes
-- name: Start baazdataacquisition Service.
-  service: name=baazdataacquisition state=restarted
+- name: Start dataacquisitionservice (upstart).
+  service: name=dataacquisitionservice state=started
   sudo: yes
 
 #Start of Analytics module deployment.
@@ -55,14 +58,8 @@
 - name: Remove any previous service that may be installed.
   shell: update-rc.d -f baazmath remove
   sudo: yes
-- name: Install baazmath Service.
-  shell: update-rc.d baazmath defaults
-  sudo: yes
-- name: Start baazmath Service.
-  service: name=baazmath state=restarted
-  sudo: yes
-- name: Install xplaincompile server upstart script
-  copy: src=roles/backoffice/files/xplaincompile.conf dest=/etc/init/
+- name: Start mathservice (upstart).
+  service: name=mathservice state=started
   sudo: yes
 
 - name: Get Compiler Module
@@ -78,17 +75,23 @@
 - name: Remove any previous service that may be installed.
   shell: update-rc.d -f baazcompile remove
   sudo: yes
-- name: Install baazcompile Service.
-  shell: update-rc.d baazcompile defaults
+- name: Remove any previous xplaincompile server that may be installed.
+  service: name=xplaincompile state=stopped
   sudo: yes
-- name: Stop xplain compile server server
-  action: service name=xplaincompile state=stopped
+- name: Delete xplaincompile.conf
+  shell: rm -f /etc/init/xplaincompile.conf
   sudo: yes
-- name: Start xplain compile server server
-  action: service name=xplaincompile state=started
+- name: Stop compileservice.
+  service: name=compileservice state=stopped
   sudo: yes
-- name: Start Baaz Compiler Service.
-  service: name=baazcompile state=restarted
+- name: Stop compileserver.
+  service: name=compileserver state=stopped
+  sudo: yes
+- name: Start compileserver.
+  service: name=compileserver state=started
+  sudo: yes
+- name: Start compileservice.
+  service: name=compileservice state=started
   sudo: yes
 - name: copy monitrc file
   template: src=roles/backoffice/files/monitrc dest=/etc/monit/monitrc
@@ -97,5 +100,5 @@
   action: service name=hive state=started
   sudo: yes
 - name: Start monit service
-  shell: monit reload
+  shell: monit 
   sudo: yes
