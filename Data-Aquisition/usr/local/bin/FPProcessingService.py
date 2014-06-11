@@ -9,6 +9,7 @@ from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
 from flightpath.utils import *
 from flightpath.parsing.ParseDemux import *
+from flightpath.Provenance import getMongoServer
 import sys
 from flightpath.MongoConnector import *
 from json import *
@@ -34,16 +35,8 @@ if usingAWS:
     import boto
 
 rabbitserverIP = config.get("RabbitMQ", "server")
-mongoserverIP = config.get("MongoDB", "server")
 metrics_url = None
-try:
-    replicationGroup = config.get("MongoDB", "replicationGroup")
-except:
-    replicationGroup = None
 
-mongo_url = "mongodb://" + mongoserverIP + "/"
-if replicationGroup is not None:
-    mongo_url = mongo_url + "?replicaset=" + replicationGroup
 
 """
 For VM there is not S3 connectivity. Save the logs with a timestamp. 
@@ -175,6 +168,7 @@ def callback(ch, method, properties, body):
     except:
         logging.exception("Testing Cleanup")
 
+    mongo_url = getMongoServer(tenant)
     r_collection = None
     dest_file = None
     try:

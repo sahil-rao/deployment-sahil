@@ -14,10 +14,12 @@
     shell: tar -zxf /home/xplain/Baaz-DataAcquisition-Service.tar.gz chdir=/
   - name: Remove any previous service that may be installed.
     shell: update-rc.d -f baazdataacquisition remove
-  - name: Install baazdataacquisition Service.
-    shell: update-rc.d baazdataacquisition defaults
-  - name: Start baazdataacquisition Service.
-    service: name=baazdataacquisition state=started
+    ignore_errors: True
+  - name: Stop dataacquisitionservice
+    service: name=dataacquisitionservice state=stopped
+    ignore_errors: True
+  - name: Start dataacquistiionservice
+    service: name=dataacquisitionservice state=started
 
     #Start of Analytics module deployment.
   - name: Untar Analytics
@@ -32,10 +34,12 @@
     shell: tar -zxf /home/xplain/Baaz-Analytics-Service.tar.gz chdir=/
   - name: Remove any previous service that may be installed.
     shell: update-rc.d -f baazmath remove
-  - name: Install baazmath Service.
-    shell: update-rc.d baazmath defaults
-  - name: Start baazmath Service.
-    service: name=baazmath state=started
+    ignore_errors: True
+  - name: Stop mathservice
+    service: name=mathservice state=stopped
+    ignore_errors: True
+  - name: Start mathservice
+    service: name=mathservice state=started
 
     #Start of Compiler module deployment.
   - name: Untar Compiler binaries
@@ -44,16 +48,19 @@
     shell: tar -zxf /home/xplain/Baaz-Compile-Service.tar.gz chdir=/
   - name: Remove any previous service that may be installed.
     shell: update-rc.d -f baazcompile remove
-  - name: Install baazcompile Service.
-    shell: update-rc.d baazcompile defaults
-  - name: Install xplaincompile server upstart script
-    copy: src=/home/xplain/xplaincompile.conf dest=/etc/init/
+    ignore_errors: True
   - name: Stop xplain compile server server
     action: service name=xplaincompile state=stopped
-  - name: Start xplain compile server
-    action: service name=xplaincompile state=started
-  - name: Start Baaz Compiler Service.
-    service: name=baazcompile state=started
+  - name: Stop compileserver
+    action: service name=compileserver state=stopped
+    ignore_errors: True
+  - name: Stop compileservice
+    service: name=compileservice state=stopped
+    ignore_errors: True
+  - name: Start compileserver
+    action: service name=compileserver state=started
+  - name: Start compileservice
+    service: name=compileservice state=started
 
   - name: Create mysql user
     mysql_user: name=baaz password=baaz login_user=root login_password=mysql priv=*.*:ALL state=present

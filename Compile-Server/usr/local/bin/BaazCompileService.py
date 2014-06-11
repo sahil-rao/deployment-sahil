@@ -7,6 +7,7 @@ from flightpath.MongoConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
 from flightpath.utils import *
+from flightpath.Provenance import getMongoServer
 from subprocess import Popen, PIPE
 from json import *
 import sys
@@ -30,20 +31,12 @@ BAAZ_COMPILER_LOG_FILE = "/var/log/BaazCompileService.err"
 config = ConfigParser.RawConfigParser ()
 config.read("/var/Baaz/hosts.cfg")
 rabbitserverIP = config.get("RabbitMQ", "server")
-mongoserverIP = config.get("MongoDB", "server")
-try:
-   replicationGroup = config.get("MongoDB", "replicationGroup")
-except:
-   replicationGroup = None
 
 usingAWS = config.getboolean("mode", "usingAWS")
 if usingAWS:
     from boto.s3.key import Key
     import boto
 
-mongo_url = "mongodb://" + mongoserverIP + "/"
-if replicationGroup is not None:
-    mongo_url = mongo_url + "?replicaset=" + replicationGroup
 
 """
 For VM there is not S3 connectivity. Save the logs with a timestamp. 
@@ -362,6 +355,7 @@ def callback(ch, method, properties, body):
         received_msgID = None
     uid = None
     db = None
+    mongo_url = getMongoServer(tenant)
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
 

@@ -10,6 +10,7 @@ from flightpath.services.XplainBlockingConnection import *
 from flightpath.services.RotatingS3FileHandler import *
 from flightpath.MongoConnector import *
 from flightpath.utils import *
+from flightpath.Provenance import getMongoServer
 from json import *
 from baazmath.interface.BaazCSV import *
 from subprocess import Popen, PIPE
@@ -38,15 +39,7 @@ if usingAWS:
     import boto
 
 rabbitserverIP = config.get("RabbitMQ", "server")
-mongoserverIP = config.get("MongoDB", "server")
-try:
-   replicationGroup = config.get("MongoDB", "replicationGroup")
-except:
-   replicationGroup = None
 
-mongo_url = "mongodb://" + mongoserverIP + "/"
-if replicationGroup is not None:
-    mongo_url = mongo_url + "?replicaset=" + replicationGroup
 
 """
 For VM there is not S3 connectivity. Save the logs with a timestamp. 
@@ -94,7 +87,7 @@ def storeResourceProfile(tenant):
     logging.info("Resource profile file found\n")
     mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
-        mongoconn = MongoConnector({'host':mongoserverIP, 'context':tenant, \
+        mongoconn = MongoConnector({'host':getMongoServer(tenant), 'context':tenant, \
                                     'create_db_if_not_exist':True})
 
     with open("/tmp/test_hadoop_job_resource_share.out", "r") as resource_file:
@@ -171,6 +164,7 @@ def callback(ch, method, properties, body):
         Check if this is a valid UID. If it so happens that this flow has been deleted,
         then drop the message.
         """
+    mongo_url = getMongoServer(tenant)
 	db = MongoClient(mongo_url)[tenant]
         if not checkUID(db, uid):
             """
