@@ -261,13 +261,13 @@ check process dataacquisitionservice with pidfile /var/run/FPProcessingService.p
     stop program = "stop dataacquisitionservice"
 
 check process compileserver with pidfile /var/run/compileserver.pid
-    start program = "start compileserver"
+    start program = "start compileserver" with timeout 30 seconds
     stop program = "stop compileserver"
 
 check process compileservice with pidfile /var/run/BaazCompileService.pid
-    start program = "start compileservice"
+    start program = "start compileservice" with timeout 30 seconds
     stop program = "stop compileservice"
 
 check process mathservice with pidfile /var/run/BaazMathService.pid
-    start program = "start mathservice"
+    start program = "start mathservice" with timeout 30 seconds
     stop program = "stop mathservice"
