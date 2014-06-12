@@ -115,8 +115,8 @@ set mmonit http://monit:monit@{{ groups['tag_Name_Deployment-Root'][0] }}:8080/c
 # set alert manager@foo.bar only on { timeout }  # receive just service-
 #                                                # timeout alert
 #
-set alert parna@xplain.io # receive all alerts
-set alert samir@xplain.io # receive all alerts
+set alert parna@xplain.io only on { timeout }    # receive only timeout alerts
+set alert samir@xplain.io only on { timeout }    # receive only timeout alerts
 #
 ## Monit has an embedded web server which can be used to view status of 
 ## services monitored and manage services from a web interface. See the
@@ -256,20 +256,18 @@ set alert samir@xplain.io # receive all alerts
 set httpd port 2812
    allow localhost
 
-check process baazdataacquisition with pidfile /var/run/FPProcessingService.pid
-    start program = "/etc/init.d/baazdataacquisition start"
-    stop program = "/etc/init.d/baazdataacquisition  stop"
-    alert parna@xplain.io only on { nonexist }
-    alert samir@xplain.io only on { nonexist }
+check process dataacquisitionservice with pidfile /var/run/FPProcessingService.pid
+    start program = "start dataacquisitionservice" with timeout 30 seconds
+    stop program = "stop dataacquisitionservice"
 
-check process baazcompile with pidfile /var/run/BaazCompileService.pid
-    start program = "/etc/init.d/baazcompile start"
-    stop program = "/etc/init.d/baazcompile stop"
+check process compileserver with pidfile /var/run/compileserver.pid
+    start program = "start compileserver"
+    stop program = "stop compileserver"
 
-check process baazmath with pidfile /var/run/BaazMathService.pid
-    start program = "/etc/init.d/baazmath start"
-    stop program = "/etc/init.d/baazmath stop"
+check process compileservice with pidfile /var/run/BaazCompileService.pid
+    start program = "start compileservice"
+    stop program = "stop compileservice"
 
-check process xplaincompile with pidfile /var/run/xplaincompile.pid
-    start program = "/sbin/start xplaincompile"
-    stop program = "/sbin/stop xplaincompile"
+check process mathservice with pidfile /var/run/BaazMathService.pid
+    start program = "start mathservice"
+    stop program = "stop mathservice"
