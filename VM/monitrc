@@ -255,18 +255,22 @@
 set httpd port 2812
    allow localhost
 
-check process baazdataacquisition with pidfile /var/run/FPProcessingService.pid
-    start program = "/etc/init.d/baazdataacquisition start"
-    stop program = "/etc/init.d/baazdataacquisition  stop"
+check process dataacquisitionservice with pidfile /var/run/FPProcessingService.pid
+    start program = "start dataacquisitionservice"
+    stop program = "stop dataacquisitionservice"
 #    alert parna@baazdata.com only on { nonexist }
 
-check process baazcompile with pidfile /var/run/BaazCompileService.pid
-    start program = "/etc/init.d/baazcompile start"
-    stop program = "/etc/init.d/baazcompile stop"
+check process compileserver with pidfile /var/run/compileserver.pid
+    start program = "start compileserver"
+    stop program = "stop compileserver"
 
-check process baazmath with pidfile /var/run/BaazMathService.pid
-    start program = "/etc/init.d/baazmath start"
-    stop program = "/etc/init.d/baazmath stop"
+check process compileservice with pidfile /var/run/BaazCompileService.pid
+    start program = "start compileservice"
+    stop program = "stop compileservice"
+
+check process mathservice with pidfile /var/run/BaazMathService.pid
+    start program = "start mathservice"
+    stop program = "stop mathservice"
 
 check process node with pidfile /var/run/nodejs.pid
     start program = "/sbin/start nodejs"
