@@ -326,6 +326,19 @@ def callback(ch, method, properties, body):
         logging.exception("Publishing Math Message")
 
     try:
+        if uid is not None:
+            #This query finds the latest upload and stores that timestamp in the timestamp variable
+            timestamp = int(list(collection.find({},{"_id":0, "timestamp":1}).sort([("timestamp",-1)]).limit(1))[0]["timestamp"])
+            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads":collection.count(), \
+                "queries":MongoClient(mongo_url)[tenant].entities.find({"etype":"SQL_QUERY"}).count(), \
+                "lastTimeStamp": timestamp}})
+    except:
+        if uid is not None:
+            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads":collection.count(), \
+                "queries":MongoClient(mongo_url)[tenant].entities.find({"etype":"SQL_QUERY"}).count(), \
+                "lastTimeStamp": 0}})  
+
+    try:
         mongoconn.close()
         if msg_dict.has_key('uid'):
             #if uid has been set, the variable will be set already

@@ -129,6 +129,26 @@ def end_of_phase_callback(params, current_phase):
     params['connection'].publish(params['channel'],'',params['queuename'],message) 
     return
 
+def analytics_callback(params):
+    '''
+    Callback method that is used to initiate the processing of a passed in opcode.
+    '''
+    if 'opcode' in params:
+        logging.info("Calling the analytics callback for opcode %s"%(params['opcode']))
+    else:
+        logging.info("Calling the analytics callback with no opcode.")
+    msg_dict = {'tenant':params['tenant'], 'opcode':params['opcode']}
+    msg_dict['uid'] = params['uid']
+    msg_dict['entityid'] = params["entityid"]
+    collection = params["collection"]
+    message_id = genMessageID("Math", collection, msg_dict['entityid'])
+    msg_dict['message_id'] = message_id
+    incrementPendingMessage(collection, msg_dict['uid'], message_id)
+
+    message = dumps(msg_dict)
+    params['connection'].publish(params['channel'],'',params['queuename'],message) 
+    return
+
 def callback(ch, method, properties, body):
 
     startTime = time.time()
@@ -171,7 +191,7 @@ def callback(ch, method, properties, body):
         Check if this is a valid UID. If it so happens that this flow has been deleted,
         then drop the message.
         """
-	db = MongoClient(mongo_url)[tenant]
+        db = MongoClient(mongo_url)[tenant]
         if not checkUID(db, uid):
             """
             Just drain the queue.
@@ -190,7 +210,7 @@ def callback(ch, method, properties, body):
 
     callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
     if opcode == "BaseStats":
-        logging.info("Got Base Stats\n")     
+        logging.info("Got Base Stats\n")
         try:
             generateBaseStats(tenant)
             proc = Popen('mysql -ubaazdep -pbaazdep --local-infile -A HADOOP_DEV < /usr/lib/reports/queries/HADOOP/JobReports.sql', 
@@ -245,13 +265,19 @@ def callback(ch, method, properties, body):
         try:
             entityid = None
             if "entityid" in msg_dict:
-                entityid = msg_dict["entityid"]    
+                entityid = msg_dict["entityid"]
 
             mod = importlib.import_module(mathconfig.get(section, "Import"))
             methodToCall = getattr(mod, mathconfig.get(section, "Function"))
             logging.info("Executing " + section + " for " + tenant)
             if mathconfig.get(section, "NumParms") == "1":
                 methodToCall(tenant)
+            elif mathconfig.get(section, "NumParms") == "2":
+                methodToCall(tenant, entityid)
+            elif mathconfig.get(section, "NumParms") == "3":
+                callback_params["collection"] = collection
+                callback_params["callback"] = analytics_callback
+                methodToCall(tenant, entityid, callback_params)
             else:
                 methodToCall(tenant, entityid)
 
