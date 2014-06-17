@@ -327,7 +327,7 @@ def callback(ch, method, properties, body):
             if r_collection is not None:
                 r_collection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.time()-starttime)}})
     except:
-        logging.logfile("While closing mongo")
+        logging.exception("While closing mongo")
 
     connection1.basicAck(ch,method)
 
