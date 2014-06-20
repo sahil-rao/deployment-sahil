@@ -397,7 +397,7 @@ def callback(ch, method, properties, body):
                         hive_success = 0
 
                         if key == "hive" and 'ErrorSignature' in compile_doc:
-                            len(compile_doc['ErrorSignature']) == 0:
+                            if len(compile_doc['ErrorSignature']) == 0:
                                 hive_success = 1
 
                         mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
