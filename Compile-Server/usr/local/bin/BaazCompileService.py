@@ -4,6 +4,7 @@
 Compile Service:
 """
 from flightpath.MongoConnector import *
+from flightpath.RedisConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
 from flightpath.utils import *
@@ -111,7 +112,7 @@ def end_of_phase_callback(params, current_phase):
     params['connection'].publish(params['channel'],'',params['queuename'],message) 
     return
     
-def processColumns(columnset, mongoconn, tenant, entity):
+def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
     tableCount = 0
     table_entity = None
     for column_entry in columnset:
@@ -141,24 +142,23 @@ def processColumns(columnset, mongoconn, tenant, entity):
             if column_entity is not None:
                 logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))     
                 #print "Form relation : ", join_entity.name, " ", m_query_entity.name
-                mongoconn.formRelation(table_entity, column_entity, "TABLE_COLUMN", weight=1)
+                redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
 
     """
     Create relationships.
     """
     if entity is not None and table_entity is not None:
-        mongoconn.formRelation(entity, table_entity, "CREATE", weight=1)
+        redis_conn.createRelationship(entity.eid, table_entity.eid, "CREATE")
         logging.info(" CREATE Relation between {0} {1}\n".format(entity.eid, table_entity.eid))     
     return [0, tableCount]
 
-def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=None):
+def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, tableEidList=None, hive_success=0):
     dbCount = 0
     tableCount = 0
     if tableset is None or len(tableset) == 0:
         return [dbCount, tableCount]
 
     endict = {}
-    #mongoconn.startBatchUpdate()
     for tableentry in tableset:
         database_name = None
         entryname = tableentry["TableName"].lower()
@@ -204,25 +204,27 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
         """
         if entity is not None and table_entity is not None:
             if isinput:
-                mongoconn.formRelation(table_entity, entity, "READ", weight=1)
+                redis_conn.createRelationship(table_entity.eid, entity.eid, "READ")
+                redis_conn.setRelationship(table_entity.eid, entity.eid, "READ", {"hive_success":hive_success})
+                redis_conn.incrRelationshipCounter(table_entity.eid, entity.eid, "READ", "instance_count", incrBy=1) 
                 logging.info("Relation between {0} {1}\n".format(table_entity.eid, entity.eid))     
             else:
-                mongoconn.formRelation(entity, table_entity, "WRITE", weight=1)
+                redis_conn.createRelationship(entity.eid, table_entity.eid, "WRITE")
+                redis_conn.setRelationship(entity.eid, table_entity.eid, "WRITE", {"hive_success":hive_success})
+                redis_conn.incrRelationshipCounter(entity.eid, table_entity.eid, "WRITE", "instance_count", incrBy=1) 
                 logging.info("Relation between {0} {1}\n".format(entity.eid, table_entity.eid))     
 
         if database_entity is not None:
             if table_entity is not None:
-                mongoconn.formRelation(database_entity, table_entity, "CONTAINS", weight=1)
+                redis_conn.createRelationship(database_entity.eid, table_entity.eid, "CONTAINS")
                 logging.info("Relation between {0} {1}\n".format(database_entity.eid, table_entity.eid))     
 
             """ Note this assumes that formRelations is idempotent
             """
             if entity is not None:
-                mongoconn.formRelation(database_entity, entity, "CONTAINS", weight=1)
+                redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
                 logging.info("Relation between {0} {1}\n".format(database_entity.eid, entity.eid))     
 
-    #mongoconn.finishBatchUpdate()
-    
     return [dbCount, tableCount]
 
 def callback(ch, method, properties, body):
@@ -282,6 +284,8 @@ def callback(ch, method, properties, body):
     if mongoconn is None:
         mongoconn = MongoConnector({'host':mongo_url, 'context':tenant, \
                                     'create_db_if_not_exist':True})
+
+    redis_conn = RedisConnector(tenant)
 
     compconfig = ConfigParser.RawConfigParser()
     compconfig.read("/etc/xplain/compiler.cfg")
@@ -390,10 +394,16 @@ def callback(ch, method, properties, body):
 
                 if compile_doc is not None:
                     for key in compile_doc:
+                        hive_success = 0
+
+                        if key == "hive" and 'ErrorSignature' in compile_doc:
+                            if len(compile_doc['ErrorSignature']) == 0:
+                                hive_success = 1
+
                         mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
                         if compile_doc[key].has_key("InputTableList"):
                             tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], 
-                                                           mongoconn, tenant, entity, True,  
+                                                           mongoconn, redis_conn, tenant, entity, True,  
                                                            tableEidList)
                             if msg_dict.has_key('uid'):
                                 collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
@@ -401,13 +411,13 @@ def callback(ch, method, properties, body):
                                 dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
 
                         if compile_doc[key].has_key("OutputTableList"):
-                            tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, tenant, entity, False, tableEidList)
+                            tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, redis_conn, tenant, entity, False, tableEidList, hive_success)
                             if msg_dict.has_key('uid'):
                                 collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
 
                         if compile_doc[key].has_key("ddlcolumns"):
                             tmpAdditions = processColumns(compile_doc[key]["ddlcolumns"], 
-                                                           mongoconn, tenant, entity)
+                                                           mongoconn, redis_conn, tenant, entity)
                             if msg_dict.has_key('uid'):
                                 collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
                                                   stats_newtables_key: tmpAdditions[1]}})
