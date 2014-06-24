@@ -1,0 +1,7 @@
+---
+- hosts: tag_Name_Backoffice
+  sudo: yes
+  tasks:
+  - apt_repository: repo='ppa:rwky/redis' state=present update_cache=yes
+  - apt: name=redis-server state=present
+  - pip: name=redis
