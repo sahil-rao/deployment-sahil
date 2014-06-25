@@ -85,15 +85,15 @@ def updateRelationCounter(redis_conn, eid):
     relationshipTypes = ['QUERY_SELECT', 'QUERY_JOIN', 'QUERY_FILTER', "READ", "WRITE",
                          'QUERY_GROUPBY', 'QUERY_ORDERBY', "COOCCURRENCE_GROUP"]
 
-    relations_to = redis_conn.getRelationships(entity_id, None, None)
+    relations_to = redis_conn.getRelationships(eid, None, None)
     for rel in relations_to:
         if rel['relationship_type'] in relationshipTypes:
-            redis_conn.incrRelationshipCounter(eid, rel['end_eid'], rel['relationship_type'], "instance_count", incrBy=1)
+            redis_conn.incrRelationshipCounter(eid, rel['end_entity'], rel['relationship_type'], "instance_count", incrBy=1)
 
-    relations_from = redis_conn.getRelationships(None, entity_id, None)
+    relations_from = redis_conn.getRelationships(None, eid, None)
     for rel in relations_to:
         if rel['relationship_type'] in relationshipTypes:
-            redis_conn.incrRelationshipCounter(rel['start_eid'], eid, rel['relationship_type'], "instance_count", incrBy=1)
+            redis_conn.incrRelationshipCounter(rel['start_entity'], eid, rel['relationship_type'], "instance_count", incrBy=1)
 
 def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, update=False):
 
@@ -130,6 +130,16 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, upda
     """
     if entity.etype == 'SQL_QUERY': 
         if update == False:
+            redis_conn.createEntityProfile(eid, "SQL_QUERY")
+            redis_conn.createEntityProfile(eid, "SQL_QUERY", "instance_count")
+            redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
+
+            #redis_conn.createEntityProfile()
+
+            mongoconn.db.dashboard_data.update({'tenant':tenant_id}, \
+                {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
+                upsert = True)
+
             jinst_dict = {'entity_id':entity.eid} 
             jinst_dict['program_type'] = "SQL"
             jinst_dict['query'] = entity.name
@@ -143,6 +153,12 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, upda
             incrementPendingMessage(collection, uid, message_id)
             logging.info("Published Compiler Message {0}\n".format(message))
         else:
+
+            redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
+
+            mongoconn.db.dashboard_data.update({'tenant':tenant_id}, \
+                {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
+
             """
             Get relationships for the given entity.
             """
