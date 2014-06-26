@@ -9,6 +9,7 @@ from flightpath.services.RotatingS3FileHandler import *
 from baazmath.workflows.hbase_analytics import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
+from flightpath.services.mq_template import *
 from subprocess import Popen, PIPE
 from json import *
 import sys
@@ -332,6 +333,105 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
     
     return [dbCount, tableCount]
 
+def process_mongo_rewrite_request(ch, properties, tenant, instances):
+
+    """
+        Steps to rewrite SQL queries to mongo are as following:
+        1. For each query in the request.
+            2. Save the query to a local file.
+            3. Invoke compiler to generate Xplain RA.
+            4. Read the output file as a JSON.
+            5. Invoke mongo converter template engine to convert.
+        6. Send the RPC response. 
+    """
+    in_file = "/tmp/mongo-RA-input"
+    out_file = "/tmp/mongo-RA-output"
+    resp_dict = {"mongo_queries" : []}
+
+    for inst in instances:
+
+        if os.path.isfile(in_file):
+            os.remove(in_file)
+
+        if os.path.isfile(out_file):
+            os.remove(out_file)
+
+        sql_query = inst["query"]
+        if len(sql_query.strip()) == 0:
+            continue
+
+        data_dict = { "InputFile": in_file, "OutputFile": out_file}
+
+        """
+            2. Save the query to a local file.
+        """
+        infile = open(in_file, "w")
+        infile.write(sql_query)
+        infile.flush()
+        infile.close()
+
+        """
+            3. Invoke compiler to generate Xplain RA.
+        """
+        try:
+            output_file_name = "/tmp/hbase_ddl.out"
+
+            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            client_socket.connect(("localhost", 12121))
+
+            data = dumps(data_dict)
+            client_socket.send("1\n");
+
+            """
+                For Mongo rewrite the opcode is 3.
+            """
+            client_socket.send("3\n");
+            data = data + "\n"
+            client_socket.send(data)
+            rx_data = client_socket.recv(512)
+
+            if rx_data == "Done":
+                status = "SUCCESS"
+            else:
+                status = "FAILED"
+
+            client_socket.close()
+
+            compile_doc = None
+            """
+                4. Read the output file as a JSON.
+            """
+            if not os.path.isfile(out_file):
+                resp_dict["status"] = "Failed"
+            else:
+                """ 
+                    Read the output file and send the RPC response.
+                """
+                compile_doc = None
+                with open(out_file) as data_file:    
+                    compile_doc = load(data_file)
+
+                """
+                    5. Invoke mongo converter template engine to convert.
+                """
+                mongo_query = convert_to_mongo(compile_doc["QueryBlock"])
+                resp_dict['mongo_queries'].append(mongo_query)
+
+            resp_dict["status"] = "Success"
+        except:
+            logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))     
+            resp_dict["status"] = "Failed"
+
+    """
+        6. Send the RPC response. 
+    """
+    logging.info("Sending compiler response")
+    ch.basic_publish(exchange='',
+                     routing_key=properties.reply_to,
+                     properties=pika.BasicProperties(correlation_id = \
+                                                     properties.correlation_id),
+                     body=dumps(resp_dict))
+
 def process_hbase_ddl_request(ch, properties, tenant, instances):
 
     """
@@ -458,7 +558,7 @@ def callback(ch, method, properties, body):
 
 
     if "opcode" in msg_dict and msg_dict["opcode"] == "HbaseDDL":
-        logging.info("PARNA : Got the opcode of Hbase")
+        logging.info("Got the opcode of Hbase")
         process_hbase_ddl_request(ch, properties, tenant, instances)
         """
         Read the input and respond.
@@ -466,6 +566,15 @@ def callback(ch, method, properties, body):
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
+    if "opcode" in msg_dict and msg_dict["opcode"] == "MongoTransform":
+        logging.info("Got the opcode For Mongo Translation")
+        process_mongo_rewrite_request(ch, properties, tenant, instances)
+
+        """
+        Read the input and respond.
+        """
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+        return
 
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
