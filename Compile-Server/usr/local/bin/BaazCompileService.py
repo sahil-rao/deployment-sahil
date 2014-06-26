@@ -681,6 +681,7 @@ def callback(ch, method, properties, body):
                 logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
                 if msg_dict.has_key('uid'):
                     collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
 
         msg_dict = {'tenant':tenant, 'opcode':"GenerateQueryProfile", "entityid":entity.eid} 
         if uid is not None:
@@ -701,17 +702,9 @@ def callback(ch, method, properties, body):
         Copy over any intermediate file to S3 and remove the directory.
         """
         try:
-            s3_dest = tenant + "/" + myip + "/" + timestr + "/" 
-            for (sourceDir, dirname, filename) in os.walk(destination):
-                for f in filename:
-                    src_path = os.path.join(sourceDir, f)
-                    s3_obj_name = s3_dest + f
-                    k = file_bucket.new_key(s3_obj_name)
-                    k.set_contents_from_filename(src_path) 
-
             shutil.rmtree(destination)     
         except:
-            logging.exception("Tenent {0} S3 upload of intermediate file failed.\n".format(tenant))    
+            logging.exception("Tenent {0} removing intermediate file failed.\n".format(tenant))    
 
 
     logging.info("Event Processing Complete")     
