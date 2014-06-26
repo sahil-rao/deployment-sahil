@@ -87,7 +87,7 @@ def storeResourceProfile(tenant):
     logging.info("Resource profile file found\n")
     mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
-        mongoconn = MongoConnector({'host':getMongoServer(tenant), 'context':tenant, \
+        mongoconn = MongoConnector({'host':getMongoServer(), 'context':tenant, \
                                     'create_db_if_not_exist':True})
 
     with open("/tmp/test_hadoop_job_resource_share.out", "r") as resource_file:
@@ -164,7 +164,7 @@ def callback(ch, method, properties, body):
         Check if this is a valid UID. If it so happens that this flow has been deleted,
         then drop the message.
         """
-        mongo_url = getMongoServer(tenant)
+        mongo_url = getMongoServer()
         db = MongoClient(mongo_url)[tenant]
         if not checkUID(db, uid):
             """

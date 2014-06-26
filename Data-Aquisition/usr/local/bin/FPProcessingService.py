@@ -168,7 +168,7 @@ def callback(ch, method, properties, body):
     except:
         logging.exception("Testing Cleanup")
 
-    mongo_url = getMongoServer(tenant)
+    mongo_url = getMongoServer()
     r_collection = None
     dest_file = None
     try:

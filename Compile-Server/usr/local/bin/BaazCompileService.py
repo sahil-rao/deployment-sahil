@@ -454,7 +454,7 @@ def callback(ch, method, properties, body):
     uid = None
     db = None
 
-    mongo_url = getMongoServer(tenant)
+    mongo_url = getMongoServer()
 
 
     if "opcode" in msg_dict and msg_dict["opcode"] == "HbaseDDL":
