@@ -7,6 +7,7 @@ from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
+from baazmath.workflows.hbase_analytics import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from subprocess import Popen, PIPE
@@ -159,6 +160,7 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, ta
         return [dbCount, tableCount]
 
     endict = {}
+    #mongoconn.startBatchUpdate()
     for tableentry in tableset:
         database_name = None
         entryname = tableentry["TableName"].lower()
@@ -206,12 +208,12 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, ta
             if isinput:
                 redis_conn.createRelationship(table_entity.eid, entity.eid, "READ")
                 redis_conn.setRelationship(table_entity.eid, entity.eid, "READ", {"hive_success":hive_success})
-                redis_conn.incrRelationshipCounter(table_entity.eid, entity.eid, "READ", "instance_count", incrBy=1) 
+                redis_conn.incrRelationshipCounter(table_entity.eid, entity.eid, "READ", "instance_count", incrBy=1)
                 logging.info("Relation between {0} {1}\n".format(table_entity.eid, entity.eid))     
             else:
                 redis_conn.createRelationship(entity.eid, table_entity.eid, "WRITE")
                 redis_conn.setRelationship(entity.eid, table_entity.eid, "WRITE", {"hive_success":hive_success})
-                redis_conn.incrRelationshipCounter(entity.eid, table_entity.eid, "WRITE", "instance_count", incrBy=1) 
+                redis_conn.incrRelationshipCounter(entity.eid, table_entity.eid, "WRITE", "instance_count", incrBy=1)
                 logging.info("Relation between {0} {1}\n".format(entity.eid, table_entity.eid))     
 
         if database_entity is not None:
@@ -225,7 +227,106 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, ta
                 redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
                 logging.info("Relation between {0} {1}\n".format(database_entity.eid, entity.eid))     
 
+    #mongoconn.finishBatchUpdate()
+    
     return [dbCount, tableCount]
+
+def process_hbase_ddl_request(ch, properties, tenant, instances):
+
+    """
+        Steps to generate Hbase DDL are as following:
+        1. Get the entity ID of the table to start with. Note currently,
+            this works with only one table.
+        2. Invoke analytics workflow to generate Hbase analytics.
+        3. Save the analytics results to a local file.
+        4. Send request to DDL generator.
+        5. Check the output file.
+        6. Read output file and send the RPC response. 
+    """
+    compile_doc = None
+    prog_id = None
+    for inst in instances:
+        prog_id = inst["entity_id"] 
+
+    if prog_id is None:
+        logging.info("PARNA : No program ID found")
+        return
+
+    """
+        Invoke analytics workflow to generate Hbase analytics.
+    """
+    result = run_workflow(tenant, prog_id)
+
+    """
+        Save the analytics results to a local file.
+    """
+    oFile_path = "/tmp/hbase_analytics.out"
+    oFile = open(oFile_path, "w")
+    oFile.write(dumps(result))
+    oFile.flush()
+    oFile.close()
+
+    resp_dict = {}
+    status = "FAILED"
+    """
+        Send request to DDL generator.
+    """
+    try:
+        output_file_name = "/tmp/hbase_ddl.out"
+
+        if os.path.isfile(output_file_name):
+            os.path.remove(output_file_name)
+
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect(("localhost", 12121))
+
+        data_dict = {"InputFile": oFile_path, "OutputFile": output_file_name, 
+                     "EntityId": prog_id, "TenantId": "100"}
+        data = dumps(data_dict)
+        client_socket.send("1\n");
+
+        """
+            For DDL generation the opcode is 2.
+        """
+        client_socket.send("2\n");
+        data = data + "\n"
+        client_socket.send(data)
+        rx_data = client_socket.recv(512)
+
+        if rx_data == "Done":
+            status = "SUCCESS"
+        else:
+            status = "FAILED"
+
+        client_socket.close()
+
+        """
+            Upon response, check the output file.
+        """
+        if not os.path.isfile(output_file_name):
+            resp_dict["status"] = "Failed"
+        else:
+            """ 
+                Read the output file and send the RPC response.
+            """
+            compile_coc = None
+            with open(output_file_name) as data_file:    
+                compile_doc = load(data_file)
+            resp_dict = compile_doc
+            resp_dict["status"] = "Success"
+    except:
+        logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
+        resp_dict["status"] = "Failed"
+
+    """
+        Publish the response to the requestor.
+    """
+    logging.info("Sending compiler response")
+    ch.basic_publish(exchange='',
+                     routing_key=properties.reply_to,
+                     properties=pika.BasicProperties(correlation_id = \
+                                                     properties.correlation_id),
+                     body=dumps(resp_dict))
 
 def callback(ch, method, properties, body):
     startTime = time.time()
@@ -251,7 +352,20 @@ def callback(ch, method, properties, body):
         received_msgID = None
     uid = None
     db = None
+
     mongo_url = getMongoServer(tenant)
+
+
+    if "opcode" in msg_dict and msg_dict["opcode"] == "HbaseDDL":
+        logging.info("PARNA : Got the opcode of Hbase")
+        process_hbase_ddl_request(ch, properties, tenant, instances)
+        """
+        Read the input and respond.
+        """
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+        return
+
+
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
 
@@ -279,6 +393,7 @@ def callback(ch, method, properties, body):
         ch.basic_ack(delivery_tag=method.delivery_tag)
            
         return
+
 
     mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
@@ -366,6 +481,11 @@ def callback(ch, method, properties, body):
                               "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
                 data = dumps(data_dict)
                 client_socket.send("1\n");
+
+                """
+                For regular compilation the opcode is 1.
+                """
+                client_socket.send("1\n");
                 data = data + "\n"
                 client_socket.send(data)
                 rx_data = client_socket.recv(512)
@@ -433,6 +553,7 @@ def callback(ch, method, properties, body):
                 logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
                 if msg_dict.has_key('uid'):
                     collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
 
         msg_dict = {'tenant':tenant, 'opcode':"GenerateQueryProfile", "entityid":entity.eid} 
         if uid is not None:
@@ -453,17 +574,9 @@ def callback(ch, method, properties, body):
         Copy over any intermediate file to S3 and remove the directory.
         """
         try:
-            s3_dest = tenant + "/" + myip + "/" + timestr + "/" 
-            for (sourceDir, dirname, filename) in os.walk(destination):
-                for f in filename:
-                    src_path = os.path.join(sourceDir, f)
-                    s3_obj_name = s3_dest + f
-                    k = file_bucket.new_key(s3_obj_name)
-                    k.set_contents_from_filename(src_path) 
-
             shutil.rmtree(destination)     
         except:
-            logging.exception("Tenent {0} S3 upload of intermediate file failed.\n".format(tenant))    
+            logging.exception("Tenent {0} removing intermediate file failed.\n".format(tenant))    
 
 
     logging.info("Event Processing Complete")     
@@ -473,6 +586,7 @@ def callback(ch, method, properties, body):
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already
         collection.update({'uid':uid},{"$inc": {"Compiler.time":(endTime-startTime)}})
+    mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
         
     mongoconn.close()
     connection1.basicAck(ch,method)
