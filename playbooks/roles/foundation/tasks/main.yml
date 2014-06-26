@@ -138,4 +138,6 @@
 - name: Install hive upstart script
   copy: src=roles/backoffice/files/hive.conf dest=/etc/init/
   sudo: yes
-
+- name: Install redis python client
+  pip: name=redis
+  sudo: yes
