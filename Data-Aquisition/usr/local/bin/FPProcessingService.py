@@ -131,12 +131,12 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, upda
     if entity.etype == 'SQL_QUERY': 
         if update == False:
             redis_conn.createEntityProfile(eid, "SQL_QUERY")
-            redis_conn.createEntityProfile(eid, "SQL_QUERY", "instance_count")
+            redis_conn.createEntitySortedKey(eid, "SQL_QUERY", "instance_count")
             redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
 
             #redis_conn.createEntityProfile()
 
-            mongoconn.db.dashboard_data.update({'tenant':tenant_id}, \
+            mongoconn.db.dashboard_data.update({'tenant':tenant}, \
                 {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
                 upsert = True)
 
@@ -156,7 +156,7 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, upda
 
             redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
 
-            mongoconn.db.dashboard_data.update({'tenant':tenant_id}, \
+            mongoconn.db.dashboard_data.update({'tenant':tenant}, \
                 {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
 
             """
