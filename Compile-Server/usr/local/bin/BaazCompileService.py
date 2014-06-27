@@ -476,7 +476,7 @@ def process_hbase_ddl_request(ch, properties, tenant, instances):
         output_file_name = "/tmp/hbase_ddl.out"
 
         if os.path.isfile(output_file_name):
-            os.path.remove(output_file_name)
+            os.remove(output_file_name)
 
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         client_socket.connect(("localhost", 12121))
