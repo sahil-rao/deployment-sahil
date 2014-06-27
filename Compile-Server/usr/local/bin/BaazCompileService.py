@@ -586,7 +586,6 @@ def callback(ch, method, properties, body):
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already
         collection.update({'uid':uid},{"$inc": {"Compiler.time":(endTime-startTime)}})
-    mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
         
     mongoconn.close()
     connection1.basicAck(ch,method)
