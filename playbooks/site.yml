@@ -27,3 +27,7 @@
 - hosts: tag_Name_Foundation
   roles:
   - role: foundation
+
+ - hosts: tag_Name_Redis
+   roles:
+   - role: redis
