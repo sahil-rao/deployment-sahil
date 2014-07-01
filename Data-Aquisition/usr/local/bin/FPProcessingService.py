@@ -12,6 +12,7 @@ from flightpath.parsing.ParseDemux import *
 from flightpath.Provenance import getMongoServer
 import sys
 from flightpath.MongoConnector import *
+from flightpath.RedisConnector import *
 from json import *
 import pika
 import shutil
@@ -79,7 +80,22 @@ def performTenantCleanup(tenant):
     if os.path.exists(destination):
         shutil.rmtree(destination)
 
-def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection, update=False):
+def updateRelationCounter(redis_conn, eid):
+
+    relationshipTypes = ['QUERY_SELECT', 'QUERY_JOIN', 'QUERY_FILTER', "READ", "WRITE",
+                         'QUERY_GROUPBY', 'QUERY_ORDERBY', "COOCCURRENCE_GROUP"]
+
+    relations_to = redis_conn.getRelationships(eid, None, None)
+    for rel in relations_to:
+        if rel['relationship_type'] in relationshipTypes:
+            redis_conn.incrRelationshipCounter(eid, rel['end_entity'], rel['relationship_type'], "instance_count", incrBy=1)
+
+    relations_from = redis_conn.getRelationships(None, eid, None)
+    for rel in relations_to:
+        if rel['relationship_type'] in relationshipTypes:
+            redis_conn.incrRelationshipCounter(rel['start_entity'], eid, rel['relationship_type'], "instance_count", incrBy=1)
+
+def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, update=False):
 
     entity = mongoconn.getEntity(eid)
     if entity.etype == 'HADOOP_JOB':
@@ -114,6 +130,16 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection, update=False):
     """
     if entity.etype == 'SQL_QUERY': 
         if update == False:
+            redis_conn.createEntityProfile(eid, "SQL_QUERY")
+            redis_conn.createEntitySortedKey(eid, "SQL_QUERY", "instance_count")
+            redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
+
+            #redis_conn.createEntityProfile()
+
+            mongoconn.db.dashboard_data.update({'tenant':tenant}, \
+                {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
+                upsert = True)
+
             jinst_dict = {'entity_id':entity.eid} 
             jinst_dict['program_type'] = "SQL"
             jinst_dict['query'] = entity.name
@@ -127,6 +153,18 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection, update=False):
             incrementPendingMessage(collection, uid, message_id)
             logging.info("Published Compiler Message {0}\n".format(message))
         else:
+
+            redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
+
+            mongoconn.db.dashboard_data.update({'tenant':tenant}, \
+                {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
+
+            """
+            Get relationships for the given entity.
+            """
+            updateRelationCounter(redis_conn, eid)
+
+            """
             math_msg = {'tenant':tenant, 'entityid': eid, 'opcode':"UpdateSQLRelations"}
             if uid is not None:
                 math_msg['uid'] = uid
@@ -137,6 +175,7 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection, update=False):
             collection.update({'uid':uid},{'$inc':{"Math2MessageCount":1}})
             incrementPendingMessage(collection, uid,message_id)
             logging.info("Published Message {0}\n".format(message))
+            """
 
 def callback(ch, method, properties, body):
     starttime = time.time()
@@ -260,6 +299,7 @@ def callback(ch, method, properties, body):
             mongoconn = MongoConnector({'host':mongo_url, 'context':context, \
                                     'create_db_if_not_exist':True})
 
+        redis_conn = RedisConnector(tenant)
         '''
         Incrmements an Pre-Processing count, sends to compiler, then decrements the count
         '''
@@ -267,7 +307,7 @@ def callback(ch, method, properties, body):
         incrementPendingMessage(collection, uid, message_id)
         logging.info("Incremementing message count: " + message_id)
 
-        parseDir(tenant, logpath, mongoconn, sendToCompiler, uid, ch, collection)
+        parseDir(tenant, logpath, mongoconn, redis_conn, sendToCompiler, uid, ch, collection)
 
         callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
         decrementPendingMessage(collection, uid, message_id, end_of_phase_callback, callback_params)
@@ -286,25 +326,6 @@ def callback(ch, method, properties, body):
         logging.exception("Parsing the input and Compiler Message")
 
     try:
-        '''math_msg = {'tenant':tenant, 'opcode':"Frequency-Estimation"}
-        if uid is not None:
-            math_msg['uid'] = uid
-        job_insts = {}
-        for en in mongoconn.entities:
-            entity = mongoconn.getEntity(en)
-            if not entity.etype == 'HADOOP_JOB':
-                continue
-            job_insts[entity.eid] = {'program_id':entity.eid}
-        math_msg['job_instances'] = job_insts.values()
-        message_id = genMessageID()
-        math_msg['message_id'] = message_id
-        message = dumps(math_msg)
-        connection1.publish(ch,'','mathqueue',message)
-        collection.update({'uid':uid},{'$inc':{"Math1MessageCount":1}})
-        incrementPendingMessage(collection, uid,message_id)
-
-        logging.info("Published Message {0}\n".format(message))
-        '''
 
         math_msg = {'tenant':tenant, 'opcode':"BaseStats"}
         if uid is not None:
@@ -318,6 +339,19 @@ def callback(ch, method, properties, body):
         logging.info("Published Message {0}\n".format(message))
     except:
         logging.exception("Publishing Math Message")
+
+    try:
+        if uid is not None:
+            #This query finds the latest upload and stores that timestamp in the timestamp variable
+            timestamp = int(list(collection.find({},{"_id":0, "timestamp":1}).sort([("timestamp",-1)]).limit(1))[0]["timestamp"])
+            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads":collection.count(), \
+                "queries":MongoClient(mongo_url)[tenant].entities.find({"etype":"SQL_QUERY"}).count(), \
+                "lastTimeStamp": timestamp}})
+    except:
+        if uid is not None:
+            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads":collection.count(), \
+                "queries":MongoClient(mongo_url)[tenant].entities.find({"etype":"SQL_QUERY"}).count(), \
+                "lastTimeStamp": 0}})  
 
     try:
         mongoconn.close()

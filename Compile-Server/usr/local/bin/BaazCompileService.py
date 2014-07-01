@@ -4,6 +4,7 @@
 Compile Service:
 """
 from flightpath.MongoConnector import *
+from flightpath.RedisConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
 from baazmath.workflows.hbase_analytics import *
@@ -113,7 +114,7 @@ def end_of_phase_callback(params, current_phase):
     params['connection'].publish(params['channel'],'',params['queuename'],message) 
     return
     
-def processColumns(columnset, mongoconn, tenant, entity):
+def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
     tableCount = 0
     table_entity = None
     for column_entry in columnset:
@@ -143,123 +144,17 @@ def processColumns(columnset, mongoconn, tenant, entity):
             if column_entity is not None:
                 logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))     
                 #print "Form relation : ", join_entity.name, " ", m_query_entity.name
-                mongoconn.formRelation(table_entity, column_entity, "TABLE_COLUMN", weight=1)
+                redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
 
     """
     Create relationships.
     """
     if entity is not None and table_entity is not None:
-        mongoconn.formRelation(entity, table_entity, "CREATE", weight=1)
+        redis_conn.createRelationship(entity.eid, table_entity.eid, "CREATE")
         logging.info(" CREATE Relation between {0} {1}\n".format(entity.eid, table_entity.eid))     
     return [0, tableCount]
 
-
-def addColumns(columnset, mongoconn, tenant, entity, opType, tableIdentifier, colIdentifier):
-    '''
-    Creating this as a separate function seperate because I don't want to create a table
-    entity if it doesn't already exist.
-    '''
-    columnCount = 0
-    table_entity = None
-    for column_entry in columnset:
-        if tableIdentifier not in column_entry:
-            continue
-
-        tablename = column_entry[tableIdentifier]
-        columnname = column_entry[colIdentifier]
-        table_entity = mongoconn.getEntityByName(tablename)
-
-        column_entity_name = tablename.lower() + "." + columnname.lower()
-        column_entity = mongoconn.getEntityByName(column_entity_name)
-
-        if table_entity is None:
-            continue
-
-        if column_entity is None:
-            logging.info("Creating Column entity for {0}\n".format(column_entity_name))     
-            eid = IdentityService.getNewIdentity(tenant, True)
-            column_entity = mongoconn.addEn(eid, column_entity_name, tenant,\
-                            EntityType.SQL_TABLE_COLUMN, column_entry, None)
-
-            if column_entity is not None:
-                logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))     
-                #print "Form relation : ", join_entity.name, " ", m_query_entity.name
-                mongoconn.formRelation(table_entity, column_entity, "TABLE_COLUMN", weight=1)
-                columnCount += 1
-
-        mongoconn.formRelation(entity, column_entity, "QUERY_"+opType, weight=1)
-        logging.info(" {0} Relation between {1} {2}\n".format("QUERY_"+opType, entity.eid, column_entity.eid))
-
-    return columnCount
-
-def addJoinColumns(columnset, mongoconn, tenant, entity, opType):
-    '''
-    Creating this as a separate function because we want to account for both columns
-    and create a join relation between them.
-    '''
-    columnCount = 0
-    LHStable_entity = None
-    RHStable_entity = None
-    for column_entry in columnset:
-        if ("LHSTable" not in column_entry) or ("RHSTable" not in column_entry) or \
-            ("LHSColumn" not in column_entry) or ("RHSColumn" not in column_entry):
-            continue
-
-        LHStablename = column_entry["LHSTable"]
-        RHStablename = column_entry["RHSTable"]
-        LHSColumnName = column_entry["LHSColumn"]
-        RHSColumnName = column_entry["RHSColumn"]
-
-        LHStable_entity = mongoconn.getEntityByName(LHStablename)
-        RHStable_entity = mongoconn.getEntityByName(RHStablename)
-
-        LHScolumn_entity_name = LHStablename.lower() + "." + LHSColumnName.lower()
-        LHScolumn_entity = mongoconn.getEntityByName(LHScolumn_entity_name)
-
-        RHScolumn_entity_name = RHStablename.lower() + "." + RHSColumnName.lower()
-        RHScolumn_entity = mongoconn.getEntityByName(RHScolumn_entity_name)
-
-
-        if LHStable_entity is None:
-            continue
-
-        if RHStable_entity is None:
-            continue
-
-        if LHScolumn_entity is None:
-            logging.info("Creating Column entity for {0}\n".format(LHScolumn_entity_name))     
-            eid = IdentityService.getNewIdentity(tenant, True)
-            LHScolumn_entity = mongoconn.addEn(eid, LHScolumn_entity_name, tenant,\
-                            EntityType.SQL_TABLE_COLUMN, column_entry, None)
-
-            if LHScolumn_entity is not None:
-                logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(LHStable_entity.eid, LHScolumn_entity.eid))     
-                #print "Form relation : ", join_entity.name, " ", m_query_entity.name
-                mongoconn.formRelation(LHStable_entity, LHScolumn_entity, "TABLE_COLUMN", weight=1)
-                columnCount += 1
-
-        if RHScolumn_entity is None:
-            logging.info("Creating Column entity for {0}\n".format(RHScolumn_entity_name))     
-            eid = IdentityService.getNewIdentity(tenant, True)
-            RHScolumn_entity = mongoconn.addEn(eid, RHScolumn_entity_name, tenant,\
-                            EntityType.SQL_TABLE_COLUMN, column_entry, None)
-
-            if RHScolumn_entity is not None:
-                logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(RHStable_entity.eid, RHScolumn_entity.eid))     
-                #print "Form relation : ", join_entity.name, " ", m_query_entity.name
-                mongoconn.formRelation(RHStable_entity, RHScolumn_entity, "TABLE_COLUMN", weight=1)
-                columnCount += 1
-
-        mongoconn.formRelation(LHScolumn_entity, RHScolumn_entity, "COLUMN_"+opType, weight=1)
-        mongoconn.formRelation(entity, LHScolumn_entity, "QUERY_"+opType, weight=1)
-        mongoconn.formRelation(entity, RHScolumn_entity, "QUERY_"+opType, weight=1)
-        logging.info(" {0} Relation between {1} {2}\n".format("QUERY_"+opType, entity.eid, LHScolumn_entity.eid))
-        logging.info(" {0} Relation between {1} {2}\n".format("QUERY_"+opType, entity.eid, RHScolumn_entity.eid))
-        logging.info(" {0} Relation between {1} {2}\n".format("COLUMN_"+opType, LHScolumn_entity.eid, RHScolumn_entity.eid))
-
-    return columnCount
-
-def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=None):
+def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, tableEidList=None, hive_success=0):
     dbCount = 0
     tableCount = 0
     if tableset is None or len(tableset) == 0:
@@ -312,21 +207,25 @@ def processTableSet(tableset, mongoconn, tenant, entity, isinput, tableEidList=N
         """
         if entity is not None and table_entity is not None:
             if isinput:
-                mongoconn.formRelation(table_entity, entity, "READ", weight=1)
+                redis_conn.createRelationship(table_entity.eid, entity.eid, "READ")
+                redis_conn.setRelationship(table_entity.eid, entity.eid, "READ", {"hive_success":hive_success})
+                redis_conn.incrRelationshipCounter(table_entity.eid, entity.eid, "READ", "instance_count", incrBy=1)
                 logging.info("Relation between {0} {1}\n".format(table_entity.eid, entity.eid))     
             else:
-                mongoconn.formRelation(entity, table_entity, "WRITE", weight=1)
+                redis_conn.createRelationship(entity.eid, table_entity.eid, "WRITE")
+                redis_conn.setRelationship(entity.eid, table_entity.eid, "WRITE", {"hive_success":hive_success})
+                redis_conn.incrRelationshipCounter(entity.eid, table_entity.eid, "WRITE", "instance_count", incrBy=1)
                 logging.info("Relation between {0} {1}\n".format(entity.eid, table_entity.eid))     
 
         if database_entity is not None:
             if table_entity is not None:
-                mongoconn.formRelation(database_entity, table_entity, "CONTAINS", weight=1)
+                redis_conn.createRelationship(database_entity.eid, table_entity.eid, "CONTAINS")
                 logging.info("Relation between {0} {1}\n".format(database_entity.eid, table_entity.eid))     
 
             """ Note this assumes that formRelations is idempotent
             """
             if entity is not None:
-                mongoconn.formRelation(database_entity, entity, "CONTAINS", weight=1)
+                redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
                 logging.info("Relation between {0} {1}\n".format(database_entity.eid, entity.eid))     
 
     #mongoconn.finishBatchUpdate()
@@ -554,11 +453,11 @@ def callback(ch, method, properties, body):
     uid = None
     db = None
 
-    mongo_url = getMongoServer()
+    mongo_url = getMongoServer(tenant)
 
 
     if "opcode" in msg_dict and msg_dict["opcode"] == "HbaseDDL":
-        logging.info("Got the opcode of Hbase")
+        logging.info("PARNA : Got the opcode of Hbase")
         process_hbase_ddl_request(ch, properties, tenant, instances)
         """
         Read the input and respond.
@@ -593,6 +492,7 @@ def callback(ch, method, properties, body):
             return
       
         collection = MongoClient(mongo_url)[tenant].uploadStats
+        dashboard_data = MongoClient(mongo_url)[tenant].dashboard_data
         collection.update({'uid':uid},{'$inc':{"Compiler.count":1}})
     else:
         """
@@ -608,6 +508,8 @@ def callback(ch, method, properties, body):
     if mongoconn is None:
         mongoconn = MongoConnector({'host':mongo_url, 'context':tenant, \
                                     'create_db_if_not_exist':True})
+
+    redis_conn = RedisConnector(tenant)
 
     compconfig = ConfigParser.RawConfigParser()
     compconfig.read("/etc/xplain/compiler.cfg")
@@ -676,7 +578,6 @@ def callback(ch, method, properties, body):
                 output_file_name = destination + "/" + compilername + ".out"
                 stats_newdbs_key = "Compiler." + compilername + ".newDBs"
                 stats_newtables_key = "Compiler." + compilername + ".newTables"
-                stats_newcolumns_key = "Compiler." + compilername + ".newColumns"
                 stats_runsuccess_key = "Compiler." + compilername + ".run_success"
                 stats_runfailure_key = "Compiler." + compilername + ".run_failure"
                 stats_success_key = "Compiler." + compilername + ".success"
@@ -699,7 +600,7 @@ def callback(ch, method, properties, body):
                 rx_data = client_socket.recv(512)
 
                 if rx_data == "Done":
-                    print "Got Done"
+                    logging.info("Got Done")
 
                 client_socket.close()
 
@@ -722,62 +623,33 @@ def callback(ch, method, properties, body):
 
                 if compile_doc is not None:
                     for key in compile_doc:
+                        hive_success = 0
+
+                        if key == "hive" and 'ErrorSignature' in compile_doc:
+                            if len(compile_doc['ErrorSignature']) == 0:
+                                hive_success = 1
+
                         mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
                         if compile_doc[key].has_key("InputTableList"):
                             tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], 
-                                                           mongoconn, tenant, entity, True,  
+                                                           mongoconn, redis_conn, tenant, entity, True,  
                                                            tableEidList)
                             if msg_dict.has_key('uid'):
                                 collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
                                                   stats_newtables_key: tmpAdditions[1]}})
+                                dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
 
                         if compile_doc[key].has_key("OutputTableList"):
-                            tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, tenant, entity, False, tableEidList)
+                            tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, redis_conn, tenant, entity, False, tableEidList, hive_success)
                             if msg_dict.has_key('uid'):
                                 collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
 
                         if compile_doc[key].has_key("ddlcolumns"):
                             tmpAdditions = processColumns(compile_doc[key]["ddlcolumns"], 
-                                                           mongoconn, tenant, entity)
+                                                           mongoconn, redis_conn, tenant, entity)
                             if msg_dict.has_key('uid'):
                                 collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
                                                   stats_newtables_key: tmpAdditions[1]}})
-
-                        if "selectColumnNames" in compile_doc[key]:
-                            tmpAdditions = addColumns(compile_doc[key]["selectColumnNames"], mongoconn, tenant, entity, 
-                                    "SELECT", "tableName", "columnName")
-
-                            if msg_dict.has_key('uid'):
-                                collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
-
-                        if "groupByColumns" in compile_doc[key]:
-                            tmpAdditions = addColumns(compile_doc[key]["groupByColumns"], mongoconn, tenant, entity, 
-                                    "GROUPBY", "tableName", "columnName")
-
-                            if msg_dict.has_key('uid'):
-                                collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
-
-                        if "whereColumns" in compile_doc[key]:
-                            tmpAdditions = addColumns(compile_doc[key]["whereColumns"], mongoconn, tenant, entity, 
-                                    "FILTER", "tableName", "columnName")
-
-                            if msg_dict.has_key('uid'):
-                                collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
-
-                        if "orderByColumns" in compile_doc[key]:
-                            tmpAdditions = addColumns(compile_doc[key]["orderByColumns"], mongoconn, tenant, entity, 
-                                    "ORDERBY", "tableName", "columnName")
-
-                            if msg_dict.has_key('uid'):
-                                collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
-
-                        if "joinPredicates" in compile_doc[key]:
-                            
-                            tmpAdditions = addJoinColumns(compile_doc[key]["joinPredicates"], mongoconn, tenant, entity, 
-                                    "JOIN")
-
-                            if msg_dict.has_key('uid'):
-                                collection.update({'uid':uid},{"$inc": {stats_newcolumns_key: tmpAdditions}})
 
                 if msg_dict.has_key('uid'):
                     collection.update({'uid':uid},{"$inc": {stats_runsuccess_key: 1, stats_runfailure_key: 0}})
