@@ -31,3 +31,4 @@
 - hosts: tag_Name_Redis
   roles:
   - role: redis
+    sudo: yes
