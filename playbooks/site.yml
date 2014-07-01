@@ -28,6 +28,6 @@
   roles:
   - role: foundation
 
- - hosts: tag_Name_Redis
-   roles:
-   - role: redis
+- hosts: tag_Name_Redis
+  roles:
+  - role: redis
