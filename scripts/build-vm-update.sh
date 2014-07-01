@@ -12,6 +12,7 @@ cp /home/ubuntu/build/deployment/VM/apache-hive-0.13.0-SNAPSHOT-bin.tar.gz .
 cp /home/ubuntu/build/deployment/VM/clear_tenant.sh .
 cp /home/ubuntu/build/deployment/VM/monitrc .
 cp /home/ubuntu/build/deployment/VM/nodejs.conf .
+cp /home/ubuntu/build/deployment/VM/xplain_admin.conf .
 cp /home/ubuntu/build/deployment/VM/README .
 cp /home/ubuntu/build/deployment/VM/refresh.sh .
 cp /home/ubuntu/build/deployment/VM/vm-update.yml .

@@ -126,6 +126,8 @@
     apt: pkg=rabbitmq-server state=present
   - name: Copy node upstart configuration file
     copy: src=/home/ubuntu/nodejs.conf dest=/etc/init/nodejs.conf
+  - name: Copy xplain_admin upstart configuration file
+    copy: src=/home/xplain/xplain_admin.conf dest=/etc/init/xplain_admin.conf
   - name: Install Monit service
     apt: pkg=monit state=present
   - name: Untar Baazdata App
