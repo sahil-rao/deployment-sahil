@@ -103,6 +103,8 @@
 - name: Start hive server
   action: service name=hive state=started
   sudo: yes
+- name: Install redis
+  pip: name=redis
 - name: Start monit service
   shell: monit 
   sudo: yes
