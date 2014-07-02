@@ -8,6 +8,14 @@
     shell: mongod --fork --logpath /mnt/volume1/mongo/log/mongo.log -dbpath /mnt/volume1/mongo/db
     ignore_errors: True
 
+  #Redis deployments
+  - name: Add APT repository with latest version of redis
+    apt_repository: repo='ppa:rwky/redis' state=present update_cache=yes
+  - name: Install redis-server
+    apt: name=redis-server state=present
+  - name: Install redis-py
+    pip: name=redis
+
   - name: Untar flightpath
     shell: tar -zxf /home/xplain/flightpath-deployment.tar.gz chdir=/
   - name: Copy the service files
@@ -83,3 +91,5 @@
     npm: path=/var/xplain
   - name: copy monitrc file
     copy: src=/home/xplain/monitrc dest=/etc/monit/monitrc
+
+  
