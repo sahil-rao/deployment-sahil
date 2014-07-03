@@ -180,10 +180,10 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, ta
         if table_entity is None:
             logging.info("Creating table entity for {0}\n".format(tablename))     
             eid = IdentityService.getNewIdentity(tenant, True)
-            mongoconn.addEn(eid, tablename, tenant,\
+            table_entity = mongoconn.addEn(eid, tablename, tenant,\
                       EntityType.SQL_TABLE, endict, None)
-            table_entity = mongoconn.getEntityByName(tablename)
-            tableCount = tableCount + 1
+            if eid == table_entity.eid:
+                tableCount = tableCount + 1
 
         tableEidList.add(table_entity.eid)
 
@@ -196,10 +196,10 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, ta
             if database_entity is None:
                 logging.info("Creating database entity for {0}\n".format(database_name))     
                 eid = IdentityService.getNewIdentity(tenant, True)
-                mongoconn.addEn(eid, database_name, tenant,\
+                database_entity = mongoconn.addEn(eid, database_name, tenant,\
                           EntityType.SQL_DATABASE, endict, None)
-                database_entity = mongoconn.getEntityByName(database_name)
-                dbCount = dbCount + 1
+                if eid == database_entity.eid:
+                    dbCount = dbCount + 1
 
         """
         Create relations, first between tables and query             
