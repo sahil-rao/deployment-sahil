@@ -95,7 +95,45 @@ def updateRelationCounter(redis_conn, eid):
         if rel['relationship_type'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_entity'], eid, rel['relationship_type'], "instance_count", incrBy=1)
 
-def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, update=False):
+def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection, update=False, name=None, etype=None, data=None):
+
+    if eid is None:
+        if not etype == 'SQL_QUERY': 
+            return
+
+        """
+        For SQL query, send any new query to compiler first.
+        If this is an update to existing query, send a message to math,
+        for update analysis.
+        """
+        if update == False:
+            jinst_dict = {} 
+            jinst_dict['program_type'] = "SQL"
+            jinst_dict['query'] = name
+            if data is not None:
+                jinst_dict['data'] = data
+            compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
+
+            if uid is not None:
+                compiler_msg['uid'] = uid
+            message_id = genMessageID("FP", collection)
+            compiler_msg['message_id'] = message_id
+            message = dumps(compiler_msg)
+            connection1.publish(ch,'','compilerqueue',message)
+            incrementPendingMessage(collection, uid, message_id)
+            logging.info("Published Compiler Message {0}\n".format(message))
+        else:
+            redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
+
+            mongoconn.db.dashboard_data.update({'tenant':tenant}, \
+                {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
+
+            """
+            Get relationships for the given entity.
+            """
+            updateRelationCounter(redis_conn, eid)
+
+        return
 
     entity = mongoconn.getEntity(eid)
     if entity.etype == 'HADOOP_JOB':
@@ -114,6 +152,8 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, upda
             pub = False
         if pub == True:
             compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
+            if data is not None:
+                compiler_msg['data'] = data
             if uid is not None:
                 compiler_msg['uid'] = uid
             message_id = genMessageID("FP", collection)
@@ -123,60 +163,6 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, upda
             incrementPendingMessage(collection, uid, message_id)
             logging.info("Published Compiler Message {0}\n".format(message))
     
-    """
-    For SQL query, send any new query to compiler first.
-    If this is an update to existing query, send a message to math,
-       for update analysis.
-    """
-    if entity.etype == 'SQL_QUERY': 
-        if update == False:
-            redis_conn.createEntityProfile(eid, "SQL_QUERY")
-            redis_conn.createEntitySortedKey(eid, "SQL_QUERY", "instance_count")
-            redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
-
-            #redis_conn.createEntityProfile()
-
-            mongoconn.db.dashboard_data.update({'tenant':tenant}, \
-                {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
-                upsert = True)
-
-            jinst_dict = {'entity_id':entity.eid} 
-            jinst_dict['program_type'] = "SQL"
-            jinst_dict['query'] = entity.name
-            compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
-            if uid is not None:
-                compiler_msg['uid'] = uid
-            message_id = genMessageID("FP", collection)
-            compiler_msg['message_id'] = message_id
-            message = dumps(compiler_msg)
-            connection1.publish(ch,'','compilerqueue',message)
-            incrementPendingMessage(collection, uid, message_id)
-            logging.info("Published Compiler Message {0}\n".format(message))
-        else:
-
-            redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
-
-            mongoconn.db.dashboard_data.update({'tenant':tenant}, \
-                {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
-
-            """
-            Get relationships for the given entity.
-            """
-            updateRelationCounter(redis_conn, eid)
-
-            """
-            math_msg = {'tenant':tenant, 'entityid': eid, 'opcode':"UpdateSQLRelations"}
-            if uid is not None:
-                math_msg['uid'] = uid
-            message_id = genMessageID("FP", collection)
-            math_msg['message_id'] = message_id
-            message = dumps(math_msg)
-            connection1.publish(ch,'','mathqueue',message)
-            collection.update({'uid':uid},{'$inc':{"Math2MessageCount":1}})
-            incrementPendingMessage(collection, uid,message_id)
-            logging.info("Published Message {0}\n".format(message))
-            """
-
 def callback(ch, method, properties, body):
     starttime = time.time()
     

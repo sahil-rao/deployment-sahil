@@ -180,10 +180,10 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, ta
         if table_entity is None:
             logging.info("Creating table entity for {0}\n".format(tablename))     
             eid = IdentityService.getNewIdentity(tenant, True)
-            table_entity = mongoconn.addEn(eid, tablename, tenant,\
+            mongoconn.addEn(eid, tablename, tenant,\
                       EntityType.SQL_TABLE, endict, None)
-            if eid == table_entity.eid:
-                tableCount = tableCount + 1
+            table_entity = mongoconn.getEntityByName(tablename)
+            tableCount = tableCount + 1
 
         tableEidList.add(table_entity.eid)
 
@@ -196,10 +196,10 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, ta
             if database_entity is None:
                 logging.info("Creating database entity for {0}\n".format(database_name))     
                 eid = IdentityService.getNewIdentity(tenant, True)
-                database_entity = mongoconn.addEn(eid, database_name, tenant,\
+                mongoconn.addEn(eid, database_name, tenant,\
                           EntityType.SQL_DATABASE, endict, None)
-                if eid == database_entity.eid:
-                    dbCount = dbCount + 1
+                database_entity = mongoconn.getEntityByName(database_name)
+                dbCount = dbCount + 1
 
         """
         Create relations, first between tables and query             
@@ -428,6 +428,161 @@ def process_hbase_ddl_request(ch, properties, tenant, instances):
                                                      properties.correlation_id),
                      body=dumps(resp_dict))
 
+def updateRelationCounter(redis_conn, eid):
+
+    relationshipTypes = ['QUERY_SELECT', 'QUERY_JOIN', 'QUERY_FILTER', "READ", "WRITE",
+                         'QUERY_GROUPBY', 'QUERY_ORDERBY', "COOCCURRENCE_GROUP"]
+
+    relations_to = redis_conn.getRelationships(eid, None, None)
+    for rel in relations_to:
+        if rel['relationship_type'] in relationshipTypes:
+            redis_conn.incrRelationshipCounter(eid, rel['end_entity'], rel['relationship_type'], "instance_count", incrBy=1)
+
+    relations_from = redis_conn.getRelationships(None, eid, None)
+    for rel in relations_to:
+        if rel['relationship_type'] in relationshipTypes:
+            redis_conn.incrRelationshipCounter(rel['start_entity'], eid, rel['relationship_type'], "instance_count", incrBy=1)
+
+def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query, data, compile_doc):
+    """
+        Takes a list of compiler output files and performs following:
+            1. If the compiler is unsuccessful in parsing the query:
+                  Build the profile info
+            2. If the compiler is successful in parsing the query:
+                - Check if the entity with MD5 hash already exists.
+                    o If the query entity exists, then add the instance and return
+                      No further processing is necessary.
+                    o If the query entity does not exist, then add the profile, record the hash.
+            3. After all the compiler outputs have been processed, create the query entity.
+    """
+    entity = None
+    tableEidList = set()
+    if compile_doc is None:
+        return
+
+    profile_dict = { "profile": { "Compiler" : {}}}
+    comp_profile = profile_dict["profile"]["Compiler"]
+
+    for key in compile_doc:
+        comp_profile[key] = compile_doc[key]
+        if key == "gsp":
+            if "queryHash" in compile_doc[key]:
+                q_hash =  compile_doc[key]["queryHash"]
+                profile_dict["md5"] = q_hash
+                logging.info("Compiler {0} Program {1}  md5 {2}".format(key, query, q_hash))
+            if "queryTemplate" in compile_doc[key]:
+                profile_dict["logical_name"] = compile_doc[key]["queryTemplate"]
+
+    custom_id = None
+    if data is not None and "custom_id" in data:
+        custom_id = data['custom_id']
+
+    """
+        get Entity
+        if no entity then create entity
+    """
+    entity = None
+    if q_hash is not None:
+        entity = mongoconn.searchEntity({"md5":q_hash})
+
+    if entity is None:
+        logging.info("Going to create the entity")
+        profile_dict["instance_count"] = 1
+        try:
+            eid = IdentityService.getNewIdentity(tenant, True)
+            entity = mongoconn.addEn(eid, query, tenant,\
+                       EntityType.SQL_QUERY, profile_dict, None) 
+            if entity is None:
+                logging.info("No Entity found")
+                return
+
+            redis_conn.createEntityProfile(eid, "SQL_QUERY")
+            redis_conn.createEntitySortedKey(eid, "SQL_QUERY", "instance_count")
+            redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
+
+            #redis_conn.createEntityProfile()
+
+            mongoconn.db.dashboard_data.update({'tenant':tenant}, \
+                      {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
+                       upsert = True)
+        except DuplicateKeyError:
+            inst_dict = {}
+            
+            if custom_id is not None:
+                inst_dict = {'custom_id':custom_id}
+            entity = mongoconn.searchEntity({"md5":q_hash})
+            if entity is None:
+                logging.info("Entity not found for hash - {0}".format(q_hash))
+                return
+    else:
+        """
+        Update instance count, store the instance and update the instance counts in 
+        relationships.
+        """
+
+        redis_conn.incrEntityCounter(entity.eid, "instance_count", incrBy=1)
+
+        mongoconn.db.dashboard_data.update({'tenant':tenant}, \
+            {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
+
+        updateRelationCounter(redis_conn, entity.eid)
+
+        inst_dict = None
+        if custom_id is not None:
+            inst_dict = {'custom_id':custom_id}
+        mongoconn.updateInstance(entity, query, None, inst_dict)
+
+    for key in compile_doc:
+        try:
+            stats_newdbs_key = "Compiler." + key + ".newDBs"
+            stats_newtables_key = "Compiler." + key + ".newTables"
+            stats_runsuccess_key = "Compiler." + key + ".run_success"
+            stats_runfailure_key = "Compiler." + key + ".run_failure"
+            stats_success_key = "Compiler." + key + ".success"
+            stats_failure_key = "Compiler." + key + ".failure"
+
+            hive_success = 0
+            if key == "hive" and 'ErrorSignature' in compile_doc:
+                if len(compile_doc['ErrorSignature']) == 0:
+                    hive_success = 1
+
+            mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
+
+            if compile_doc[key].has_key("InputTableList"):
+                tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], 
+                                               mongoconn, redis_conn, tenant, entity, True,  
+                                               tableEidList)
+                if uid is not None:
+                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
+                                      stats_newtables_key: tmpAdditions[1]}})
+                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
+    
+            if compile_doc[key].has_key("OutputTableList"):
+                tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, redis_conn, 
+                                               tenant, entity, False, tableEidList)
+                if uid is not None:
+                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
+                    dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
+
+            if compile_doc[key].has_key("ddlcolumns"):
+                tmpAdditions = processColumns(compile_doc[key]["ddlcolumns"], 
+                                                           mongoconn, redis_conn, tenant, entity)
+                if uid is not None:
+                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
+                                      stats_newtables_key: tmpAdditions[1]}})
+
+            if compile_doc[key].has_key("ErrorSignature") and\
+                len(compile_doc[key]["ErrorSignature"]) > 0:
+                collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1}})
+            else:
+                collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0}})
+        except:
+            logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))     
+            if uid is not None:
+                collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+
+    return entity
+
 def callback(ch, method, properties, body):
     startTime = time.time()
     dbAdditions = [0,0]
@@ -514,20 +669,26 @@ def callback(ch, method, properties, body):
     compconfig = ConfigParser.RawConfigParser()
     compconfig.read("/etc/xplain/compiler.cfg")
 
+    msg_data = None
+    if "data" in msg_dict:
+        msg_data = msg_dict["data"]
+
     """
     Generate the CSV from the job instances.
     """
     counter = 0
     for inst in instances:
         compile_doc = None
-        prog_id = inst["entity_id"] 
-        try:
-            entity = mongoconn.getEntity(prog_id)
-        except:
-            continue
+        prog_id = ""
+        if "entity_id" in inst:
+            prog_id = inst["entity_id"] 
+            try:
+                entity = mongoconn.getEntity(prog_id)
+            except:
+                continue
 
-        if entity is None:
-            continue
+        #if entity is None:
+        #    continue
 
         if inst['program_type'] == "Pig":
             compile_doc = generatePigSignature(inst['pig_features'], tenant, prog_id)
@@ -558,7 +719,12 @@ def callback(ch, method, properties, body):
         dest_file.flush()
         dest_file.close()
 
-        tableEidList = set()
+        """
+          Parameters required to create a query entity in the system.
+          entity_id, query, tenant, profile documents.
+        """
+        comp_outs = {}
+
         """
           Get the list of compilers we need to run. 
           Run each valid compiler we find.
@@ -604,11 +770,6 @@ def callback(ch, method, properties, body):
 
                 client_socket.close()
 
-                compile_doc = None
-                logging.info("Loading file : "+ output_file_name)
-                with open(output_file_name) as data_file:    
-                    compile_doc = load(data_file)
-
                 """
                 It is possible the tenant has been cleared. If this is the case then do not add an new entities.
                 """
@@ -621,49 +782,22 @@ def callback(ch, method, properties, body):
                     ch.basic_ack(delivery_tag=method.delivery_tag)   
                     return
 
+                compile_doc = None
+                logging.info("Loading file : "+ output_file_name)
+                with open(output_file_name) as data_file:    
+                    compile_doc = load(data_file)
+
                 if compile_doc is not None:
                     for key in compile_doc:
-                        hive_success = 0
+                        comp_outs[key] = compile_doc[key]
 
-                        if key == "hive" and 'ErrorSignature' in compile_doc:
-                            if len(compile_doc['ErrorSignature']) == 0:
-                                hive_success = 1
-
-                        mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
-                        if compile_doc[key].has_key("InputTableList"):
-                            tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], 
-                                                           mongoconn, redis_conn, tenant, entity, True,  
-                                                           tableEidList)
-                            if msg_dict.has_key('uid'):
-                                collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
-                                                  stats_newtables_key: tmpAdditions[1]}})
-                                dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
-
-                        if compile_doc[key].has_key("OutputTableList"):
-                            tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, redis_conn, tenant, entity, False, tableEidList, hive_success)
-                            if msg_dict.has_key('uid'):
-                                collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
-
-                        if compile_doc[key].has_key("ddlcolumns"):
-                            tmpAdditions = processColumns(compile_doc[key]["ddlcolumns"], 
-                                                           mongoconn, redis_conn, tenant, entity)
-                            if msg_dict.has_key('uid'):
-                                collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
-                                                  stats_newtables_key: tmpAdditions[1]}})
-
-                if msg_dict.has_key('uid'):
-                    collection.update({'uid':uid},{"$inc": {stats_runsuccess_key: 1, stats_runfailure_key: 0}})
-                    if compile_doc[key].has_key("ErrorSignature") and\
-                       len(compile_doc[key]["ErrorSignature"]) > 0:
-                        collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1}})
-                    else:
-                        collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0}})
             except:
                 logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
                 if msg_dict.has_key('uid'):
                     collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
                 mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
 
+        entity = processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query, msg_data, comp_outs)
         msg_dict = {'tenant':tenant, 'opcode':"GenerateQueryProfile", "entityid":entity.eid} 
         if uid is not None:
             msg_dict['uid'] = uid
