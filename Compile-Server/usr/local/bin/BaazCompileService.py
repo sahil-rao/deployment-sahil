@@ -40,7 +40,6 @@ if usingAWS:
     from boto.s3.key import Key
     import boto
 
-
 """
 For VM there is not S3 connectivity. Save the logs with a timestamp. 
 At some point we should move to using a log rotate handler in the VM.
@@ -111,7 +110,7 @@ def end_of_phase_callback(params, current_phase):
     msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"} 
     msg_dict['uid'] = params['uid']
     message = dumps(msg_dict)
-    params['connection'].publish(params['channel'],'',params['queuename'],message) 
+    params['connection'].publish(params['channel'],'',params['queuename'],message)
     return
     
 def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
@@ -129,21 +128,23 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
         column_entity = mongoconn.getEntityByName(column_entity_name)
 
         if table_entity is None:
-            logging.info("Creating table entity for {0}\n".format(tablename))     
+            logging.info("Creating table entity for {0}\n".format(tablename))
             eid = IdentityService.getNewIdentity(tenant, True)
             table_entity = mongoconn.addEn(eid, tablename, tenant,\
                       EntityType.SQL_TABLE, {}, None)
-            tableCount = tableCount + 1
+            if eid == table_entity.eid:
+                redis_conn.createEntityProfile(eid, "SQL_TABLE")
+                redis_conn.incrEntityCounter(eid, "instance_count", sort=True, incrBy=0)
+                tableCount = tableCount + 1
 
         if column_entity is None:
-            logging.info("Creating Column entity for {0}\n".format(column_entity_name))     
+            logging.info("Creating Column entity for {0}\n".format(column_entity_name))
             eid = IdentityService.getNewIdentity(tenant, True)
             column_entity = mongoconn.addEn(eid, column_entity_name, tenant,\
                             EntityType.SQL_TABLE_COLUMN, column_entry, None)
 
             if column_entity is not None:
-                logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))     
-                #print "Form relation : ", join_entity.name, " ", m_query_entity.name
+                logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))
                 redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
 
     """
@@ -151,7 +152,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
     """
     if entity is not None and table_entity is not None:
         redis_conn.createRelationship(entity.eid, table_entity.eid, "CREATE")
-        logging.info(" CREATE Relation between {0} {1}\n".format(entity.eid, table_entity.eid))     
+        logging.info(" CREATE Relation between {0} {1}\n".format(entity.eid, table_entity.eid))
     return [0, tableCount]
 
 def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, tableEidList=None, hive_success=0):
@@ -182,8 +183,13 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, ta
             eid = IdentityService.getNewIdentity(tenant, True)
             mongoconn.addEn(eid, tablename, tenant,\
                       EntityType.SQL_TABLE, endict, None)
+
             table_entity = mongoconn.getEntityByName(tablename)
-            tableCount = tableCount + 1
+
+            if eid == table_entity.eid:
+                redis_conn.createEntityProfile(eid, "SQL_TABLE")
+                redis_conn.incrEntityCounter(eid, "instance_count", sort=True, incrBy=0)
+                tableCount = tableCount + 1
 
         tableEidList.add(table_entity.eid)
 
@@ -497,8 +503,7 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
                 return
 
             redis_conn.createEntityProfile(eid, "SQL_QUERY")
-            redis_conn.createEntitySortedKey(eid, "SQL_QUERY", "instance_count")
-            redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
+            redis_conn.incrEntityCounter(eid, "instance_count", sort = True,incrBy=1)
 
             #redis_conn.createEntityProfile()
 
