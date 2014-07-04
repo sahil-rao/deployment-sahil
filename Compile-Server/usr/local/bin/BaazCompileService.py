@@ -567,7 +567,7 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
                                                tenant, entity, False, tableEidList)
                 if uid is not None:
                     collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
-                    dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
+                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
 
             if compile_doc[key].has_key("ddlcolumns"):
                 tmpAdditions = processColumns(compile_doc[key]["ddlcolumns"], 
