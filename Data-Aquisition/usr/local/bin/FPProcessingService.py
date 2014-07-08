@@ -95,7 +95,7 @@ def updateRelationCounter(redis_conn, eid):
         if rel['relationship_type'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_entity'], eid, rel['relationship_type'], "instance_count", incrBy=1)
 
-def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection, update=False, name=None, etype=None, data=None):
+def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, update=False, name=None, etype=None, data=None):
 
     if eid is None:
         if not etype == 'SQL_QUERY': 
