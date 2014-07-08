@@ -128,13 +128,13 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
         column_entity = mongoconn.getEntityByName(column_entity_name)
 
         if table_entity is None:
-            logging.info("Creating table entity for {0}\n".format(tablename))
+            logging.info("Creating table entity for {0} position 6\n".format(tablename))
             eid = IdentityService.getNewIdentity(tenant, True)
             table_entity = mongoconn.addEn(eid, tablename, tenant,\
                       EntityType.SQL_TABLE, {}, None)
             if eid == table_entity.eid:
-                redis_conn.createEntityProfile(eid, "SQL_TABLE")
-                redis_conn.incrEntityCounter(eid, "instance_count", sort=True, incrBy=0)
+                redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
+                redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
                 tableCount = tableCount + 1
 
         if column_entity is None:
@@ -179,16 +179,14 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, ta
         """
         table_entity = mongoconn.getEntityByName(tablename)
         if table_entity is None:
-            logging.info("Creating table entity for {0}\n".format(tablename))     
+            logging.info("Creating table entity for {0} position 5\n".format(tablename))     
             eid = IdentityService.getNewIdentity(tenant, True)
-            mongoconn.addEn(eid, tablename, tenant,\
+            table_entity = mongoconn.addEn(eid, tablename, tenant,\
                       EntityType.SQL_TABLE, endict, None)
 
-            table_entity = mongoconn.getEntityByName(tablename)
-
             if eid == table_entity.eid:
-                redis_conn.createEntityProfile(eid, "SQL_TABLE")
-                redis_conn.incrEntityCounter(eid, "instance_count", sort=True, incrBy=0)
+                redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
+                redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
                 tableCount = tableCount + 1
 
         tableEidList.add(table_entity.eid)
@@ -216,23 +214,23 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, ta
                 redis_conn.createRelationship(table_entity.eid, entity.eid, "READ")
                 redis_conn.setRelationship(table_entity.eid, entity.eid, "READ", {"hive_success":hive_success})
                 redis_conn.incrRelationshipCounter(table_entity.eid, entity.eid, "READ", "instance_count", incrBy=1)
-                logging.info("Relation between {0} {1}\n".format(table_entity.eid, entity.eid))     
+                logging.info("Relation between {0} {1} position 1\n".format(table_entity.eid, entity.eid))     
             else:
                 redis_conn.createRelationship(entity.eid, table_entity.eid, "WRITE")
                 redis_conn.setRelationship(entity.eid, table_entity.eid, "WRITE", {"hive_success":hive_success})
                 redis_conn.incrRelationshipCounter(entity.eid, table_entity.eid, "WRITE", "instance_count", incrBy=1)
-                logging.info("Relation between {0} {1}\n".format(entity.eid, table_entity.eid))     
+                logging.info("Relation between {0} {1} position 2\n".format(entity.eid, table_entity.eid))     
 
         if database_entity is not None:
             if table_entity is not None:
                 redis_conn.createRelationship(database_entity.eid, table_entity.eid, "CONTAINS")
-                logging.info("Relation between {0} {1}\n".format(database_entity.eid, table_entity.eid))     
+                logging.info("Relation between {0} {1} position 3\n".format(database_entity.eid, table_entity.eid))     
 
             """ Note this assumes that formRelations is idempotent
             """
             if entity is not None:
                 redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
-                logging.info("Relation between {0} {1}\n".format(database_entity.eid, entity.eid))     
+                logging.info("Relation between {0} {1} position 4\n".format(database_entity.eid, entity.eid))     
 
     #mongoconn.finishBatchUpdate()
     
@@ -502,8 +500,8 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
                 logging.info("No Entity found")
                 return
 
-            redis_conn.createEntityProfile(eid, "SQL_QUERY")
-            redis_conn.incrEntityCounter(eid, "instance_count", sort = True,incrBy=1)
+            redis_conn.createEntityProfile(entity.eid, "SQL_QUERY")
+            redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
 
             #redis_conn.createEntityProfile()
 
