@@ -576,9 +576,9 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
 
             if compile_doc[key].has_key("ErrorSignature") and\
                 len(compile_doc[key]["ErrorSignature"]) > 0:
-                collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1}})
+                collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
             else:
-                collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0}})
+                collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
         except:
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))     
             if uid is not None:
