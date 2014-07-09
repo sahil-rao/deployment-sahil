@@ -576,9 +576,9 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
 
             if compile_doc[key].has_key("ErrorSignature") and\
                 len(compile_doc[key]["ErrorSignature"]) > 0:
-                collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1}})
+                collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
             else:
-                collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0}})
+                collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
         except:
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))     
             if uid is not None:
@@ -660,7 +660,6 @@ def callback(ch, method, properties, body):
         ch.basic_ack(delivery_tag=method.delivery_tag)
            
         return
-
 
     mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
@@ -810,7 +809,7 @@ def callback(ch, method, properties, body):
         connection1.publish(ch,'','mathqueue',message)
         logging.info("Sent message to Math pos1:" + str(msg_dict))
          
-        incrementPendingMessage(collection, uid,message_id)
+        incrementPendingMessage(collection, redis_conn, uid,message_id)
         collection.update({'uid':uid},{'$inc':{"Math3MessageCount":1}})
 
         if not usingAWS:
@@ -837,7 +836,7 @@ def callback(ch, method, properties, body):
     connection1.basicAck(ch,method)
     collection.update({'uid':uid},{'$inc':{"RemoveCompilerMessageCount":1}})
     callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
-    decrementPendingMessage(collection, uid, received_msgID, end_of_phase_callback, callback_params)
+    decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
 
 connection1 = RabbitConnection(callback, ['compilerqueue'],['mathqueue'], {},BAAZ_COMPILER_LOG_FILE)

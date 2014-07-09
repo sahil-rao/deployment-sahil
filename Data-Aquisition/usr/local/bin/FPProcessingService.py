@@ -95,7 +95,7 @@ def updateRelationCounter(redis_conn, eid):
         if rel['relationship_type'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_entity'], eid, rel['relationship_type'], "instance_count", incrBy=1)
 
-def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection, update=False, name=None, etype=None, data=None):
+def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, update=False, name=None, etype=None, data=None):
 
     if eid is None:
         if not etype == 'SQL_QUERY': 
@@ -120,7 +120,7 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection, update=False, na
             compiler_msg['message_id'] = message_id
             message = dumps(compiler_msg)
             connection1.publish(ch,'','compilerqueue',message)
-            incrementPendingMessage(collection, uid, message_id)
+            incrementPendingMessage(collection, redis_conn, uid, message_id)
             logging.info("Published Compiler Message {0}\n".format(message))
         else:
             redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
@@ -160,7 +160,7 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, collection, update=False, na
             compiler_msg['message_id'] = message_id
             message = dumps(compiler_msg)
             connection1.publish(ch,'','compilerqueue',message)
-            incrementPendingMessage(collection, uid, message_id)
+            incrementPendingMessage(collection, redis_conn, uid, message_id)
             logging.info("Published Compiler Message {0}\n".format(message))
     
 def callback(ch, method, properties, body):
@@ -290,13 +290,13 @@ def callback(ch, method, properties, body):
         Incrmements an Pre-Processing count, sends to compiler, then decrements the count
         '''
         message_id = genMessageID("Pre", collection)
-        incrementPendingMessage(collection, uid, message_id)
+        incrementPendingMessage(collection, redis_conn, uid, message_id)
         logging.info("Incremementing message count: " + message_id)
 
         parseDir(tenant, logpath, mongoconn, redis_conn, sendToCompiler, uid, ch, collection)
 
         callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
-        decrementPendingMessage(collection, uid, message_id, end_of_phase_callback, callback_params)
+        decrementPendingMessage(collection, redis_conn, uid, message_id, end_of_phase_callback, callback_params)
         logging.info("Decrementing message count: " + message_id)
 
         if usingAWS:
@@ -321,7 +321,7 @@ def callback(ch, method, properties, body):
         message = dumps(math_msg)
         connection1.publish(ch,'','mathqueue',message)
         collection.update({'uid':uid},{'$inc':{"Math2MessageCount":1}})
-        incrementPendingMessage(collection, uid,message_id)
+        incrementPendingMessage(collection, redis_conn, uid,message_id)
         logging.info("Published Message {0}\n".format(message))
     except:
         logging.exception("Publishing Math Message")
