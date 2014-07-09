@@ -29,15 +29,18 @@
 - name: Kill Monit so it won't interfere with installation
   shell: monit quit
   sudo: yes
+- name: Remove old monit ID
+  shell: rm -f /var/lib/monit/id
+  sudo: yes
 - name: Remove any previous service that may be installed.
   shell: update-rc.d -f baazdataacquisition remove
   sudo: yes
 - name: Stop running upstart script
   service: name=dataacquisitionservice state=stopped
   sudo: yes
-- name: Start dataacquisitionservice (upstart).
-  service: name=dataacquisitionservice state=started
-  sudo: yes
+# - name: Start dataacquisitionservice (upstart).
+#   service: name=dataacquisitionservice state=started
+#   sudo: yes
 
 #Start of Analytics module deployment.
 - name: Get Analytics Module
@@ -61,9 +64,9 @@
 - name: Stop mathservice.
   service: name=mathservice state=stopped
   sudo: yes
-- name: Start mathservice (upstart).
-  service: name=mathservice state=started
-  sudo: yes
+# - name: Start mathservice (upstart).
+#   service: name=mathservice state=started
+#   sudo: yes
 
 - name: Get Compiler Module
   shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Compiler.tar.gz .
@@ -91,12 +94,12 @@
 - name: Stop compileserver.
   service: name=compileserver state=stopped
   sudo: yes
-- name: Start compileserver.
-  service: name=compileserver state=started
-  sudo: yes
-- name: Start compileservice.
-  service: name=compileservice state=started
-  sudo: yes
+# - name: Start compileserver.
+#   service: name=compileserver state=started
+#   sudo: yes
+# - name: Start compileservice.
+#   service: name=compileservice state=started
+#   sudo: yes
 - name: copy monitrc file
   template: src=roles/backoffice/files/monitrc dest=/etc/monit/monitrc
   sudo: yes
@@ -108,3 +111,10 @@
 - name: Start monit service
   shell: monit 
   sudo: yes
+# - name: Reload monit
+#   shell: monit reload
+#   sudo: yes
+# - name: Use monit to start all services
+#   shell: monit start all
+#   sudo: yes
+
