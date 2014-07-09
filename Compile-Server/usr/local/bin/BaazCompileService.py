@@ -439,13 +439,13 @@ def updateRelationCounter(redis_conn, eid):
 
     relations_to = redis_conn.getRelationships(eid, None, None)
     for rel in relations_to:
-        if rel['relationship_type'] in relationshipTypes:
-            redis_conn.incrRelationshipCounter(eid, rel['end_entity'], rel['relationship_type'], "instance_count", incrBy=1)
+        if rel['rtype'] in relationshipTypes:
+            redis_conn.incrRelationshipCounter(eid, rel['end_en'], rel['rtype'], "instance_count", incrBy=1)
 
     relations_from = redis_conn.getRelationships(None, eid, None)
     for rel in relations_to:
-        if rel['relationship_type'] in relationshipTypes:
-            redis_conn.incrRelationshipCounter(rel['start_entity'], eid, rel['relationship_type'], "instance_count", incrBy=1)
+        if rel['rtype'] in relationshipTypes:
+            redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
 
 def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query, data, compile_doc):
     """
