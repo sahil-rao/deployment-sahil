@@ -244,6 +244,18 @@ def callback(ch, method, properties, body):
            not mathconfig.has_option(section, "Import") or\
            not mathconfig.has_option(section, "Function"):
             logging.info("Section "+ section + " Does not have all params")
+            if mathconfig.has_option(section, "BatchMode") and\
+                mathconfig.get(section, "BatchMode") == "True" and\
+                received_msgID is not None:
+                if (int(received_msgID.split("-")[1])%40) > 0:
+                    continue
+
+            if mathconfig.has_option(section, "NotificationName"):
+                notif_queue = mathconfig.get(section, "NotificationQueue")
+                notif_name = mathconfig.get(section, "NotificationName")
+                message = {"messageType" : notif_name, "tenantId": tenant}
+                logging.info("Sending message to node!")
+                connection1.publish(ch,'', notif_queue, dumps(message))
             continue
  
         if not opcode == mathconfig.get(section, "Opcode"):
@@ -281,6 +293,13 @@ def callback(ch, method, properties, body):
 
 	    if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {stats_success_key: 1, stats_failure_key: 0}})
+
+            if mathconfig.has_option(section, "NotificationName"):
+                notif_queue = mathconfig.get(section, "NotificationQueue")
+                notif_name = mathconfig.get(section, "NotificationName")
+                message = {"messageType" : notif_name, "tenantId": tenant}
+                logging.info("Sending message to node!")
+                connection1.publish(ch,'', notif_queue, dumps(message))
         except:
             logging.exception("Section :"+section)
 	    if msg_dict.has_key('uid'):
