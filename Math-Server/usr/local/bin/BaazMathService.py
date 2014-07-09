@@ -9,6 +9,7 @@ from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.XplainBlockingConnection import *
 from flightpath.services.RotatingS3FileHandler import *
 from flightpath.MongoConnector import *
+from flightpath.RedisConnector import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from json import *
@@ -134,9 +135,10 @@ def analytics_callback(params):
     msg_dict['uid'] = params['uid']
     msg_dict['entityid'] = params["entityid"]
     collection = params["collection"]
+    redis_conn = params["redis_conn"]
     message_id = genMessageID("Math", collection, msg_dict['entityid'])
     msg_dict['message_id'] = message_id
-    incrementPendingMessage(collection, msg_dict['uid'], message_id)
+    incrementPendingMessage(collection, redis_conn, msg_dict['uid'], message_id)
 
     message = dumps(msg_dict)
     params['connection'].publish(params['channel'],'',params['queuename'],message) 
@@ -164,7 +166,7 @@ def callback(ch, method, properties, body):
             except:
                 received_msgID = None
             collection.update({'uid':uid},{'$inc':{"Math.tmpcount":1, "Math.time":(endTime-startTime)}})
-            decrementPendingMessage(collection, uid, received_msgID)
+            decrementPendingMessage(collection, redis_conn, uid, received_msgID)
             collection.update({'uid':uid},{'$inc':{"DecrementMath1MessageCount":1}})
 
         connection1.basicAck(ch,method)
@@ -186,6 +188,7 @@ def callback(ch, method, properties, body):
         """
         mongo_url = getMongoServer(tenant)
         db = MongoClient(mongo_url)[tenant]
+        redis_conn = RedisConnector(tenant)
         if not checkUID(db, uid):
             """
             Just drain the queue.
@@ -221,7 +224,7 @@ def callback(ch, method, properties, body):
         """ Compute single table profile of SQL queries
         """
         logging.info("Generating BaseStats for {0}\n".format(tenant))     
-        decrementPendingMessage(collection, uid, received_msgID, end_of_phase_callback, callback_params)
+        decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
         
         connection1.basicAck(ch,method)
 
@@ -270,6 +273,7 @@ def callback(ch, method, properties, body):
                 methodToCall(tenant, entityid)
             elif mathconfig.get(section, "NumParms") == "3":
                 callback_params["collection"] = collection
+                callback_params['redis_conn'] = redis_conn
                 callback_params["callback"] = analytics_callback
                 methodToCall(tenant, entityid, callback_params)
             else:
@@ -293,7 +297,7 @@ def callback(ch, method, properties, body):
                 collection.update({'uid':uid},{"$set": {stats_phase_key: 1}})
 
     logging.info("Event Processing Complete")     
-    decrementPendingMessage(collection, uid, received_msgID, end_of_phase_callback, callback_params)
+    decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
     connection1.basicAck(ch,method)
 
     endTime = time.time()
