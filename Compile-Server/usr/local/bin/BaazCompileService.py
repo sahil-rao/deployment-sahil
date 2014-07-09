@@ -443,7 +443,7 @@ def updateRelationCounter(redis_conn, eid):
             redis_conn.incrRelationshipCounter(eid, rel['end_en'], rel['rtype'], "instance_count", incrBy=1)
 
     relations_from = redis_conn.getRelationships(None, eid, None)
-    for rel in relations_to:
+    for rel in relations_from:
         if rel['rtype'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
 
