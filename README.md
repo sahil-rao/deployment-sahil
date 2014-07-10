@@ -9,10 +9,10 @@ RABBITMQ Notes
 
 To install rabbitmq on any ubuntu machine:
 
-sudo chmod u+x rabbitmqinstall.sh
-sudo ./rabbitmqinstall.sh
+sudo chmod u+x installrabbit.sh
+sudo ./installrabbit.sh
 
-rabbitmqinstall.sh is in deployment/scripts
+installrabbit.sh is in deployment/scripts
 
 ===============================
 To cluster:
