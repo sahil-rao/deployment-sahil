@@ -23,6 +23,7 @@ import datetime
 import time
 import logging
 import socket
+import urllib
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -198,6 +199,7 @@ def callback(ch, method, properties, body):
     dest_file = None
     try:
         filename = msg_dict["filename"]
+        filename = urllib.unquote(filename)
 
         uid = None
         if msg_dict.has_key('uid'):
