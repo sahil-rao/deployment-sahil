@@ -83,8 +83,8 @@ def performTenantCleanup(tenant):
 
 def updateRelationCounter(redis_conn, eid):
 
-    relationshipTypes = ['QUERY_SELECT', 'QUERY_JOIN', 'QUERY_FILTER', "READ", "WRITE",
-                         'QUERY_GROUPBY', 'QUERY_ORDERBY', "COOCCURRENCE_GROUP"]
+    relationshipTypes = ['QUERY_SELECT', 'QUERY_JOIN', 'QUERY_FILTER', "READ", "WRITE", "COOCCURRENCE_TABLE",
+                         'QUERY_GROUPBY', 'QUERY_ORDERBY', "COOCCURRENCE_GROUP", "COOCCURRENCE_QUERY"]
 
     relations_to = redis_conn.getRelationships(eid, None, None)
     for rel in relations_to:

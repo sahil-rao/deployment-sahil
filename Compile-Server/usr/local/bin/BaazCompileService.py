@@ -335,12 +335,12 @@ def process_mongo_rewrite_request(ch, properties, tenant, instances):
                                                      properties.correlation_id),
                      body=dumps(resp_dict))
 
-def process_hbase_ddl_request(ch, properties, tenant, instances):
+def process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn):
 
     """
         Steps to generate Hbase DDL are as following:
-        1. Get the entity ID of the table to start with. Note currently,
-            this works with only one table.
+        1. Gets the pattern ID of the pattern. Finds the tables and 
+           queries involved in the pattern.
         2. Invoke analytics workflow to generate Hbase analytics.
         3. Save the analytics results to a local file.
         4. Send request to DDL generator.
@@ -349,17 +349,45 @@ def process_hbase_ddl_request(ch, properties, tenant, instances):
     """
     compile_doc = None
     prog_id = None
+    queryList = None
+    transformType = ""
     for inst in instances:
-        prog_id = inst["entity_id"] 
+        if 'entity_id' in inst:
+            prog_id = inst['entity_id']
+            transformType = 'SingleTable'
+        elif "patID" in inst:
+            prog_id = inst["patID"]
+            transformType = 'SinglePattern'
 
     if prog_id is None:
-        logging.info("PARNA : No program ID found")
+        logging.info("No program ID found for hbase_ddl_request")
         return
+
+    if transformType == "SingleTable":
+        logging.info('Received SingleTable hbase transformation request.')
+        tableList = [prog_id]
+    elif transformType == "SinglePattern":
+        logging.info('Received SinglePattern hbase transformation request.')
+        join_group = db.entities.find_one({'profile.PatternID':prog_id}, {'eid':1, 'profile.FullQueryList':1})
+
+        if join_group is None:
+            return
+
+        tableList = []
+        queryList = []
+
+        relations_to = redis_conn.getRelationships(join_group['eid'], None, "COOCCURRENCE_TABLE")
+        for rel in relations_to:
+            tableList.append(rel['end_en'])
+
+        if "profile" in join_group:
+            if "FullQueryList" in join_group['profile']:
+                queryList = join_group['profile']['FullQueryList']
 
     """
         Invoke analytics workflow to generate Hbase analytics.
     """
-    result = run_workflow(tenant, prog_id)
+    result = run_workflow(tenant, tableList, queryList)
 
     """
         Save the analytics results to a local file.
@@ -434,8 +462,8 @@ def process_hbase_ddl_request(ch, properties, tenant, instances):
 
 def updateRelationCounter(redis_conn, eid):
 
-    relationshipTypes = ['QUERY_SELECT', 'QUERY_JOIN', 'QUERY_FILTER', "READ", "WRITE",
-                         'QUERY_GROUPBY', 'QUERY_ORDERBY', "COOCCURRENCE_GROUP"]
+    relationshipTypes = ['QUERY_SELECT', 'QUERY_JOIN', 'QUERY_FILTER', "READ", "WRITE", "COOCCURRENCE_TABLE",
+                         'QUERY_GROUPBY', 'QUERY_ORDERBY', "COOCCURRENCE_GROUP", "COOCCURRENCE_QUERY"]
 
     relations_to = redis_conn.getRelationships(eid, None, None)
     for rel in relations_to:
@@ -615,8 +643,10 @@ def callback(ch, method, properties, body):
 
 
     if "opcode" in msg_dict and msg_dict["opcode"] == "HbaseDDL":
-        logging.info("PARNA : Got the opcode of Hbase")
-        process_hbase_ddl_request(ch, properties, tenant, instances)
+        logging.info("Got the opcode of Hbase")
+        db = MongoClient(mongo_url)[tenant]
+        redis_conn = RedisConnector(tenant)
+        process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn)
         """
         Read the input and respond.
         """
