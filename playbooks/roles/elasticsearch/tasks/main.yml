@@ -6,7 +6,7 @@
 - name: Install JRE
   apt: pkg=oracle-java7-installer state=latest update-cache=yes force=yes
 - name: Get Elasticsearch Package
-  shell: wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.deb
+  get_url: url=https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.deb dest=/home/xplain
 - name: Install Elasticsearch
   shell: dpkg -i elasticsearch-1.1.1.deb
   sudo: yes
@@ -23,12 +23,14 @@
   shell: /usr/share/elasticsearch/bin/plugin -install elasticsearch/elasticsearch-cloud-aws/2.1.1
   sudo: yes
 - name: Install elasticsearch-py
-  shell: pip install elasticsearch
+  pip: elasticsearch
+  sudo: yes
 - name: Install elasticsearch nodejs library
-  shell: npm install elasticsearch
+  npm: name=elasticsearch path=/var/xplain/
+  sudo: yes
 #- name: Copy Elasticsearch Config
 #  copy: src=roles/elasticsearch/files/elasticsearch.yml dest=/etc/elasticsearch/elaticsearch.yml
 #  sudo: yes
 - name: Start Elasticsearch Service
-  shell: service elasticsearch start
+  service: name=elasticsearch state=started
   sudo: yes
