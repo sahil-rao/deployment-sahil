@@ -96,6 +96,49 @@ def updateRelationCounter(redis_conn, eid):
         if rel['rtype'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
 
+def elasticConnect(tenantID):
+
+    elastichost = getElasticServer(tenantID)
+    mongoserver = getMongoServer(tenantID)
+    mongoserver = mongoserver.replace('/', '')
+    mongoserver = mongoserver.replace('mongodb:', '')
+
+    es = elasticsearch.Elasticsearch(hosts=[{'host' : elastichost, 'port' : 9200}])
+    mapping = loads('{\
+        "properties" : {\
+            "name" : {\
+                "type" : "completion",\
+                "index_analyzer" : "standard",\
+                "search_analyzer" : "standard"\
+            },\
+            "eid" : {\
+                "type" : "completion",\
+                "index_analyzer" : "standard",\
+                "search_analyzer" : "standard"\
+            }\
+        }\
+    }')
+    es.indices.create(index=tenantID, ignore=[400,409])
+    es.indices.put_mapping(index=tenantID, doc_type='entity', body=mapping, ignore=[400,409])
+
+    doc = '{\
+          "type": "mongodb",\
+          "mongodb": {\
+            "servers": [\
+              { "host": "' + mongoserver + '", "port": 27017 }\
+            ],\
+            "options": { "secondary_read_preference": true },\
+            "db": "' + tenantID + '",\
+            "collection": "entities"\
+          },\
+          "index": {\
+            "name": "' + tenantID + '",\
+            "type": "entity"\
+          }\
+    }'
+    jsondoc = loads(doc)
+    es.create(index='_river', doc_type=tenantID, id='_meta', body=jsondoc, ignore=[400,409])
+
 def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, update=False, name=None, etype=None, data=None):
 
     if eid is None:
@@ -194,6 +237,7 @@ def callback(ch, method, properties, body):
     except:
         logging.exception("Testing Cleanup")
 
+        elasticConnect(tenant)
     mongo_url = getMongoServer(tenant)
     r_collection = None
     dest_file = None
