@@ -1,12 +1,12 @@
 ---
 - name: Prepare file system
-  filesystem: fstype=ext3 dev=/dev/xvdf
+  filesystem: fstype=ext3 dev=/dev/xvdd
   sudo: yes
 - name: Create mount point
   file: path=/mnt/volume1 owner=ubuntu group=ubuntu state=directory
   sudo: yes
 - name: Mount EBS
-  mount: name=/mnt/volume1 src=/dev/xvdf fstype=ext3 state=mounted
+  mount: name=/mnt/volume1 src=/dev/xvdd fstype=ext3 state=mounted
   sudo: yes
 - name: Change ownsership of volume1
   file: path=/mnt/volume1 owner=ubuntu group=ubuntu state=directory

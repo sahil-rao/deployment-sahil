@@ -253,8 +253,8 @@ set httpd port 2812
 
 check process mongodb
   with pidfile "/mnt/volume1/mongo/db/mongod.lock"
-  start program = "/sbin/start mongodb"
-  stop program = "/sbin/stop mongodb"
+  start program = "/sbin/start mongod"
+  stop program = "/sbin/stop mongod"
   if failed port 27017 protocol http
     and request "/" with timeout 10 seconds then restart
   if 5 restarts within 5 cycles then timeout

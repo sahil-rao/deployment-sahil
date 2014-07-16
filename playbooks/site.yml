@@ -17,7 +17,6 @@
 
 - hosts: tag_Name_QueueServer
   roles:
-  - role: common
   - role: queueserver
 
 - hosts: tag_Name_NodeJS

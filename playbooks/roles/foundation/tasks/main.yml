@@ -13,9 +13,6 @@
 - name: Create mount point
   file: path=/mnt/volume1 owner=ubuntu group=ubuntu state=directory
   sudo: yes
-- name: Mount /dev/xvdc
-  mount: name=/mnt/volume1 src=/dev/xvdc fstype=ext3 state=mounted
-  sudo: yes
 - name: Install python setuptools
   apt: pkg=python-setuptools state=present
   sudo: yes
@@ -73,11 +70,11 @@
   apt: pkg=openjdk-7-jdk state=present
   sudo: yes
 - name: Download Hive-0.13
-  get_url: url=http://apache.tradebit.com/pub/hive/stable/apache-hive-0.13.0-bin.tar.gz  dest=/home/ubuntu/hive-0.13.0.tar.gz
+  get_url: url=http://apache.tradebit.com/pub/hive/stable/apache-hive-0.13.1-bin.tar.gz  dest=/home/ubuntu/hive-0.13.1.tar.gz
 - name: Untar Hive 
-  shell: tar -zxf /home/ubuntu/hive-0.13.0.tar.gz chdir=/home/ubuntu/
+  shell: tar -zxf /home/ubuntu/hive-0.13.1.tar.gz chdir=/home/ubuntu/
 - name: Instal Hive
-  shell: mv /home/ubuntu/apache-hive-0.13.0-bin /usr/lib/hive
+  shell: mv /home/ubuntu/apache-hive-0.13.1-bin /usr/lib/hive
   sudo: yes
 - name: Download Hive in /usr/local/
   command: chdir=/usr/local/ wget http://mirror.olnevhost.net/pub/apache/hive/hive-0.12.0/hive-0.12.0-bin.tar.gz
@@ -93,10 +90,10 @@
   command: chdir=/usr/local/ rm hive-0.12.0-bin.tar.gz
   sudo: yes
 - name: Download Hadoop in /usr/local/
-  command: chdir=/usr/local/ wget http://mirrors.advancedhosters.com/apache/hadoop/common/hadoop-0.23.10/hadoop-0.23.10.tar.gz
+  command: chdir=/usr/local/ wget http://mirrors.advancedhosters.com/apache/hadoop/common/hadoop-0.23.11/hadoop-0.23.11.tar.gz
   sudo: yes
 - name: Remove any existing hadoop directory
-  file: path=/usr/local/hadoop-0.23.10/ state=absent
+  file: path=/usr/local/hadoop-0.23.11/ state=absent
   sudo: yes
   ignore_errors: True
 - name: Remove any existing hadoop link directory
@@ -104,13 +101,13 @@
   sudo: yes
   ignore_errors: True
 - name: Untar hadoop in /usr/local/
-  command: chdir=/usr/local/ tar -xzf hadoop-0.23.10.tar.gz
+  command: chdir=/usr/local/ tar -xzf hadoop-0.23.11.tar.gz
   sudo: yes
 - name: Delete Hadoop tar file in /usr/local/
-  command: chdir=/usr/local/ rm hadoop-0.23.10.tar.gz
+  command: chdir=/usr/local/ rm hadoop-0.23.11.tar.gz
   sudo: yes
 - name: Create symbolic link for hadoop
-  command: chdir=/usr/local/ ln -s hadoop-0.23.10 hadoop
+  command: chdir=/usr/local/ ln -s hadoop-0.23.11 hadoop
   ignore_errors: True
   sudo: yes
 - name: Create hive directory
