@@ -1,0 +1,7 @@
+rs.initiate()
+sleep(13000)
+{% for host in groups['tag_Name_MongoDBServer'] %}
+rs.add("{{ host }}")
+sleep(8000)
+{% endfor %}
+printjson(rs.status())
