@@ -14,6 +14,7 @@ import sys
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from json import *
+import elasticsearch
 import pika
 import shutil
 import os
@@ -237,7 +238,7 @@ def callback(ch, method, properties, body):
     except:
         logging.exception("Testing Cleanup")
 
-        elasticConnect(tenant)
+    elasticConnect(tenant)
     mongo_url = getMongoServer(tenant)
     r_collection = None
     dest_file = None
