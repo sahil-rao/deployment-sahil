@@ -1,0 +1,34 @@
+---
+- name: Add JRE ppa
+  apt_repository: repo=ppa:webupd8team/java state=present
+- name: Automatically select the Oracle License
+  shell: echo debconf shared/accepted-oracle-license-v1-1 select true | sudo debconf-set-selections
+- name: Install JRE
+  apt: pkg=oracle-java7-installer state=latest update-cache=yes force=yes
+- name: Get Elasticsearch Package
+  shell: wget https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.deb
+- name: Install Elasticsearch
+  shell: dpkg -i elasticsearch-1.1.1.deb
+  sudo: yes
+- name: Configure update-rc.d
+  shell: update-rc.d elasticsearch defaults 95 10
+  sudo: yes
+- name: Install Mapper-Attachments Plugin
+  shell: /usr/share/elasticsearch/bin/plugin -install elasticsearch/elasticsearch-mapper-attachments/2.0.0
+  sudo: yes
+- name: Install MongoDB River Plugin
+  shell: /usr/share/elasticsearch/bin/plugin --install com.github.richardwilly98.elasticsearch/elasticsearch-river-mongodb/2.0.0
+  sudo: yes
+- name: Install EC2 Plugin
+  shell: /usr/share/elasticsearch/bin/plugin -install elasticsearch/elasticsearch-cloud-aws/2.1.1
+  sudo: yes
+- name: Install elasticsearch-py
+  shell: pip install elasticsearch
+- name: Install elasticsearch nodejs library
+  shell: npm install elasticsearch
+#- name: Copy Elasticsearch Config
+#  copy: src=roles/elasticsearch/files/elasticsearch.yml dest=/etc/elasticsearch/elaticsearch.yml
+#  sudo: yes
+- name: Start Elasticsearch Service
+  shell: service elasticsearch start
+  sudo: yes
