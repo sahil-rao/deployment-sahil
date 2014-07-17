@@ -110,6 +110,7 @@
   pip: name=redis
 - name: Install Elasticsearch
   pip: name=elasticsearch
+  sudo: yes
 - name: Start monit service
   shell: monit 
   sudo: yes
