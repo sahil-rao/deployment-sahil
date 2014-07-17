@@ -31,3 +31,8 @@
   roles:
   - role: redis
     sudo: true
+
+- hosts: tag_Name_Elasticsearch
+  roles:
+  - role: elasticsearch
+    sudo: true
