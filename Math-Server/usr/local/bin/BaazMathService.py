@@ -276,6 +276,7 @@ def callback(ch, method, properties, body):
             if "entityid" in msg_dict:
                 entityid = msg_dict["entityid"]
 
+            logging.info("PRITHVI EID: " + entityid)
             mod = importlib.import_module(mathconfig.get(section, "Import"))
             methodToCall = getattr(mod, mathconfig.get(section, "Function"))
             logging.info("Executing " + section + " for " + tenant)
@@ -291,7 +292,7 @@ def callback(ch, method, properties, body):
             else:
                 methodToCall(tenant, entityid)
 
-	    if msg_dict.has_key('uid'):
+	        if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {stats_success_key: 1, stats_failure_key: 0}})
 
             if mathconfig.has_option(section, "NotificationName"):
@@ -303,7 +304,7 @@ def callback(ch, method, properties, body):
         except:
             logging.exception("Section :"+section)
 	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {stats_success_key: 0, stats_failure_key: 1}})
+            collection.update({'uid':uid},{"$inc": {stats_success_key: 0, stats_failure_key: 1}})
         if msg_dict.has_key('uid'):
             sectionEndTime = time.time()
             collection.update({'uid':uid},{"$inc": {stats_time_key: (sectionEndTime-sectionStartTime)}})

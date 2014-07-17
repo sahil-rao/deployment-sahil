@@ -272,3 +272,8 @@ check process compileservice with pidfile /var/run/compileservice.pid
 check process mathservice with pidfile /var/run/mathservice.pid
     start program = "/sbin/start mathservice" with timeout 30 seconds
     stop program = "/sbin/stop mathservice"
+
+check process redis-sentinel with pidfile /var/run/sentinel.pid
+    start program = "/sbin/start redis-sentinel"
+    stop program = "/sbin/stop redis-sentinel"
+    mode passive

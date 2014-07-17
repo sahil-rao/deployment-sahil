@@ -530,9 +530,13 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
 
             redis_conn.createEntityProfile(entity.eid, "SQL_QUERY")
             redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
-
+            logging.info("PRITHVI EID 1: " + str(entity.eid))
+            
             #redis_conn.createEntityProfile()
-
+            inst_dict = None
+            if custom_id is not None:
+                inst_dict = {'custom_id':custom_id}
+            mongoconn.updateInstance(entity, query, None, inst_dict)
             mongoconn.db.dashboard_data.update({'tenant':tenant}, \
                       {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
                        upsert = True)
@@ -552,7 +556,8 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
         """
 
         redis_conn.incrEntityCounter(entity.eid, "instance_count", incrBy=1)
-
+        logging.info("PRITHVI EID 2: " + str(entity.eid))
+        
         mongoconn.db.dashboard_data.update({'tenant':tenant}, \
             {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
 
