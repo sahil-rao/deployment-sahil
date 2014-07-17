@@ -125,9 +125,8 @@
   template: src=roles/backoffice/templates/sentinel.conf dest=/etc/redis/local/sentinel.conf owner=redis group=redis mode=0644
 - name: Write upstart script in /etc/init/redis-sentinel.conf
   copy: src=roles/backoffice/files/redis-sentinel.conf dest=/etc/init/redis-sentinel.conf 
-
-
-
+- name: Start sentinel
+  service: name=redis-sentinel state=started
 
 - name: Start monit service
   shell: monit 
