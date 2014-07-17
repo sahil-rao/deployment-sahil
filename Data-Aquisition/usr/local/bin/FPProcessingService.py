@@ -14,8 +14,7 @@ import sys
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from json import *
-import elasticsearch
-import pika
+#import elasticsearch
 import shutil
 import os
 import tarfile
@@ -93,7 +92,7 @@ def updateRelationCounter(redis_conn, eid):
             redis_conn.incrRelationshipCounter(eid, rel['end_en'], rel['rtype'], "instance_count", incrBy=1)
 
     relations_from = redis_conn.getRelationships(None, eid, None)
-    for rel in relations_to:
+    for rel in relations_from:
         if rel['rtype'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
 
@@ -148,9 +147,13 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, upda
 
         """
         For SQL query, send any new query to compiler first.
-        If this is an update to existing query, send a message to math,
-        for update analysis.
+        If this is an update to existing query,
+        updates the appropriate relationships that will be used by math.
         """
+        
+
+        redis_conn.incrEntityCounter("dashboard_data", "TotalQueries", sort=False, incrBy=1)
+        logging.info(redis_conn.getEntityProfile('dashboard_data'))
         if update == False:
             jinst_dict = {} 
             jinst_dict['program_type'] = "SQL"
@@ -228,18 +231,23 @@ def callback(ch, method, properties, body):
         connection1.basicAck(ch,method)
         return
 
+    tenant = msg_dict["tenent"]
+    mongo_url = getMongoServer(tenant)
+    #elasticConnect(tenant)
+
     try:
-        tenant = msg_dict["tenent"]
         filename = None
         opcode = None
+        
         if msg_dict.has_key("opcode") and msg_dict["opcode"] == "DeleteTenant":
             performTenantCleanup(tenant)
+
+            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},\
+            {"$set":{"uploads":0, "queries":0, "lastTimeStamp": 0}})
             return
     except:
         logging.exception("Testing Cleanup")
 
-    elasticConnect(tenant)
-    mongo_url = getMongoServer(tenant)
     r_collection = None
     dest_file = None
     try:
@@ -333,8 +341,11 @@ def callback(ch, method, properties, body):
                                     'create_db_if_not_exist':True})
 
         redis_conn = RedisConnector(tenant)
+
+        if redis_conn.getEntityProfile("dashboard_data") == {}:
+            redis_conn.createEntityProfile("dashboard_data", "dashboard_data")
         '''
-        Incrmements an Pre-Processing count, sends to compiler, then decrements the count
+        Incremements a Pre-Processing count, sends to compiler, then decrements the count
         '''
         message_id = genMessageID("Pre", collection)
         incrementPendingMessage(collection, redis_conn, uid, message_id)
@@ -377,13 +388,13 @@ def callback(ch, method, properties, body):
         if uid is not None:
             #This query finds the latest upload and stores that timestamp in the timestamp variable
             timestamp = int(list(collection.find({},{"_id":0, "timestamp":1}).sort([("timestamp",-1)]).limit(1))[0]["timestamp"])
-            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads":collection.count(), \
-                "queries":MongoClient(mongo_url)[tenant].entities.find({"etype":"SQL_QUERY"}).count(), \
+            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads": (collection.count() -1) , \
+                "queries":int(redis_conn.getEntityProfile("dashboard_data", "TotalQueries")["TotalQueries"]), \
                 "lastTimeStamp": timestamp}})
     except:
         if uid is not None:
             MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads":collection.count(), \
-                "queries":MongoClient(mongo_url)[tenant].entities.find({"etype":"SQL_QUERY"}).count(), \
+                "queries":int(redis_conn.getEntityProfile("dashboard_data", "TotalQueries")["TotalQueries"]), \
                 "lastTimeStamp": 0}})  
 
     try:
