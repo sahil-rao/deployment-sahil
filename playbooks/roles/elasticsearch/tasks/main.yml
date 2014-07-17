@@ -23,7 +23,7 @@
   shell: /usr/share/elasticsearch/bin/plugin -install elasticsearch/elasticsearch-cloud-aws/2.1.1
   sudo: yes
 - name: Install elasticsearch-py
-  pip: elasticsearch
+  pip: name=elasticsearch
   sudo: yes
 - name: Install elasticsearch nodejs library
   npm: name=elasticsearch path=/var/xplain/

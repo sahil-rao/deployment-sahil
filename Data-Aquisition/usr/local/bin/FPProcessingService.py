@@ -115,6 +115,16 @@ def elasticConnect(tenantID):
                 "type" : "completion",\
                 "index_analyzer" : "standard",\
                 "search_analyzer" : "standard"\
+            },\
+             "sqlSummary" : {\
+                "type" : "string",\
+                "index" : "no",\
+                "included_in_all" : "false"\
+            },\
+            "logical_name" : {\
+                "type" : "string",\
+                "index" : "no",\
+                "included_in_all" : "false"\
             }\
         }\
     }')

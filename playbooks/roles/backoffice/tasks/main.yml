@@ -108,6 +108,8 @@
   sudo: yes
 - name: Install redis
   pip: name=redis
+- name: Install Elasticsearch
+  pip: name=elasticsearch
 - name: Start monit service
   shell: monit 
   sudo: yes
