@@ -14,7 +14,7 @@ import sys
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from json import *
-#import elasticsearch
+import elasticsearch
 import shutil
 import os
 import tarfile
@@ -243,7 +243,7 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict["tenent"]
     mongo_url = getMongoServer(tenant)
-    #elasticConnect(tenant)
+    elasticConnect(tenant)
 
     try:
         filename = None
