@@ -126,6 +126,9 @@
 - name: Create redis config directory
   file: path=/etc/redis/local owner=redis group=redis mode=777 state=directory
   sudo: yes
+- name: Create redis config directory
+  file: path=/var/log/sentinel owner=redis group=redis mode=777 state=directory
+  sudo: yes
 - name: Copy sentinel config file
   template: src=roles/backoffice/templates/sentinel.conf dest=/etc/redis/local/sentinel.conf owner=redis group=redis mode=0644
   sudo: yes
