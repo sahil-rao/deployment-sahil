@@ -303,7 +303,7 @@ def callback(ch, method, properties, body):
         except:
             logging.exception("Section :"+section)
 	    if msg_dict.has_key('uid'):
-            collection.update({'uid':uid},{"$inc": {stats_success_key: 0, stats_failure_key: 1}})
+                collection.update({'uid':uid},{"$inc": {stats_success_key: 0, stats_failure_key: 1}})
         if msg_dict.has_key('uid'):
             sectionEndTime = time.time()
             collection.update({'uid':uid},{"$inc": {stats_time_key: (sectionEndTime-sectionStartTime)}})
