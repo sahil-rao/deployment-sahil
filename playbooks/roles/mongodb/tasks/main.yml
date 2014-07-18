@@ -25,9 +25,11 @@
   template: src=replica_set.j2 dest=/tmp/repset_init.js
 - name: Start Mongo
   service: name=mongod state=stopped
+  sudo: yes
   ignore_errors: true
 - name: Start Mongo
   service: name=mongod state=started
+  sudo: yes
 - name: Pause for a while
   pause: seconds=20
 - name: Initialize the replication set
