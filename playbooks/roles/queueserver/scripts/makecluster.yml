@@ -1,0 +1,42 @@
+---
+- hosts: tag_Name_QueueServer
+  sudo: yes
+  tasks:
+
+  - name: Stop and reset everything, including erlang nodes
+    shell: rabbitmqctl stop_app
+  - shell: rabbitmqctl reset
+  - shell: rabbitmqctl stop
+  - name: Write rabbitmq cluster config files
+    template: src=../templates/rabbitmq.config dest=/etc/rabbitmq/rabbitmq.config
+  - name: Restart rabbit/erlang nodes
+    shell: rabbitmq-server -detached
+  - name: Mirror queues for HA
+    rabbitmq_policy: name=ha-all pattern='.*' tags="ha-mode=all" vhost=xplain
+
+  #Setting up user permissions
+  - name: Add virtualhost 'xplain'
+    rabbitmq_vhost: name=xplain state=present
+  - name: Add user 'xplain' with password 'xplain' with full privileges
+    rabbitmq_user: user=xplain
+    password=xplain
+    vhost=xplain
+    configure_priv=.*
+    read_priv=.*
+    write_priv=.*
+    state=present
+
+  #Set up web UI plugin, port 15672 must be open
+  - name: Adding web management plugin 
+    rabbitmq_plugin: names=rabbitmq_management state=enabled
+  #login to management UI with this user/password info
+  - name: Add user 'rabbitmonitor' with password 'monitor123' as administrator
+    rabbitmq_user: user=xplain
+    password=xplain
+    vhost=xplain
+    configure_priv=.*
+    read_priv=.*
+    write_priv=.*
+    tags=administrator
+    state=present
+
