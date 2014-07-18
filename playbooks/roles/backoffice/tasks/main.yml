@@ -123,12 +123,18 @@
 - name: remove redis-server from init.d
   shell: update-rc.d -f redis-server remove
   sudo: yes
+- name: Create redis config directory
+  file: path=/etc/redis/local owner=redis group=redis mode=777 state=directory
+  sudo: yes
 - name: Copy sentinel config file
   template: src=roles/backoffice/templates/sentinel.conf dest=/etc/redis/local/sentinel.conf owner=redis group=redis mode=0644
+  sudo: yes
 - name: Write upstart script in /etc/init/redis-sentinel.conf
   copy: src=roles/backoffice/files/redis-sentinel.conf dest=/etc/init/redis-sentinel.conf 
+  sudo: yes
 - name: Start sentinel
   service: name=redis-sentinel state=started
+  sudo: yes
 
 - name: Start monit service
   shell: monit 
