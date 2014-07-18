@@ -99,13 +99,18 @@ def updateRelationCounter(redis_conn, eid):
 def elasticConnect(tenantID):
 
     elastichost = getElasticServer(tenantID)
+    if elastichost is None:
+        return
     mongoserver = getMongoServer(tenantID)
     mongoserver = mongoserver.replace('/', '')
     mongoserver = mongoserver.replace('mongodb:', '')
 
     es = elasticsearch.Elasticsearch(hosts=[{'host' : elastichost, 'port' : 9200}])
-    mapping = loads('{\
-        "properties" : {\
+    if es is None:
+        return
+    try:
+        mapping = loads('{\
+            "properties" : {\
             "name" : {\
                 "type" : "completion",\
                 "index_analyzer" : "standard",\
@@ -127,14 +132,14 @@ def elasticConnect(tenantID):
                 "included_in_all" : "false"\
             }\
         }\
-    }')
-    es.indices.create(index=tenantID, ignore=[400,409])
-    es.indices.put_mapping(index=tenantID, doc_type='entity', body=mapping, ignore=[400,409])
+        }')
+        es.indices.create(index=tenantID, ignore=[400,409])
+        es.indices.put_mapping(index=tenantID, doc_type='entity', body=mapping, ignore=[400,409])
 
-    doc = '{\
-          "type": "mongodb",\
-          "mongodb": {\
-            "servers": [\
+        doc = '{\
+              "type": "mongodb",\
+              "mongodb": {\
+                "servers": [\
               { "host": "' + mongoserver + '", "port": 27017 }\
             ],\
             "options": { "secondary_read_preference": true },\
@@ -145,9 +150,11 @@ def elasticConnect(tenantID):
             "name": "' + tenantID + '",\
             "type": "entity"\
           }\
-    }'
-    jsondoc = loads(doc)
-    es.create(index='_river', doc_type=tenantID, id='_meta', body=jsondoc, ignore=[400,409])
+        }'
+        jsondoc = loads(doc)
+        es.create(index='_river', doc_type=tenantID, id='_meta', body=jsondoc, ignore=[400,409])
+    except:
+        pass
 
 def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, update=False, name=None, etype=None, data=None):
 
