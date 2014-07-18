@@ -530,7 +530,6 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
 
             redis_conn.createEntityProfile(entity.eid, "SQL_QUERY")
             redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
-            logging.info("PRITHVI EID 1: " + str(entity.eid))
             
             #redis_conn.createEntityProfile()
             inst_dict = None
