@@ -72,8 +72,6 @@
                  state=present
   sudo: yes
 
-#CLUSTERING
-
 
 
 
