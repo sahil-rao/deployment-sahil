@@ -32,7 +32,7 @@
   - role: redis
     sudo: true
 
-- hosts: tag_Name_Elasticsearch
+- hosts: tag_Name_ElasticSearch
   roles:
   - role: elasticsearch
     sudo: true
