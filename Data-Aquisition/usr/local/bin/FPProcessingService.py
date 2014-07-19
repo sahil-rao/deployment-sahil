@@ -252,6 +252,7 @@ def callback(ch, method, properties, body):
     mongo_url = getMongoServer(tenant)
     elasticConnect(tenant)
 
+    uid = None
     try:
         filename = None
         opcode = None
@@ -271,7 +272,6 @@ def callback(ch, method, properties, body):
         filename = msg_dict["filename"]
         filename = urllib.unquote(filename)
 
-        uid = None
         if msg_dict.has_key('uid'):
             uid = msg_dict['uid']
 
