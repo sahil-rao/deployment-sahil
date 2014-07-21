@@ -41,7 +41,7 @@
   copy: src=roles/redis/files/redis.conf dest=/etc/redis/local/redis.conf owner=redis group=redis mode=0644
   sudo: yes
 - name: Write upstart script in /etc/init/redis-sentinel.conf
-  copy: src=roles/redis/files/redis-server.conf dest=/etc/init/redis-sentinel.conf 
+  copy: src=roles/redis/files/redis-server.conf dest=/etc/init/redis-server.conf 
   sudo: yes
 - name: Start redis-server
   service: name=redis-server state=started
