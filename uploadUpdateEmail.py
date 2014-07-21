@@ -46,8 +46,8 @@ def formatDataforEmail(uploadInfoDict):
 
 
 def sendEmail(formattedData):
-	fromAddress = 'siddharth@xplain.io'
-	with open('recipients.txt') as f:
+	fromAddress = 'no-reply@xplain.io'
+	with open('updaterecipients.txt') as f:
 		recipients = f.readlines()
 
 	msg = MIMEMultipart('alternative')
@@ -60,7 +60,7 @@ def sendEmail(formattedData):
 	msg.attach(part1)
 	msg.attach(part2)
 
-	username = 'siddharth@xplain.io'
+	username = 'no-reply@xplain.io'
 	password = 'password'
 
 	server = smtplib.SMTP('smtp.gmail.com:587')
@@ -70,8 +70,7 @@ def sendEmail(formattedData):
 	server.sendmail(fromAddress, recipients, msg.as_string())
 	server.quit()
 
-
-def run_workflow():
+def run():
 
     try:
         mongo_host = getMongoServer('xplainDb')
@@ -95,4 +94,4 @@ def run_workflow():
     sendEmail(formattedData)
 
 
-run_workflow()
+run()
