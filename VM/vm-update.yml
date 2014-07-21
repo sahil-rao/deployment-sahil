@@ -5,7 +5,7 @@
 - hosts: localhost
   tasks:
   - name: Start Mongo
-    shell: mongod --fork --logpath /mnt/volume1/mongo/log/mongo.log -dbpath /mnt/volume1/mongo/db
+    shell: mongod --fork --logpath /mnt/volume1/mongo/log/mongo.log --dbpath /mnt/volume1/mongo/db --replSet rs0 --oplogSize 100
     ignore_errors: True
 
   #Redis deployments

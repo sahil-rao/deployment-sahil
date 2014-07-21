@@ -111,29 +111,32 @@ def elasticConnect(tenantID):
     try:
         mapping = loads('{\
             "properties" : {\
-            "name" : {\
-                "type" : "completion",\
-                "index_analyzer" : "standard",\
-                "search_analyzer" : "standard"\
+            "name":{\
+                "type":"multi_field",\
+                "fields":{\
+                    "name":{\
+                        "include_in_all":true,\
+                        "type":"completion",\
+                    },\
+                    "_untokenized":{\
+                        "include_in_all":false,\
+                        "type":"string",\
+                        "index":"not_analyzed"\
+                    }\
+                }\
             },\
             "eid" : {\
-                "type" : "completion",\
-                "index_analyzer" : "standard",\
-                "search_analyzer" : "standard"\
-            },\
-             "sqlSummary" : {\
-                "type" : "string",\
-                "index" : "no",\
-                "included_in_all" : "false"\
-            },\
-            "logical_name" : {\
-                "type" : "string",\
-                "index" : "no",\
-                "included_in_all" : "false"\
+                "type" : "completion"\
             }\
-        }\
+            }\
         }')
-        es.indices.create(index=tenantID, ignore=[400,409])
+        settings = loads('{\
+            "index" : {\
+                "number_of_shards" : 3,\
+                "number_of_replicas": 0\
+            }\
+        }')
+        es.indices.create(index=tenantID, body=settings, ignore=[400,409])
         es.indices.put_mapping(index=tenantID, doc_type='entity', body=mapping, ignore=[400,409])
 
         doc = '{\

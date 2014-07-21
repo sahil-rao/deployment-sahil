@@ -1,5 +1,6 @@
 #Restarts running services 
 sudo mongod --fork --logpath /mnt/volume1/mongo/log/mongo.log -dbpath /mnt/volume1/mongo/db 
+sudo service elasticsearch restart
 sudo stop dataacquisitionservice
 sudo start dataacquisitionservice
 sudo stop compileservice 
