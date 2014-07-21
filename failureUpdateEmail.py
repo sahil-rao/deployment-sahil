@@ -1,13 +1,22 @@
+#!/usr/bin/python
+
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 import smtplib
 import time
 from pymongo import MongoClient
 from flightpath.Provenance import getMongoServer
+from Crypto.Cipher import AES
+import encdec
+import os
 
 
 def sendEmail(formattedData):
-	fromAddress = 'siddharth@xplain.io'
+	encdec.decrypt_file('sender.txt.enc')
+	with open('sender.txt') as f0:
+		fromAddress = f0.readline()
+		password = f0.readline()
+	os.remove('sender.txt')
 	with open('failurerecipients.txt') as f:
 		recipients = f.readlines()
 
@@ -21,12 +30,9 @@ def sendEmail(formattedData):
 	msg.attach(part1)
 	msg.attach(part2)
 
-	username = 'siddharth@xplain.io'
-	password = 'Xplainio1'
-
 	server = smtplib.SMTP('smtp.gmail.com:587')
 	server.starttls()
-	server.login(username, password)
+	server.login(fromAddress, password)
 	server.helo()
 	server.sendmail(fromAddress, recipients, msg.as_string())
 	server.quit()
@@ -35,6 +41,7 @@ def sendEmail(formattedData):
 def twoMinutesAgo():
 	twoMinutesInMilliSeconds = 2 * 60 * 1000
 	return time.time() * 1000 - twoMinutesInMilliSeconds
+
 
 def isGreaterThanTwoMinutes(start, end):
 	twoMinutesInMilliSeconds = 2 * 60 * 1000
@@ -79,6 +86,7 @@ def findUploadsWithErrors(uploads):
 			uploadErrors.append(tempUploadErrors)
 			continue
 	return uploadErrors
+
 
 def formatDataforEmail(uploadErrors):
 	htmlStr = '<html><body>' 
