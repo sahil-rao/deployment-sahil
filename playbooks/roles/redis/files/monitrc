@@ -257,23 +257,6 @@ set alert samir@xplain.io only on { timeout }    # receive only timeout alerts
 set httpd port 2812
    allow localhost
 
-check process dataacquisitionservice with pidfile /var/run/dataacquisitionservice.pid
-    start program = "/sbin/start dataacquisitionservice" with timeout 30 seconds
-    stop program = "/sbin/stop dataacquisitionservice"
-
-check process compileserver with pidfile /var/run/compileserver.pid
-    start program = "/sbin/start compileserver" with timeout 30 seconds
-    stop program = "/sbin/stop compileserver"
-
-check process compileservice with pidfile /var/run/compileservice.pid
-    start program = "/sbin/start compileservice" with timeout 30 seconds
-    stop program = "/sbin/stop compileservice"
-
-check process mathservice with pidfile /var/run/mathservice.pid
-    start program = "/sbin/start mathservice" with timeout 30 seconds
-    stop program = "/sbin/stop mathservice"
-
-check process redis-sentinel with pidfile /var/run/sentinel.pid
-    start program = "/sbin/start redis-sentinel"
-    stop program = "/sbin/stop redis-sentinel"
-    mode passive
+check process redis-server with pidfile /var/run/redis.pid
+    start program = "/sbin/start redis-server"
+    stop program = "/sbin/stop redis-server"

@@ -6,7 +6,7 @@
 - name: Install JRE
   apt: pkg=oracle-java7-installer state=latest update-cache=yes force=yes
 - name: Get Elasticsearch Package
-  get_url: url=https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.deb dest=/home/xplain
+  get_url: url=https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.deb dest=/home/ubuntu
 - name: Install Elasticsearch
   apt: deb=elasticsearch-1.1.1.deb
   sudo: yes
@@ -16,18 +16,15 @@
 - name: Install Mapper-Attachments Plugin
   shell: /usr/share/elasticsearch/bin/plugin -install elasticsearch/elasticsearch-mapper-attachments/2.0.0
   sudo: yes
+  ignore_errors: true
 - name: Install MongoDB River Plugin
   shell: /usr/share/elasticsearch/bin/plugin --install com.github.richardwilly98.elasticsearch/elasticsearch-river-mongodb/2.0.0
   sudo: yes
+  ignore_errors: true
 - name: Install EC2 Plugin
   shell: /usr/share/elasticsearch/bin/plugin -install elasticsearch/elasticsearch-cloud-aws/2.1.1
   sudo: yes
-- name: Install elasticsearch-py
-  pip: name=elasticsearch
-  sudo: yes
-- name: Install elasticsearch nodejs library
-  npm: name=elasticsearch path=/var/xplain/
-  sudo: yes
+  ignore_errors: true
 #- name: Copy Elasticsearch Config
 #  copy: src=roles/elasticsearch/files/elasticsearch.yml dest=/etc/elasticsearch/elaticsearch.yml
 #  sudo: yes

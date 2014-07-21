@@ -1,0 +1,23 @@
+For the addredisslave.yml script to work, tag_Name_RedisSlaves must be defined in 
+/etc/ansible/hosts. But the tag_Name_RedisSlaves should/may include machines also in tag_Name_Redis
+
+example:
+
+[tag_Name_Redis]
+ip0 #this is the master
+ip1
+ip2
+
+[tag_Name_RedisSlaves]
+ip1
+ip2
+
+----
+
+Notice that ip0 is not in RedisSlaves, as we have defined it as the master.
+By convention, the first ip listed in tag_Name_Redis will default to the 'actual' master.
+The rest of the ips will also be masters before addredisslave.yml is run, but 
+Sentinel will just never discover them and so neither will the rest of the backoffice services.
+The script addredisslave.yml will change them into slaves of the first ip in tag_Name_Redis. 
+At this point Sentinel will discover them and the machines will become useful as slaves.
+
