@@ -4,6 +4,48 @@
 
 - hosts: localhost
   tasks:
+  #Should eventually replace this script with package manager
+  - name: Copy rabbit install script
+    copy: src=installrabbit.sh dest=/home/xplain/installrabbit.sh owner=root group=root mode=0744
+  #Commented out but may be needed later when we can figure out how to make sure it's installed already
+  #- name: Install Erlang and RabbitMQ from source. This will take some time.
+  #  command: ./installrabbit.sh chdir=/home/xplain/ 
+
+  # Setting up clustering erlang cookie
+  - name: create cookie directory
+    file: path=/var/lib/rabbitmq owner=rabbitmq group=rabbitmq mode=0755 state=directory
+  - name: add rabbitmq erlang cookie
+    template: src=erlang.cookie.j2 dest=/var/lib/rabbitmq/.erlang.cookie owner=rabbitmq group=rabbitmq mode=0400
+    register: erlang_cookie
+  #Set up web UI plugin, port 15672 must be open
+  - name: Adding web management plugin 
+    rabbitmq_plugin: names=rabbitmq_management state=enabled
+  - name: restart rabbitmq
+    service: name=rabbitmq-server state=restarted
+
+  #Setting up user permissions
+  - name: Add virtualhost 'xplain'
+    rabbitmq_vhost: name=xplain state=present
+  - name: Add user 'xplain' with password 'xplain' with full privileges
+    rabbitmq_user: user=xplain
+                   password=xplain
+                   vhost=xplain
+                   configure_priv=.*
+                   read_priv=.*
+                   write_priv=.*
+                   state=present
+  #login to management UI with this user/password info
+  - name: Add user 'rabbitmonitor' with password 'monitor123' as administrator
+    rabbitmq_user: user=xplain
+                   password=xplain
+                   vhost=xplain
+                   configure_priv=.*
+                   read_priv=.*
+                   write_priv=.*
+                   tags=administrator
+                   state=present
+
+
   - name: Start Mongo
     shell: mongod --fork --logpath /mnt/volume1/mongo/log/mongo.log --dbpath /mnt/volume1/mongo/db --replSet rs0 --oplogSize 100
     ignore_errors: True
@@ -15,6 +57,29 @@
     apt: name=redis-server state=present
   - name: Install redis-py
     pip: name=redis
+
+
+  #REDIS SENTINEL DEPLOYMENT
+  - name: Stop running redis server
+    service: name=redis-server state=stopped
+  - name: Create redis config directory
+    file: path=/etc/redis/local owner=redis group=redis mode=777 state=directory
+  - name: Create redis log directory
+    file: path=/var/log/redis owner=redis group=redis mode=777 state=directory
+  - name: Create redis data persistence/dump directory
+    file: path=/var/lib/redis owner=redis group=redis mode=777 state=directory
+
+  - name: Copy redis config file
+    copy: src=/home/xplain/redis.conf dest=/etc/redis/local/redis.conf owner=redis group=redis mode=0644
+
+  - name: Create redis config directory
+    file: path=/var/log/sentinel owner=redis group=redis mode=777 state=directory
+  - name: Copy sentinel config file
+    template: src=/home/xplain/sentinel.conf dest=/etc/redis/local/sentinel.conf owner=redis group=redis mode=0644
+  - name: Write upstart script in /etc/init/redis-sentinel.conf
+    copy: src=/home/xplain/redis-sentinel.conf dest=/etc/init/redis-sentinel.conf 
+  - name: Start sentinel
+    service: name=redis-sentinel state=started
 
   - name: Untar flightpath
     shell: tar -zxf /home/xplain/flightpath-deployment.tar.gz chdir=/
@@ -91,5 +156,3 @@
     npm: path=/var/xplain
   - name: copy monitrc file
     copy: src=/home/xplain/monitrc dest=/etc/monit/monitrc
-
-  
