@@ -412,10 +412,7 @@ def callback(ch, method, properties, body):
                 "queries":int(redis_conn.getEntityProfile("dashboard_data", "TotalQueries")["TotalQueries"]), \
                 "lastTimeStamp": timestamp}})
     except:
-        if uid is not None:
-            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads":collection.count(), \
-                "queries":int(redis_conn.getEntityProfile("dashboard_data", "TotalQueries")["TotalQueries"]), \
-                "lastTimeStamp": 0}})  
+        logging.exception("Error while updating the overall stats values")
 
     try:
         mongoconn.close()
