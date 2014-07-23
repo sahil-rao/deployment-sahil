@@ -110,23 +110,24 @@ def elasticConnect(tenantID):
         return
     try:
         mapping = loads('{\
-            "properties" : {\
-            "name":{\
-                "type":"multi_field",\
-                "fields":{\
-                    "name":{\
-                        "include_in_all":true,\
-                        "type":"completion",\
-                    },\
-                    "_untokenized":{\
-                        "include_in_all":false,\
-                        "type":"string",\
-                        "index":"not_analyzed"\
+            "entity" : {\
+                "properties" : {\
+                "name":{\
+                    "type":"completion",\
+                    "fields" : {\
+                        "untouched" : {\
+                            "type":"string",\
+                            "index":"not_analyzed"\
+                        }\
                     }\
+                },\
+                "eid" : {\
+                    "type" : "completion"\
+                },\
+                "logical_name" : {\
+                    "type":"string",\
+                    "index":"not_analyzed"\
                 }\
-            },\
-            "eid" : {\
-                "type" : "completion"\
             }\
             }\
         }')
