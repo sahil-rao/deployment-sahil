@@ -6,9 +6,9 @@
 - name: Install JRE
   apt: pkg=oracle-java7-installer state=latest update-cache=yes force=yes
 - name: Get Elasticsearch Package
-  get_url: url=https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.deb dest=/home/ubuntu
+  get_url: url=https://download.elasticsearch.org/elasticsearch/elasticsearch/elasticsearch-1.1.1.deb dest=/home/xplain
 - name: Install Elasticsearch
-  apt: deb=elasticsearch-1.1.1.deb
+  shell: dpkg -i elasticsearch-1.1.1.deb
   sudo: yes
 - name: Configure update-rc.d
   shell: update-rc.d elasticsearch defaults 95 10
