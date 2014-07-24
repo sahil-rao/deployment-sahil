@@ -25,9 +25,6 @@
   shell: /usr/share/elasticsearch/bin/plugin -install elasticsearch/elasticsearch-cloud-aws/2.1.1
   sudo: yes
   ignore_errors: true
-#- name: Copy Elasticsearch Config
-#  copy: src=roles/elasticsearch/files/elasticsearch.yml dest=/etc/elasticsearch/elaticsearch.yml
-#  sudo: yes
 - name: Start Elasticsearch Service
   service: name=elasticsearch state=started
   sudo: yes

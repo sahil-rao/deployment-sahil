@@ -40,6 +40,8 @@
     shell: pip install pika==0.9.8
   - name: Install numpy
     shell: pip install numpy
+  - name: Install elasticsearch-py
+    shell: pip install elasticsearch
 
     #Start of Analytics module deployment.
   - name: Install gcc needed for numpy
