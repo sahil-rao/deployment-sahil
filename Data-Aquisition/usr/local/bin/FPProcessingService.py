@@ -194,8 +194,21 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, upda
         else:
             redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
 
-            mongoconn.db.dashboard_data.update({'tenant':tenant}, \
-                {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
+            queryEntity = mongoconn.db.entities.find_one({eid:"eid"},{'profile.Compiler.gsp.ErrorSignature':1})
+
+            if "profile" not in queryEntity:
+                logging.info("Failed in FP sendToCompiler 1")
+            elif "Compiler" not in queryEntity["profile"]:
+                logging.info("Failed in FP sendToCompiler 2")
+            elif "gsp" not in queryEntity["profile"]["Compiler"]:
+                logging.info("Failed in FP sendToCompiler 3")
+            elif "ErrorSignature" not in queryEntity["profile"]["Compiler"]["gsp"]:
+                logging.info("Failed in FP sendToCompiler 4")
+
+            elif queryEntity["profile"]["Compiler"]["gsp"] == "":
+
+                mongoconn.db.dashboard_data.update({'tenant':tenant},\
+                    {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
 
             """
             Get relationships for the given entity.
