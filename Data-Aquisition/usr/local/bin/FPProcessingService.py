@@ -110,30 +110,34 @@ def elasticConnect(tenantID):
         return
     try:
         mapping = loads('{\
-            "properties" : {\
-            "name" : {\
-                "type" : "completion",\
-                "index_analyzer" : "standard",\
-                "search_analyzer" : "standard"\
-            },\
-            "eid" : {\
-                "type" : "completion",\
-                "index_analyzer" : "standard",\
-                "search_analyzer" : "standard"\
-            },\
-             "sqlSummary" : {\
-                "type" : "string",\
-                "index" : "no",\
-                "included_in_all" : "false"\
-            },\
-            "logical_name" : {\
-                "type" : "string",\
-                "index" : "no",\
-                "included_in_all" : "false"\
+            "entity" : {\
+                "properties" : {\
+                "name":{\
+                    "type":"completion",\
+                    "fields" : {\
+                        "untouched" : {\
+                            "type":"string",\
+                            "index":"not_analyzed"\
+                        }\
+                    }\
+                },\
+                "eid" : {\
+                    "type" : "completion"\
+                },\
+                "logical_name" : {\
+                    "type":"string",\
+                    "index":"not_analyzed"\
+                }\
             }\
-        }\
+            }\
         }')
-        es.indices.create(index=tenantID, ignore=[400,409])
+        settings = loads('{\
+            "index" : {\
+                "number_of_shards" : 3,\
+                "number_of_replicas": 0\
+            }\
+        }')
+        es.indices.create(index=tenantID, body=settings, ignore=[400,409])
         es.indices.put_mapping(index=tenantID, doc_type='entity', body=mapping, ignore=[400,409])
 
         doc = '{\
@@ -190,8 +194,21 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, upda
         else:
             redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
 
-            mongoconn.db.dashboard_data.update({'tenant':tenant}, \
-                {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
+            queryEntity = mongoconn.db.entities.find_one({eid:"eid"},{'profile.Compiler.gsp.ErrorSignature':1})
+
+            if "profile" not in queryEntity:
+                logging.info("Failed in FP sendToCompiler 1")
+            elif "Compiler" not in queryEntity["profile"]:
+                logging.info("Failed in FP sendToCompiler 2")
+            elif "gsp" not in queryEntity["profile"]["Compiler"]:
+                logging.info("Failed in FP sendToCompiler 3")
+            elif "ErrorSignature" not in queryEntity["profile"]["Compiler"]["gsp"]:
+                logging.info("Failed in FP sendToCompiler 4")
+
+            elif queryEntity["profile"]["Compiler"]["gsp"] == "":
+
+                mongoconn.db.dashboard_data.update({'tenant':tenant},\
+                    {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
 
             """
             Get relationships for the given entity.
@@ -409,7 +426,7 @@ def callback(ch, method, properties, body):
                 "queries":int(redis_conn.getEntityProfile("dashboard_data", "TotalQueries")["TotalQueries"]), \
                 "lastTimeStamp": timestamp}})
     except:
-        logging.exception("Error while updating the overall stats values") 
+        logging.exception("Error while updating the overall stats values")
 
     try:
         mongoconn.close()
