@@ -539,9 +539,20 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
             if custom_id is not None:
                 inst_dict = {'custom_id':custom_id}
             mongoconn.updateInstance(entity, query, None, inst_dict)
-            mongoconn.db.dashboard_data.update({'tenant':tenant}, \
+
+            entityProfile = entity.profile
+            if "Compiler" not in entityProfile:
+                logging.info("Failed in Compiler processCompilerOutputs 2")
+            elif "gsp" not in entityProfile["Compiler"]:
+                logging.info("Failed in Compiler processCompilerOutputs 3")
+            elif "ErrorSignature" not in entityProfile["Compiler"]["gsp"]:
+                logging.info("Failed in Compiler processCompilerOutputs 4")
+            elif entityProfile["Compiler"]["gsp"]["ErrorSignature"] == "":
+
+                mongoconn.db.dashboard_data.update({'tenant':tenant},\
                       {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
                        upsert = True)
+
         except DuplicateKeyError:
             inst_dict = {}
             
@@ -560,8 +571,16 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
         redis_conn.incrEntityCounter(entity.eid, "instance_count", incrBy=1)
         logging.info("PRITHVI EID 2: " + str(entity.eid))
         
-        mongoconn.db.dashboard_data.update({'tenant':tenant}, \
-            {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
+        entityProfile = entity.profile
+        if "Compiler" not in entityProfile:
+            logging.info("Failed in Compiler processCompilerOutputs 2")
+        elif "gsp" not in entityProfile["Compiler"]:
+            logging.info("Failed in Compiler processCompilerOutputs 3")
+        elif "ErrorSignature" not in entityProfile["Compiler"]["gsp"]:
+            logging.info("Failed in Compiler processCompilerOutputs 4")
+        elif entityProfile["Compiler"]["gsp"]["ErrorSignature"] == "":
+            mongoconn.db.dashboard_data.update({'tenant':tenant},\
+                {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
 
         updateRelationCounter(redis_conn, entity.eid)
 
