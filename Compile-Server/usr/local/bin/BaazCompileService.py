@@ -145,7 +145,9 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
 
             if column_entity is not None:
                 logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))
-                redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
+                redis_conn.setRelationship(table_entity.eid, column_entity.eid,
+                                           "TABLE_COLUMN", {'weight':1, "columnName":column_entity.columnName})
+                #redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
 
     """
     Create relationships.
@@ -153,6 +155,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
     if entity is not None and table_entity is not None:
         redis_conn.createRelationship(entity.eid, table_entity.eid, "CREATE")
         logging.info(" CREATE Relation between {0} {1}\n".format(entity.eid, table_entity.eid))
+        redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=1)
     return [0, tableCount]
 
 def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, tableEidList=None, hive_success=0):
