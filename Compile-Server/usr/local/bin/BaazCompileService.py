@@ -523,6 +523,8 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
     if entity is None:
         logging.info("Going to create the entity")
         profile_dict["instance_count"] = 1
+        if custom_id is not None:
+            profile_dict['custom_id'] = custom_id
         try:
             eid = IdentityService.getNewIdentity(tenant, True)
             entity = mongoconn.addEn(eid, query, tenant,\
@@ -727,13 +729,10 @@ def callback(ch, method, properties, body):
     compconfig = ConfigParser.RawConfigParser()
     compconfig.read("/etc/xplain/compiler.cfg")
 
-    msg_data = None
-    if "data" in msg_dict:
-        msg_data = msg_dict["data"]
-
     """
     Generate the CSV from the job instances.
     """
+    msg_data = None
     counter = 0
     for inst in instances:
         compile_doc = None
@@ -745,8 +744,8 @@ def callback(ch, method, properties, body):
             except:
                 continue
 
-        #if entity is None:
-        #    continue
+        if "data" in inst:
+            msg_data = inst["data"]
 
         if inst['program_type'] == "Pig":
             compile_doc = generatePigSignature(inst['pig_features'], tenant, prog_id)
