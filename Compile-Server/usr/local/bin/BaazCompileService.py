@@ -545,9 +545,9 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
                 logging.info("Failed in Compiler processCompilerOutputs 2")
             elif "gsp" not in entityProfile["Compiler"]:
                 logging.info("Failed in Compiler processCompilerOutputs 3")
-            elif "ErrorSignature" not in entityProfile["Compiler"]["gsp"]:
+            elif "OperatorList" not in entityProfile["Compiler"]["gsp"]:
                 logging.info("Failed in Compiler processCompilerOutputs 4")
-            elif entityProfile["Compiler"]["gsp"]["ErrorSignature"] == "":
+            elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
 
                 mongoconn.db.dashboard_data.update({'tenant':tenant},\
                       {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
@@ -576,9 +576,9 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
             logging.info("Failed in Compiler processCompilerOutputs 2")
         elif "gsp" not in entityProfile["Compiler"]:
             logging.info("Failed in Compiler processCompilerOutputs 3")
-        elif "ErrorSignature" not in entityProfile["Compiler"]["gsp"]:
+        elif "OperatorList" not in entityProfile["Compiler"]["gsp"]:
             logging.info("Failed in Compiler processCompilerOutputs 4")
-        elif entityProfile["Compiler"]["gsp"]["ErrorSignature"] == "":
+        elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
             mongoconn.db.dashboard_data.update({'tenant':tenant},\
                 {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
 
