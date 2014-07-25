@@ -202,10 +202,10 @@ def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, upda
                 logging.info("Failed in FP sendToCompiler 2")
             elif "gsp" not in queryEntity["profile"]["Compiler"]:
                 logging.info("Failed in FP sendToCompiler 3")
-            elif "ErrorSignature" not in queryEntity["profile"]["Compiler"]["gsp"]:
+            elif "OperatorList" not in queryEntity["profile"]["Compiler"]["gsp"]:
                 logging.info("Failed in FP sendToCompiler 4")
 
-            elif queryEntity["profile"]["Compiler"]["gsp"] == "":
+            elif len(queryEntity["profile"]["Compiler"]["gsp"]["OperatorList"]) > 1:
 
                 mongoconn.db.dashboard_data.update({'tenant':tenant},\
                     {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
