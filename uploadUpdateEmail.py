@@ -96,8 +96,9 @@ def run():
     	if len(uploadsOfInterest) > 0:
     		uploadInfo[tenantID['users'][0]] = uploadsOfInterest
     
-    formattedData = formatDataforEmail(uploadInfo)
-    sendEmail(formattedData)
+    if len(uploadInfo) > 0:
+	    formattedData = formatDataforEmail(uploadInfo)
+	    sendEmail(formattedData)
 
 
 run()
