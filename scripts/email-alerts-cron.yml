@@ -1,0 +1,12 @@
+---
+#This script creates cron jobs that generate email alerts
+
+- hosts: tag_Name_Deployment-Root
+  sudo: yes
+  tasks:
+
+  - name: Set up cron job for failureUpdateEmail.py to run every 2 minutes
+    cron: name="check for failures" minute=*/2 job=/home/ubuntu/build/deployment/failureUpdateEmail.py
+  - name: Set up cron job for uploadUpdateEmail.py to run every 12 hours
+    cron: name="general status email" hour=*/12 job=/home/ubuntu/build/deployment/uploadUpdateEmail.py
+
