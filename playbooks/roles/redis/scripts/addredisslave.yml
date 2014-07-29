@@ -8,7 +8,7 @@
   - name: Stop redis-server
     service: name=redis-server state=stopped
   - name: Reconfigure conf file to transform into slave of first ip in tag_Name_Redis
-    template: src=roles/redis/files/redisslave.conf dest=/etc/redis/local/redis.conf owner=redis group=redis mode=0644
+    template: src=/home/ubuntu/build/deployment/playbooks/roles/redis/files/redisslave.conf dest=/etc/redis/local/redis.conf owner=redis group=redis mode=0644
   - name: Restart redis-server
     service: name=redis-server state=started
   - name: Start monit again
