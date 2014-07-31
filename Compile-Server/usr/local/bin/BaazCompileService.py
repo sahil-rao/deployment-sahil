@@ -531,7 +531,7 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
                        EntityType.SQL_QUERY, profile_dict, None) 
             if entity is None:
                 logging.info("No Entity found")
-                return
+                return None, None
 
             redis_conn.createEntityProfile(entity.eid, "SQL_QUERY")
             redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
@@ -563,7 +563,7 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
             entity = mongoconn.searchEntity({"md5":q_hash})
             if entity is None:
                 logging.info("Entity not found for hash - {0}".format(q_hash))
-                return
+                return None, None
     else:
         """
         Update instance count, store the instance and update the instance counts in 
@@ -590,6 +590,8 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
         if custom_id is not None:
             inst_dict = {'custom_id':custom_id}
         mongoconn.updateInstance(entity, query, None, inst_dict)
+
+        return entity, "UpdateQueryProfile"
 
     for key in compile_doc:
         try:
@@ -640,7 +642,7 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
             if uid is not None:
                 collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
 
-    return entity
+    return entity, "GenerateQueryProfile"
 
 def callback(ch, method, properties, body):
     startTime = time.time()
@@ -854,18 +856,21 @@ def callback(ch, method, properties, body):
                     collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
                 mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
 
-        entity = processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query, msg_data, comp_outs)
-        msg_dict = {'tenant':tenant, 'opcode':"GenerateQueryProfile", "entityid":entity.eid} 
-        if uid is not None:
-            msg_dict['uid'] = uid
-        message_id = genMessageID("Comp", collection, entity.eid)
-        msg_dict['message_id'] = message_id
-        message = dumps(msg_dict)
-        connection1.publish(ch,'','mathqueue',message)
-        logging.info("Sent message to Math pos1:" + str(msg_dict))
-         
-        incrementPendingMessage(collection, redis_conn, uid,message_id)
-        collection.update({'uid':uid},{'$inc':{"Math3MessageCount":1}})
+        entity, opcode = processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query, msg_data, comp_outs)
+
+        if entity is not None:
+            if opcode is not None:
+                msg_dict = {'tenant':tenant, 'opcode':opcode, "entityid":entity.eid} 
+                if uid is not None:
+                    msg_dict['uid'] = uid
+                message_id = genMessageID("Comp", collection, entity.eid)
+                msg_dict['message_id'] = message_id
+                message = dumps(msg_dict)
+                connection1.publish(ch,'','mathqueue',message)
+                logging.info("Sent message to Math pos1:" + str(msg_dict))
+                 
+                incrementPendingMessage(collection, redis_conn, uid,message_id)
+                collection.update({'uid':uid},{'$inc':{"Math3MessageCount":1}})
 
         if not usingAWS:
             continue
