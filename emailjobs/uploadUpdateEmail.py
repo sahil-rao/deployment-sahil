@@ -8,6 +8,7 @@ from pymongo import MongoClient
 from flightpath.Provenance import getMongoServer
 from Crypto.Cipher import AES
 import os
+import ConfigParser
 import encdec
 
 
@@ -51,19 +52,25 @@ def formatDataforEmail(uploadInfoDict):
 
 
 def sendEmail(formattedData):
-	encdec.decrypt_file('sender.txt.enc')
+	config = ConfigParser.RawConfigParser ()
+	config.read("/var/Baaz/emails.cfg")
+	encdec.decrypt_file('/var/Baaz/sender.txt.enc')
 	with open('sender.txt') as f0:
 		fromAddress = f0.readline()
 		password = f0.readline()
 	os.remove('sender.txt')
-	with open('updaterecipients.txt') as f:
-		recipients = f.readlines()
+	recipients = config.get('updateRecipients', 'recipient')
+	recipients.replace(' ', '')
+	recipients.replace('\n', '')
+	recipients = recipients.split(",")
 
 	msg = MIMEMultipart('alternative')
 	msg['Subject'] = '12 Hour Activity Update'
 	msg['From'] = fromAddress
 	msg['To'] = ", ".join(recipients)
-	plainTextBody = 'The following are the uploads of users in the last 12 hours: '
+	cluster = config.get('GoogleAuth', 'realm')
+	plainTextBody = 'From cluster: ' + cluster + '\n'
+	plainTextBody += 'The following are the uploads of users in the last 12 hours: '
 	part1 = MIMEText(plainTextBody, 'plain')
 	part2 = MIMEText(formattedData, 'html')
 	msg.attach(part1)

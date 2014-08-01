@@ -12,19 +12,25 @@ import os
 
 
 def sendEmail(formattedData):
-	encdec.decrypt_file('sender.txt.enc')
+	config = ConfigParser.RawConfigParser ()
+	config.read("/var/Baaz/emails.cfg")
+	encdec.decrypt_file('/var/Baaz/sender.txt.enc')
 	with open('sender.txt') as f0:
 		fromAddress = f0.readline()
 		password = f0.readline()
 	os.remove('sender.txt')
-	with open('failurerecipients.txt') as f:
-		recipients = f.readlines()
+	recipients = config.get('updateRecipients', 'recipient')
+	recipients.replace(' ', '')
+	recipients.replace('\n', '')
+	recipients = recipients.split(",")
 
 	msg = MIMEMultipart('alternative')
 	msg['Subject'] = 'Upload Failure Update'
 	msg['From'] = fromAddress
 	msg['To'] = ", ".join(recipients)
-	plainTextBody = 'The following are the uploads of users in the last 12 hours: '
+	cluster = config.get('GoogleAuth', 'realm')
+	plainTextBody = 'From cluster: ' + cluster + '\n'
+	plainTextBody = 'The following are failures of uploads: '
 	part1 = MIMEText(plainTextBody, 'plain')
 	part2 = MIMEText(formattedData, 'html')
 	msg.attach(part1)
@@ -36,11 +42,6 @@ def sendEmail(formattedData):
 	server.helo()
 	server.sendmail(fromAddress, recipients, msg.as_string())
 	server.quit()
-
-
-def twoMinutesAgo():
-	twoMinutesInMilliSeconds = 2 * 60 * 1000
-	return time.time() * 1000 - twoMinutesInMilliSeconds
 
 
 def isGreaterThanTwoMinutes(start, end):
@@ -62,12 +63,20 @@ def hasCountError(document):
 
 
 def findUploadsWithErrors(uploads):
-	timeLimit = twoMinutesAgo()
-	uploadStatsCursor = uploads.find({"timestamp" : {"$gte" : timeLimit}}, {"timestamp":1, "LastMessageProcessed":1,\
+	uploadStatsCursor = uploads.find({"checkedForFailure":{"$ne":"true"}}, {"uid":1, "timestamp":1, "LastMessageProcessed":1,\
 			"Compiler.count":1, "FPProcessing.count":1, "Math.count":1})
 	uploadErrors = list()
 	for upload in uploadStatsCursor:
 		tempUploadErrors = dict()
+		errorMessage = isGreaterThanTwoMinutes(upload['timestamp'], time.time())
+		if errorMessage != '':
+			tempUploadErrors['_id'] = upload['_id']
+			tempUploadErrors['error'] = errorMessage
+			uploads.update({"uid":upload['uid']}, {"$set": {'checkedForFailure':"true"}})
+			continue
+		if 'LastMessageProcessed' not in upload:
+			continue
+		uploads.update({"uid":upload['uid']}, {"$set": {'checkedForFailure':"true"}})	
 		if(len(upload) != 6):
 			tempUploadErrors['_id'] = upload['_id']
 			tempUploadErrors['error'] = 'Does not contain all fields'
