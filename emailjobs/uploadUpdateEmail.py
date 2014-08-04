@@ -26,7 +26,7 @@ def getMatchingDocuments(entities):
 		uploadStatsTempDict = dict()
 		uploadStatsTempDict['time'] = time.ctime((int(uploadStats['timestamp'])/1000))
 		uploadStatsTempDict['queriesUploaded'] = uploadStats['RemoveCompilerMessageCount']
-		uploadStatsTempDict['filename'] = uploadStats['filename'].split('/')[2]
+		uploadStatsTempDict['filename'] = uploadStats['filename'].split('/')[2]em
 		uploadStatsArray.append(uploadStatsTempDict)
 	return uploadStatsArray
 
@@ -68,7 +68,7 @@ def sendEmail(formattedData):
 	msg['Subject'] = '12 Hour Activity Update'
 	msg['From'] = fromAddress
 	msg['To'] = ", ".join(recipients)
-	cluster = config.get('GoogleAuth', 'realm')
+	cluster = config.get('cluster', 'name')
 	plainTextBody = 'From cluster: ' + cluster + '\n'
 	plainTextBody += 'The following are the uploads of users in the last 12 hours: '
 	part1 = MIMEText(plainTextBody, 'plain')

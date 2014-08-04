@@ -28,7 +28,7 @@ def sendEmail(formattedData):
 	msg['Subject'] = 'Upload Failure Update'
 	msg['From'] = fromAddress
 	msg['To'] = ", ".join(recipients)
-	cluster = config.get('GoogleAuth', 'realm')
+	cluster = config.get('cluster', 'name')
 	plainTextBody = 'From cluster: ' + cluster + '\n'
 	plainTextBody = 'The following are failures of uploads: '
 	part1 = MIMEText(plainTextBody, 'plain')
