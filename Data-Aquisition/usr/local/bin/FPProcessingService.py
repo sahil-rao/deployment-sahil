@@ -420,13 +420,47 @@ def callback(ch, method, properties, body):
 
     try:
         if uid is not None:
+            queryNo = redis_conn.getEntityProfile("dashboard_data", "TotalQueries")
+            if queryNo is not None:
+                if "Total_Queries" in queryNo:
+                    if queryNo["TotalQueries"] is not None:
+                        queries = int(queryNo["TotalQueries"])
+                    else:
+                        queries = 0
+                else:
+                    queries = 0
+            else:
+                queries = 0
+
+            lastUploadTime = collection.find({},{"_id":0, "timestamp":1}).sort([("timestamp",-1)]).limit(1)
+            if lastUploadTime is not None:
+                lastUploadTime = list(lastUploadTime)
+                if len(lastUploadTime) > 0:
+                    lastUploadTime = lastUploadTime[0]
+                    if lastUploadTime is not None:
+                        if "timestamp" in lastUploadTime:
+                            lastUploadTime = lastUploadTime["timestamp"]
+                        else:
+                            lastUploadTime = None
+                    else:
+                        lastUploadTime = None
+                else:
+                    lastUploadTime = None
+            else:
+                lastUploadTime = None
+
             #This query finds the latest upload and stores that timestamp in the timestamp variable
-            timestamp = int(list(collection.find({},{"_id":0, "timestamp":1}).sort([("timestamp",-1)]).limit(1))[0]["timestamp"])
+            if lastUploadTime is not None:
+                timestamp = int(lastUploadTime)
+            else:
+                timestamp = 0
+
             MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads": (collection.count() -1) , \
-                "queries":int(redis_conn.getEntityProfile("dashboard_data", "TotalQueries")["TotalQueries"]), \
-                "lastTimeStamp": timestamp}})
+                "queries":queries, "lastTimeStamp": timestamp}})
+
+            logging.exception("Updated the overall stats values.")
     except:
-        logging.exception("Error while updating the overall stats values")
+        logging.exception("Error while updating the overall stats values.")
 
     try:
         mongoconn.close()
