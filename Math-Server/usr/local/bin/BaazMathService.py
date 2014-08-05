@@ -317,6 +317,32 @@ def callback(ch, method, properties, body):
 
     logging.info("Event Processing Complete")     
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
+
+    """
+     Progress Bar update
+    """
+    notif_queue = "node-update-queue"
+    logging.info("Going to check progress bar")     
+    try:
+        stats_dict = collection.find_one({'uid':uid})
+        if stats_dict is not None and\
+            "total_queries" in stats_dict and\
+            "processed_queries" in stats_dict:
+            collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
+            
+            #if received_msgID is not None and\
+            #    (int(received_msgID.split("-")[1])%40) == 0:
+            if stats_dict["processed_queries"]%10 == 0:
+            #logging.info("Procesing progress bar event")     
+                out_dict = {"messageType" : "uploadProgress", "tenantId": tenant, 
+                            "completed": stats_dict["processed_queries"] + 1, "total":stats_dict["total_queries"]}
+                connection1.publish(ch,'', notif_queue, dumps(out_dict))
+    except:
+        logging.exception("While making update to progress bar")
+
+    """
+     Progress Bar Update end
+    """
     connection1.basicAck(ch,method)
 
     endTime = time.time()
