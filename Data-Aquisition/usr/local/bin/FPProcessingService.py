@@ -439,7 +439,7 @@ def callback(ch, method, properties, body):
         if uid is not None:
             queryNo = redis_conn.getEntityProfile("dashboard_data", "TotalQueries")
             if queryNo is not None:
-                if "Total_Queries" in queryNo:
+                if "TotalQueries" in queryNo:
                     if queryNo["TotalQueries"] is not None:
                         queries = int(queryNo["TotalQueries"])
                     else:
@@ -475,7 +475,7 @@ def callback(ch, method, properties, body):
             MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads": (collection.count() -1) , \
                 "queries":queries, "lastTimeStamp": timestamp}})
 
-            logging.exception("Updated the overall stats values.")
+            logging.info("Updated the overall stats values.")
     except:
         logging.exception("Error while updating the overall stats values.")
 
