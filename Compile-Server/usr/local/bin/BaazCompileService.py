@@ -590,7 +590,7 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
             logging.info("Failed in Compiler processCompilerOutputs 4")
         elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
             mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
+                {'$inc' : {"TotalQueries": 1, "unique_count": 1}}, upsert = True)
 
         updateRelationCounter(redis_conn, entity.eid)
 
