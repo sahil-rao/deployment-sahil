@@ -520,6 +520,8 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
     if q_hash is not None:
         entity = mongoconn.searchEntity({"md5":q_hash})
 
+    update = False
+
     if entity is None:
         logging.info("Going to create the entity")
         profile_dict["instance_count"] = 1
@@ -532,28 +534,31 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
             if entity is None:
                 logging.info("No Entity found")
                 return None, None
+            if eid == entity.eid:
 
-            redis_conn.createEntityProfile(entity.eid, "SQL_QUERY")
-            redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
-            
-            #redis_conn.createEntityProfile()
-            inst_dict = None
-            if custom_id is not None:
-                inst_dict = {'custom_id':custom_id}
-            mongoconn.updateInstance(entity, query, None, inst_dict)
+                redis_conn.createEntityProfile(entity.eid, "SQL_QUERY")
+                redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
+                
+                #redis_conn.createEntityProfile()
+                inst_dict = None
+                if custom_id is not None:
+                    inst_dict = {'custom_id':custom_id}
+                mongoconn.updateInstance(entity, query, None, inst_dict)
 
-            entityProfile = entity.profile
-            if "Compiler" not in entityProfile:
-                logging.info("Failed in Compiler processCompilerOutputs 2")
-            elif "gsp" not in entityProfile["Compiler"]:
-                logging.info("Failed in Compiler processCompilerOutputs 3")
-            elif "OperatorList" not in entityProfile["Compiler"]["gsp"]:
-                logging.info("Failed in Compiler processCompilerOutputs 4")
-            elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
+                entityProfile = entity.profile
+                if "Compiler" not in entityProfile:
+                    logging.info("Failed in Compiler processCompilerOutputs 2")
+                elif "gsp" not in entityProfile["Compiler"]:
+                    logging.info("Failed in Compiler processCompilerOutputs 3")
+                elif "OperatorList" not in entityProfile["Compiler"]["gsp"]:
+                    logging.info("Failed in Compiler processCompilerOutputs 4")
+                elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
 
-                mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                      {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
-                       upsert = True)
+                    mongoconn.db.dashboard_data.update({'tenant':tenant},\
+                          {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
+                           upsert = True)
+            else:
+                update = True
 
         except DuplicateKeyError:
             inst_dict = {}
@@ -565,6 +570,9 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
                 logging.info("Entity not found for hash - {0}".format(q_hash))
                 return None, None
     else:
+        update = True
+
+    if update == True:
         """
         Update instance count, store the instance and update the instance counts in 
         relationships.
