@@ -38,9 +38,15 @@
 - name: Stop running upstart script
   service: name=dataacquisitionservice state=stopped
   sudo: yes
+- name: Stop running upstart script
+  service: name=applicationservice state=stopped
+  sudo: yes
 # - name: Start dataacquisitionservice (upstart).
 #   service: name=dataacquisitionservice state=started
 #   sudo: yes
+- name: copy logrotate file
+  template: src=roles/backoffice/files/compileserver dest=/etc/logrotate.d/
+  sudo: yes
 
 #Start of Analytics module deployment.
 - name: Get Analytics Module

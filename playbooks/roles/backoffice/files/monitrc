@@ -261,6 +261,10 @@ check process dataacquisitionservice with pidfile /var/run/dataacquisitionservic
     start program = "/sbin/start dataacquisitionservice" with timeout 30 seconds
     stop program = "/sbin/stop dataacquisitionservice"
 
+check process applicationservice with pidfile /var/run/applicationservice.pid
+    start program = "/sbin/start applicationservice" with timeout 30 seconds
+    stop program = "/sbin/stop applicationservice"
+
 check process compileserver with pidfile /var/run/compileserver.pid
     start program = "/sbin/start compileserver" with timeout 30 seconds
     stop program = "/sbin/stop compileserver"

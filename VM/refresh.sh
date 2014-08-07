@@ -11,5 +11,8 @@ sudo stop mathservice
 sudo start mathservice 
 sudo stop nodejs                                 
 sudo start nodejs  
+sudo stop applicationservice
+sudo start applicationservice
+
 #sudo monit                               
 exit 0
