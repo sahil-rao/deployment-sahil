@@ -167,90 +167,106 @@ def elasticConnect(tenantID):
     except:
         pass
 
-def sendToCompiler(tenant, eid, uid, ch, mongoconn, redis_conn, collection, update=False, name=None, etype=None, data=None):
+class callback_context():
 
-    if eid is None:
-        if not etype == 'SQL_QUERY': 
+    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection):
+        Self.tenant = tenant
+        Self.uid = uid
+        Self.ch = ch
+        Self.mongoconn = mongoconn
+        Self.redis_conn = redis_conn
+        Self.collection = collection
+
+    def query_count(Self, total_queries_found):
+        """
+        Report total number of queries found.
+
+        Store the total count in the upload stats.
+        """
+        logging.info("Total Queries found " + str(total_queries_found))
+        Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(total_queries_found), "processed_queries":0}}) 
+
+    def callback(Self, eid, update=False, name=None, etype=None, data=None):
+
+        if eid is None:
+            if not etype == 'SQL_QUERY': 
+                return
+
+            """
+            For SQL query, send any new query to compiler first.
+            If this is an update to existing query,
+            updates the appropriate relationships that will be used by math.
+            """
+            Self.redis_conn.incrEntityCounter("dashboard_data", "TotalQueries", sort=False, incrBy=1)
+            logging.info(Self.redis_conn.getEntityProfile('dashboard_data'))
+            if update == False:
+                jinst_dict = {} 
+                jinst_dict['program_type'] = "SQL"
+                jinst_dict['query'] = name
+                if data is not None:
+                    jinst_dict['data'] = data
+                compiler_msg = {'tenant':Self.tenant, 'job_instances':[jinst_dict]}
+
+                if Self.uid is not None:
+                    compiler_msg['uid'] = Self.uid
+                message_id = genMessageID("FP", Self.collection)
+                compiler_msg['message_id'] = message_id
+                message = dumps(compiler_msg)
+                connection1.publish(Self.ch,'','compilerqueue',message)
+                incrementPendingMessage(Self.collection, Self.redis_conn, Self.uid, message_id)
+                logging.info("Published Compiler Message {0}\n".format(message))
+            else:
+                Self.redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
+
+                queryEntity = Self.mongoconn.db.entities.find_one({eid:"eid"},{'profile.Compiler.gsp.ErrorSignature':1})
+
+                if "profile" not in queryEntity:
+                    logging.info("Failed in FP sendToCompiler 1")
+                elif "Compiler" not in queryEntity["profile"]:
+                    logging.info("Failed in FP sendToCompiler 2")
+                elif "gsp" not in queryEntity["profile"]["Compiler"]:
+                    logging.info("Failed in FP sendToCompiler 3")
+                elif "OperatorList" not in queryEntity["profile"]["Compiler"]["gsp"]:
+                    logging.info("Failed in FP sendToCompiler 4")
+
+                elif len(queryEntity["profile"]["Compiler"]["gsp"]["OperatorList"]) > 1:
+    
+                    Self.mongoconn.db.dashboard_data.update({'tenant':Self.tenant},\
+                            {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
+
+                """
+                Get relationships for the given entity.
+                """
+                updateRelationCounter(Self.redis_conn, eid)
             return
 
-        """
-        For SQL query, send any new query to compiler first.
-        If this is an update to existing query,
-        updates the appropriate relationships that will be used by math.
-        """
-        
+        entity = Self.mongoconn.getEntity(eid)
+        if entity.etype == 'HADOOP_JOB':
 
-        redis_conn.incrEntityCounter("dashboard_data", "TotalQueries", sort=False, incrBy=1)
-        logging.info(redis_conn.getEntityProfile('dashboard_data'))
-        if update == False:
-            jinst_dict = {} 
-            jinst_dict['program_type'] = "SQL"
-            jinst_dict['query'] = name
-            if data is not None:
-                jinst_dict['data'] = data
-            compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
-
-            if uid is not None:
-                compiler_msg['uid'] = uid
-            message_id = genMessageID("FP", collection)
-            compiler_msg['message_id'] = message_id
-            message = dumps(compiler_msg)
-            connection1.publish(ch,'','compilerqueue',message)
-            incrementPendingMessage(collection, redis_conn, uid, message_id)
-            logging.info("Published Compiler Message {0}\n".format(message))
-        else:
-            redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
-
-            queryEntity = mongoconn.db.entities.find_one({eid:"eid"},{'profile.Compiler.gsp.ErrorSignature':1})
-
-            if "profile" not in queryEntity:
-                logging.info("Failed in FP sendToCompiler 1")
-            elif "Compiler" not in queryEntity["profile"]:
-                logging.info("Failed in FP sendToCompiler 2")
-            elif "gsp" not in queryEntity["profile"]["Compiler"]:
-                logging.info("Failed in FP sendToCompiler 3")
-            elif "OperatorList" not in queryEntity["profile"]["Compiler"]["gsp"]:
-                logging.info("Failed in FP sendToCompiler 4")
-
-            elif len(queryEntity["profile"]["Compiler"]["gsp"]["OperatorList"]) > 1:
-
-                mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                    {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
-
-            """
-            Get relationships for the given entity.
-            """
-            updateRelationCounter(redis_conn, eid)
-
-        return
-
-    entity = mongoconn.getEntity(eid)
-    if entity.etype == 'HADOOP_JOB':
-
-        pub = True
-        jinst_dict = {'entity_id':entity.eid} 
-        prog_type = ""
-        if entity.instances[0].config_data.has_key("hive.query.string"):
-            jinst_dict['program_type'] = "Hive"
-            jinst_dict['query'] = entity.name
-        elif entity.instances[0].config_data.has_key("pig.script.features"):
-            jinst_dict['program_type'] = "Pig"
-            jinst_dict['pig_features'] = int(entity.instances[0].config_data['pig.script.features'])
-        else:
-            logging.info("Progname found {0}\n".format(entity.name))
-            pub = False
-        if pub == True:
-            compiler_msg = {'tenant':tenant, 'job_instances':[jinst_dict]}
-            if data is not None:
-                compiler_msg['data'] = data
-            if uid is not None:
-                compiler_msg['uid'] = uid
-            message_id = genMessageID("FP", collection)
-            compiler_msg['message_id'] = message_id
-            message = dumps(compiler_msg)
-            connection1.publish(ch,'','compilerqueue',message)
-            incrementPendingMessage(collection, redis_conn, uid, message_id)
-            logging.info("Published Compiler Message {0}\n".format(message))
+            pub = True
+            jinst_dict = {'entity_id':entity.eid} 
+            prog_type = ""
+            if entity.instances[0].config_data.has_key("hive.query.string"):
+                jinst_dict['program_type'] = "Hive"
+                jinst_dict['query'] = entity.name
+            elif entity.instances[0].config_data.has_key("pig.script.features"):
+                jinst_dict['program_type'] = "Pig"
+                jinst_dict['pig_features'] = int(entity.instances[0].config_data['pig.script.features'])
+            else:
+                logging.info("Progname found {0}\n".format(entity.name))
+                pub = False
+            if pub == True:
+                compiler_msg = {'tenant':Self.tenant, 'job_instances':[jinst_dict]}
+                if data is not None:
+                    compiler_msg['data'] = data
+                if Self.uid is not None:
+                    compiler_msg['uid'] = Self.uid
+                message_id = genMessageID("FP", Self.collection)
+                compiler_msg['message_id'] = message_id
+                message = dumps(compiler_msg)
+                connection1.publish(Self.ch,'','compilerqueue',message)
+                incrementPendingMessage(Self.collection, Self.redis_conn, Self.uid, message_id)
+                logging.info("Published Compiler Message {0}\n".format(message))
     
 def callback(ch, method, properties, body):
     starttime = time.time()
@@ -392,7 +408,8 @@ def callback(ch, method, properties, body):
         incrementPendingMessage(collection, redis_conn, uid, message_id)
         logging.info("Incremementing message count: " + message_id)
 
-        parseDir(tenant, logpath, mongoconn, redis_conn, sendToCompiler, uid, ch, collection)
+        cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection)
+        parseDir(tenant, logpath, cb_ctx)
 
         callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
         decrementPendingMessage(collection, redis_conn, uid, message_id, end_of_phase_callback, callback_params)
@@ -429,7 +446,7 @@ def callback(ch, method, properties, body):
         if uid is not None:
             queryNo = redis_conn.getEntityProfile("dashboard_data", "TotalQueries")
             if queryNo is not None:
-                if "Total_Queries" in queryNo:
+                if "TotalQueries" in queryNo:
                     if queryNo["TotalQueries"] is not None:
                         queries = int(queryNo["TotalQueries"])
                     else:
@@ -465,7 +482,7 @@ def callback(ch, method, properties, body):
             MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads": (collection.count() -1) , \
                 "queries":queries, "lastTimeStamp": timestamp}})
 
-            logging.exception("Updated the overall stats values.")
+            logging.info("Updated the overall stats values.")
     except:
         logging.exception("Error while updating the overall stats values.")
 
