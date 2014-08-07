@@ -114,6 +114,13 @@ def elasticConnect(tenantID):
                 "properties" : {\
                 "name":{\
                     "type":"completion",\
+                    "context" : {\
+                        "etype" : {\
+                            "type" : "category",\
+                            "default" : ["SQL_QUERY","SQL_TABLE"],\
+                            "path" : "etype"\
+                        }\
+                    },\
                     "fields" : {\
                         "untouched" : {\
                             "type":"string",\
