@@ -539,7 +539,6 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
                 redis_conn.createEntityProfile(entity.eid, "SQL_QUERY")
                 redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
                 
-                #redis_conn.createEntityProfile()
                 inst_dict = None
                 if custom_id is not None:
                     inst_dict = {'custom_id':custom_id}
@@ -547,16 +546,26 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
 
                 entityProfile = entity.profile
                 if "Compiler" not in entityProfile:
-                    logging.info("Failed in Compiler processCompilerOutputs 2")
+                    logging.info("Failed in Compiler processCompilerOutputs 1")
                 elif "gsp" not in entityProfile["Compiler"]:
-                    logging.info("Failed in Compiler processCompilerOutputs 3")
+                    logging.info("Failed in Compiler processCompilerOutputs 2")
                 elif "OperatorList" not in entityProfile["Compiler"]["gsp"]:
-                    logging.info("Failed in Compiler processCompilerOutputs 4")
+                    logging.info("Failed in Compiler processCompilerOutputs 3")
                 elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
 
                     mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                          {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
-                           upsert = True)
+                        {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
+                            upsert = True)
+
+                if "Compiler" not in entityProfile:
+                    logging.info("Failed in Compiler processCompilerOutputs 4")
+                elif "gsp" not in entityProfile["Compiler"]:
+                    logging.info("Failed in Compiler processCompilerOutputs 5")
+                elif "ComplexityScore" not in entityProfile["Compiler"]["gsp"]:
+                    logging.info("Failed in Compiler processCompilerOutputs 6")
+                elif entityProfile["Compiler"]["gsp"]["ComplexityScore"] > 0:
+                    redis_conn.incrEntityCounter(entity.eid, "ComplexityScore", sort = True,
+                        incrBy= entityProfile["Compiler"]["gsp"]["ComplexityScore"])
             else:
                 update = True
 
@@ -583,14 +592,14 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
         
         entityProfile = entity.profile
         if "Compiler" not in entityProfile:
-            logging.info("Failed in Compiler processCompilerOutputs 2")
+            logging.info("Failed in Compiler processCompilerOutputs 7")
         elif "gsp" not in entityProfile["Compiler"]:
-            logging.info("Failed in Compiler processCompilerOutputs 3")
+            logging.info("Failed in Compiler processCompilerOutputs 8")
         elif "OperatorList" not in entityProfile["Compiler"]["gsp"]:
-            logging.info("Failed in Compiler processCompilerOutputs 4")
+            logging.info("Failed in Compiler processCompilerOutputs 9")
         elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
             mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
+                {'$inc' : {"TotalQueries": 1, "unique_count": 1}}, upsert = True)
 
         updateRelationCounter(redis_conn, entity.eid)
 
