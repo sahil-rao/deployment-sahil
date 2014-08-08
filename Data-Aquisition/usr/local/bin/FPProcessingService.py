@@ -130,10 +130,6 @@ def elasticConnect(tenantID):
                 },\
                 "eid" : {\
                     "type" : "completion"\
-                },\
-                "logical_name" : {\
-                    "type":"string",\
-                    "index":"not_analyzed"\
                 }\
             }\
             }\
@@ -155,7 +151,7 @@ def elasticConnect(tenantID):
             ],\
             "options": {\
                 "secondary_read_preference": true,\
-                "include_fields" : ["name", "eid", "etype"]\
+                "exclude_fields" : ["logical_name", "md5"]\
             },\
             "db": "' + tenantID + '",\
             "collection": "entities"\

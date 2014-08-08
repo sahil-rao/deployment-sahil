@@ -26,7 +26,7 @@ def getMatchingDocuments(entities):
 		uploadStatsTempDict = dict()
 		uploadStatsTempDict['time'] = time.ctime((int(uploadStats['timestamp'])/1000))
 		uploadStatsTempDict['queriesUploaded'] = uploadStats['RemoveCompilerMessageCount']
-		uploadStatsTempDict['filename'] = uploadStats['filename'].split('/')[2]em
+		uploadStatsTempDict['filename'] = uploadStats['filename'].split('/')[2]
 		uploadStatsArray.append(uploadStatsTempDict)
 	return uploadStatsArray
 
