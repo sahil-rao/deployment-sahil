@@ -12,3 +12,9 @@
 - name: Untar flightpath
   shell: tar -zxf /home/ubuntu/flightpath-deployment.tar.gz chdir=/
   sudo: yes
+- name: change update email file to executables
+  file: src=/home/ubuntu/siddharth/emailjobs/uploadUpdateEmails.py owner=ubuntu group=ubuntu mode=0755
+- name: change failure email file to executables
+  file: src=/home/ubuntu/siddharth/emailjobs/failureUpdateEmails.py owner=ubuntu group=ubuntu mode=0755
+- cron: name="update email job" hour="*/12" job="/home/ubuntu/siddharth/emailjobs/uploadUpdateEmails.py"
+- cron: name="failure email job" minute="*/2" job="/home/ubuntu/siddharth/emailjobs/failureUpdateEmails.py"

@@ -60,16 +60,15 @@ def sendEmail(formattedData):
 		password = f0.readline()
 	os.remove('sender.txt')
 	recipients = config.get('updateRecipients', 'recipient')
+	cluster = config.get('cluster', 'name')
 	recipients.replace(' ', '')
 	recipients.replace('\n', '')
 	recipients = recipients.split(",")
 
 	msg = MIMEMultipart('alternative')
-	msg['Subject'] = '12 Hour Activity Update'
+	msg['Subject'] = '12 Hour Activity Update for ' + cluster
 	msg['From'] = fromAddress
 	msg['To'] = ", ".join(recipients)
-	cluster = config.get('cluster', 'name')
-	plainTextBody = 'From cluster: ' + cluster + '\n'
 	plainTextBody += 'The following are the uploads of users in the last 12 hours: '
 	part1 = MIMEText(plainTextBody, 'plain')
 	part2 = MIMEText(formattedData, 'html')
