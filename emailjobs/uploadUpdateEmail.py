@@ -19,15 +19,15 @@ def twelveHoursAgo():
 
 def getMatchingDocuments(entities):
 	timeLimit = twelveHoursAgo()
-	uploadStatsCursor = entities.find({"$and" : [{"timestamp" : {"$gte" : timeLimit}}, {"RemoveCompilerMessageCount" : {"$gte" : 0}}]},\
-				 {"_id":0, "timestamp":1, "RemoveCompilerMessageCount":1, "filename":1}).skip(1)
+	uploadStatsCursor = entities.find({"timestamp":{"$gte":timeLimit}})
 	uploadStatsArray = list()
 	for uploadStats in uploadStatsCursor:
 		uploadStatsTempDict = dict()
-		uploadStatsTempDict['time'] = time.ctime((int(uploadStats['timestamp'])/1000))
-		uploadStatsTempDict['queriesUploaded'] = uploadStats['RemoveCompilerMessageCount']
-		uploadStatsTempDict['filename'] = uploadStats['filename'].split('/')[2]
-		uploadStatsArray.append(uploadStatsTempDict)
+		if 'timestamp' in uploadStats and 'RemoveCompilerMessageCount' in uploadStats and 'filename' in uploadStats:
+			uploadStatsTempDict['time'] = time.ctime((int(uploadStats['timestamp'])/1000))
+			uploadStatsTempDict['queriesUploaded'] = uploadStats['RemoveCompilerMessageCount']
+			uploadStatsTempDict['filename'] = uploadStats['filename'].split('/')[2]
+			uploadStatsArray.append(uploadStatsTempDict)
 	return uploadStatsArray
 
 

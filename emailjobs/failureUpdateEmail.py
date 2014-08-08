@@ -68,6 +68,11 @@ def findUploadsWithErrors(uploads):
 	uploadErrors = list()
 	for upload in uploadStatsCursor:
 		tempUploadErrors = dict()
+		if 'timestamp' not in upload:
+			tempUploadErrors['_id'] = upload['_id']
+			tempUploadErrors['error'] = 'no timestamp'
+			uploads.update({"uid":upload['uid']}, {"$set": {'checkedForFailure':"true"}})
+			continue
 		errorMessage = isGreaterThanTwoMinutes(upload['timestamp'], time.time())
 		if errorMessage != '':
 			tempUploadErrors['_id'] = upload['_id']
