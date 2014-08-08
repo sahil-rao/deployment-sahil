@@ -153,7 +153,10 @@ def elasticConnect(tenantID):
                 "servers": [\
               { "host": "' + mongoserver + '", "port": 27017 }\
             ],\
-            "options": { "secondary_read_preference": true },\
+            "options": {\
+                "secondary_read_preference": true,\
+                "include_fields" : ["name", "eid", "etype"]\
+            },\
             "db": "' + tenantID + '",\
             "collection": "entities"\
           },\
@@ -290,7 +293,6 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict["tenent"]
     mongo_url = getMongoServer(tenant)
-    elasticConnect(tenant)
 
     uid = None
     try:
@@ -306,6 +308,7 @@ def callback(ch, method, properties, body):
     except:
         logging.exception("Testing Cleanup")
 
+    elasticConnect(tenant)
     r_collection = None
     dest_file = None
     try:
