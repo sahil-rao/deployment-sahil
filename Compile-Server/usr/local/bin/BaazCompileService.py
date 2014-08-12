@@ -24,6 +24,7 @@ import re
 import ConfigParser
 import logging
 import socket
+import pprint
 
 #104857600
 
@@ -49,7 +50,7 @@ if not usingAWS:
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
         shutil.copy(BAAZ_COMPILER_LOG_FILE, BAAZ_COMPILER_LOG_FILE+timestr)
 
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_COMPILER_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_COMPILER_LOG_FILE,level=logging.CRITICAL,datefmt='%m/%d/%Y %I:%M:%S %p')
 
 """
 In AWS use S3 log rotate to save the log files.
@@ -463,6 +464,106 @@ def process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn)
                                                      properties.correlation_id),
                      body=dumps(resp_dict))
 
+def process_scale_mode(tenant, uid, instances, redis_conn):
+    
+    for inst in instances:
+        """
+        Create input and output folders for compiler
+        """
+        if 'query' in inst:
+            query = inst["query"].strip()
+        else:
+            logging.error("Could not find query")
+            continue
+        timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
+        destination = '/mnt/volume1/compile-' + tenant + "/" + timestr 
+        if not os.path.exists(destination):
+            os.makedirs(destination)
+        dest_file_name = destination + "/input.query"
+        dest_file = open(dest_file_name, "w+")
+        dest_file.write(query)
+        dest_file.flush()
+        dest_file.close()
+        output_file_name = destination + "/gsp.out"
+
+
+        data_dict = { "InputFile": dest_file_name,
+                      "OutputFile": output_file_name,
+                      "Compiler": "gsp",
+                      "EntityId": "",
+                      "TenantId": "100" }
+
+
+        data = dumps(data_dict)
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect(("localhost", 12121))
+        client_socket.send("1\n");
+
+        """
+        For regular compilation the opcode is 1.
+        """
+        client_socket.send("1\n");
+        data = data + "\n"
+        client_socket.send(data)
+        rx_data = client_socket.recv(512)
+
+        if rx_data == "Done":
+            logging.info("Got Done")
+
+        client_socket.close()
+
+        compile_doc = None
+        logging.info("Loading file : "+ output_file_name)
+        with open(output_file_name) as data_file:    
+            compile_doc = load(data_file)["gsp"]
+
+        parsed_compile_doc = { "parsed": False,
+                               "signatures": [],
+                               "operators": [],
+                               "columns": [],
+                               "hash": None,
+                               "tables": [] }
+        
+        for section, value in compile_doc.items():
+            
+            if value is None:
+                continue
+
+            #value is gsp error, if no error, it parsed successfully
+            if section == "ErrorSignature":
+                if value == "": 
+                    parsed_compile_doc['parsed'] = True 
+
+            #value is a list of signature keywords
+            if section == "SignatureKeywords":
+                parsed_compile_doc['signatures'] += value
+
+            #value is a list of operators
+            if section == "OperatorList":
+                parsed_compile_doc['operators'] += value
+
+            #value is a list of dictionaries, each dict containing info about a column, we only care about the columnName key 
+            if section == "selectColumnNames" or section == "groupByColumns" or section == "orderByColumns":
+                parsed_compile_doc['columns'] += [colinfo['tableName'] + '.' + colinfo['columnName'] for colinfo in value]
+                
+            if section == "joinPredicates":
+                continue
+
+            #value is the md5 hash generated from the query template
+            if section == "queryHash":
+                parsed_compile_doc['hash'] = value
+
+            #value is a list of dictionaries, each dict containing info about a table, we only care about the tableName key
+            if section == "InputTableList" or section == "OutputTableList":
+                parsed_compile_doc['tables'] += [table['TableName'] for table in value]
+            
+            if section == "whereColumns":
+                continue
+
+        redis_conn.scaleCounts(parsed_compile_doc)
+        #logging.info(pprint.pformat(parsed_compile_doc))
+        
+            
 def updateRelationCounter(redis_conn, eid):
 
     relationshipTypes = ['QUERY_SELECT', 'QUERY_JOIN', 'QUERY_FILTER', "READ", "WRITE", "COOCCURRENCE_TABLE",
@@ -571,7 +672,6 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
         """
 
         redis_conn.incrEntityCounter(entity.eid, "instance_count", incrBy=1)
-        logging.info("PRITHVI EID 2: " + str(entity.eid))
         
         entityProfile = entity.profile
         if "Compiler" not in entityProfile:
@@ -693,6 +793,22 @@ def callback(ch, method, properties, body):
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
+    if "opcode" in msg_dict and msg_dict["opcode"] == "scale_mode":
+        logging.info("Got the opcode for scale mode analysis")
+        if 'uid' in msg_dict:
+            uid = msg_dict['uid']
+        else:
+            logging.error("No uid, dropping scale mode message")
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+            
+        redis_conn = RedisConnector(tenant)
+        collection = MongoClient(mongo_url)[tenant].uploadStats
+        process_scale_mode(tenant, uid, instances, redis_conn)
+        decrementPendingMessage(collection, redis_conn, uid, received_msgID)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+        return
+
+    
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
 

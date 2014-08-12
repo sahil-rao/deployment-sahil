@@ -49,7 +49,7 @@ if not usingAWS:
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
         shutil.copy(BAAZ_FP_LOG_FILE, BAAZ_FP_LOG_FILE+timestr)
 
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_FP_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_FP_LOG_FILE,level=logging.CRITICAL,datefmt='%m/%d/%Y %I:%M:%S %p')
 
 """
 In AWS use S3 log rotate to save the log files.
@@ -162,13 +162,15 @@ def elasticConnect(tenantID):
 
 class callback_context():
 
-    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection):
+    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode=False, queryNumThreshold=1):
         Self.tenant = tenant
         Self.uid = uid
         Self.ch = ch
         Self.mongoconn = mongoconn
         Self.redis_conn = redis_conn
         Self.collection = collection
+        Self.scale_mode = scale_mode
+        Self.queryNumThreshold = queryNumThreshold
 
     def query_count(Self, total_queries_found):
         """
@@ -177,6 +179,13 @@ class callback_context():
         Store the total count in the upload stats.
         """
         logging.info("Total Queries found " + str(total_queries_found))
+        
+        """
+        Trigger scale mode
+        """
+        if total_queries_found > Self.queryNumThreshold:
+            Self.scale_mode = True
+            
         Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(total_queries_found), "processed_queries":0}}) 
 
     def callback(Self, eid, update=False, name=None, etype=None, data=None):
@@ -185,11 +194,6 @@ class callback_context():
             if not etype == 'SQL_QUERY': 
                 return
 
-            """
-            For SQL query, send any new query to compiler first.
-            If this is an update to existing query,
-            updates the appropriate relationships that will be used by math.
-            """
             Self.redis_conn.incrEntityCounter("dashboard_data", "TotalQueries", sort=False, incrBy=1)
             logging.info(Self.redis_conn.getEntityProfile('dashboard_data'))
             if update == False:
@@ -204,10 +208,17 @@ class callback_context():
                     compiler_msg['uid'] = Self.uid
                 message_id = genMessageID("FP", Self.collection)
                 compiler_msg['message_id'] = message_id
+                """
+                Send scale_mode opcode to compiler if scale_mode is set to true by either SQLScriptConnector trigger 
+                OR short circuit opcode from ftpqueue
+                """
+                if Self.scale_mode: 
+                    compiler_msg['opcode'] = "scale_mode"
                 message = dumps(compiler_msg)
                 connection1.publish(Self.ch,'','compilerqueue',message)
                 incrementPendingMessage(Self.collection, Self.redis_conn, Self.uid, message_id)
                 logging.info("Published Compiler Message {0}\n".format(message))
+
             else:
                 Self.redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
 
@@ -299,6 +310,14 @@ def callback(ch, method, properties, body):
     except:
         logging.exception("Testing Cleanup")
 
+    """
+    Scale mode should be triggered by a query number threshold.
+    But scale_mode_enabled opcode provides short circuit capability to directly access scale mode.
+    """
+    scale_mode = False
+    if "opcode" in msg_dict and msg_dict["opcode"] == "scale_mode":
+        scale_mode = True
+
     r_collection = None
     dest_file = None
     try:
@@ -379,7 +398,8 @@ def callback(ch, method, properties, body):
     logging.info("Extracted file : {0} \n".format(dest_file))     
     if not usingAWS:
         logging.info("Extracted file to /mnt/volume1/[tenent]/processing")
-   
+
+    
     try:
         """
         Parse the data.
@@ -401,8 +421,12 @@ def callback(ch, method, properties, body):
         incrementPendingMessage(collection, redis_conn, uid, message_id)
         logging.info("Incremementing message count: " + message_id)
 
-        cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection)
-        parseDir(tenant, logpath, cb_ctx)
+        cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode)
+
+        """
+        If scale_mode was triggered by SQLScriptConnector, FPProcessingService needs to know
+        """
+        scale_mode = parseDir(tenant, logpath, cb_ctx)
 
         callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
         decrementPendingMessage(collection, redis_conn, uid, message_id, end_of_phase_callback, callback_params)
@@ -415,7 +439,16 @@ def callback(ch, method, properties, body):
             chkpoint_key = Key(bucket)
             chkpoint_key.key = checkpoint
             chkpoint_key.set_contents_from_string("Processed")
-            logging.info("Processed file : {0} \n".format(dest_file))     
+            logging.info("Processed file : {0} \n".format(dest_file))  
+
+        """
+        If we are in scale mode, close mongo, ack, and exit. 
+        Do not send messages to Math or update mongo collections.
+        """
+        if scale_mode:
+            mongoconn.close()
+            connection1.basicAck(ch, method)
+            return
 
     except:
         logging.exception("Parsing the input and Compiler Message")
