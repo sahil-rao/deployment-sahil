@@ -114,6 +114,13 @@ def elasticConnect(tenantID):
                 "properties" : {\
                 "name":{\
                     "type":"completion",\
+                    "context" : {\
+                        "etype" : {\
+                            "type" : "category",\
+                            "default" : ["SQL_QUERY","SQL_TABLE"],\
+                            "path" : "etype"\
+                        }\
+                    },\
                     "fields" : {\
                         "untouched" : {\
                             "type":"string",\
@@ -123,10 +130,6 @@ def elasticConnect(tenantID):
                 },\
                 "eid" : {\
                     "type" : "completion"\
-                },\
-                "logical_name" : {\
-                    "type":"string",\
-                    "index":"not_analyzed"\
                 }\
             }\
             }\
@@ -146,7 +149,10 @@ def elasticConnect(tenantID):
                 "servers": [\
               { "host": "' + mongoserver + '", "port": 27017 }\
             ],\
-            "options": { "secondary_read_preference": true },\
+            "options": {\
+                "secondary_read_preference": true,\
+                "exclude_fields" : ["logical_name", "md5"]\
+            },\
             "db": "' + tenantID + '",\
             "collection": "entities"\
           },\
@@ -294,7 +300,6 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict["tenent"]
     mongo_url = getMongoServer(tenant)
-    elasticConnect(tenant)
 
     uid = None
     try:
@@ -318,6 +323,7 @@ def callback(ch, method, properties, body):
     if "opcode" in msg_dict and msg_dict["opcode"] == "scale_mode":
         scale_mode = True
 
+    elasticConnect(tenant)
     r_collection = None
     dest_file = None
     try:
@@ -472,7 +478,7 @@ def callback(ch, method, properties, body):
         if uid is not None:
             queryNo = redis_conn.getEntityProfile("dashboard_data", "TotalQueries")
             if queryNo is not None:
-                if "Total_Queries" in queryNo:
+                if "TotalQueries" in queryNo:
                     if queryNo["TotalQueries"] is not None:
                         queries = int(queryNo["TotalQueries"])
                     else:
@@ -508,7 +514,7 @@ def callback(ch, method, properties, body):
             MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads": (collection.count() -1) , \
                 "queries":queries, "lastTimeStamp": timestamp}})
 
-            logging.exception("Updated the overall stats values.")
+            logging.info("Updated the overall stats values.")
     except:
         logging.exception("Error while updating the overall stats values.")
 

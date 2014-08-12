@@ -7,6 +7,7 @@ import time
 from pymongo import MongoClient
 from flightpath.Provenance import getMongoServer
 from Crypto.Cipher import AES
+import ConfigParser
 import encdec
 import os
 
@@ -15,10 +16,10 @@ def sendEmail(formattedData):
 	config = ConfigParser.RawConfigParser ()
 	config.read("/var/Baaz/emails.cfg")
 	encdec.decrypt_file('/var/Baaz/sender.txt.enc')
-	with open('sender.txt') as f0:
+	with open('/var/Baaz/sender.txt') as f0:
 		fromAddress = f0.readline()
 		password = f0.readline()
-	os.remove('sender.txt')
+	os.remove('/var/Baaz/sender.txt')
 	recipients = config.get('updateRecipients', 'recipient')
 	recipients.replace(' ', '')
 	recipients.replace('\n', '')
@@ -68,6 +69,11 @@ def findUploadsWithErrors(uploads):
 	uploadErrors = list()
 	for upload in uploadStatsCursor:
 		tempUploadErrors = dict()
+		if 'timestamp' not in upload:
+			tempUploadErrors['_id'] = upload['_id']
+			tempUploadErrors['error'] = 'no timestamp'
+			uploads.update({"uid":upload['uid']}, {"$set": {'checkedForFailure':"true"}})
+			continue
 		errorMessage = isGreaterThanTwoMinutes(upload['timestamp'], time.time())
 		if errorMessage != '':
 			tempUploadErrors['_id'] = upload['_id']

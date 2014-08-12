@@ -19,15 +19,15 @@ def twelveHoursAgo():
 
 def getMatchingDocuments(entities):
 	timeLimit = twelveHoursAgo()
-	uploadStatsCursor = entities.find({"$and" : [{"timestamp" : {"$gte" : timeLimit}}, {"RemoveCompilerMessageCount" : {"$gte" : 0}}]},\
-				 {"_id":0, "timestamp":1, "RemoveCompilerMessageCount":1, "filename":1}).skip(1)
+	uploadStatsCursor = entities.find({"timestamp":{"$gte":timeLimit}})
 	uploadStatsArray = list()
 	for uploadStats in uploadStatsCursor:
 		uploadStatsTempDict = dict()
-		uploadStatsTempDict['time'] = time.ctime((int(uploadStats['timestamp'])/1000))
-		uploadStatsTempDict['queriesUploaded'] = uploadStats['RemoveCompilerMessageCount']
-		uploadStatsTempDict['filename'] = uploadStats['filename'].split('/')[2]em
-		uploadStatsArray.append(uploadStatsTempDict)
+		if 'timestamp' in uploadStats and 'RemoveCompilerMessageCount' in uploadStats and 'filename' in uploadStats:
+			uploadStatsTempDict['time'] = time.ctime((int(uploadStats['timestamp'])/1000))
+			uploadStatsTempDict['queriesUploaded'] = uploadStats['RemoveCompilerMessageCount']
+			uploadStatsTempDict['filename'] = uploadStats['filename'].split('/')[2]
+			uploadStatsArray.append(uploadStatsTempDict)
 	return uploadStatsArray
 
 
@@ -55,21 +55,20 @@ def sendEmail(formattedData):
 	config = ConfigParser.RawConfigParser ()
 	config.read("/var/Baaz/emails.cfg")
 	encdec.decrypt_file('/var/Baaz/sender.txt.enc')
-	with open('sender.txt') as f0:
+	with open('/var/Baaz/sender.txt') as f0:
 		fromAddress = f0.readline()
 		password = f0.readline()
-	os.remove('sender.txt')
+	os.remove('/var/Baaz/sender.txt')
 	recipients = config.get('updateRecipients', 'recipient')
+	cluster = config.get('cluster', 'name')
 	recipients.replace(' ', '')
 	recipients.replace('\n', '')
 	recipients = recipients.split(",")
 
 	msg = MIMEMultipart('alternative')
-	msg['Subject'] = '12 Hour Activity Update'
+	msg['Subject'] = '12 Hour Activity Update for ' + cluster
 	msg['From'] = fromAddress
 	msg['To'] = ", ".join(recipients)
-	cluster = config.get('cluster', 'name')
-	plainTextBody = 'From cluster: ' + cluster + '\n'
 	plainTextBody += 'The following are the uploads of users in the last 12 hours: '
 	part1 = MIMEText(plainTextBody, 'plain')
 	part2 = MIMEText(formattedData, 'html')
