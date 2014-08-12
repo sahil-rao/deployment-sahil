@@ -168,13 +168,17 @@ def elasticConnect(tenantID):
 
 class callback_context():
 
-    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection):
+    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, 
+                 skipLimit=False, sourcePlatform=None):
         Self.tenant = tenant
         Self.uid = uid
         Self.ch = ch
         Self.mongoconn = mongoconn
         Self.redis_conn = redis_conn
         Self.collection = collection
+        Self.uploadLimit = Self.__getUploadLimit()
+        Self.skipLimit = skipLimit
+        Self.sourcePlatform = sourcePlatform
 
     def query_count(Self, total_queries_found):
         """
@@ -183,12 +187,48 @@ class callback_context():
         Store the total count in the upload stats.
         """
         logging.info("Total Queries found " + str(total_queries_found))
+        if not Self.skipLimit and total_queries_found > Self.uploadLimit:
+            Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(Self.uploadLimit), "processed_queries":0}}) 
+            return
+
         Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(total_queries_found), "processed_queries":0}}) 
+
+    def __getUploadLimit(Self):
+        """
+        This should be fetched from a db.
+        """
+        return 1000
+
+    def __checkQueryLimit(Self):
+        upStats = Self.collection.find_one({'uid':"0"})
+        if upStats is None:
+            return True
+
+        if "query_processed" not in upStats:
+            Self.collection.update({'uid':Self.uid},{'$set':{"query_processed":0}}) 
+            return True
+         
+        """
+        TODO Get the limit from the user database
+        """
+        if Self.uploadLimit == 0:
+            return True
+
+        if upStats["query_processed"] >= Self.uploadLimit:
+            return False
+
+        return True
+
+    def __incrementProcessedQueryCount(Self):
+        Self.collection.update({'uid':"0"},{'$inc':{"query_processed": 1}}) 
 
     def callback(Self, eid, update=False, name=None, etype=None, data=None):
 
         if eid is None:
             if not etype == 'SQL_QUERY': 
+                return
+
+            if not Self.skipLimit and not Self.__checkQueryLimit():
                 return
 
             """
@@ -205,6 +245,8 @@ class callback_context():
                 if data is not None:
                     jinst_dict['data'] = data
                 compiler_msg = {'tenant':Self.tenant, 'job_instances':[jinst_dict]}
+                if Self.sourcePlatform is not None:
+                    compiler_msg['source_platform'] = Self.sourcePlatform
 
                 if Self.uid is not None:
                     compiler_msg['uid'] = Self.uid
@@ -237,6 +279,9 @@ class callback_context():
                 Get relationships for the given entity.
                 """
                 updateRelationCounter(Self.redis_conn, eid)
+
+            if not Self.skipLimit:
+                Self.__incrementProcessedQueryCount()
             return
 
         entity = Self.mongoconn.getEntity(eid)
@@ -386,6 +431,20 @@ def callback(ch, method, properties, body):
     if not usingAWS:
         logging.info("Extracted file to /mnt/volume1/[tenent]/processing")
    
+    """
+    Check if this upload has requested to skip the limit check.
+    """
+    skipLimit = False
+    if "skip_limit" in msg_dict and msg_dict["skip_limit"] == 1:
+        skipLimit = True
+
+    """
+    Check if this upload has vendor pre-selected.
+    """
+    source_platform = None
+    if "source_platform" in msg_dict:
+        sourcePlatform = msg_dict["source_platform"] 
+
     try:
         """
         Parse the data.
@@ -407,7 +466,8 @@ def callback(ch, method, properties, body):
         incrementPendingMessage(collection, redis_conn, uid, message_id)
         logging.info("Incremementing message count: " + message_id)
 
-        cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection)
+        cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection, 
+                                  skipLimit, source_platform)
         parseDir(tenant, logpath, cb_ctx)
 
         callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}

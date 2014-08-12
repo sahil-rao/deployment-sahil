@@ -748,6 +748,10 @@ def callback(ch, method, properties, body):
     compconfig = ConfigParser.RawConfigParser()
     compconfig.read("/etc/xplain/compiler.cfg")
 
+    source_platform = None
+    if "source_platform" in msg_dict:
+        source_platform = msg_dict["source_platform"]
+
     """
     Generate the CSV from the job instances.
     """
@@ -830,6 +834,8 @@ def callback(ch, method, properties, body):
 
                 data_dict = { "InputFile": dest_file_name, "OutputFile": output_file_name, 
                               "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
+                if source_platform is not None:
+                    data_dict["source_platform"] = source_platform
                 data = dumps(data_dict)
                 client_socket.send("1\n");
 
