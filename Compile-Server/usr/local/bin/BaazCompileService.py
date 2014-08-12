@@ -877,7 +877,7 @@ def callback(ch, method, properties, body):
                 logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
                 if msg_dict.has_key('uid'):
                     collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
-                mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
+                #mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
 
         entity, opcode = processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query, msg_data, comp_outs)
 
