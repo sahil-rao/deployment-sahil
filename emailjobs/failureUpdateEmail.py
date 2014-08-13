@@ -81,13 +81,7 @@ def findUploadsWithErrors(uploads):
 			uploads.update({"uid":upload['uid']}, {"$set": {'checkedForFailure':"true"}})
 			continue
 		if 'LastMessageProcessed' not in upload:
-			continue
-		uploads.update({"uid":upload['uid']}, {"$set": {'checkedForFailure':"true"}})	
-		if(len(upload) != 6):
-			tempUploadErrors['_id'] = upload['_id']
-			tempUploadErrors['error'] = 'Does not contain all fields'
-			uploadErrors.append(tempUploadErrors)
-			continue
+			continue	
 		errorMessage = hasCountError(upload)
 		if(errorMessage != ''):
 			tempUploadErrors['_id'] = upload['_id']
