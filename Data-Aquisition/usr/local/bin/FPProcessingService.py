@@ -168,7 +168,7 @@ def elasticConnect(tenantID):
 
 class callback_context():
 
-    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode=False, queryNumThreshold=1):
+    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode=False, queryNumThreshold=100):
         Self.tenant = tenant
         Self.uid = uid
         Self.ch = ch
@@ -429,10 +429,7 @@ def callback(ch, method, properties, body):
 
         cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode)
 
-        """
-        If scale_mode was triggered by SQLScriptConnector, FPProcessingService needs to know
-        """
-        scale_mode = parseDir(tenant, logpath, cb_ctx)
+        parseDir(tenant, logpath, cb_ctx)
 
         callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
         decrementPendingMessage(collection, redis_conn, uid, message_id, end_of_phase_callback, callback_params)
@@ -451,7 +448,7 @@ def callback(ch, method, properties, body):
         If we are in scale mode, close mongo, ack, and exit. 
         Do not send messages to Math or update mongo collections.
         """
-        if scale_mode:
+        if cb_ctx.scale_mode:
             mongoconn.close()
             connection1.basicAck(ch, method)
             return
