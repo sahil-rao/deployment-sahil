@@ -197,7 +197,14 @@ class callback_context():
         """
         This should be fetched from a db.
         """
-        return 1000
+        mongo_url = getMongoServer(Self.tenant)
+        org = MongoClient(mongo_url)["xplainIO"].organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
+        if "upLimit" not in org:
+            return 1000
+        if org["upLimit"] == 0:
+            return 0
+        else:
+            return 1000
 
     def __checkQueryLimit(Self):
         upStats = Self.collection.find_one({'uid':"0"})
