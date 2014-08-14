@@ -525,12 +525,15 @@ def process_scale_mode(tenant, uid, instances, redis_conn):
                                "groupByColumns": [],
                                "orderByColumns": [],
                                "whereColumns": [],
+                               "joinColumns": [],
                                "hash": None,
                                "tables": [],
                                "selectTables": [],
                                "groupByTables": [],
                                "orderByTables": [],
-                               "joinTables": [] }
+                               "whereTables": [],
+                               "joinTables": [],
+                               "joinTypes": [] }
         
         for section, value in compile_doc.items():
             
@@ -557,14 +560,18 @@ def process_scale_mode(tenant, uid, instances, redis_conn):
                 if section == "selectColumnNames":
                     parsed_compile_doc['selectTables'] += [tblinfo['tableName'] for tblinfo in value]
                 if section == "groupByColumns":
-                    pass
+                    parsed_compile_doc['groupByTables'] += [tblinfo['tableName'] for tblinfo in value]
                 if section == "orderByColumns":
-                    pass
+                    parsed_compile_doc['orderByTables'] += [tblinfo['tableName'] for tblinfo in value]
                 if section == "whereColumns":
-                    pass
-                
+                    parsed_compile_doc['whereTables'] += [tblinfo['tableName'] for tblinfo in value]
+
             if section == "joinPredicates":
-                continue
+                parsed_compile_doc['joinTypes'] += [joininfo['joinType'] for joininfo in value if 'joinType' in joininfo]
+                parsed_compile_doc['joinTables'] += [joininfo['LHSTable'] for joininfo in value if 'LHSTable' in joininfo]
+                parsed_compile_doc['joinTables'] += [joininfo['RHSTable'] for joininfo in value if 'RHSTable' in joininfo]
+                parsed_compile_doc['joinColumns'] += [joininfo['LHSColumn'] for joininfo in value if 'LHSColumn' in joininfo]
+                parsed_compile_doc['joinColumns'] += [joininfo['RHSColumn'] for joininfo in value if 'RHSColumn' in joininfo]
 
             #value is the md5 hash generated from the query template
             if section == "queryHash":
