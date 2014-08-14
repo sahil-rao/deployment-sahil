@@ -521,8 +521,16 @@ def process_scale_mode(tenant, uid, instances, redis_conn):
                                "signatures": [],
                                "operators": [],
                                "columns": [],
+                               "selectColumnNames": [],
+                               "groupByColumns": [],
+                               "orderByColumns": [],
+                               "whereColumns": [],
                                "hash": None,
-                               "tables": [] }
+                               "tables": [],
+                               "selectTables": [],
+                               "groupByTables": [],
+                               "orderByTables": [],
+                               "joinTables": [] }
         
         for section, value in compile_doc.items():
             
@@ -543,8 +551,17 @@ def process_scale_mode(tenant, uid, instances, redis_conn):
                 parsed_compile_doc['operators'] += value
 
             #value is a list of dictionaries, each dict containing info about a column, we only care about the columnName key 
-            if section == "selectColumnNames" or section == "groupByColumns" or section == "orderByColumns":
+            if section == "selectColumnNames" or section == "groupByColumns" or section == "orderByColumns" or section == "whereColumns":
                 parsed_compile_doc['columns'] += [colinfo['tableName'] + '.' + colinfo['columnName'] for colinfo in value]
+                parsed_compile_doc[section] += [colinfo['tableName'] + '.' + colinfo['columnName'] for colinfo in value]
+                if section == "selectColumnNames":
+                    parsed_compile_doc['selectTables'] += [tblinfo['tableName'] for tblinfo in value]
+                if section == "groupByColumns":
+                    pass
+                if section == "orderByColumns":
+                    pass
+                if section == "whereColumns":
+                    pass
                 
             if section == "joinPredicates":
                 continue
@@ -557,9 +574,6 @@ def process_scale_mode(tenant, uid, instances, redis_conn):
             if section == "InputTableList" or section == "OutputTableList":
                 parsed_compile_doc['tables'] += [table['TableName'] for table in value]
             
-            if section == "whereColumns":
-                continue
-
         redis_conn.scaleCounts(parsed_compile_doc)
         #logging.info(pprint.pformat(parsed_compile_doc))
         

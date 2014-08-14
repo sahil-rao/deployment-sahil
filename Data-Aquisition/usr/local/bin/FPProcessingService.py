@@ -191,6 +191,7 @@ class callback_context():
         """
         if total_queries_found > Self.queryNumThreshold:
             Self.scale_mode = True
+            Self.redis_conn.setScaleModeTotalQueryCount(total_queries_found)
             
         Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(total_queries_found), "processed_queries":0}}) 
 
