@@ -1,6 +1,6 @@
 #!/bin/bash
 
-S3Bucket='baaz-deployment'
+S3Bucket="baaz-deployment/$1"
 #Make sure the build directory does not yet exist
 rm -rf /home/ubuntu/build 
 

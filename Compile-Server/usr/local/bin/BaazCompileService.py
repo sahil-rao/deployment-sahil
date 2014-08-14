@@ -520,6 +520,8 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
     if q_hash is not None:
         entity = mongoconn.searchEntity({"md5":q_hash})
 
+    update = False
+
     if entity is None:
         logging.info("Going to create the entity")
         profile_dict["instance_count"] = 1
@@ -532,28 +534,40 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
             if entity is None:
                 logging.info("No Entity found")
                 return None, None
+            if eid == entity.eid:
 
-            redis_conn.createEntityProfile(entity.eid, "SQL_QUERY")
-            redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
-            
-            #redis_conn.createEntityProfile()
-            inst_dict = None
-            if custom_id is not None:
-                inst_dict = {'custom_id':custom_id}
-            mongoconn.updateInstance(entity, query, None, inst_dict)
+                redis_conn.createEntityProfile(entity.eid, "SQL_QUERY")
+                redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
+                
+                inst_dict = None
+                if custom_id is not None:
+                    inst_dict = {'custom_id':custom_id}
+                mongoconn.updateInstance(entity, query, None, inst_dict)
 
-            entityProfile = entity.profile
-            if "Compiler" not in entityProfile:
-                logging.info("Failed in Compiler processCompilerOutputs 2")
-            elif "gsp" not in entityProfile["Compiler"]:
-                logging.info("Failed in Compiler processCompilerOutputs 3")
-            elif "OperatorList" not in entityProfile["Compiler"]["gsp"]:
-                logging.info("Failed in Compiler processCompilerOutputs 4")
-            elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
+                entityProfile = entity.profile
+                if "Compiler" not in entityProfile:
+                    logging.info("Failed in Compiler processCompilerOutputs 1")
+                elif "gsp" not in entityProfile["Compiler"]:
+                    logging.info("Failed in Compiler processCompilerOutputs 2")
+                elif "OperatorList" not in entityProfile["Compiler"]["gsp"]:
+                    logging.info("Failed in Compiler processCompilerOutputs 3")
+                elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
 
-                mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                      {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
-                       upsert = True)
+                    mongoconn.db.dashboard_data.update({'tenant':tenant},\
+                        {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
+                            upsert = True)
+
+                if "Compiler" not in entityProfile:
+                    logging.info("Failed in Compiler processCompilerOutputs 4")
+                elif "gsp" not in entityProfile["Compiler"]:
+                    logging.info("Failed in Compiler processCompilerOutputs 5")
+                elif "ComplexityScore" not in entityProfile["Compiler"]["gsp"]:
+                    logging.info("Failed in Compiler processCompilerOutputs 6")
+                elif entityProfile["Compiler"]["gsp"]["ComplexityScore"] > 0:
+                    redis_conn.incrEntityCounter(entity.eid, "ComplexityScore", sort = True,
+                        incrBy= entityProfile["Compiler"]["gsp"]["ComplexityScore"])
+            else:
+                update = True
 
         except DuplicateKeyError:
             inst_dict = {}
@@ -565,6 +579,9 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
                 logging.info("Entity not found for hash - {0}".format(q_hash))
                 return None, None
     else:
+        update = True
+
+    if update == True:
         """
         Update instance count, store the instance and update the instance counts in 
         relationships.
@@ -575,14 +592,14 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
         
         entityProfile = entity.profile
         if "Compiler" not in entityProfile:
-            logging.info("Failed in Compiler processCompilerOutputs 2")
+            logging.info("Failed in Compiler processCompilerOutputs 7")
         elif "gsp" not in entityProfile["Compiler"]:
-            logging.info("Failed in Compiler processCompilerOutputs 3")
+            logging.info("Failed in Compiler processCompilerOutputs 8")
         elif "OperatorList" not in entityProfile["Compiler"]["gsp"]:
-            logging.info("Failed in Compiler processCompilerOutputs 4")
+            logging.info("Failed in Compiler processCompilerOutputs 9")
         elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
             mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
+                {'$inc' : {"TotalQueries": 1, "unique_count": 1}}, upsert = True)
 
         updateRelationCounter(redis_conn, entity.eid)
 
@@ -731,6 +748,10 @@ def callback(ch, method, properties, body):
     compconfig = ConfigParser.RawConfigParser()
     compconfig.read("/etc/xplain/compiler.cfg")
 
+    source_platform = None
+    if "source_platform" in msg_dict:
+        source_platform = msg_dict["source_platform"]
+
     """
     Generate the CSV from the job instances.
     """
@@ -813,6 +834,8 @@ def callback(ch, method, properties, body):
 
                 data_dict = { "InputFile": dest_file_name, "OutputFile": output_file_name, 
                               "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
+                if source_platform is not None:
+                    data_dict["source_platform"] = source_platform
                 data = dumps(data_dict)
                 client_socket.send("1\n");
 
@@ -854,7 +877,7 @@ def callback(ch, method, properties, body):
                 logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
                 if msg_dict.has_key('uid'):
                     collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
-                mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
+                #mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
 
         entity, opcode = processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query, msg_data, comp_outs)
 

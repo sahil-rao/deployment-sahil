@@ -30,6 +30,7 @@
 #Should eventually replace this script with package manager
 - name: Copy rabbit install script
   copy: src=roles/queueserver/scripts/installrabbit.sh dest=/home/ubuntu/installrabbit.sh owner=root group=root mode=0744
+  sudo: yes
 - name: Install Erlang and RabbitMQ from source. This will take some time.
   command: ./installrabbit.sh chdir=/home/ubuntu/ 
   sudo: yes
