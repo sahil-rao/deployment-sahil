@@ -47,7 +47,8 @@
 
 
   - name: Start Mongo
-    shell: mongod --fork --logpath /mnt/volume1/mongo/log/mongo.log --dbpath /mnt/volume1/mongo/db --replSet rs0 --oplogSize 100
+    shell: 
+
     sudo: yes
     ignore_errors: True
 
@@ -67,6 +68,10 @@
     sudo: yes
   - name: Install Mapper-Attachments Plugin
     shell: /usr/share/elasticsearch/bin/plugin -install elasticsearch/elasticsearch-mapper-attachments/2.0.0
+    sudo: yes
+    ignore_errors: true
+  - name: Uninstall MongoDB River Plugin (if exists)
+    shell: /usr/share/elasticsearch/bin/plugin --remove com.github.richardwilly98.elasticsearch/elasticsearch-river-mongodb/2.0.1
     sudo: yes
     ignore_errors: true
   - name: Install MongoDB River Plugin
