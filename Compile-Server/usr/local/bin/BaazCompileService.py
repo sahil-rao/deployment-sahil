@@ -5,6 +5,7 @@ Compile Service:
 """
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
+from flightpath.ScaleModeConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
 from baazmath.workflows.hbase_analytics import *
@@ -464,7 +465,7 @@ def process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn)
                                                      properties.correlation_id),
                      body=dumps(resp_dict))
 
-def process_scale_mode(tenant, uid, instances, redis_conn):
+def process_scale_mode(tenant, uid, instances, smc):
     
     for inst in instances:
         """
@@ -517,72 +518,29 @@ def process_scale_mode(tenant, uid, instances, redis_conn):
         with open(output_file_name) as data_file:    
             compile_doc = load(data_file)["gsp"]
 
-        parsed_compile_doc = { "parsed": False,
-                               "signatures": [],
-                               "operators": [],
-                               "columns": [],
-                               "selectColumnNames": [],
-                               "groupByColumns": [],
-                               "orderByColumns": [],
-                               "whereColumns": [],
-                               "joinColumns": [],
-                               "hash": None,
-                               "tables": [],
-                               "selectTables": [],
-                               "groupByTables": [],
-                               "orderByTables": [],
-                               "whereTables": [],
-                               "joinTables": [],
-                               "joinTypes": [] }
-        
-        for section, value in compile_doc.items():
-            
-            if value is None:
-                continue
+        compile_doc_fields = ["ErrorSignature", 
+                              "SignatureKeywords",
+                              "OperatorList",
+                              "selectColumnNames",
+                              "groupByColumns",
+                              "orderByColumns",
+                              "whereColumns",
+                              "joinPredicates",
+                              "queryHash",
+                              "queryNameHash",
+                              "InputTableList",
+                              "OutputTableList",
+                              "ComplexityScore"]
 
-            #value is gsp error, if no error, it parsed successfully
-            if section == "ErrorSignature":
-                if value == "": 
-                    parsed_compile_doc['parsed'] = True 
-
-            #value is a list of signature keywords
-            if section == "SignatureKeywords":
-                parsed_compile_doc['signatures'] += value
-
-            #value is a list of operators
-            if section == "OperatorList":
-                parsed_compile_doc['operators'] += value
-
-            #value is a list of dictionaries, each dict containing info about a column, we only care about the columnName key 
-            if section == "selectColumnNames" or section == "groupByColumns" or section == "orderByColumns" or section == "whereColumns":
-                parsed_compile_doc['columns'] += [colinfo['tableName'] + '.' + colinfo['columnName'] for colinfo in value]
-                parsed_compile_doc[section] += [colinfo['tableName'] + '.' + colinfo['columnName'] for colinfo in value]
-                if section == "selectColumnNames":
-                    parsed_compile_doc['selectTables'] += [tblinfo['tableName'] for tblinfo in value]
-                if section == "groupByColumns":
-                    parsed_compile_doc['groupByTables'] += [tblinfo['tableName'] for tblinfo in value]
-                if section == "orderByColumns":
-                    parsed_compile_doc['orderByTables'] += [tblinfo['tableName'] for tblinfo in value]
-                if section == "whereColumns":
-                    parsed_compile_doc['whereTables'] += [tblinfo['tableName'] for tblinfo in value]
-
-            if section == "joinPredicates":
-                parsed_compile_doc['joinTypes'] += [joininfo['joinType'] for joininfo in value if 'joinType' in joininfo]
-                parsed_compile_doc['joinTables'] += [joininfo['LHSTable'] for joininfo in value if 'LHSTable' in joininfo]
-                parsed_compile_doc['joinTables'] += [joininfo['RHSTable'] for joininfo in value if 'RHSTable' in joininfo]
-                parsed_compile_doc['joinColumns'] += [joininfo['LHSColumn'] for joininfo in value if 'LHSColumn' in joininfo]
-                parsed_compile_doc['joinColumns'] += [joininfo['RHSColumn'] for joininfo in value if 'RHSColumn' in joininfo]
-
-            #value is the md5 hash generated from the query template
-            if section == "queryHash":
-                parsed_compile_doc['hash'] = value
-
-            #value is a list of dictionaries, each dict containing info about a table, we only care about the tableName key
-            if section == "InputTableList" or section == "OutputTableList":
-                parsed_compile_doc['tables'] += [table['TableName'] for table in value]
-            
-        redis_conn.scaleCounts(parsed_compile_doc)
-        #logging.info(pprint.pformat(parsed_compile_doc))
+        for field in compile_doc_fields:
+            if field in compile_doc and compile_doc[field] is not None:
+                try:
+                    smc.process(field, compile_doc[field])
+                except:
+                    logging.exception("Error in Scale Mode Connector")
+                #Break if query was not parsed
+                if field == "ErrorSignature" and compile_doc[field]:
+                    break
         
             
 def updateRelationCounter(redis_conn, eid):
@@ -838,10 +796,11 @@ def callback(ch, method, properties, body):
         else:
             logging.error("No uid, dropping scale mode message")
             ch.basic_ack(delivery_tag=method.delivery_tag)
-            
+
         redis_conn = RedisConnector(tenant)
         collection = MongoClient(mongo_url)[tenant].uploadStats
-        process_scale_mode(tenant, uid, instances, redis_conn)
+        smc = ScaleModeConnector(tenant)
+        process_scale_mode(tenant, uid, instances, smc)
         decrementPendingMessage(collection, redis_conn, uid, received_msgID)
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
