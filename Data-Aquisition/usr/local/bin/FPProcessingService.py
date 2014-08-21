@@ -168,8 +168,7 @@ def elasticConnect(tenantID):
 
 class callback_context():
 
-    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, 
-                 skipLimit=False, sourcePlatform=None):
+    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode=False, skipLimit=False, sourcePlatform=None):
         Self.tenant = tenant
         Self.uid = uid
         Self.ch = ch
@@ -179,6 +178,8 @@ class callback_context():
         Self.uploadLimit = Self.__getUploadLimit()
         Self.skipLimit = skipLimit
         Self.sourcePlatform = sourcePlatform
+        Self.scale_mode = scale_mode
+        Self.queryNumThreshold = 1000
 
     def query_count(Self, total_queries_found):
         """
@@ -187,10 +188,18 @@ class callback_context():
         Store the total count in the upload stats.
         """
         logging.info("Total Queries found " + str(total_queries_found))
+
         if not Self.skipLimit and total_queries_found > Self.uploadLimit:
             Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(Self.uploadLimit), "processed_queries":0}}) 
             return
-
+        
+        """
+        Trigger scale mode
+        """
+        if total_queries_found > Self.queryNumThreshold:
+            Self.scale_mode = True
+            Self.redis_conn.setScaleModeTotalQueryCount(total_queries_found)
+            
         Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(total_queries_found), "processed_queries":0}}) 
 
     def __getUploadLimit(Self):
@@ -238,11 +247,6 @@ class callback_context():
             if not Self.skipLimit and not Self.__checkQueryLimit():
                 return
 
-            """
-            For SQL query, send any new query to compiler first.
-            If this is an update to existing query,
-            updates the appropriate relationships that will be used by math.
-            """
             Self.redis_conn.incrEntityCounter("dashboard_data", "TotalQueries", sort=False, incrBy=1)
             logging.info(Self.redis_conn.getEntityProfile('dashboard_data'))
             if update == False:
@@ -261,10 +265,17 @@ class callback_context():
                     compiler_msg['uid'] = Self.uid
                 message_id = genMessageID("FP", Self.collection)
                 compiler_msg['message_id'] = message_id
+                """
+                Send scale_mode opcode to compiler if scale_mode is set to true by either SQLScriptConnector trigger 
+                OR short circuit opcode from ftpqueue
+                """
+                if Self.scale_mode: 
+                    compiler_msg['opcode'] = "scale_mode"
                 message = dumps(compiler_msg)
                 connection1.publish(Self.ch,'','compilerqueue',message)
                 incrementPendingMessage(Self.collection, Self.redis_conn, Self.uid, message_id)
                 logging.info("Published Compiler Message {0}\n".format(message))
+
             else:
                 Self.redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
 
@@ -357,6 +368,14 @@ def callback(ch, method, properties, body):
             return
     except:
         logging.exception("Testing Cleanup")
+
+    """
+    Scale mode should be triggered by a query number threshold.
+    But scale_mode_enabled opcode provides short circuit capability to directly access scale mode.
+    """
+    scale_mode = False
+    if "opcode" in msg_dict and msg_dict["opcode"] == "scale_mode":
+        scale_mode = True
 
     elasticConnect(tenant)
     r_collection = None
@@ -480,7 +499,8 @@ def callback(ch, method, properties, body):
         logging.info("Incremementing message count: " + message_id)
 
         cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection, 
-                                  skipLimit, source_platform)
+                                  scale_mode, skipLimit, source_platform)
+
         parseDir(tenant, logpath, cb_ctx)
 
         callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
@@ -494,7 +514,16 @@ def callback(ch, method, properties, body):
             chkpoint_key = Key(bucket)
             chkpoint_key.key = checkpoint
             chkpoint_key.set_contents_from_string("Processed")
-            logging.info("Processed file : {0} \n".format(dest_file))     
+            logging.info("Processed file : {0} \n".format(dest_file))  
+
+        """
+        If we are in scale mode, close mongo, ack, and exit. 
+        Do not send messages to Math or update mongo collections.
+        """
+        if cb_ctx.scale_mode:
+            mongoconn.close()
+            connection1.basicAck(ch, method)
+            return
 
     except:
         logging.exception("Parsing the input and Compiler Message")

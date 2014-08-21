@@ -5,6 +5,7 @@ Compile Service:
 """
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
+from flightpath.ScaleModeConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
 from baazmath.workflows.hbase_analytics import *
@@ -24,6 +25,7 @@ import re
 import ConfigParser
 import logging
 import socket
+import pprint
 
 #104857600
 
@@ -463,6 +465,84 @@ def process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn)
                                                      properties.correlation_id),
                      body=dumps(resp_dict))
 
+def process_scale_mode(tenant, uid, instances, smc):
+    
+    for inst in instances:
+        """
+        Create input and output folders for compiler
+        """
+        if 'query' in inst:
+            query = inst["query"].strip()
+        else:
+            logging.error("Could not find query")
+            continue
+        timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
+        destination = '/mnt/volume1/compile-' + tenant + "/" + timestr 
+        if not os.path.exists(destination):
+            os.makedirs(destination)
+        dest_file_name = destination + "/input.query"
+        dest_file = open(dest_file_name, "w+")
+        dest_file.write(query)
+        dest_file.flush()
+        dest_file.close()
+        output_file_name = destination + "/gsp.out"
+
+
+        data_dict = { "InputFile": dest_file_name,
+                      "OutputFile": output_file_name,
+                      "Compiler": "gsp",
+                      "EntityId": "",
+                      "TenantId": "100" }
+
+
+        data = dumps(data_dict)
+        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.connect(("localhost", 12121))
+        client_socket.send("1\n");
+
+        """
+        For regular compilation the opcode is 1.
+        """
+        client_socket.send("1\n");
+        data = data + "\n"
+        client_socket.send(data)
+        rx_data = client_socket.recv(512)
+
+        if rx_data == "Done":
+            logging.info("Got Done")
+
+        client_socket.close()
+
+        compile_doc = None
+        logging.info("Loading file : "+ output_file_name)
+        with open(output_file_name) as data_file:    
+            compile_doc = load(data_file)["gsp"]
+
+        compile_doc_fields = ["ErrorSignature", 
+                              "SignatureKeywords",
+                              "OperatorList",
+                              "selectColumnNames",
+                              "groupByColumns",
+                              "orderByColumns",
+                              "whereColumns",
+                              "joinPredicates",
+                              "queryHash",
+                              "queryNameHash",
+                              "InputTableList",
+                              "OutputTableList",
+                              "ComplexityScore"]
+
+        for field in compile_doc_fields:
+            if field in compile_doc and compile_doc[field] is not None:
+                try:
+                    smc.process(field, compile_doc[field])
+                except:
+                    logging.exception("Error in Scale Mode Connector")
+                #Break if query was not parsed
+                if field == "ErrorSignature" and compile_doc[field]:
+                    break
+        
+            
 def updateRelationCounter(redis_conn, eid):
 
     relationshipTypes = ['QUERY_SELECT', 'QUERY_JOIN', 'QUERY_FILTER', "READ", "WRITE", "COOCCURRENCE_TABLE",
@@ -591,7 +671,6 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
         """
 
         redis_conn.incrEntityCounter(entity.eid, "instance_count", incrBy=1)
-        logging.info("PRITHVI EID 2: " + str(entity.eid))
         
         entityProfile = entity.profile
         if "Compiler" not in entityProfile:
@@ -713,6 +792,23 @@ def callback(ch, method, properties, body):
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
+    if "opcode" in msg_dict and msg_dict["opcode"] == "scale_mode":
+        logging.info("Got the opcode for scale mode analysis")
+        if 'uid' in msg_dict:
+            uid = msg_dict['uid']
+        else:
+            logging.error("No uid, dropping scale mode message")
+            ch.basic_ack(delivery_tag=method.delivery_tag)
+
+        redis_conn = RedisConnector(tenant)
+        collection = MongoClient(mongo_url)[tenant].uploadStats
+        smc = ScaleModeConnector(tenant)
+        process_scale_mode(tenant, uid, instances, smc)
+        decrementPendingMessage(collection, redis_conn, uid, received_msgID)
+        ch.basic_ack(delivery_tag=method.delivery_tag)
+        return
+
+    
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
 
