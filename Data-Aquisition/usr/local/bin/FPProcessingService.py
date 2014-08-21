@@ -258,6 +258,8 @@ class callback_context():
                 compiler_msg = {'tenant':Self.tenant, 'job_instances':[jinst_dict]}
                 if Self.sourcePlatform is not None:
                     compiler_msg['source_platform'] = Self.sourcePlatform
+                else:
+                    compiler_msg['source_platform'] = "teradata"
 
                 if Self.uid is not None:
                     compiler_msg['uid'] = Self.uid
@@ -378,6 +380,16 @@ def callback(ch, method, properties, body):
     elasticConnect(tenant)
     r_collection = None
     dest_file = None
+
+    """
+    Check if this upload has vendor pre-selected.
+    """
+    source_platform = None
+    if "source_platform" in msg_dict:
+        source_platform = msg_dict["source_platform"]
+    else:
+        source_platform = "teradata"
+
     try:
         filename = msg_dict["filename"]
         filename = urllib.unquote(filename)
@@ -387,7 +399,7 @@ def callback(ch, method, properties, body):
 
             collection = MongoClient(mongo_url)[tenant].uploadStats
             collection.update({'uid':"0"},{'$set':{"done":False}})
-            collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}, '$set':{"FPProcessing.socket":socket.gethostbyname(socket.gethostname())}})
+            collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}, '$set':{"sourcePlatform":source_platform,"FPProcessing.socket":socket.gethostbyname(socket.gethostname())}})
             startProcessingPhase(collection, uid)
             if metrics_url is not None:
                 try:
@@ -464,13 +476,6 @@ def callback(ch, method, properties, body):
     skipLimit = False
     if "skip_limit" in msg_dict and msg_dict["skip_limit"] == 1:
         skipLimit = True
-
-    """
-    Check if this upload has vendor pre-selected.
-    """
-    source_platform = None
-    if "source_platform" in msg_dict:
-        sourcePlatform = msg_dict["source_platform"] 
 
     try:
         """

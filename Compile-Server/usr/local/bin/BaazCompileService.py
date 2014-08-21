@@ -558,7 +558,7 @@ def updateRelationCounter(redis_conn, eid):
         if rel['rtype'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
 
-def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query, data, compile_doc):
+def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query, data, compile_doc, source_platform):
     """
         Takes a list of compiler output files and performs following:
             1. If the compiler is unsuccessful in parsing the query:
@@ -578,6 +578,8 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
     profile_dict = { "profile": { "Compiler" : {}}}
     comp_profile = profile_dict["profile"]["Compiler"]
 
+    profile_dict["source_platform"] = source_platform 
+
     for key in compile_doc:
         comp_profile[key] = compile_doc[key]
         if key == "gsp":
@@ -591,6 +593,7 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
     custom_id = None
     if data is not None and "custom_id" in data:
         custom_id = data['custom_id']
+
 
     """
         get Entity
@@ -897,7 +900,7 @@ def callback(ch, method, properties, body):
 
         """
           Parameters required to create a query entity in the system.
-          entity_id, query, tenant, profile documents.
+          entity_id, query, tenant, profile documents, source_platform.
         """
         comp_outs = {}
 
@@ -975,7 +978,7 @@ def callback(ch, method, properties, body):
                     collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
                 #mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
 
-        entity, opcode = processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query, msg_data, comp_outs)
+        entity, opcode = processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query, msg_data, comp_outs, source_platform)
 
         if entity is not None:
             if opcode is not None:

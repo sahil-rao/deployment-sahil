@@ -16,6 +16,7 @@ from flightpath.RedisConnector import *
 from baazmath.workflows.hbase_analytics import *
 import flightpath.services.app_get_table_detail as table_details
 import flightpath.services.app_get_query_detail as query_details
+import flightpath.services.app_get_upload_detail as upload_details
 from json import *
 import elasticsearch
 import shutil
@@ -326,6 +327,8 @@ def callback(ch, method, properties, body):
         elif msg_dict["opcode"] == "QueryDetails":
             entity_id = msg_dict["entity_id"]
             resp_dict = query_details.execute(tenant, entity_id)
+        elif msg_dict["opcode"] == "UploadDetails":
+            resp_dict = upload_details.execute(tenant)
     except:
         logging.exception("Proceesing request for " + msg_dict["opcode"])
 
