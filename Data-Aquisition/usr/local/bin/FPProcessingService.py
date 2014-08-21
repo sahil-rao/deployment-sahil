@@ -189,17 +189,17 @@ class callback_context():
         """
         logging.info("Total Queries found " + str(total_queries_found))
 
-        if not Self.skipLimit and total_queries_found > Self.uploadLimit:
-            Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(Self.uploadLimit), "processed_queries":0}}) 
-            return
-        
         """
         Trigger scale mode
         """
         if total_queries_found > Self.queryNumThreshold:
             Self.scale_mode = True
             Self.redis_conn.setScaleModeTotalQueryCount(total_queries_found)
-            
+
+        if not Self.skipLimit and total_queries_found > Self.uploadLimit:
+            Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(Self.uploadLimit), "processed_queries":0}}) 
+            return
+
         Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(total_queries_found), "processed_queries":0}}) 
 
     def __getUploadLimit(Self):
