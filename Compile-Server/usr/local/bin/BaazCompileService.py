@@ -578,8 +578,7 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
     profile_dict = { "profile": { "Compiler" : {}}}
     comp_profile = profile_dict["profile"]["Compiler"]
 
-    profile_dict["source_platform"] = source_platform 
-
+    q_hash = None
     for key in compile_doc:
         comp_profile[key] = compile_doc[key]
         if key == "gsp":
@@ -730,6 +729,7 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
                 if uid is not None:
                     collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
                                       stats_newtables_key: tmpAdditions[1]}})
+                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
 
             if compile_doc[key].has_key("ErrorSignature") and\
                 len(compile_doc[key]["ErrorSignature"]) > 0:
