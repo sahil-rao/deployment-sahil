@@ -13,6 +13,7 @@ from flightpath.Provenance import getMongoServer
 import sys
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
+from flightpath.ScaleModeConnector import *
 from baazmath.workflows.hbase_analytics import *
 import flightpath.services.app_get_table_detail as table_details
 import flightpath.services.app_get_query_detail as query_details
@@ -329,6 +330,9 @@ def callback(ch, method, properties, body):
             resp_dict = query_details.execute(tenant, entity_id)
         elif msg_dict["opcode"] == "UploadDetails":
             resp_dict = upload_details.execute(tenant)
+        elif msg_dict["opcode"] == "ScaleModeInfo":
+            smc = ScaleModeConnector(tenant)
+            resp_dict = smc.generate_json()
     except:
         logging.exception("Proceesing request for " + msg_dict["opcode"])
 
