@@ -192,9 +192,10 @@ class callback_context():
         """
         Trigger scale mode
         """
+        Self.redis_conn.setScaleModeTotalQueryCount(total_queries_found, Self.uid)
+        
         if total_queries_found > Self.queryNumThreshold:
             Self.scale_mode = True
-            Self.redis_conn.setScaleModeTotalQueryCount(total_queries_found)
 
         if not Self.skipLimit and total_queries_found > Self.uploadLimit:
             Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(Self.uploadLimit), "processed_queries":0}}) 

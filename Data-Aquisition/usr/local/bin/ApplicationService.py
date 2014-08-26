@@ -332,7 +332,13 @@ def callback(ch, method, properties, body):
             resp_dict = upload_details.execute(tenant)
         elif msg_dict["opcode"] == "ScaleModeInfo":
             smc = ScaleModeConnector(tenant)
+            rc = RedisConnector(tenant)
             resp_dict = smc.generate_json()
+            if "uid" in msg_dict:
+                uid = msg_dict["uid"]
+                resp_dict["totalQueries"] = rc.getScaleModeTotalQueryCount(uid)
+                resp_dict["progress"] = rc.getProgress(uid) 
+                
     except:
         logging.exception("Proceesing request for " + msg_dict["opcode"])
 
