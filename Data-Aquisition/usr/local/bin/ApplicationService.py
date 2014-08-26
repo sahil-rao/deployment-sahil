@@ -14,7 +14,8 @@ import sys
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath.ScaleModeConnector import *
-from baazmath.workflows.hbase_analytics import *
+import baazmath.workflows.hbase_analytics as Hbase
+import baazmath.workflows.impala_analytics as Impala
 import flightpath.services.app_get_table_detail as table_details
 import flightpath.services.app_get_query_detail as query_details
 import flightpath.services.app_get_upload_detail as upload_details
@@ -162,7 +163,7 @@ def process_mongo_rewrite_request(ch, properties, tenant, instances):
     #                                                 properties.correlation_id),
     #                 body=dumps(resp_dict))
 
-def process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn):
+def process_ddl_request(ch, properties, tenant, target, instances, db, redis_conn):
 
     """
         Steps to generate Hbase DDL are as following:
@@ -187,14 +188,14 @@ def process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn)
             transformType = 'SinglePattern'
 
     if prog_id is None:
-        logging.info("No program ID found for hbase_ddl_request")
+        logging.info("No program ID found for ddl_request")
         return
 
     if transformType == "SingleTable":
-        logging.info('Received SingleTable hbase transformation request.')
+        logging.info('Received SingleTable {0} transformation request.'.format(target))
         tableList = [prog_id]
     elif transformType == "SinglePattern":
-        logging.info('Received SinglePattern hbase transformation request.')
+        logging.info('Received SinglePattern {0} transformation request.'.format(target))
         join_group = db.entities.find_one({'profile.PatternID':prog_id}, {'eid':1, 'profile.FullQueryList':1})
 
         if join_group is None:
@@ -214,12 +215,16 @@ def process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn)
     """
         Invoke analytics workflow to generate Hbase analytics.
     """
-    result = run_workflow(tenant, tableList, queryList)
+    result = None
+    if target == "hbase":
+        result = Hbase.run_workflow(tenant, tableList, queryList)
+    elif target == "impala":
+        result = Impala.run_workflow(tenant, tableList, queryList)
 
     """
         Save the analytics results to a local file.
     """
-    oFile_path = "/tmp/hbase_analytics.out"
+    oFile_path = "/tmp/" + target + "_analytics.out"
     oFile = open(oFile_path, "w")
     oFile.write(dumps(result))
     oFile.flush()
@@ -231,7 +236,7 @@ def process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn)
         Send request to DDL generator.
     """
     try:
-        output_file_name = "/tmp/hbase_ddl.out"
+        output_file_name = "/tmp/" + target + "_ddl.out"
 
         if os.path.isfile(output_file_name):
             os.remove(output_file_name)
@@ -316,7 +321,14 @@ def callback(ch, method, properties, body):
             instances = msg_dict["job_instances"]
             db = MongoClient(mongo_url)[tenant]
             redis_conn = RedisConnector(tenant)
-            resp_dict = process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn)
+            resp_dict = process_ddl_request(ch, properties, tenant, "hbase", instances, db, redis_conn)
+        if msg_dict["opcode"] == "ImpalaDDL":
+
+            logging.info("Got the opcode of Hbase")
+            instances = msg_dict["job_instances"]
+            db = MongoClient(mongo_url)[tenant]
+            redis_conn = RedisConnector(tenant)
+            resp_dict = process_ddl_request(ch, properties, tenant, "impala", instances, db, redis_conn)
         elif msg_dict["opcode"] == "MongoTransform":
     
             logging.info("Got the opcode For Mongo Translation")
