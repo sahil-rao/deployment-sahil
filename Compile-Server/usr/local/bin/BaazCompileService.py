@@ -968,30 +968,32 @@ def callback(ch, method, properties, body):
                 with open(output_file_name) as data_file:    
                     compile_doc = load(data_file)
 
-                compile_doc_fields = ["ErrorSignature", 
-                              "SignatureKeywords",
-                              "OperatorList",
-                              "selectColumnNames",
-                              "groupByColumns",
-                              "orderByColumns",
-                              "whereColumns",
-                              "joinPredicates",
-                              "queryHash",
-                              "queryNameHash",
-                              "InputTableList",
-                              "OutputTableList",
-                              "ComplexityScore"]
+                if "gsp" in compile_doc:
 
-                smc = ScaleModeConnector(tenant)
-                for field in compile_doc_fields:
-                    if field in compile_doc["gsp"] and compile_doc["gsp"][field] is not None:
-                        try:
-                            smc.process(field, compile_doc["gsp"][field])
-                        except:
-                            logging.exception("Error in Scale Mode Connector")
-                            #Break if query was not parsed
-                            if field == "ErrorSignature" and compile_doc["gsp"][field]:
-                                break
+                    compile_doc_fields = ["ErrorSignature", 
+                                  "SignatureKeywords",
+                                  "OperatorList",
+                                  "selectColumnNames",
+                                  "groupByColumns",
+                                  "orderByColumns",
+                                  "whereColumns",
+                                  "joinPredicates",
+                                  "queryHash",
+                                  "queryNameHash",
+                                  "InputTableList",
+                                  "OutputTableList",
+                                  "ComplexityScore"]
+
+                    smc = ScaleModeConnector(tenant)
+                    for field in compile_doc_fields:
+                        if field in compile_doc["gsp"] and compile_doc["gsp"][field] is not None:
+                            try:
+                                smc.process(field, compile_doc["gsp"][field])
+                            except:
+                                logging.exception("Error in Scale Mode Connector")
+                                #Break if query was not parsed
+                                if field == "ErrorSignature" and compile_doc["gsp"][field]:
+                                    break
 
                 if compile_doc is not None:
                     for key in compile_doc:
