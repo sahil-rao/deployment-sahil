@@ -1,4 +1,10 @@
 ---
+- name: Create the Baaz config directory
+  file: path=/var/Baaz state=directory
+  sudo: yes
+- name: Save configuration file
+  template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
+  sudo: yes
 - name: copy emails.cfg to /var/Baaz
   template: src=emails.cfg dest=/var/Baaz/emails.cfg
   sudo: yes

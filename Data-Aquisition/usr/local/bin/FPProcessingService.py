@@ -32,6 +32,22 @@ BAAZ_FP_LOG_FILE = "/var/log/FPProcessing.err"
 config = ConfigParser.RawConfigParser ()
 config.read("/var/Baaz/hosts.cfg")
 usingAWS = config.getboolean("mode", "usingAWS")
+
+bucket_location = "partner-logs"
+log_bucket_location = "xplain-servicelogs"
+
+CLUSTER_MODE = config.get("ApplicationConfig", "mode")
+CLUSTER_NAME = config.get("ApplicationConfig", "clusterName")
+
+if CLUSTER_MODE is None:
+    CLUSTER_MODE = 'production'
+
+'''
+if CLUSTER_NAME is not None:
+    bucket_location = CLUSTER_NAME
+    log_bucket_location = CLUSTER_NAME + "/" + log_bucket_location
+'''
+
 if usingAWS:
     from boto.s3.key import Key
     import boto
@@ -56,8 +72,8 @@ In AWS use S3 log rotate to save the log files.
 """
 if usingAWS:
     boto_conn = boto.connect_s3()
-    bucket = boto_conn.get_bucket('partner-logs') 
-    log_bucket = boto_conn.get_bucket('xplain-servicelogs')
+    bucket = boto_conn.get_bucket(bucket_location)
+    log_bucket = boto_conn.get_bucket(log_bucket_location)
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_FP_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
 
 def end_of_phase_callback(params, current_phase):
@@ -175,12 +191,13 @@ class callback_context():
         Self.mongoconn = mongoconn
         Self.redis_conn = redis_conn
         Self.collection = collection
+        Self.CLUSTER_MODE = CLUSTER_MODE
         Self.uploadLimit = Self.__getUploadLimit()
         Self.skipLimit = skipLimit
         Self.sourcePlatform = sourcePlatform
         Self.scale_mode = scale_mode
         Self.queryNumThreshold = 1000
-
+        
     def query_count(Self, total_queries_found):
         """
         Report total number of queries found.
@@ -207,6 +224,9 @@ class callback_context():
         """
         This should be fetched from a db.
         """
+        if Self.CLUSTER_MODE == "development":
+            return 0
+
         mongo_url = getMongoServer(Self.tenant)
         org = MongoClient(mongo_url)["xplainIO"].organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
         if "upLimit" not in org:
@@ -399,7 +419,6 @@ def callback(ch, method, properties, body):
             uid = msg_dict['uid']
 
             collection = MongoClient(mongo_url)[tenant].uploadStats
-            collection.update({'uid':"0"},{'$set':{"done":False}})
             collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}, '$set':{"sourcePlatform":source_platform,"FPProcessing.socket":socket.gethostbyname(socket.gethostname())}})
             startProcessingPhase(collection, uid)
             if metrics_url is not None:
@@ -410,7 +429,7 @@ def callback(ch, method, properties, body):
                     logging.exception("Remote collection:")
                     r_collection = None
 
-        source = tenant + "/" + filename
+        source = "partner-logs/" + tenant + "/" + filename
 
         if usingAWS:
             """
