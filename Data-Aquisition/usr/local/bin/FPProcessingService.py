@@ -429,7 +429,7 @@ def callback(ch, method, properties, body):
                     logging.exception("Remote collection:")
                     r_collection = None
 
-        source = "partner-logs/" + tenant + "/" + filename
+        source = tenant + "/" + filename
 
         if usingAWS:
             """
