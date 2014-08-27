@@ -197,7 +197,10 @@ class callback_context():
         Self.sourcePlatform = sourcePlatform
         Self.scale_mode = scale_mode
         Self.queryNumThreshold = 1000
-        
+
+    def get_source_platform(Self):
+        return Self.sourcePlatform
+
     def query_count(Self, total_queries_found):
         """
         Report total number of queries found.
