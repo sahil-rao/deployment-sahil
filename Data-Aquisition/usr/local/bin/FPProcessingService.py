@@ -218,10 +218,10 @@ class callback_context():
             Self.scale_mode = True
 
         if not Self.skipLimit and total_queries_found > Self.uploadLimit:
-            Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(Self.uploadLimit), "processed_queries":0}}) 
+            Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":Self.uploadLimit, "processed_queries":0}}) 
             return
 
-        Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(total_queries_found), "processed_queries":0}}) 
+        Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":total_queries_found, "processed_queries":0}}) 
 
     def __getUploadLimit(Self):
         """
