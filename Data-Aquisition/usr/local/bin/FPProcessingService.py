@@ -315,9 +315,9 @@ class callback_context():
                     logging.info("Failed in FP sendToCompiler 4")
 
                 elif len(queryEntity["profile"]["Compiler"]["gsp"]["OperatorList"]) > 1:
-    
+                    unique_count = Self.mongoconn.db.entity_instances.find().count()
                     Self.mongoconn.db.dashboard_data.update({'tenant':Self.tenant},\
-                            {'$inc' : {"TotalQueries": 1, "unique_count": 1}})
+                            {'$inc' : {"TotalQueries": 1}, '$set': { "unique_count": unique_count}})
 
                 """
                 Get relationships for the given entity.
@@ -422,7 +422,7 @@ def callback(ch, method, properties, body):
             uid = msg_dict['uid']
 
             collection = MongoClient(mongo_url)[tenant].uploadStats
-            collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}, '$set':{"sourcePlatform":source_platform,"FPProcessing.socket":socket.gethostbyname(socket.gethostname())}})
+            collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}, '$set':{"FPProcessing.socket":socket.gethostbyname(socket.gethostname())}})
             startProcessingPhase(collection, uid)
             if metrics_url is not None:
                 try:
