@@ -332,8 +332,9 @@ def callback(ch, method, properties, body):
             
             #if received_msgID is not None and\
             #    (int(received_msgID.split("-")[1])%40) == 0:
-            if stats_dict["processed_queries"]%10 == 0:
-            #logging.info("Procesing progress bar event")     
+            if stats_dict["processed_queries"]%10 == 0 or\
+               stats_dict['total_queries'] <= (stats_dict['processed_queries'] + 1):
+                #logging.info("Procesing progress bar event")     
                 out_dict = {"messageType" : "uploadProgress", "tenantId": tenant, 
                             "completed": stats_dict["processed_queries"] + 1, "total":stats_dict["total_queries"]}
                 connection1.publish(ch,'', notif_queue, dumps(out_dict))
