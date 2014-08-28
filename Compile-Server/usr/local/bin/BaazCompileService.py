@@ -635,8 +635,10 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
                     logging.info("Failed in Compiler processCompilerOutputs 3")
                 elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
 
+                    unique_count = mongoconn.db.entity_instances.find().count()
                     mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                        {'$inc' : {"TotalQueries": 1, "unique_count": 1, "semantically_unique_count": 1 }}, \
+                        {'$inc' : {"TotalQueries": 1, "semantically_unique_count": 1 }, 
+                        '$set': { "unique_count": unique_count}}, \
                             upsert = True)
 
                 if "Compiler" not in entityProfile:
@@ -679,8 +681,9 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
         elif "OperatorList" not in entityProfile["Compiler"]["gsp"]:
             logging.info("Failed in Compiler processCompilerOutputs 9")
         elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
+            unique_count = mongoconn.db.entity_instances.find().count()
             mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                {'$inc' : {"TotalQueries": 1, "unique_count": 1}}, upsert = True)
+                {'$inc' : {"TotalQueries": 1}, '$set': { "unique_count": unique_count}}, upsert = True)
 
         updateRelationCounter(redis_conn, entity.eid)
 
