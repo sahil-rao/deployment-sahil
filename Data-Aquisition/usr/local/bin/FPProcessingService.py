@@ -179,7 +179,7 @@ class callback_context():
         Self.skipLimit = skipLimit
         Self.sourcePlatform = sourcePlatform
         Self.scale_mode = scale_mode
-        Self.queryNumThreshold = 1000
+        Self.queryNumThreshold = 20000
 
     def query_count(Self, total_queries_found):
         """
@@ -197,7 +197,7 @@ class callback_context():
         if total_queries_found > Self.queryNumThreshold:
             Self.scale_mode = True
 
-        if not Self.skipLimit and total_queries_found > Self.uploadLimit:
+        if not Self.skipLimit and Self.uploadLimit != 0 and total_queries_found > Self.uploadLimit :
             Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(Self.uploadLimit), "processed_queries":0}}) 
             return
 
