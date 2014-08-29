@@ -635,7 +635,10 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
                     logging.info("Failed in Compiler processCompilerOutputs 3")
                 elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
 
-                    unique_count = mongoconn.db.entity_instances.find().count()
+                    unique_queries = mongoconn.db.entities.find({'profile.Compiler.gsp.OperatorList':{"$exists":1},
+                        "$where":'this.profile.Compiler.gsp.OperatorList.length > 1'},{"eid":1,"_id":0})
+                    uniqueEids = [x['eid'] for x in unique_queries]
+                    unique_count = mongoconn.db.entity_instances.find({"eid":{'$in':uniqueEids}}).count()
                     mongoconn.db.dashboard_data.update({'tenant':tenant},\
                         {'$inc' : {"TotalQueries": 1, "semantically_unique_count": 1 }, 
                         '$set': { "unique_count": unique_count}}, \
@@ -681,7 +684,10 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
         elif "OperatorList" not in entityProfile["Compiler"]["gsp"]:
             logging.info("Failed in Compiler processCompilerOutputs 9")
         elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
-            unique_count = mongoconn.db.entity_instances.find().count()
+            unique_queries = mongoconn.db.entities.find({'profile.Compiler.gsp.OperatorList':{"$exists":1},
+                "$where":'this.profile.Compiler.gsp.OperatorList.length > 1'},{"eid":1,"_id":0})
+            uniqueEids = [x['eid'] for x in unique_queries]
+            unique_count = mongoconn.db.entity_instances.find({"eid":{'$in':uniqueEids}}).count()
             mongoconn.db.dashboard_data.update({'tenant':tenant},\
                 {'$inc' : {"TotalQueries": 1}, '$set': { "unique_count": unique_count}}, upsert = True)
 

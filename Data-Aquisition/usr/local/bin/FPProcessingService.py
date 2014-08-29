@@ -289,7 +289,10 @@ class callback_context():
                     logging.info("Failed in FP sendToCompiler 4")
 
                 elif len(queryEntity["profile"]["Compiler"]["gsp"]["OperatorList"]) > 1:
-                    unique_count = Self.mongoconn.db.entity_instances.find().count()
+                    unique_queries = Self.mongoconn.db.entities.find({'profile.Compiler.gsp.OperatorList':{"$exists":1},
+                        "$where":'this.profile.Compiler.gsp.OperatorList.length > 1'},{"eid":1,"_id":0})
+                    uniqueEids = [x['eid'] for x in unique_queries]
+                    unique_count = Self.mongoconn.db.entity_instances.find({"eid":{'$in':uniqueEids}}).count()
                     Self.mongoconn.db.dashboard_data.update({'tenant':Self.tenant},\
                             {'$inc' : {"TotalQueries": 1}, '$set': { "unique_count": unique_count}})
 
