@@ -125,62 +125,36 @@ def elasticConnect(tenantID):
     if es is None:
         return
     try:
-        mapping = loads('{\
-            "entity" : {\
-                "properties" : {\
-                "name":{\
-                    "type":"completion",\
-                    "context" : {\
-                        "etype" : {\
-                            "type" : "category",\
-                            "default" : ["SQL_QUERY","SQL_TABLE"],\
-                            "path" : "etype"\
-                        }\
-                    },\
-                    "fields" : {\
-                        "untouched" : {\
-                            "type":"string",\
-                            "index":"not_analyzed"\
-                        }\
-                    }\
-                },\
-                "eid" : {\
-                    "type" : "completion"\
-                }\
-            }\
-            }\
-        }')
-        settings = loads('{\
-            "index" : {\
-                "number_of_shards" : 3,\
-                "number_of_replicas": 0\
-            }\
-        }')
-        es.indices.create(index=tenantID, body=settings, ignore=[400,409])
-        es.indices.put_mapping(index=tenantID, doc_type='entity', body=mapping, ignore=[400,409])
+        if not es.indices.exists(index=tenantID):
+            mapping = { "entity" : {
+                            "properties" : {
+                                "name":{
+                                    "type":"completion",
+                                    "context" : {
+                                        "etype" : {
+                                            "type" : "category",
+                                            "default" : ["SQL_QUERY","SQL_TABLE"],
+                                            "path" : "etype"
+                                        }
+                                    },
+                                    "fields" : {
+                                        "untouched" : { "type":"string", "index":"not_analyzed" }
+                                    }
+                                },
+                            "eid" : { "type" : "completion" }
+                        }
+                    }
+                }
 
-        doc = '{\
-              "type": "mongodb",\
-              "mongodb": {\
-                "servers": [\
-              { "host": "' + mongoserver + '", "port": 27017 }\
-            ],\
-            "options": {\
-                "secondary_read_preference": true,\
-                "exclude_fields" : ["logical_name", "md5"]\
-            },\
-            "db": "' + tenantID + '",\
-            "collection": "entities"\
-          },\
-          "index": {\
-            "name": "' + tenantID + '",\
-            "type": "entity"\
-          }\
-        }'
-        jsondoc = loads(doc)
-        es.create(index='_river', doc_type=tenantID, id='_meta', body=jsondoc, ignore=[400,409])
+            settings = { "index" : {
+                            "number_of_shards" : 3,
+                            "number_of_replicas": 0
+                            }
+                        }
+            es.indices.create(index=tenantID, body=settings, ignore=[400,409])
+            es.indices.put_mapping(index=tenantID, doc_type='entity', body=mapping, ignore=[400,409])
     except:
-        pass
+        logging.exception("Elastic Search : ")
 
 class callback_context():
 
@@ -218,7 +192,7 @@ class callback_context():
             Self.scale_mode = True
 
         if not Self.skipLimit and Self.uploadLimit != 0 and total_queries_found > Self.uploadLimit :
-            Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":str(Self.uploadLimit), "processed_queries":0}}) 
+            Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":Self.uploadLimit, "processed_queries":0}}) 
             return
 
         Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":total_queries_found, "processed_queries":0}}) 
