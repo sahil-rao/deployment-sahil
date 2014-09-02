@@ -6,6 +6,7 @@ Compile Service:
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath.ScaleModeConnector import *
+from flightpath.FilterModeConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
 from baazmath.workflows.hbase_analytics import *
@@ -541,6 +542,12 @@ def process_scale_mode(tenant, uid, instances, smc):
                 #Break if query was not parsed
                 if field == "ErrorSignature" and compile_doc[field]:
                     break
+
+        if compile_doc["ErrorSignature"] == "":
+            filter_compile_doc = compile_doc.copy()
+            fmc = FilterModeConnector(tenant)
+            fmc.process_query(filter_compile_doc)
+        
         
             
 def updateRelationCounter(redis_conn, eid):
@@ -995,8 +1002,8 @@ def callback(ch, method, properties, body):
                             except:
                                 logging.exception("Error in Scale Mode Connector")
                                 #Break if query was not parsed
-                                if field == "ErrorSignature" and compile_doc["gsp"][field]:
-                                    break
+                            if field == "ErrorSignature" and compile_doc["gsp"][field]:
+                                break
 
                 if compile_doc is not None:
                     for key in compile_doc:
