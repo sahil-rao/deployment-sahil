@@ -41,3 +41,38 @@
   file: path=/home/ubuntu/siddharth/emailjobs/failureUpdateEmail.py owner=ubuntu group=ubuntu mode=0755
 #- cron: name="update email job" hour="*/12" job="/home/ubuntu/siddharth/emailjobs/uploadUpdateEmails.py"
 #- cron: name="failure email job" minute="*/2" job="/home/ubuntu/siddharth/emailjobs/failureUpdateEmails.py"
+- name: Add nginx ppa
+  apt_repository: repo='ppa:nginx/stable'
+  sudo: yes
+- name: Install nginx
+  apt: name=nginx update_cache=yes
+  sudo: yes
+- name: Install apache2-utils
+  apt: name=apache2-utils state=present
+- name: Copy nginx conf file
+  copy: src=/home/ubuntu/build/deployment/playbooks/roles/deploymentroot/files/nginx.conf dest=/etc/nginx/nginx.conf
+  sudo: yes
+- name: Create /var/www dir
+  file: path=/var/www state=directory
+  sudo: yes
+- name: Copy index.html file
+  copy: src=/home/ubuntu/build/deployment/playbooks/roles/deploymentroot/files/index.html dest=/var/www/index.html
+  sudo: yes
+- name: Stop nodejs
+  service: name=nodejs state=stopped
+  sudo: yes
+- name: Copy new node upstart script
+  copy: src=/home/ubuntu/build/deployment/playbooks/roles/deploymentroot/files/nodejs.conf dest=/etc/init/nodejs.conf
+  sudo: yes
+- name: Start nodejs
+  service: name=nodejs state=started
+  sudo: yes
+- name: Create username/password
+  command: /usr/bin/htpasswd -b -c /etc/nginx/.htpasswd xplain xplainio
+  sudo: yes 
+- name: Start nginx
+  command: /usr/sbin/nginx
+  sudo: yes
+- name: Reload nginx
+  command: /usr/sbin/nginx -s reload
+  sudo: yes
