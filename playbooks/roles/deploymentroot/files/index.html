@@ -1,10 +1,11 @@
 <html>
 <head><title>XplainIO Deployment Root</title></head>
 <body>
-<h1>XplainIO Alpha Cluster Root</h1>
+<h1>XplainIO Cluster Root</h1>
 <h3>Options</h3>
 RabbitMQ Monitoring
-<pre><a href="rabbitmq1">rabbitmq@172.31.10.27</a>  <a href="rabbitmq2">rabbitmq@172.31.15.232</a></pre>
+<pre><a href="rabbitmq1">
+rabbitmq@{{ groups['tag_Name_QueueServer'][0] }} </a>  <a href="rabbitmq2">rabbitmq@{{ groups['tag_Name_QueueServer'][1] }}</a></pre>
 <a href="MMS">Mongo Monitoring Service</a>
 <br>
 <a href="monit">Monit</a>
