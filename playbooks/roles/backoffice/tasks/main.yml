@@ -8,10 +8,8 @@
 - name: Mount /dev/xvdc
   mount: name=/mnt/volume1 src=/dev/xvdc fstype=ext3 state=mounted
   sudo: yes
-- name: Set the timezone
-  shell: echo "America/Los_Angeles" | sudo tee /etc/timezone
-- name: Reset the system time to new timezone.
-  shell: dpkg-reconfigure --frontend noninteractive tzdata
+- name: NTP installed
+  apt: name=ntp state=present
   sudo: yes
 - name: Save configuration file
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
