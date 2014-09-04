@@ -42,11 +42,9 @@ CLUSTER_NAME = config.get("ApplicationConfig", "clusterName")
 if CLUSTER_MODE is None:
     CLUSTER_MODE = 'production'
 
-'''
+
 if CLUSTER_NAME is not None:
     bucket_location = CLUSTER_NAME
-    log_bucket_location = CLUSTER_NAME + "/" + log_bucket_location
-'''
 
 if usingAWS:
     from boto.s3.key import Key
@@ -415,6 +413,8 @@ def callback(ch, method, properties, body):
             """
             Check if the file exists in S3. 
             """ 
+            if CLUSTER_NAME is not None:
+                source = "partner-logs/" + source
             file_key = bucket.get_key(source)
             if file_key is None:
                 logging.error("NOT FOUND: {0} not in S3\n".format(source))     
