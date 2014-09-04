@@ -565,7 +565,22 @@ def updateRelationCounter(redis_conn, eid):
         if rel['rtype'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
 
-def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query, data, compile_doc, source_platform):
+def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode):
+    if entity is not None:
+        if opcode is not None:
+            msg_dict = {'tenant':tenant, 'opcode':opcode, "entityid":entity.eid} 
+            if uid is not None:
+                msg_dict['uid'] = uid
+            message_id = genMessageID("Comp", collection, entity.eid)
+            msg_dict['message_id'] = message_id
+            message = dumps(msg_dict)
+            connection1.publish(ch,'','mathqueue',message)
+            logging.info("Sent message to Math pos1:" + str(msg_dict))
+             
+            incrementPendingMessage(collection, redis_conn, uid,message_id)
+            collection.update({'uid':uid},{'$inc':{"Math3MessageCount":1}})
+
+def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform):
     """
         Takes a list of compiler output files and performs following:
             1. If the compiler is unsuccessful in parsing the query:
@@ -752,6 +767,19 @@ def processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query
                 collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
             else:
                 collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
+
+            if compile_doc[key].has_key("subQueries") and\
+                len(compile_doc[key]["subQueries"]) > 0:
+                logging.info("Processing Sub queries")
+                for sub_q_dict in compile_doc[key]["subQueries"]:
+                    if "origquery" not in sub_q_dict["gsp"]:
+                        logging.info("Original query not found in sub query dictionary")
+                        continue
+                    sub_q = sub_q_dict["gsp"]["origquery"]
+                    logging.info("Processing Sub queries " + sub_q)
+                    sub_entity, sub_opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, 
+                                                    tenant, uid, sub_q, data, sub_q_dict, source_platform)
+                    sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode)
         except:
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))     
             if uid is not None:
@@ -1021,21 +1049,9 @@ def callback(ch, method, properties, body):
                     collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
                 #mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
 
-        entity, opcode = processCompilerOutputs(mongoconn, redis_conn, collection, tenant, uid, query, msg_data, comp_outs, source_platform)
+        entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform)
 
-        if entity is not None:
-            if opcode is not None:
-                msg_dict = {'tenant':tenant, 'opcode':opcode, "entityid":entity.eid} 
-                if uid is not None:
-                    msg_dict['uid'] = uid
-                message_id = genMessageID("Comp", collection, entity.eid)
-                msg_dict['message_id'] = message_id
-                message = dumps(msg_dict)
-                connection1.publish(ch,'','mathqueue',message)
-                logging.info("Sent message to Math pos1:" + str(msg_dict))
-                 
-                incrementPendingMessage(collection, redis_conn, uid,message_id)
-                collection.update({'uid':uid},{'$inc':{"Math3MessageCount":1}})
+        sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode)
 
         if not usingAWS:
             continue
