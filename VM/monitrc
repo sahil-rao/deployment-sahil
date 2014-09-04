@@ -80,7 +80,7 @@
 # set mmonit http://monit:monit@192.168.1.10:8080/collector
 #     # and register without credentials     # Don't register credentials
 #
-#set mmonit http://monit:monit@{{ groups['tag_Name_Deployment-Root'][0] }}:8080/collector
+#set mmonit http://monit:monit@{{ groups['tag_Name_DeploymentRoot'][0] }}:8080/collector
 #      and register without credentials     # Don't register credentials
 #
 ## Monit by default uses the following format for alerts if the the mail-format
