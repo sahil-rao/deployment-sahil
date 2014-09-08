@@ -206,6 +206,9 @@ def callback(ch, method, properties, body):
         return
 
     callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
+    '''
+    Deprecated because we no longer use mysql for analytics workflows.
+    
     if opcode == "BaseStats":
         logging.info("Got Base Stats\n")
         try:
@@ -234,6 +237,7 @@ def callback(ch, method, properties, body):
             collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
 
         return
+    '''
 
     mathconfig = ConfigParser.RawConfigParser()
     mathconfig.read("/etc/xplain/analytics.cfg")

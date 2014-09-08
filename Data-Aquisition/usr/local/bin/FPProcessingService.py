@@ -529,21 +529,6 @@ def callback(ch, method, properties, body):
         logging.exception("Parsing the input and Compiler Message")
 
     try:
-
-        math_msg = {'tenant':tenant, 'opcode':"BaseStats"}
-        if uid is not None:
-            math_msg['uid'] = uid
-        message_id = genMessageID("FP", collection)
-        math_msg['message_id'] = message_id
-        message = dumps(math_msg)
-        connection1.publish(ch,'','mathqueue',message)
-        collection.update({'uid':uid},{'$inc':{"Math2MessageCount":1}})
-        incrementPendingMessage(collection, redis_conn, uid,message_id)
-        logging.info("Published Message {0}\n".format(message))
-    except:
-        logging.exception("Publishing Math Message")
-
-    try:
         if uid is not None:
             queryNo = redis_conn.getEntityProfile("dashboard_data", "TotalQueries")
             if queryNo is not None:
