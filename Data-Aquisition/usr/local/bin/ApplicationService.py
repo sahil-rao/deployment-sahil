@@ -242,7 +242,18 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
             os.remove(output_file_name)
 
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client_socket.connect(("localhost", 12121))
+        retry_count = 0
+        socket_connected = False
+        while (socket_connected == False) and (retry_count < 2):
+            retry_count += 1
+            try:
+                client_socket.connect(("localhost", 12121))
+                socket_connected = True
+            except:
+                logging.error("Unable to connect to JVM socket on try #%s." %retry_count)
+                time.sleep(1)
+        if socket_connected == False:
+            raise Exception("Unable to connect to JVM socket.")
 
         data_dict = {"InputFile": oFile_path, "OutputFile": output_file_name, 
                      "EntityId": prog_id, "TenantId": "100"}
