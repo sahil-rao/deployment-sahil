@@ -28,8 +28,6 @@ import logging
 import socket
 import pprint
 
-#104857600
-
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
 BAAZ_COMPILER_LOG_FILE = "/var/log/BaazCompileService.err"
@@ -42,6 +40,11 @@ usingAWS = config.getboolean("mode", "usingAWS")
 if usingAWS:
     from boto.s3.key import Key
     import boto
+
+CLUSTER_NAME = config.get("ApplicationConfig", "clusterName")
+
+if CLUSTER_NAME is not None:
+    bucket_location = CLUSTER_NAME
 
 """
 For VM there is not S3 connectivity. Save the logs with a timestamp. 
@@ -595,7 +598,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     entity = None
     tableEidList = set()
     if compile_doc is None:
-        return
+        logging.info("No compile_doc found")
+        return None, None
 
     profile_dict = { "profile": { "Compiler" : {}}}
     comp_profile = profile_dict["profile"]["Compiler"]
@@ -614,7 +618,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     custom_id = None
     if data is not None and "custom_id" in data:
         custom_id = data['custom_id']
-
 
     """
         get Entity
@@ -719,8 +722,26 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         if custom_id is not None:
             inst_dict = {'custom_id':custom_id}
         mongoconn.updateInstance(entity, query, None, inst_dict)
+        
+        try:
+            for key in compile_doc:
+                stats_runsuccess_key = "Compiler." + key + ".run_success"
+                stats_runfailure_key = "Compiler." + key + ".run_failure"
+                stats_success_key = "Compiler." + key + ".success"
+                stats_failure_key = "Compiler." + key + ".failure"
+            
+                if compile_doc[key].has_key("ErrorSignature") and\
+                    len(compile_doc[key]["ErrorSignature"]) > 0:
+                    collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
+                else:
+                    collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
 
-        return entity, "UpdateQueryProfile"
+
+            return entity, "UpdateQueryProfile"
+        except:
+            logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))
+            collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+            return None, None
 
     for key in compile_doc:
         try:
@@ -784,6 +805,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))     
             if uid is not None:
                 collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+            return None, None
 
     return entity, "GenerateQueryProfile"
 
@@ -973,7 +995,19 @@ def callback(ch, method, properties, body):
                 stats_failure_key = "Compiler." + compilername + ".failure"
 
                 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                client_socket.connect(("localhost", 12121))
+
+                retry_count = 0
+                socket_connected = False
+                while (socket_connected == False) and (retry_count < 2):
+                    retry_count += 1
+                    try:
+                        client_socket.connect(("localhost", 12121))
+                        socket_connected = True
+                    except:
+                        logging.error("Unable to connect to JVM socket on try #%s." %retry_count)
+                        time.sleep(1)
+                if socket_connected == False:
+                    raise Exception("Unable to connect to JVM socket.")
 
                 data_dict = { "InputFile": dest_file_name, "OutputFile": output_file_name, 
                               "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
