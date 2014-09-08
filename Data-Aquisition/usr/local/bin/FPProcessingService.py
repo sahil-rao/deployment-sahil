@@ -180,36 +180,30 @@ class callback_context():
         Store the total count in the upload stats.
         """
         logging.info("Total Queries found " + str(total_queries_found))
-
-        """
-        Trigger scale mode
-        """
-        Self.redis_conn.setScaleModeTotalQueryCount(total_queries_found, Self.uid)
+        overall_stats = Self.collection.find_one({'uid':'0'})
+        queries_left = total_queries_found
+        if 'query_processed' in overall_stats and Self.uploadLimit !=0 and not Self.skipLimit:
+            queries_left = int(Self.uploadLimit) - int( overall_stats['query_processed'])
         
+        Self.redis_conn.setScaleModeTotalQueryCount( min(queries_left, int(total_queries_found)), Self.uid )
+        Self.collection.update({'uid':Self.uid},{'$set':{"total_queries": min(queries_left, total_queries_found), "processed_queries":0}})
         if total_queries_found > Self.queryNumThreshold:
             Self.scale_mode = True
 
-        if not Self.skipLimit and Self.uploadLimit != 0 and total_queries_found > Self.uploadLimit :
-            Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":Self.uploadLimit, "processed_queries":0}}) 
-            return
-
-        Self.collection.update({'uid':Self.uid},{'$set':{"total_queries":total_queries_found, "processed_queries":0}}) 
-
     def __getUploadLimit(Self):
-        """
-        This should be fetched from a db.
-        """
         if Self.CLUSTER_MODE == "development":
             return 0
 
-        mongo_url = getMongoServer(Self.tenant)
-        org = MongoClient(mongo_url)["xplainIO"].organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
+        userdb = MongoClient(getMongoServer(Self.tenant))["xplainIO"]
+        org = userdb.organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
+        
         if "upLimit" not in org:
-            return 1000
-        if org["upLimit"] == 0:
-            return 0
+            upLimit = 1000
+            org.update({"guid":Self.tenant}, {"$set": {"upLimit":upLimit}})
         else:
-            return 1000
+            upLimit = org["upLimit"]
+            
+        return upLimit
 
     def __checkQueryLimit(Self):
         upStats = Self.collection.find_one({'uid':"0"})
@@ -217,16 +211,13 @@ class callback_context():
             return True
 
         if "query_processed" not in upStats:
-            Self.collection.update({'uid':Self.uid},{'$set':{"query_processed":0}}) 
+            Self.collection.update({'uid':"0"},{'$set':{"query_processed":0}})
             return True
          
-        """
-        TODO Get the limit from the user database
-        """
         if Self.uploadLimit == 0:
             return True
 
-        if upStats["query_processed"] >= Self.uploadLimit:
+        if int(upStats["query_processed"]) >= int(Self.uploadLimit):
             return False
 
         return True
