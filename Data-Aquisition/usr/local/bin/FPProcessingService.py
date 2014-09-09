@@ -199,7 +199,7 @@ class callback_context():
         
         if "upLimit" not in org:
             upLimit = 1000
-            org.update({"guid":Self.tenant}, {"$set": {"upLimit":upLimit}})
+            userdb.organizations.update({"guid":Self.tenant}, {"$set": {"upLimit":upLimit}})
         else:
             upLimit = org["upLimit"]
             
@@ -217,7 +217,7 @@ class callback_context():
         if Self.uploadLimit == 0:
             return True
 
-        if int(upStats["query_processed"]) >= int(Self.uploadLimit):
+        if int(upStats["query_processed"]) > int(Self.uploadLimit):
             return False
 
         return True
