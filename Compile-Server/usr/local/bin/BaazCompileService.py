@@ -651,33 +651,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     inst_dict = {'custom_id':custom_id}
                 mongoconn.updateInstance(entity, query, None, inst_dict)
 
-                entityProfile = entity.profile
-                if "Compiler" not in entityProfile:
-                    logging.info("Failed in Compiler processCompilerOutputs 1")
-                elif "gsp" not in entityProfile["Compiler"]:
-                    logging.info("Failed in Compiler processCompilerOutputs 2")
-                elif "OperatorList" not in entityProfile["Compiler"]["gsp"]:
-                    logging.info("Failed in Compiler processCompilerOutputs 3")
-                elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
+                unique_count = mongoconn.db.entity_instances.find({}).count()
+                mongoconn.db.dashboard_data.update({'tenant':tenant},\
+                    {'$inc' : {"TotalQueries": 1, "semantically_unique_count": 1 }, 
+                    '$set': { "unique_count": unique_count}}, \
+                        upsert = True)
 
-                    unique_queries = mongoconn.db.entities.find({'profile.Compiler.gsp.OperatorList':{"$exists":1},
-                        "$where":'this.profile.Compiler.gsp.OperatorList.length > 1'},{"eid":1,"_id":0})
-                    uniqueEids = [x['eid'] for x in unique_queries]
-                    unique_count = mongoconn.db.entity_instances.find({"eid":{'$in':uniqueEids}}).count()
-                    mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                        {'$inc' : {"TotalQueries": 1, "semantically_unique_count": 1 }, 
-                        '$set': { "unique_count": unique_count}}, \
-                            upsert = True)
-
-                if "Compiler" not in entityProfile:
-                    logging.info("Failed in Compiler processCompilerOutputs 4")
-                elif "gsp" not in entityProfile["Compiler"]:
-                    logging.info("Failed in Compiler processCompilerOutputs 5")
-                elif "ComplexityScore" not in entityProfile["Compiler"]["gsp"]:
-                    logging.info("Failed in Compiler processCompilerOutputs 6")
-                elif entityProfile["Compiler"]["gsp"]["ComplexityScore"] > 0:
-                    redis_conn.incrEntityCounter(entity.eid, "ComplexityScore", sort = True,
-                        incrBy= entityProfile["Compiler"]["gsp"]["ComplexityScore"])
+                redis_conn.incrEntityCounter(entity.eid, "ComplexityScore", sort = True,
+                    incrBy= entity.profile["Compiler"]["gsp"]["ComplexityScore"])
             else:
                 update = True
 
@@ -701,20 +682,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
         redis_conn.incrEntityCounter(entity.eid, "instance_count", incrBy=1)
         
-        entityProfile = entity.profile
-        if "Compiler" not in entityProfile:
-            logging.info("Failed in Compiler processCompilerOutputs 7")
-        elif "gsp" not in entityProfile["Compiler"]:
-            logging.info("Failed in Compiler processCompilerOutputs 8")
-        elif "OperatorList" not in entityProfile["Compiler"]["gsp"]:
-            logging.info("Failed in Compiler processCompilerOutputs 9")
-        elif len(entityProfile["Compiler"]["gsp"]["OperatorList"]) > 1:
-            unique_queries = mongoconn.db.entities.find({'profile.Compiler.gsp.OperatorList':{"$exists":1},
-                "$where":'this.profile.Compiler.gsp.OperatorList.length > 1'},{"eid":1,"_id":0})
-            uniqueEids = [x['eid'] for x in unique_queries]
-            unique_count = mongoconn.db.entity_instances.find({"eid":{'$in':uniqueEids}}).count()
-            mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                {'$inc' : {"TotalQueries": 1}, '$set': { "unique_count": unique_count}}, upsert = True)
+        unique_count = mongoconn.db.entity_instances.find().count()
+        mongoconn.db.dashboard_data.update({'tenant':tenant},\
+            {'$inc' : {"TotalQueries": 1}, '$set': { "unique_count": unique_count}}, upsert = True)
 
         updateRelationCounter(redis_conn, entity.eid)
 
