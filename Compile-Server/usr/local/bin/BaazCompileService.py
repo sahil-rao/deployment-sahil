@@ -651,14 +651,30 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     inst_dict = {'custom_id':custom_id}
                 mongoconn.updateInstance(entity, query, None, inst_dict)
 
-                unique_count = mongoconn.db.entity_instances.find({}).count()
-                mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                    {'$inc' : {"TotalQueries": 1, "semantically_unique_count": 1 }, 
-                    '$set': { "unique_count": unique_count}}, \
-                        upsert = True)
+                entityProfile = entity.profile
 
-                redis_conn.incrEntityCounter(entity.eid, "ComplexityScore", sort = True,
-                    incrBy= entity.profile["Compiler"]["gsp"]["ComplexityScore"])
+                if "Compiler" in entityProfile\
+                        and "gsp" in entityProfile['Compiler']\
+                        and "ErrorSignature" in entityProfile['Compiler']['gsp']\
+                        and entityProfile['Compiler']['gsp']["ErrorSignature"] == "":
+                    unique_queries = mongoconn.db.entities.find({'profile.Compiler.gsp.ErrorSignature':""},
+                                                                {"eid":1,"_id":0})
+                    uniqueEids = [x['eid'] for x in unique_queries]
+                    unique_count = mongoconn.db.entity_instances.find({"eid":{'$in':uniqueEids}}).count()
+                    mongoconn.db.dashboard_data.update({'tenant':tenant},\
+                        {'$inc' : {"TotalQueries": 1, "semantically_unique_count": 1 }, 
+                        '$set': { "unique_count": unique_count}}, \
+                            upsert = True)
+                else:
+                    logging.info("No ErrorSignature found.")
+
+                if "Compiler" in entityProfile\
+                        and "gsp" in entityProfile['Compiler']\
+                        and "ComplexityScore" in entityProfile['Compiler']['gsp']:
+                    redis_conn.incrEntityCounter(entity.eid, "ComplexityScore", sort = True,
+                        incrBy= entityProfile["Compiler"]["gsp"]["ComplexityScore"])
+                else:
+                    logging.info("No ComplexityScore found.")
             else:
                 update = True
 
@@ -681,10 +697,21 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         """
 
         redis_conn.incrEntityCounter(entity.eid, "instance_count", incrBy=1)
-        
-        unique_count = mongoconn.db.entity_instances.find().count()
-        mongoconn.db.dashboard_data.update({'tenant':tenant},\
-            {'$inc' : {"TotalQueries": 1}, '$set': { "unique_count": unique_count}}, upsert = True)
+
+        entityProfile = entity.profile
+        if "Compiler" in entityProfile\
+                and "gsp" in entityProfile['Compiler']\
+                and "ErrorSignature" in entityProfile['Compiler']['gsp']\
+                and entityProfile['Compiler']['gsp']["ErrorSignature"] == "":
+
+            unique_queries = mongoconn.db.entities.find({'profile.Compiler.gsp.ErrorSignature':""},
+                                                        {"eid":1,"_id":0})
+            uniqueEids = [x['eid'] for x in unique_queries]
+            unique_count = mongoconn.db.entity_instances.find({"eid":{'$in':uniqueEids}}).count()
+            mongoconn.db.dashboard_data.update({'tenant':tenant},\
+                {'$inc' : {"TotalQueries": 1},'$set': { "unique_count": unique_count}}, upsert = True)
+        else:
+            logging.info("No ErrorSignature found in update.")
 
         updateRelationCounter(redis_conn, entity.eid)
 
