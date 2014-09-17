@@ -696,7 +696,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         relationships.
         """
 
-        redis_conn.incrEntityCounter(entity.eid, "instance_count", incrBy=1)
+        redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True, incrBy=1)
 
         entityProfile = entity.profile
         if "Compiler" in entityProfile\
