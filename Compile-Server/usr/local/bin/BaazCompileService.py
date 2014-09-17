@@ -149,7 +149,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
             column_entity = mongoconn.addEn(eid, column_entity_name, tenant,\
                             EntityType.SQL_TABLE_COLUMN, column_entry, None)
 
-            if column_entity is not None:
+            if column_entity.eid == eid:
                 logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))
                 redis_conn.setRelationship(table_entity.eid, column_entity.eid,
                                            "TABLE_COLUMN", {'weight':1, "columnName":column_entity.columnName})
