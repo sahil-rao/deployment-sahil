@@ -19,6 +19,11 @@ import baazmath.workflows.impala_analytics as Impala
 import flightpath.services.app_get_table_detail as table_details
 import flightpath.services.app_get_query_detail as query_details
 import flightpath.services.app_get_upload_detail as upload_details
+import flightpath.services.app_get_top_fact as top_fact
+import flightpath.services.app_get_top_dim as top_dim
+import flightpath.services.app_get_top_table_by_patterns as top_tables_by_pattern
+import flightpath.services.app_get_top_tables as top_tables
+import flightpath.services.app_get_tail_tables as tail_tables
 from json import *
 import elasticsearch
 import shutil
@@ -361,7 +366,17 @@ def callback(ch, method, properties, body):
                 uid = msg_dict["uid"]
                 resp_dict["totalQueries"] = rc.getScaleModeTotalQueryCount(uid)
                 resp_dict["progress"] = rc.getProgress(uid) 
-                
+        elif msg_dict['opcode'] == "TopFact":
+            resp_dict = top_fact.execute(tenant)
+        elif msg_dict['opcode'] == "TopDim":
+            resp_dict = top_dim.execute(tenant)
+        elif msg_dict['opcode'] == "TopTablesByPattern":
+            resp_dict = top_tables_by_pattern.execute(tenant)
+        elif msg_dict['opcode'] == "TopTables":
+            resp_dict = top_tables.execute(tenant)
+        elif msg_dict['opcode'] == "TailTables":
+            resp_dict = tail_tables.execute(tenant)
+
     except:
         logging.exception("Proceesing request for " + msg_dict["opcode"])
 
