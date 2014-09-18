@@ -146,6 +146,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
         if column_entity is None:
             logging.info("Creating Column entity for {0}\n".format(column_entity_name))
             eid = IdentityService.getNewIdentity(tenant, True)
+            column_entry['tableEid'] = table_entity.eid
             column_entity = mongoconn.addEn(eid, column_entity_name, tenant,\
                             EntityType.SQL_TABLE_COLUMN, column_entry, None)
 

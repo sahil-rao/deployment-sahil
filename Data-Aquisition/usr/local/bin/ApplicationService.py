@@ -24,6 +24,13 @@ import flightpath.services.app_get_top_dim as top_dim
 import flightpath.services.app_get_top_table_by_patterns as top_tables_by_pattern
 import flightpath.services.app_get_top_tables as top_tables
 import flightpath.services.app_get_tail_tables as tail_tables
+import flightpath.services.app_get_top_select_columns as select_columns
+import flightpath.services.app_get_top_join_columns as join_columns
+import flightpath.services.app_get_top_filter_columns as filter_columns
+import flightpath.services.app_get_top_groupby_columns as groupby_columns
+import flightpath.services.app_get_top_orderby_columns as orderby_columns
+import flightpath.services.app_get_table_stats as table_stats
+import flightpath.services.app_get_column_stats as column_stats
 from json import *
 import elasticsearch
 import shutil
@@ -376,6 +383,20 @@ def callback(ch, method, properties, body):
             resp_dict = top_tables.execute(tenant)
         elif msg_dict['opcode'] == "TailTables":
             resp_dict = tail_tables.execute(tenant)
+        elif msg_dict['opcode'] == "SelectColumns":
+            resp_dict = select_columns.execute(tenant)
+        elif msg_dict['opcode'] == "JoinColumns":
+            resp_dict = join_columns.execute(tenant)
+        elif msg_dict['opcode'] == "FilterColumns":
+            resp_dict = filter_columns.execute(tenant)
+        elif msg_dict['opcode'] == "GroupByColumns":
+            resp_dict = groupby_columns.execute(tenant)
+        elif msg_dict['opcode'] == "OrderByColumns":
+            resp_dict = orderby_columns.execute(tenant)
+        elif msg_dict['opcode'] == "TableStats":
+            resp_dict = table_stats.execute(tenant)
+        elif msg_dict['opcode'] == "ColumnStats" :
+            resp_dict = column_stats.execute(tenant)
 
     except:
         logging.exception("Proceesing request for " + msg_dict["opcode"])
