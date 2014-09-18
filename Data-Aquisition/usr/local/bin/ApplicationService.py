@@ -24,7 +24,6 @@ import flightpath.services.app_get_top_dim as top_dim
 import flightpath.services.app_get_top_table_by_patterns as top_tables_by_pattern
 import flightpath.services.app_get_top_tables as top_tables
 import flightpath.services.app_get_tail_tables as tail_tables
-<<<<<<< Updated upstream
 import flightpath.services.app_get_top_select_columns as select_columns
 import flightpath.services.app_get_top_join_columns as join_columns
 import flightpath.services.app_get_top_filter_columns as filter_columns
@@ -32,9 +31,7 @@ import flightpath.services.app_get_top_groupby_columns as groupby_columns
 import flightpath.services.app_get_top_orderby_columns as orderby_columns
 import flightpath.services.app_get_table_stats as table_stats
 import flightpath.services.app_get_column_stats as column_stats
-=======
 import flightpath.services.app_get_access_patterns as access_patterns
->>>>>>> Stashed changes
 from json import *
 import elasticsearch
 import shutil
