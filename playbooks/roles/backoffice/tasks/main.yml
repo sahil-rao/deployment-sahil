@@ -74,6 +74,9 @@
 
 - name: Get Compiler Module
   shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Compiler.tar.gz .
+- name: Remove the existing compiler deployed code
+  file: path=/usr/lib/baaz_compiler state=absent
+  sudo: yes
 - name: Untar Compiler binaries
   shell: tar -zxf /home/ubuntu/Baaz-Compiler.tar.gz chdir=/usr/lib
   sudo: yes

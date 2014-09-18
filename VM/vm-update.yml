@@ -151,6 +151,8 @@
     service: name=mathservice state=started
 
     #Start of Compiler module deployment.
+  - name: Remove the existing compiler deployed code
+    file: path=/usr/lib/baaz_compiler state=absent
   - name: Untar Compiler binaries
     shell: tar -zxf /home/xplain/Baaz-Compiler.tar.gz chdir=/usr/lib
   - name: Install Compiler Service
