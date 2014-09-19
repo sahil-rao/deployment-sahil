@@ -41,27 +41,60 @@
 #   file: path=/home/ubuntu/siddharth/emailjobs/failureUpdateEmail.py owner=ubuntu group=ubuntu mode=0755
 # #- cron: name="update email job" hour="*/12" job="/home/ubuntu/siddharth/emailjobs/uploadUpdateEmails.py"
 # #- cron: name="failure email job" minute="*/2" job="/home/ubuntu/siddharth/emailjobs/failureUpdateEmails.py"
+########DEPENDENCIES#########
 - name: Add nginx ppa
   apt_repository: repo='ppa:nginx/stable'
   sudo: yes
 - name: Install nginx
-  apt: name=nginx update_cache=yes
+  apt: name=nginx state=present
   sudo: yes
 - name: Install apache2-utils
   apt: name=apache2-utils state=present
-- name: Copy nginx conf file
-  template: src=/home/ubuntu/build/deployment/playbooks/roles/deploymentroot/files/nginx.conf dest=/etc/nginx/nginx.conf
+- name: Install S3 CMD
+  apt: name=s3cmd state=present
   sudo: yes
-- name: Create /var/www dir
-  file: path=/var/www state=directory
-  sudo: yes
-- name: Copy index.html file
-  template: src=/home/ubuntu/build/deployment/playbooks/roles/deploymentroot/files/index.html dest=/var/www/index.html
-  sudo: yes
+########SET UP ENVIRONMENT########
 - name: Stop nodejs
   service: name=nodejs state=stopped
   sudo: yes
-- name: Copy new node upstart script
+  ignore_errors: true
+- name: Create /var/xplain_admin
+  file: path=/var/xplain_admin state=directory owner=root mode=0644
+  sudo: yes
+- name: Create /var/www
+  file: path=/var/www state=directory
+  sudo: yes
+- name: Create user node
+  user: name=node state=present
+########UNPACK S3 TARBALLS########
+- name: Get xplain_admin
+  s3: bucket=baaz-deployment/{{ BuildVersion }}xplain_admin.tar.gz dest=/home/ubuntu/ mode=get
+- name: Get xplain_dashboard
+  s3: bucket=baaz-deployment/{{ BuildVersion }}xplain_dashboard.tar.gz dest=/home/ubuntu/ mode=get
+- name: Untar xplain_admin
+  shell: tar -zxf /home/ubuntu/xplain_admin.tar.gz
+- name: Untar xplain_dashboard
+  shell: tar -zxf /home/ubuntu/xplain_dashboard.tar.gz
+- name: Remove the existing deployed code (xplain_admin)
+  file: path=/var/xplain_admin state=absent
+  sudo: yes
+- name: Remove the existing deployed code (xplain_dashboard)
+  file: path=/var/www/ state=absent
+  sudo: yes
+- name: Move the new code (xplain_admin)
+  shell: mv /home/ubuntu/xplain_admin /var/xplain_admin
+  sudo: yes
+- name: Move the new code (xplain_dashboard)
+  shell: mv /home/ubuntu/xplain_dashboard /var/www
+- name: Get the npm modules for xplain_admin
+  npm: path=/var/xplain_admin
+- name: Template out javascript for xplain_dashboard
+  template: src=/home/ubuntu/build/UI/xplain_dashboard/js2/index.js dest=/var/www/js2/index.js
+########DEPLOY AND CONFIGURE########
+- name: Copy nginx conf file
+  template: src=/home/ubuntu/build/UI/xplain_dashboard/nginx.conf dest=/etc/nginx/nginx.conf
+  sudo: yes
+- name: Copy node upstart script
   copy: src=/home/ubuntu/build/deployment/playbooks/roles/deploymentroot/files/nodejs.conf dest=/etc/init/nodejs.conf
   sudo: yes
 - name: Start nodejs
