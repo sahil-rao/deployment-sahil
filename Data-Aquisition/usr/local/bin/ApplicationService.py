@@ -24,7 +24,6 @@ import flightpath.services.app_get_top_dim as top_dim
 import flightpath.services.app_get_top_table_by_patterns as top_tables_by_pattern
 import flightpath.services.app_get_top_tables as top_tables
 import flightpath.services.app_get_tail_tables as tail_tables
-<<<<<<< Updated upstream
 import flightpath.services.app_get_top_select_columns as select_columns
 import flightpath.services.app_get_top_join_columns as join_columns
 import flightpath.services.app_get_top_filter_columns as filter_columns
@@ -32,9 +31,7 @@ import flightpath.services.app_get_top_groupby_columns as groupby_columns
 import flightpath.services.app_get_top_orderby_columns as orderby_columns
 import flightpath.services.app_get_table_stats as table_stats
 import flightpath.services.app_get_column_stats as column_stats
-=======
 import flightpath.services.app_get_access_patterns as access_patterns
->>>>>>> Stashed changes
 from json import *
 import elasticsearch
 import shutil
@@ -45,6 +42,7 @@ import datetime
 import time
 import logging
 import socket
+import importlib
 import urllib
 
 APPSRV_LOG_FILE = "/var/log/applicationserice.err"
@@ -403,7 +401,19 @@ def callback(ch, method, properties, body):
             resp_dict = column_stats.execute(tenant)
         elif msg_dict['opcode'] == "AccessPatterns":
             resp_dict = access_patterns.execute(tenant, msg_dict["accessPatternIds"])
+        else:
+            api_config= ConfigParser.RawConfigParser()
+            api_config.read("/etc/xplain/application-api.cfg")
 
+            section = msg_dict['opcode']
+            if api_config.has_section(section):
+                if not api_config.has_option(section, "Import") or\
+                   not api_config.has_option(section, "Function"):
+                    logging.error("API configuration section not defined properly")
+                else:
+                    mod = importlib.import_module(api_config.get(section, "Import"))
+                    methodToCall = getattr(mod, api_config.get(section, "Function"))
+                    resp_dict = methodToCall(tenant, msg_dict)
     except:
         logging.exception("Proceesing request for " + msg_dict["opcode"])
 
