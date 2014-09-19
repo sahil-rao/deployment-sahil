@@ -23,14 +23,14 @@ import flightpath.services.app_get_top_fact as top_fact
 import flightpath.services.app_get_top_dim as top_dim
 import flightpath.services.app_get_top_table_by_patterns as top_tables_by_pattern
 import flightpath.services.app_get_top_tables as top_tables
+import flightpath.services.app_get_top_queries as top_queries
 import flightpath.services.app_get_tail_tables as tail_tables
-import flightpath.services.app_get_top_select_columns as select_columns
-import flightpath.services.app_get_top_join_columns as join_columns
-import flightpath.services.app_get_top_filter_columns as filter_columns
-import flightpath.services.app_get_top_groupby_columns as groupby_columns
-import flightpath.services.app_get_top_orderby_columns as orderby_columns
+import flightpath.services.app_get_columns_by_operator as columns_by_operator
+import flightpath.services.app_get_simple_queries as simple_queries
 import flightpath.services.app_get_table_stats as table_stats
 import flightpath.services.app_get_column_stats as column_stats
+import flightpath.services.app_get_query_stats as query_stats
+import flightpath.services.app_get_query_pie_chart as query_pie_chart
 import flightpath.services.app_get_access_patterns as access_patterns
 from json import *
 import elasticsearch
@@ -383,22 +383,23 @@ def callback(ch, method, properties, body):
             resp_dict = top_tables_by_pattern.execute(tenant)
         elif msg_dict['opcode'] == "TopTables":
             resp_dict = top_tables.execute(tenant)
+        elif msg_dict['opcode'] == "TopQueries":
+            resp_dict = top_queries.execute(tenant)
         elif msg_dict['opcode'] == "TailTables":
             resp_dict = tail_tables.execute(tenant)
-        elif msg_dict['opcode'] == "SelectColumns":
-            resp_dict = select_columns.execute(tenant)
-        elif msg_dict['opcode'] == "JoinColumns":
-            resp_dict = join_columns.execute(tenant)
-        elif msg_dict['opcode'] == "FilterColumns":
-            resp_dict = filter_columns.execute(tenant)
-        elif msg_dict['opcode'] == "GroupByColumns":
-            resp_dict = groupby_columns.execute(tenant)
-        elif msg_dict['opcode'] == "OrderByColumns":
-            resp_dict = orderby_columns.execute(tenant)
+        elif msg_dict['opcode'] == "ColumnByOperator":
+            if 'operator' in msg_dict:
+                resp_dict = columns_by_operator.execute(tenant, msg_dict['operator'])
         elif msg_dict['opcode'] == "TableStats":
             resp_dict = table_stats.execute(tenant)
-        elif msg_dict['opcode'] == "ColumnStats" :
+        elif msg_dict['opcode'] == "ColumnStats":
             resp_dict = column_stats.execute(tenant)
+        elif msg_dict['opcode'] == "QueryStats":
+            resp_dict = query_stats.execute(tenant)
+        elif msg_dict['opcode'] == "QueryPieChart":
+            resp_dict = query_pie_chart.execute(tenant)
+        elif msg_dict['opcode'] == "SimpleQueries":
+            resp_dict = simple_queries.execute(tenant)
         elif msg_dict['opcode'] == "AccessPatterns":
             resp_dict = access_patterns.execute(tenant, msg_dict["accessPatternIds"])
         else:
