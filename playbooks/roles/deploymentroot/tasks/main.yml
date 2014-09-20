@@ -72,9 +72,9 @@
 - name: Get xplain_dashboard
   shell: s3://baaz-deployment/{{ BuildVersion }}xplain_dashboard.tar.gz /home/ubuntu/ 
 - name: Untar xplain_admin
-  shell: tar -zxf /home/ubuntu/xplain_admin.tar.gz
+  shell: tar -zxf /home/ubuntu/xplain_admin.tar.gz -C /home/ubuntu
 - name: Untar xplain_dashboard
-  shell: tar -zxf /home/ubuntu/xplain_dashboard.tar.gz
+  shell: tar -zxf /home/ubuntu/xplain_dashboard.tar.gz -C /home/ubuntu
 - name: Remove the existing deployed code (xplain_admin)
   file: path=/var/xplain_admin state=absent
   sudo: yes
@@ -86,10 +86,13 @@
   sudo: yes
 - name: Move the new code (xplain_dashboard)
   shell: mv /home/ubuntu/xplain_dashboard /var/www
+  sudo: yes
 - name: Get the npm modules for xplain_admin
   npm: path=/var/xplain_admin
+  sudo: yes
 - name: Template out javascript for xplain_dashboard
   template: src=/home/ubuntu/build/UI/xplain_dashboard/js2/index.js dest=/var/www/js2/index.js
+  sudo: yes
 ########DEPLOY AND CONFIGURE########
 - name: Copy nginx conf file
   template: src=/home/ubuntu/build/UI/xplain_dashboard/nginx.conf dest=/etc/nginx/nginx.conf
@@ -106,6 +109,7 @@
 - name: Start nginx
   command: /usr/sbin/nginx
   sudo: yes
+  ignore_errors: yes
 - name: Reload nginx
   command: /usr/sbin/nginx -s reload
   sudo: yes

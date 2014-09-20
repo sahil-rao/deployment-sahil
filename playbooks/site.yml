@@ -40,4 +40,3 @@
 - hosts: tag_Name_DeploymentRoot
   roles:
   - role: deploymentroot
-    sudo: true
