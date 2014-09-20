@@ -68,9 +68,9 @@
   user: name=node state=present
 ########UNPACK S3 TARBALLS########
 - name: Get xplain_admin
-  s3: bucket=baaz-deployment/{{ BuildVersion }}xplain_admin.tar.gz dest=/home/ubuntu/ mode=get
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}xplain_admin.tar.gz /home/ubuntu/ 
 - name: Get xplain_dashboard
-  s3: bucket=baaz-deployment/{{ BuildVersion }}xplain_dashboard.tar.gz dest=/home/ubuntu/ mode=get
+  shell: s3://baaz-deployment/{{ BuildVersion }}xplain_dashboard.tar.gz /home/ubuntu/ 
 - name: Untar xplain_admin
   shell: tar -zxf /home/ubuntu/xplain_admin.tar.gz
 - name: Untar xplain_dashboard
