@@ -37,6 +37,6 @@
   - role: elasticsearch
     sudo: true
 
-- hosts: tag_Name_DeploymentRoot
+- hosts: localhost
   roles:
   - role: deploymentroot
