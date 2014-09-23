@@ -119,7 +119,7 @@ def end_of_phase_callback(params, current_phase):
     params['connection'].publish(params['channel'],'',params['queuename'],message)
     return
     
-def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
+def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity):
     tableCount = 0
     table_entity = None
     for column_entry in columnset:
@@ -137,7 +137,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
             logging.info("Creating table entity for {0} position 6\n".format(tablename))
             eid = IdentityService.getNewIdentity(tenant, True)
             table_entity = mongoconn.addEn(eid, tablename, tenant,\
-                      EntityType.SQL_TABLE, {}, None)
+                    EntityType.SQL_TABLE, {"uid" : uid}, None)
             if eid == table_entity.eid:
                 redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
@@ -147,6 +147,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
             logging.info("Creating Column entity for {0}\n".format(column_entity_name))
             eid = IdentityService.getNewIdentity(tenant, True)
             column_entry['tableEid'] = table_entity.eid
+            column_entry["uid"] = uid
             column_entity = mongoconn.addEn(eid, column_entity_name, tenant,\
                             EntityType.SQL_TABLE_COLUMN, column_entry, None)
 
@@ -165,13 +166,13 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, entity):
         redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=1)
     return [0, tableCount]
 
-def processTableSet(tableset, mongoconn, redis_conn, tenant, entity, isinput, tableEidList=None, hive_success=0):
+def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinput, tableEidList=None, hive_success=0):
     dbCount = 0
     tableCount = 0
     if tableset is None or len(tableset) == 0:
         return [dbCount, tableCount]
 
-    endict = {}
+    endict = {"uid" : uid}
     #mongoconn.startBatchUpdate()
     for tableentry in tableset:
         database_name = None
@@ -602,7 +603,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         logging.info("No compile_doc found")
         return None, None
 
-    profile_dict = { "profile": { "Compiler" : {}}}
+    profile_dict = { "uid" : uid, "profile": { "Compiler" : {}}}
     comp_profile = profile_dict["profile"]["Compiler"]
 
     q_hash = None
@@ -759,7 +760,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
             if compile_doc[key].has_key("InputTableList"):
                 tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], 
-                                               mongoconn, redis_conn, tenant, entity, True,  
+                                               mongoconn, redis_conn, tenant, uid, entity, True,  
                                                tableEidList)
                 if uid is not None:
                     collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
@@ -768,14 +769,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     
             if compile_doc[key].has_key("OutputTableList"):
                 tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], mongoconn, redis_conn, 
-                                               tenant, entity, False, tableEidList)
+                                               tenant, uid, entity, False, tableEidList)
                 if uid is not None:
                     collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
 
             if compile_doc[key].has_key("ddlcolumns"):
                 tmpAdditions = processColumns(compile_doc[key]["ddlcolumns"], 
-                                                           mongoconn, redis_conn, tenant, entity)
+                                              mongoconn, redis_conn, tenant, uid, entity)
                 if uid is not None:
                     collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
                                       stats_newtables_key: tmpAdditions[1]}})

@@ -144,6 +144,9 @@ def analytics_callback(params):
     params['connection'].publish(params['channel'],'',params['queuename'],message) 
     return
 
+class analytics_context:
+    pass
+
 def callback(ch, method, properties, body):
 
     startTime = time.time()
@@ -283,17 +286,18 @@ def callback(ch, method, properties, body):
             mod = importlib.import_module(mathconfig.get(section, "Import"))
             methodToCall = getattr(mod, mathconfig.get(section, "Function"))
             logging.info("Executing " + section + " for " + tenant)
-            if mathconfig.get(section, "NumParms") == "1":
-                methodToCall(tenant)
-            elif mathconfig.get(section, "NumParms") == "2":
-                methodToCall(tenant, entityid)
-            elif mathconfig.get(section, "NumParms") == "3":
-                callback_params["collection"] = collection
-                callback_params['redis_conn'] = redis_conn
-                callback_params["callback"] = analytics_callback
-                methodToCall(tenant, entityid, callback_params)
+            ctx = analytics_context
+            ctx.tenant = tenant
+            ctx.entityid = entityid
+            ctx.collection = collection
+            ctx.redis_conn = redis_conn
+            ctx.callback = analytics_callback
+            if msg_dict.has_key('uid'):
+                ctx.uid = uid
             else:
-                methodToCall(tenant, entityid)
+                ctx.uid = None
+
+            methodToCall(tenant, ctx)
 
             if msg_dict.has_key('uid'):
                 collection.update({'uid':uid},{"$inc": {stats_success_key: 1, stats_failure_key: 0}})
