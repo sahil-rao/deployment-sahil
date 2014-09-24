@@ -153,9 +153,9 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity):
 
             if column_entity.eid == eid:
                 logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))
+                redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
                 redis_conn.setRelationship(table_entity.eid, column_entity.eid,
                                            "TABLE_COLUMN", {'weight':1, "columnName":column_entity.columnName})
-                #redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
 
     """
     Create relationships.
