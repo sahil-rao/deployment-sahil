@@ -32,6 +32,7 @@ import flightpath.services.app_get_column_stats as column_stats
 import flightpath.services.app_get_query_stats as query_stats
 import flightpath.services.app_get_query_pie_chart as query_pie_chart
 import flightpath.services.app_get_access_patterns as access_patterns
+from flightpath import FPConnector
 from json import *
 import elasticsearch
 import shutil
@@ -402,6 +403,12 @@ def callback(ch, method, properties, body):
             resp_dict = simple_queries.execute(tenant)
         elif msg_dict['opcode'] == "AccessPatterns":
             resp_dict = access_patterns.execute(tenant, msg_dict["accessPatternIds"])
+        elif msg_dict['opcode'] == "MongoUrlForTenant":
+            resp_dict = {'mongo_url': FPConnector.get_mongo_url(tenant)}
+        elif msg_dict['opcode'] == "RedisMasterNameForTenant":
+            resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant)}
+        elif msg_dict['opcode'] == "ElasticNodesForTenant":
+            resp_dict = {'elastic_nodes': FPConnector.get_elastic_nodes(tenant)}
         else:
             api_config= ConfigParser.RawConfigParser()
             api_config.read("/etc/xplain/application-api.cfg")
