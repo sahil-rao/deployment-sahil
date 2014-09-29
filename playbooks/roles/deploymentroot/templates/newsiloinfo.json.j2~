@@ -1,0 +1,16 @@
+{
+    mongo: {
+        master:
+        slave:
+	arbiter:
+    }
+    redis: {
+	master:
+	slave:
+	mastername:
+    }
+    elasticsearch: {
+	node1: 
+	node2:
+    }
+}
