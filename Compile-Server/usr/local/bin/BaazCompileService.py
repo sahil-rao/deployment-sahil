@@ -792,13 +792,15 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 len(compile_doc[key]["subQueries"]) > 0:
                 logging.info("Processing Sub queries")
                 for sub_q_dict in compile_doc[key]["subQueries"]:
-                    if "origQuery" not in sub_q_dict["gsp"]:
+
+                    if "origQuery" not in sub_q_dict:
                         logging.info("Original query not found in sub query dictionary")
+                        logging.info(dumps(sub_q_dict))
                         continue
-                    sub_q = sub_q_dict["gsp"]["origQuery"]
+                    sub_q = sub_q_dict["origQuery"]
                     logging.info("Processing Sub queries " + sub_q)
                     sub_entity, sub_opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, 
-                                                    tenant, uid, sub_q, data, sub_q_dict, source_platform)
+                                                    tenant, uid, sub_q, data, {'gsp':sub_q_dict}, source_platform)
                     sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode)
         except:
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))     
