@@ -1,0 +1,18 @@
+{
+    "mongo": {
+        "instances": "{{ groups['tag_Name_MongoDBServer4'] | join(",") }}",
+        "arbiters": "{{ groups['tag_Name_Arbiter4'][0] }}"
+    },
+    "redis": {
+	"master": "{{ groups['tag_Name_Redis4'][0] }}",
+	"slave": "{{ groups['tag_Name_Redis4'][1] }}",
+	"mastername": "redismasterSilo{{ silo_id }}"
+    },
+    "elasticsearch": { 
+	"nodes": "{{ groups['tag_Name_ElasticSearch4'] | join(",") }}"
+    },
+    "siloinfo": {
+	"siloname": "Silo{{ silo_id }}",
+	"capacitylimit": {{ silo_capacity }}
+    }
+}
