@@ -292,14 +292,17 @@ def callback(ch, method, properties, body):
             ctx.collection = collection
             ctx.redis_conn = redis_conn
             ctx.callback = analytics_callback
-            if msg_dict.has_key('uid'):
+            if 'uid' in msg_dict:
                 ctx.uid = uid
             else:
                 ctx.uid = None
 
+            if 'outmost_query' in msg_dict:
+                ctx.outmost_query = msg_dict['outmost_query']
+
             methodToCall(tenant, ctx)
 
-            if msg_dict.has_key('uid'):
+            if 'uid' in msg_dict:
                 collection.update({'uid':uid},{"$inc": {stats_success_key: 1, stats_failure_key: 0}})
 
             if mathconfig.has_option(section, "NotificationName"):
@@ -310,9 +313,9 @@ def callback(ch, method, properties, body):
                 connection1.publish(ch,'', notif_queue, dumps(message))
         except:
             logging.exception("Section :"+section)
-	    if msg_dict.has_key('uid'):
+	    if 'uid' in msg_dict:
                 collection.update({'uid':uid},{"$inc": {stats_success_key: 0, stats_failure_key: 1}})
-        if msg_dict.has_key('uid'):
+        if 'uid' in msg_dict:
             sectionEndTime = time.time()
             collection.update({'uid':uid},{"$inc": {stats_time_key: (sectionEndTime-sectionStartTime)}})
             if opcode == "PhaseTwoAnalysis":
