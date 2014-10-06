@@ -421,11 +421,15 @@ def callback(ch, method, properties, body):
     if resp_dict is None:
         resp_dict = {"status" : "Failed"}
 
-    ch.basic_publish(exchange='',
-                     routing_key=properties.reply_to,
-                     properties=pika.BasicProperties(correlation_id = \
-                                                     properties.correlation_id),
-                         body=dumps(resp_dict))
+    try:
+        ch.basic_publish(exchange='',
+                         routing_key=properties.reply_to,
+                         properties=pika.BasicProperties(correlation_id = \
+                                                         properties.correlation_id),
+                            body=dumps(resp_dict))
+    except:
+        logging.error("Unable to send response message")
+
     connection1.basicAck(ch,method)
 
 connection1 = RabbitConnection(callback, ['appservicequeue'], [], {}, APPSRV_LOG_FILE)
