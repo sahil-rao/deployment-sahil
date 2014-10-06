@@ -1,5 +1,20 @@
 #!/bin/bash
 
+LOCKFILE=/var/lock/buildlock
+function cleanup() {
+  rm $LOCKFILE
+  exit 0
+}
+
+trap cleanup INT
+
+if [ -f $LOCKFILE ]; then
+  echo "Someone else is building!"
+  exit 0
+fi
+
+touch $LOCKFILE
+
 S3Bucket='baaz-deployment'
 #Make sure the build directory does not yet exist
 rm -rf /home/ubuntu/build 
@@ -8,10 +23,10 @@ rm -rf /home/ubuntu/build
 mkdir /home/ubuntu/build 
 
 cd  /home/ubuntu/build
-git config --global credential.helper cache
 
 #Checkout deployment
-git clone https://github.com/baazdata/deployment.git
+#git clone -b dbsilo https://github.com/baazdata/deployment.git 
+git clone https://github.com/baazdata/deployment.git 
 #cd /home/ubuntu/build/deployment
 #git pull --rebase
 
@@ -26,12 +41,14 @@ git clone https://github.com/baazdata/compiler.git
 #git pull --rebase
 
 #Checkout graph
-git clone https://github.com/baazdata/graph.git
+#git clone -b dbsilo https://github.com/baazdata/graph.git 
+git clone https://github.com/baazdata/graph.git 
 #cd /home/ubuntu/build/graph
 #git pull --rebase
 
 #Checkout UI
-git clone https://github.com/baazdata/UI.git
+#git clone -b dbsilo https://github.com/baazdata/UI.git 
+git clone https://github.com/baazdata/UI.git 
 #cd /home/ubuntu/build/UI
 #git pull --rebase
 
@@ -54,6 +71,12 @@ cd /home/ubuntu/build/UI
 tar -cvf xplain.io.tar xplain.io
 gzip xplain.io.tar
 s3cmd sync xplain.io.tar.gz s3://$S3Bucket/
+tar -cvf xplain_admin.tar xplain_admin
+gzip xplain_admin.tar
+s3cmd sync xplain_admin.tar.gz s3://$S3Bucket/
+tar -cvf xplain_dashboard.tar xplain_dashboard
+gzip xplain_dashboard.tar
+s3cmd sync xplain_dashboard.tar.gz s3://$S3Bucket/
 
 cd /home/ubuntu/build/compiler/BAAZ_COMPILER
 ant main
@@ -97,3 +120,5 @@ cd /home/ubuntu/build/compiler
 tar -cf Baaz-Basestats-Report.tar reports 
 gzip Baaz-Basestats-Report.tar
 s3cmd sync Baaz-Basestats-Report.tar.gz s3://$S3Bucket/
+
+rm $LOCKFILE

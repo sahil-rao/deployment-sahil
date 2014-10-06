@@ -1,0 +1,18 @@
+{
+    "mongo": {
+        "instances": "{{ groups['just_created_mongodb'] | join(",") }}",
+        "arbiters": "{{ groups['just_created_arbiter'][0] }}"
+    },
+    "redis": {
+	"master": "{{ groups['just_created_redis_master'][0] }}",
+	"slave": "{{ groups['just_created_redis_slave'][0] }}",
+	"mastername": "redismasterSilo{{ silo_id }}"
+    },
+    "elasticsearch": { 
+	"nodes": "{{ groups['just_created_es'] | join(",") }}"
+    },
+    "siloinfo": {
+	"siloname": "Silo{{ silo_id }}",
+	"capacitylimit": {{ silo_capacity }}
+    }
+}
