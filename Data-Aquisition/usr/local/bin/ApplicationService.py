@@ -45,6 +45,7 @@ import logging
 import socket
 import importlib
 import urllib
+import traceback
 
 APPSRV_LOG_FILE = "/var/log/applicationserice.err"
 
@@ -232,9 +233,10 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
     """
     result = None
     if target == "hbase":
-        result = Hbase.run_workflow(tenant, tableList, queryList)
+        result = Hbase.run_workflow(tenant, prog_id, queryList)
     elif target == "impala":
-        result = Impala.run_workflow(tenant, tableList, queryList)
+        result = Impala.run_workflow(tenant, prog_id, queryList)
+
 
     """
         Save the analytics results to a local file.
@@ -270,8 +272,11 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
         if socket_connected == False:
             raise Exception("Unable to connect to JVM socket.")
 
+        EntityId = '0'
+        if len(prog_id) == 0:
+            EntityId = prog_id[0]
         data_dict = {"InputFile": oFile_path, "OutputFile": output_file_name, 
-                     "EntityId": prog_id, "TenantId": "100"}
+                     "EntityId": EntityId, "TenantId": "100"}
         data = dumps(data_dict)
         client_socket.send("1\n");
 
