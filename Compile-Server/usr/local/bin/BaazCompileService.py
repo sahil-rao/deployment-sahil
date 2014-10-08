@@ -1178,7 +1178,7 @@ def callback(ch, method, properties, body):
 
         entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform)
 
-        sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, received_msgID, opcode)
+        sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msgID)
 
         if not usingAWS:
             continue
