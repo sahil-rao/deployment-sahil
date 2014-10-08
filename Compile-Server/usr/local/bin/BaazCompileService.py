@@ -618,7 +618,7 @@ def updateRelationCounter(redis_conn, eid):
         if rel['rtype'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
 
-def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, outmost_query = None):
+def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msgID, outmost_query = None):
     if entity is not None:
         if opcode is not None:
             msg_dict = {'tenant':tenant, 'opcode':opcode, "entityid":entity.eid} 
@@ -628,6 +628,8 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
                 msg_dict['outmost_query'] = outmost_query
             message_id = genMessageID("Comp", collection, entity.eid)
             msg_dict['message_id'] = message_id
+            if received_msgID is not None:
+                msg_dict['query_message_id'] = received_msgID
             message = dumps(msg_dict)
             connection1.publish(ch,'','mathqueue',message)
             logging.info("Sent message to Math pos1:" + str(msg_dict))
@@ -852,7 +854,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     logging.info("Processing Sub queries " + sub_q)
                     sub_entity, sub_opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, 
                                                     tenant, uid, sub_q, data, {key:sub_q_dict}, source_platform, context_out)
-                    sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode, context_out.outmost_query )
+                    sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode, None, context_out.outmost_query )
 
             hive_success = 0
             if key == "hive" and 'ErrorSignature' in compile_doc:
@@ -1176,7 +1178,7 @@ def callback(ch, method, properties, body):
 
         entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform)
 
-        sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode)
+        sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msgID)
 
         if not usingAWS:
             continue

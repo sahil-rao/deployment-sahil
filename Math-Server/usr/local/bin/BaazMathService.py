@@ -338,7 +338,8 @@ def callback(ch, method, properties, body):
         stats_dict = collection.find_one({'uid':uid})
         if stats_dict is not None and\
             "total_queries" in stats_dict and\
-            "processed_queries" in stats_dict:
+            "processed_queries" in stats_dict and\
+            "query_message_id" in msg_dict:
             collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
             
             #if received_msgID is not None and\
