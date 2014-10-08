@@ -1,0 +1,117 @@
+---
+#Run this script to install cx_Oracle and pyodbc libraries in python, along with the ODBC drivers for Oracle and Teradata
+- hosts: tag_Name_Backoffice
+  tasks:
+
+###########################################
+##### GENERAL HOUSEKEEPING TASKS ##########
+
+    - name: Kill monit
+      shell: monit quit
+      ignore_errors: yes
+      sudo: yes
+    - name: Kill mathservice
+      service: name=mathservice state=stopped
+      sudo: yes
+    - name: Kill compileservice
+      service: name=compileservice state=stopped
+      sudo: yes
+    - name: Kill compileserver
+      service: name=compileserver state=stopped
+      sudo: yes
+    - name: Kill dataacquisitionservice
+      service: name=dataacquisitionservice state=stopped
+      sudo: yes
+    - name: Install alien
+      apt: name=alien state=present 
+      sudo: yes
+
+###############################################
+##### ORACLE LIBRARIES INSTALLATION START #####
+
+    - name: Create directory ~/oracle-client-libs
+      file: path=/home/ubuntu/oracle-client-libs state=directory
+    - name: Copy Oracle client libs into ~/oracle-client-libs
+      copy: src=/home/ubuntu/build/deployment/playbooks/roles/backoffice/files/oracle-install-files/{{ item.name }} dest=/home/ubuntu/oracle-client-libs
+      with_items:
+          - { name: oracle-instantclient12.1-basic-12.1.0.2.0-1.x86_64.rpm }
+          - { name: oracle-instantclient12.1-devel-12.1.0.2.0-1.x86_64.rpm }
+          - { name: oracle-instantclient12.1-sqlplus-12.1.0.2.0-1.x86_64.rpm }
+          - { name: oracle-instantclient12.1-tools-12.1.0.2.0-1.x86_64.rpm }
+    - name: Convert all rpms to debs
+      shell: sudo alien -d *.rpm chdir=/home/ubuntu/oracle-client-libs
+    - name: Install all debs
+      shell: sudo dpkg -i *.deb chdir=/home/ubuntu/oracle-client-libs
+    - name: Add Oracle library to ubuntu systems library linker
+      copy: src=/home/ubuntu/build/deployment/playbooks/roles/backoffice/files/oracle-install-files/oracle.conf dest=/etc/ld.so.conf.d/oracle.conf
+      sudo: yes
+    - name: Refresh symlinks cache in shared libraries in /etc/ld.so.conf with new oracle.conf file
+      command: sudo ldconfig
+    - name: Create directory ~/oracle-client-libs
+      file: path=/home/ubuntu/oracle-client-libs/cx_Oracle-5.1.3-modified state=directory
+    - name: Untar modified cx_Oracle tarball 
+      unarchive: src=/home/ubuntu/build/deployment/playbooks/roles/backoffice/files/oracle-install-files/cx_Oracle-5.1.3-modified.tar.gz dest=/home/ubuntu/oracle-client-libs/cx_Oracle-5.1.3-modified
+    - name: Build cx_Oracle python library
+      command: python setup.py build chdir=/home/ubuntu/oracle-client-libs/cx_Oracle-5.1.3-modified
+    - name: Install cx_Oracle python library
+      command: sudo python setup.py install chdir=/home/ubuntu/oracle-client-libs/cx_Oracle-5.1.3-modified
+
+#################################################
+##### TERADATA LIBRARIES INSTALLATION START #####
+
+    - name: Create directory ~/td-client-libs
+      file: path=/home/ubuntu/td-client-libs state=directory
+    - name: Copy Teradata client libs into ~/td-client-libs
+      copy: src=/home/ubuntu/build/deployment/playbooks/roles/backoffice/files/td-install-files/{{ item.name }} dest=/home/ubuntu/td-client-libs
+      with_items:
+          - { name: TeraGSS_linux_x64-15.00.00.07-1.noarch.rpm }
+          - { name: tdicu-15.00.00.00-1.noarch.rpm }
+          - { name: tdodbc-15.00.00.02-1.noarch.rpm }
+    - name: Convert all rpms to debs
+      shell: sudo alien -d *.rpm chdir=/home/ubuntu/td-client-libs
+    - name: Install all debs
+      shell: sudo dpkg -i *.deb chdir=/home/ubuntu/td-client-libs
+    - name: Copy modified ODBC definitions
+      copy: src=/home/ubuntu/build/deployment/playbooks/roles/backoffice/files/td-install-files/X{{ item.name }} dest=/home/ubuntu/{{ item.name }}
+      with_items:
+          - { name: .odbc.ini }
+          - { name: .odbcinst.ini }
+    - name: Install python-pyodbc
+      apt: name=python-pyodbc state=present
+      sudo: yes
+    - name: Install odbcinst
+      apt: name=odbcinst state=present
+      sudo: yes
+    - name: Add TD library to ubuntu systems library linker
+      copy: src=/home/ubuntu/build/deployment/playbooks/roles/backoffice/files/td-install-files/Zteradata.conf dest=/etc/ld.so.conf.d/Zteradata.conf
+    - name: Refresh symlinks cache in shared libraries in /etc/ld.so.conf with new Zteradata.conf file
+      command: sudo ldconfig
+    - name: Remove old drivers not pointing to correct teradata drivers
+      command: sudo mv /usr/lib/x86_64-linux-gnu/{{ item.name }} /usr/lib/x86_64-linux-gnu/X{{item.name}}
+      with_items:
+          - { name: libodbc.so.1.0.0 }
+          - { name: libodbcinst.so.1.0.0 }
+    - name: Symlink new drivers to point to correct TD drivers
+      file: src=/opt/teradata/client/15.00/odbc_64/lib/{{ item.name }} dest=/usr/lib/x86_64-linux-gnu/{{ item.name }} state=link
+      with_items:
+          - { name: libodbc.so.1.0.0 }
+          - { name: libodbcinst.so.1.0.0 }
+      sudo: yes
+    - name: Create directory /usr/teragss/site
+      file: path=/usr/teragss/site state=directory
+      sudo: yes
+    - name: Copy all teragss config files to where td binary will look for them 
+      shell: sudo cp -R /opt/teradata/teragss/linux-x8664/15.00.00.07/etc/* /usr/teragss/site
+    - name: Move linux-x8664 one dir up so TD can find it
+      file: path=/usr/teragss/linux-x8664/client state=directory
+      sudo: yes
+    - name: Symlink lib from /usr/teragss/linux-x8664/client to where dpkg unpackaged it
+      file: src=/opt/teradata/teragss/linux-x8664/15.00.00.07/lib/ dest=/usr/teragss/linux-x8664/client/lib
+      sudo: yes
+    - name: Run tdgssconfig binary
+      command: sudo /opt/teradata/teragss/linux-x8664/15.00.00.07/bin/run_tdgssconfig
+    
+    
+
+    
+    
