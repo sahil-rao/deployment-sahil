@@ -218,6 +218,7 @@ class callback_context():
             return True
 
         if int(upStats["query_processed"]) > int(Self.uploadLimit):
+            Self.collection.update({'uid':"0"},{'$set':{"limit_reached":"True"}})
             return False
 
         return True
