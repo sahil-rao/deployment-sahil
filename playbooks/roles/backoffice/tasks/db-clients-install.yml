@@ -92,10 +92,10 @@
           - { name: libodbc.so.1.0.0 }
           - { name: libodbcinst.so.1.0.0 }
     - name: Symlink new drivers to point to correct TD drivers
-      file: src=/opt/teradata/client/15.00/odbc_64/lib/{{ item.name }} dest=/usr/lib/x86_64-linux-gnu/{{ item.name }} state=link
+      file: src=/opt/teradata/client/15.00/odbc_64/lib/{{ item.src_name }} dest=/usr/lib/x86_64-linux-gnu/{{ item.dest_name }} state=link
       with_items:
-          - { name: libodbc.so.1.0.0 }
-          - { name: libodbcinst.so.1.0.0 }
+          - { src_name: libodbc.so, dest_name: libodbc.so.1.0.0 }
+          - { src_name: libodbcinst.so, dest_name: libodbcinst.so.1.0.0 }
       sudo: yes
     - name: Create directory /usr/teragss/site
       file: path=/usr/teragss/site state=directory
@@ -106,7 +106,7 @@
       file: path=/usr/teragss/linux-x8664/client state=directory
       sudo: yes
     - name: Symlink lib from /usr/teragss/linux-x8664/client to where dpkg unpackaged it
-      file: src=/opt/teradata/teragss/linux-x8664/15.00.00.07/lib/ dest=/usr/teragss/linux-x8664/client/lib
+      file: src=/opt/teradata/teragss/linux-x8664/15.00.00.07/lib/ dest=/usr/teragss/linux-x8664/client/lib state=link
       sudo: yes
     - name: Run tdgssconfig binary
       command: sudo /opt/teradata/teragss/linux-x8664/15.00.00.07/bin/run_tdgssconfig
