@@ -637,7 +637,7 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
             incrementPendingMessage(collection, redis_conn, uid,message_id)
             collection.update({'uid':uid},{'$inc':{"Math3MessageCount":1}})
 
-def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, context_in = None):
+def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context_in = None):
     """
         Takes a list of compiler output files and performs following:
             1. If the compiler is unsuccessful in parsing the query:
@@ -741,11 +741,15 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         and "ErrorSignature" in entityProfile['Compiler']['gsp']\
                         and entityProfile['Compiler']['gsp']["ErrorSignature"] == ""\
                         and context_in.queryType == "SQL_QUERY":
+                    """
                     unique_queries = mongoconn.db.entities.find({'profile.Compiler.gsp.ErrorSignature':"",
                                                                     "etype": "SQL_QUERY"},
                                                                 {"eid":1,"_id":0})
                     uniqueEids = [x['eid'] for x in unique_queries]
                     unique_count = mongoconn.db.entity_instances.find({"eid":{'$in':uniqueEids}}).count()
+                    """
+                    unique_count = smc.generate_json()["unique_uniquequeries"]
+                    logging.info("Updating query counts " + str(unique_count))
                     mongoconn.db.dashboard_data.update({'tenant':tenant},\
                         {'$inc' : {"TotalQueries": 1, "semantically_unique_count": 1 }, 
                         '$set': { "unique_count": unique_count}}, \
@@ -790,11 +794,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 and entityProfile['Compiler']['gsp']["ErrorSignature"] == ""\
                 and context_in.queryType == "SQL_QUERY":
 
+            unique_count = smc.generate_json()["unique_uniquequeries"]
+            """
             unique_queries = mongoconn.db.entities.find({'profile.Compiler.gsp.ErrorSignature':"",
                                                             "etype": "SQL_QUERY"},
                                                         {"eid":1,"_id":0})
             uniqueEids = [x['eid'] for x in unique_queries]
             unique_count = mongoconn.db.entity_instances.find({"eid":{'$in':uniqueEids}}).count()
+            """
             mongoconn.db.dashboard_data.update({'tenant':tenant},\
                 {'$inc' : {"TotalQueries": 1},'$set': { "unique_count": unique_count}}, upsert = True)
         else:
@@ -853,7 +860,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     sub_q = sub_q_dict["origQuery"]
                     logging.info("Processing Sub queries " + sub_q)
                     sub_entity, sub_opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, 
-                                                    tenant, uid, sub_q, data, {key:sub_q_dict}, source_platform, context_out)
+                                                    tenant, uid, sub_q, data, {key:sub_q_dict}, source_platform, smc, context_out)
                     sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode, None, context_out.outmost_query )
 
             hive_success = 0
@@ -1002,6 +1009,7 @@ def callback(ch, method, properties, body):
                                     'create_db_if_not_exist':True})
 
     redis_conn = RedisConnector(tenant)
+    smc = ScaleModeConnector(tenant)
 
     compconfig = ConfigParser.RawConfigParser()
     compconfig.read("/etc/xplain/compiler.cfg")
@@ -1155,7 +1163,6 @@ def callback(ch, method, properties, body):
                                   "OutputTableList",
                                   "ComplexityScore"]
 
-                    smc = ScaleModeConnector(tenant)
                     for field in compile_doc_fields:
                         if field in compile_doc["gsp"] and compile_doc["gsp"][field] is not None:
                             try:
@@ -1177,7 +1184,7 @@ def callback(ch, method, properties, body):
                 #mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
 
         try:
-            entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform)
+            entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform, smc)
 
             sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msgID)
         except:
