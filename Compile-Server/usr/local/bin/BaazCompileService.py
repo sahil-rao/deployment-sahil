@@ -170,13 +170,20 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity):
         redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=1)
     return [0, tableCount]
 
-def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinput, context_in, tableEidList=None, hive_success=0):
+def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinput, context, tableEidList=None, hive_success=0):
     dbCount = 0
     tableCount = 0
     if tableset is None or len(tableset) == 0:
         return [dbCount, tableCount]
 
-    outmost_query = context_in.outmost_query
+    outmost_query = None
+    queue_len = len(context.queue)
+    if queue_len > 0:
+        if context.queue[0]['etype'] == EntityType.SQL_STORED_PROCEDURE:
+            if queue_len > 1:
+                outmost_query = context.queue[1]['eid']
+        elif context.queue[0]['etype'] == EntityType.SQL_QUERY:
+            outmost_query = context.queue[0]['eid']
 
     endict = {"uid" : uid}
     #mongoconn.startBatchUpdate()
@@ -203,8 +210,6 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
 
             if eid == table_entity.eid:
                 redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
-                logging.info("Outmost: %s"%(outmost_query))
-                logging.info("Self eid: %s"%(entity.eid))
                 redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
                 tableCount = tableCount + 1
 
@@ -237,15 +242,6 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                     redis_conn.incrRelationshipCounter(table_entity.eid, entity.eid, "SUBQUERYREAD", "instance_count", incrBy=1)
                     logging.info("SUBQUERYREAD Relation between {0} {1} position 1\n".format(table_entity.eid, entity.eid))
 
-                    '''
-                    Used to make sure that the table only gets incremented once per query.
-                    '''
-                    if table_entity.eid not in context_in.tables:
-                        redis_conn.createRelationship(table_entity.eid, outmost_query, "READ")
-                        redis_conn.setRelationship(table_entity.eid, outmost_query, "READ", {"hive_success":hive_success})
-                        redis_conn.incrRelationshipCounter(table_entity.eid, outmost_query, "READ", "instance_count", incrBy=1)
-                        logging.info("READ Relation between {0} {1} position 2\n".format(table_entity.eid, entity.eid))
-
                 else:
                     redis_conn.createRelationship(table_entity.eid, entity.eid, "READ")
                     redis_conn.setRelationship(table_entity.eid, entity.eid, "READ", {"hive_success":hive_success})
@@ -258,15 +254,6 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                     redis_conn.incrRelationshipCounter(table_entity.eid, entity.eid, "SUBQUERYWRITE", "instance_count", incrBy=1)
                     logging.info("SUBQUERYWRITE Relation between {0} {1} position 3\n".format(table_entity.eid, entity.eid))
 
-                    '''
-                    Used to make sure that the table only gets incremented once per query.
-                    '''
-                    if table_entity.eid not in context_in.tables:
-                        redis_conn.createRelationship(table_entity.eid, outmost_query, "WRITE")
-                        redis_conn.setRelationship(table_entity.eid, outmost_query, "WRITE", {"hive_success":hive_success})
-                        redis_conn.incrRelationshipCounter(table_entity.eid, outmost_query, "WRITE", "instance_count", incrBy=1)
-                        logging.info("WRITE Relation between {0} {1} position 2\n".format(table_entity.eid, entity.eid))
-
                 else:
                     redis_conn.createRelationship(table_entity.eid, entity.eid, "WRITE")
                     redis_conn.setRelationship(table_entity.eid, entity.eid, "WRITE", {"hive_success":hive_success})
@@ -276,9 +263,19 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
             '''
             Makes sure to follow context for the table and outmost query.
             '''
-            if table_entity.eid not in context_in.tables:
-                logging.info("TABLE STACK: %s"%context_in.tables)
-                context_in.tables.append(table_entity.eid)
+            if table_entity.eid is not None:
+                for query in context.queue:
+                    if query['etype'] == EntityType.SQL_QUERY:
+                        redis_conn.createRelationship(table_entity.eid, query['eid'], "READ")
+                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "READ", "instance_count", incrBy=1)
+                    elif query['etype'] == EntityType.SQL_SUBQUERY:
+                        redis_conn.createRelationship(table_entity.eid, query['eid'], "SUBQUERYREAD")
+                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "SUBQUERYREAD", "instance_count", incrBy=1)
+                    elif query['etype'] == EntityType.SQL_STORED_PROCEDURE:
+                        redis_conn.createRelationship(table_entity.eid, query['eid'], "STOREDPROCEDUREREAD")
+                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "STOREDPROCEDUREREAD", "instance_count", incrBy=1)
+
+                context.tables.append(table_entity.eid)
 
         if database_entity is not None:
             if table_entity is not None:
@@ -294,230 +291,6 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
     #mongoconn.finishBatchUpdate()
     
     return [dbCount, tableCount]
-
-def process_mongo_rewrite_request(ch, properties, tenant, instances):
-
-    """
-        Steps to rewrite SQL queries to mongo are as following:
-        1. For each query in the request.
-            2. Save the query to a local file.
-            3. Invoke compiler to generate Xplain RA.
-            4. Read the output file as a JSON.
-            5. Invoke mongo converter template engine to convert.
-        6. Send the RPC response. 
-    """
-    in_file = "/tmp/mongo-RA-input"
-    out_file = "/tmp/mongo-RA-output"
-    resp_dict = {"mongo_queries" : []}
-
-    for inst in instances:
-
-        if os.path.isfile(in_file):
-            os.remove(in_file)
-
-        if os.path.isfile(out_file):
-            os.remove(out_file)
-
-        sql_query = inst["query"]
-        if len(sql_query.strip()) == 0:
-            continue
-
-        data_dict = { "InputFile": in_file, "OutputFile": out_file}
-
-        """
-            2. Save the query to a local file.
-        """
-        infile = open(in_file, "w")
-        infile.write(sql_query)
-        infile.flush()
-        infile.close()
-
-        """
-            3. Invoke compiler to generate Xplain RA.
-        """
-        try:
-            output_file_name = "/tmp/hbase_ddl.out"
-
-            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client_socket.connect(("localhost", 12121))
-
-            data = dumps(data_dict)
-            client_socket.send("1\n");
-
-            """
-                For Mongo rewrite the opcode is 3.
-            """
-            client_socket.send("3\n");
-            data = data + "\n"
-            client_socket.send(data)
-            rx_data = client_socket.recv(512)
-
-            if rx_data == "Done":
-                status = "SUCCESS"
-            else:
-                status = "FAILED"
-
-            client_socket.close()
-
-            compile_doc = None
-            """
-                4. Read the output file as a JSON.
-            """
-            if not os.path.isfile(out_file):
-                resp_dict["status"] = "Failed"
-            else:
-                """ 
-                    Read the output file and send the RPC response.
-                """
-                compile_doc = None
-                with open(out_file) as data_file:    
-                    compile_doc = load(data_file)
-
-                """
-                    5. Invoke mongo converter template engine to convert.
-                """
-                mongo_query = convert_to_mongo(compile_doc["QueryBlock"])
-                resp_dict['mongo_queries'].append(mongo_query)
-
-            resp_dict["status"] = "Success"
-        except:
-            logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))     
-            resp_dict["status"] = "Failed"
-
-    """
-        6. Send the RPC response. 
-    """
-    logging.info("Sending compiler response")
-    ch.basic_publish(exchange='',
-                     routing_key=properties.reply_to,
-                     properties=pika.BasicProperties(correlation_id = \
-                                                     properties.correlation_id),
-                     body=dumps(resp_dict))
-
-def process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn):
-
-    """
-        Steps to generate Hbase DDL are as following:
-        1. Gets the pattern ID of the pattern. Finds the tables and 
-           queries involved in the pattern.
-        2. Invoke analytics workflow to generate Hbase analytics.
-        3. Save the analytics results to a local file.
-        4. Send request to DDL generator.
-        5. Check the output file.
-        6. Read output file and send the RPC response. 
-    """
-    compile_doc = None
-    prog_id = None
-    queryList = None
-    transformType = ""
-    for inst in instances:
-        if 'entity_id' in inst:
-            prog_id = inst['entity_id']
-            transformType = 'SingleTable'
-        elif "patID" in inst:
-            prog_id = inst["patID"]
-            transformType = 'SinglePattern'
-
-    if prog_id is None:
-        logging.info("No program ID found for hbase_ddl_request")
-        return
-
-    if transformType == "SingleTable":
-        logging.info('Received SingleTable hbase transformation request.')
-        tableList = [prog_id]
-    elif transformType == "SinglePattern":
-        logging.info('Received SinglePattern hbase transformation request.')
-        join_group = db.entities.find_one({'profile.PatternID':prog_id}, {'eid':1, 'profile.FullQueryList':1})
-
-        if join_group is None:
-            return
-
-        tableList = []
-        queryList = []
-
-        relations_to = redis_conn.getRelationships(join_group['eid'], None, "COOCCURRENCE_TABLE")
-        for rel in relations_to:
-            tableList.append(rel['end_en'])
-
-        if "profile" in join_group:
-            if "FullQueryList" in join_group['profile']:
-                queryList = join_group['profile']['FullQueryList']
-
-    """
-        Invoke analytics workflow to generate Hbase analytics.
-    """
-    result = run_workflow(tenant, tableList, queryList)
-
-    """
-        Save the analytics results to a local file.
-    """
-    oFile_path = "/tmp/hbase_analytics.out"
-    oFile = open(oFile_path, "w")
-    oFile.write(dumps(result))
-    oFile.flush()
-    oFile.close()
-
-    resp_dict = {}
-    status = "FAILED"
-    """
-        Send request to DDL generator.
-    """
-    try:
-        output_file_name = "/tmp/hbase_ddl.out"
-
-        if os.path.isfile(output_file_name):
-            os.remove(output_file_name)
-
-        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client_socket.connect(("localhost", 12121))
-
-        data_dict = {"InputFile": oFile_path, "OutputFile": output_file_name, 
-                     "EntityId": prog_id, "TenantId": "100"}
-        data = dumps(data_dict)
-        client_socket.send("1\n");
-
-        """
-            For DDL generation the opcode is 2.
-        """
-        client_socket.send("2\n");
-        data = data + "\n"
-        client_socket.send(data)
-        rx_data = client_socket.recv(512)
-
-        if rx_data == "Done":
-            status = "SUCCESS"
-        else:
-            status = "FAILED"
-
-        client_socket.close()
-
-        """
-            Upon response, check the output file.
-        """
-        if not os.path.isfile(output_file_name):
-            resp_dict["status"] = "Failed"
-        else:
-            """ 
-                Read the output file and send the RPC response.
-            """
-            compile_coc = None
-            with open(output_file_name) as data_file:    
-                compile_doc = load(data_file)
-            resp_dict = compile_doc
-            resp_dict["status"] = "Success"
-    except:
-        logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
-        resp_dict["status"] = "Failed"
-
-    """
-        Publish the response to the requestor.
-    """
-    logging.info("Sending compiler response")
-    ch.basic_publish(exchange='',
-                     routing_key=properties.reply_to,
-                     properties=pika.BasicProperties(correlation_id = \
-                                                     properties.correlation_id),
-                     body=dumps(resp_dict))
 
 def process_scale_mode(tenant, uid, instances, smc):
     
@@ -600,9 +373,7 @@ def process_scale_mode(tenant, uid, instances, smc):
             filter_compile_doc = compile_doc.copy()
             fmc = FilterModeConnector(tenant)
             fmc.process_query(filter_compile_doc)
-        
-        
-            
+
 def updateRelationCounter(redis_conn, eid):
 
     relationshipTypes = ['QUERY_SELECT', 'QUERY_JOIN', 'QUERY_FILTER', "READ", "WRITE", "COOCCURRENCE_TABLE",
@@ -618,14 +389,12 @@ def updateRelationCounter(redis_conn, eid):
         if rel['rtype'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
 
-def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msgID, outmost_query = None):
+def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msgID):
     if entity is not None:
         if opcode is not None:
             msg_dict = {'tenant':tenant, 'opcode':opcode, "entityid":entity.eid} 
             if uid is not None:
                 msg_dict['uid'] = uid
-            if outmost_query is not None:
-                msg_dict['outmost_query'] = outmost_query
             message_id = genMessageID("Comp", collection, entity.eid)
             msg_dict['message_id'] = message_id
             if received_msgID is not None:
@@ -637,7 +406,8 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
             incrementPendingMessage(collection, redis_conn, uid,message_id)
             collection.update({'uid':uid},{'$inc':{"Math3MessageCount":1}})
 
-def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context_in = None):
+def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context):
+
     """
         Takes a list of compiler output files and performs following:
             1. If the compiler is unsuccessful in parsing the query:
@@ -660,20 +430,18 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     profile_dict = { "uid" : uid, "profile": { "Compiler" : {}}}
     comp_profile = profile_dict["profile"]["Compiler"]
 
-    if context_in is None:
-        context_in = Compiler_Context()
-        context_in.queryType = EntityType.SQL_QUERY
-        context_in.outmost_query = None
-        context_in.tables = []
-
-    context_out = Compiler_Context()
-    context_out.queryType = context_in.queryType
-    context_out.outmost_query = context_in.outmost_query
-    context_out.tables = context_in.tables
-    if context_in.queryType == EntityType.SQL_SUBQUERY:
-        context_out.tables = []
-
     q_hash = None
+
+    if len(context.queue) < 1:
+        etype = EntityType.SQL_QUERY
+    elif len(context.queue) == 1:
+        if context.queue[0]['etype'] == EntityType.SQL_STORED_PROCEDURE:
+            etype = EntityType.SQL_QUERY
+        else:
+            etype = EntityType.SQL_SUBQUERY
+    else:
+        etype = EntityType.SQL_SUBQUERY
+
     for key in compile_doc:
         comp_profile[key] = compile_doc[key]
         if key == "gsp":
@@ -685,7 +453,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 profile_dict["logical_name"] = compile_doc[key]["queryTemplate"]
             if 'OperatorList' in compile_doc[key] and \
                 'PROCEDURE' in compile_doc[key]['OperatorList']:
-                context_in.queryType = EntityType.SQL_STORED_PROCEDURE
+                etype = EntityType.SQL_STORED_PROCEDURE
 
     custom_id = None
     if data is not None and "custom_id" in data:
@@ -709,25 +477,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         try:
             eid = IdentityService.getNewIdentity(tenant, True)
             entity = mongoconn.addEn(eid, query, tenant,\
-                       context_in.queryType, profile_dict, None) 
+                       etype, profile_dict, None) 
             if entity is None:
                 logging.info("No Entity found")
                 return None, None
             if eid == entity.eid:
 
-                redis_conn.createEntityProfile(entity.eid, context_in.queryType)
+                redis_conn.createEntityProfile(entity.eid, etype)
                 redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
-
-                stored_proc_rel_created = None
-                subquery_rel_created = None
-
-                if context_in.outmost_query is not None and context_in.queryType == "SQL_QUERY":
-                    stored_proc_rel_created = redis_conn.createRelationship(context_in.outmost_query, eid, "STORED_PROCEDURE_QUERY")
-                    context_out.outmost_query = eid
-                elif context_in.queryType == "SQL_QUERY":
-                    context_out.outmost_query = eid
-                elif context_in.queryType == "SQL_SUBQUERY":
-                    subquery_rel_created = redis_conn.createRelationship(context_in.outmost_query, eid, "SQL_SUBQUERY")
                 
                 inst_dict = None
                 if custom_id is not None:
@@ -740,7 +497,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         and "gsp" in entityProfile['Compiler']\
                         and "ErrorSignature" in entityProfile['Compiler']['gsp']\
                         and entityProfile['Compiler']['gsp']["ErrorSignature"] == ""\
-                        and context_in.queryType == "SQL_QUERY":
+                        and etype == "SQL_QUERY":
                     unique_count = smc.generate_json()["unique_uniquequeries"]
                     logging.info("Updating query counts " + str(unique_count))
                     mongoconn.db.dashboard_data.update({'tenant':tenant},\
@@ -772,7 +529,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     else:
         update = True
 
-    if update == True:
+    context.queue.append({'eid': entity.eid, 'etype': etype})
+    if update == True and etype == "SQL_QUERY":
         """
         Update instance count, store the instance and update the instance counts in 
         relationships.
@@ -785,7 +543,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 and "gsp" in entityProfile['Compiler']\
                 and "ErrorSignature" in entityProfile['Compiler']['gsp']\
                 and entityProfile['Compiler']['gsp']["ErrorSignature"] == ""\
-                and context_in.queryType == "SQL_QUERY":
+                and etype == "SQL_QUERY":
 
             unique_count = smc.generate_json()["unique_uniquequeries"]
             mongoconn.db.dashboard_data.update({'tenant':tenant},\
@@ -806,19 +564,51 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 stats_runfailure_key = "Compiler." + key + ".run_failure"
                 stats_success_key = "Compiler." + key + ".success"
                 stats_failure_key = "Compiler." + key + ".failure"
+                stats_proc_success_key = "Compiler." + key + ".storeproc_success"
+                stats_proc_failure_key = "Compiler." + key + ".storeproc_failure"
+                stats_sub_success_key = "Compiler." + key + ".subquery_success"
+                stats_sub_failure_key = "Compiler." + key + ".subquery_failure"
             
-                if compile_doc[key].has_key("ErrorSignature") and\
-                    len(compile_doc[key]["ErrorSignature"]) > 0:
-                    collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
+                if compile_doc[key].has_key("ErrorSignature") \
+                    and len(compile_doc[key]["ErrorSignature"]) > 0:
+                    if etype == "SQL_QUERY":
+                        collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
+                    elif etype == "SQL_SUBQUERY":
+                        collection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
+                    elif etype == "SQL_STORED_PROCEDURE":
+                        collection.update({'uid':uid},{"$inc": {stats_proc_success_key:0, stats_proc_failure_key: 1}})
                 else:
-                    collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
-
+                    if etype == "SQL_QUERY":
+                        collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
+                    elif etype == "SQL_SUBQUERY":
+                        collection.update({'uid':uid},{"$inc": {stats_sub_success_key:1, stats_sub_failure_key: 0}})
+                    elif etype == "SQL_STORED_PROCEDURE":
+                        collection.update({'uid':uid},{"$inc": {stats_proc_success_key:1, stats_proc_failure_key: 0}})
 
             return entity, "UpdateQueryProfile"
         except:
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))
-            collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+            if uid is not None:
+                if etype == "SQL_QUERY":
+                    collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                elif etype == "SQL_SUBQUERY":
+                    collection.update({'uid':uid},{"$inc": {stats_sub_failure_key: 1, stats_runsuccess_key: 0}})
+                elif etype == "SQL_STORED_PROCEDURE":
+                    collection.update({'uid':uid},{"$inc": {stats_proc_failure_key: 1, stats_runsuccess_key: 0}})
             return None, None
+
+    '''
+    Creates relationships between the queries in the hierarchy.
+    '''
+    if len(context.queue) > 1:
+        '''
+        context.queue[-2] is used here because the last element 
+        on the queue is the current query.
+        '''
+        if etype == EntityType.SQL_QUERY:
+            subquery_rel_created = redis_conn.createRelationship(context.queue[-2]['eid'], entity.eid, "STORED_PROCEDURE_QUERY")
+        elif etype == EntityType.SQL_SUBQUERY:
+            subquery_rel_created = redis_conn.createRelationship(context.queue[-2]['eid'], entity.eid, "SQL_SUBQUERY")
 
     for key in compile_doc:
         try:
@@ -828,15 +618,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             stats_runfailure_key = "Compiler." + key + ".run_failure"
             stats_success_key = "Compiler." + key + ".success"
             stats_failure_key = "Compiler." + key + ".failure"
+            stats_proc_success_key = "Compiler." + key + ".storeproc_success"
+            stats_proc_failure_key = "Compiler." + key + ".storeproc_failure"
+            stats_sub_success_key = "Compiler." + key + ".subquery_success"
+            stats_sub_failure_key = "Compiler." + key + ".subquery_failure"
 
             if compile_doc[key].has_key("subQueries") and\
                 len(compile_doc[key]["subQueries"]) > 0:
                 logging.info("Processing Sub queries")
-                
-                context_out.queryType = EntityType.SQL_SUBQUERY
-
-                if context_in.queryType == "SQL_STORED_PROCEDURE":
-                    context_out.queryType = EntityType.SQL_QUERY
 
                 for sub_q_dict in compile_doc[key]["subQueries"]:
 
@@ -846,8 +635,11 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     sub_q = sub_q_dict["origQuery"]
                     logging.info("Processing Sub queries " + sub_q)
                     sub_entity, sub_opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, 
-                                                    tenant, uid, sub_q, data, {key:sub_q_dict}, source_platform, smc, context_out)
-                    sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode, None, context_out.outmost_query )
+                                                    tenant, uid, sub_q, data, {key:sub_q_dict}, source_platform, smc, context)
+                    sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode, None)
+
+                    if sub_entity is not None:
+                        context.queue.pop()
 
             hive_success = 0
             if key == "hive" and 'ErrorSignature' in compile_doc:
@@ -859,7 +651,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if compile_doc[key].has_key("InputTableList"):
                 tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], 
                                                mongoconn, redis_conn, tenant, uid, entity, True,  
-                                               context_in, tableEidList)
+                                               context, tableEidList)
                 if uid is not None:
                     collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
                                       stats_newtables_key: tmpAdditions[1]}})
@@ -868,7 +660,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if compile_doc[key].has_key("OutputTableList"):
                 tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], 
                                                 mongoconn, redis_conn, tenant, uid, entity, False,
-                                                context_in, tableEidList)
+                                                context, tableEidList)
                 if uid is not None:
                     collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
@@ -881,18 +673,37 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                       stats_newtables_key: tmpAdditions[1]}})
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
 
-            if compile_doc[key].has_key("ErrorSignature") and\
-                len(compile_doc[key]["ErrorSignature"]) > 0:
-                collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
+            if compile_doc[key].has_key("ErrorSignature") \
+                and len(compile_doc[key]["ErrorSignature"]) > 0:
+                if etype == "SQL_QUERY":
+                    collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
+                elif etype == "SQL_SUBQUERY":
+                    collection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
+                elif etype == "SQL_STORED_PROCEDURE":
+                    collection.update({'uid':uid},{"$inc": {stats_proc_success_key:0, stats_proc_failure_key: 1}})
             else:
-                collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
+                if etype == "SQL_QUERY":
+                    collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
+                elif etype == "SQL_SUBQUERY":
+                    collection.update({'uid':uid},{"$inc": {stats_sub_success_key:1, stats_sub_failure_key: 0}})
+                elif etype == "SQL_STORED_PROCEDURE":
+                    collection.update({'uid':uid},{"$inc": {stats_proc_success_key:1, stats_proc_failure_key: 0}})
 
         except:
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))     
             if uid is not None:
-                collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                if etype == "SQL_QUERY":
+                    collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                elif etype == "SQL_SUBQUERY":
+                    collection.update({'uid':uid},{"$inc": {stats_sub_failure_key: 1, stats_runsuccess_key: 0}})
+                elif etype == "SQL_STORED_PROCEDURE":
+                    collection.update({'uid':uid},{"$inc": {stats_proc_failure_key: 1, stats_runsuccess_key: 0}})
             return None, None
 
+    if update == True and etype != "SQL_QUERY":
+        redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True, incrBy=1)
+        return entity, "UpdateQueryProfile"
+        
     return entity, "GenerateQueryProfile"
 
 def callback(ch, method, properties, body):
@@ -1170,7 +981,11 @@ def callback(ch, method, properties, body):
                 #mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
 
         try:
-            entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform, smc)
+            context = Compiler_Context()
+            context.tables = []
+            context.queue = []
+
+            entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform, smc, context)
 
             sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msgID)
         except:
