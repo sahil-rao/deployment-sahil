@@ -5,5 +5,6 @@ sudo tar -zxf /home/xplain/apache-hive-0.13.0-SNAPSHOT-bin.tar.gz -C /home/xplai
 sudo mv /home/xplain/apache-hive-0.13.0-SNAPSHOT-bin /usr/lib/hive
 echo "Running playbook vm-update.yml"
 sudo ansible-playbook vm-update.yml --connection=local
+python /home/xplain/setupSilo.py
 sudo ./refresh.sh
 exit 0
