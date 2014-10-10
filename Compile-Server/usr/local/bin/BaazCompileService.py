@@ -741,13 +741,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         and "ErrorSignature" in entityProfile['Compiler']['gsp']\
                         and entityProfile['Compiler']['gsp']["ErrorSignature"] == ""\
                         and context_in.queryType == "SQL_QUERY":
-                    """
-                    unique_queries = mongoconn.db.entities.find({'profile.Compiler.gsp.ErrorSignature':"",
-                                                                    "etype": "SQL_QUERY"},
-                                                                {"eid":1,"_id":0})
-                    uniqueEids = [x['eid'] for x in unique_queries]
-                    unique_count = mongoconn.db.entity_instances.find({"eid":{'$in':uniqueEids}}).count()
-                    """
                     unique_count = smc.generate_json()["unique_uniquequeries"]
                     logging.info("Updating query counts " + str(unique_count))
                     mongoconn.db.dashboard_data.update({'tenant':tenant},\
@@ -795,13 +788,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 and context_in.queryType == "SQL_QUERY":
 
             unique_count = smc.generate_json()["unique_uniquequeries"]
-            """
-            unique_queries = mongoconn.db.entities.find({'profile.Compiler.gsp.ErrorSignature':"",
-                                                            "etype": "SQL_QUERY"},
-                                                        {"eid":1,"_id":0})
-            uniqueEids = [x['eid'] for x in unique_queries]
-            unique_count = mongoconn.db.entity_instances.find({"eid":{'$in':uniqueEids}}).count()
-            """
             mongoconn.db.dashboard_data.update({'tenant':tenant},\
                 {'$inc' : {"TotalQueries": 1},'$set': { "unique_count": unique_count}}, upsert = True)
         else:
