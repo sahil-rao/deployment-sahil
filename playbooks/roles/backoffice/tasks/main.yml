@@ -2,12 +2,6 @@
 - name: Create the Baaz config directory
   file: path=/var/Baaz state=directory
   sudo: yes
-- name: Create mount point
-  file: path=/mnt/volume1 owner=ubuntu group=ubuntu state=directory
-  sudo: yes
-- name: Mount /dev/xvdc
-  mount: name=/mnt/volume1 src=/dev/xvdc fstype=ext3 state=mounted
-  sudo: yes
 - name: NTP installed
   apt: name=ntp state=present
   sudo: yes
