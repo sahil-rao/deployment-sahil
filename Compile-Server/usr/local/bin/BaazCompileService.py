@@ -239,41 +239,50 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                 if outmost_query is not None and outmost_query != entity.eid:
                     redis_conn.createRelationship(table_entity.eid, entity.eid, "SUBQUERYREAD")
                     redis_conn.setRelationship(table_entity.eid, entity.eid, "SUBQUERYREAD", {"hive_success":hive_success})
-                    redis_conn.incrRelationshipCounter(table_entity.eid, entity.eid, "SUBQUERYREAD", "instance_count", incrBy=1)
                     logging.info("SUBQUERYREAD Relation between {0} {1} position 1\n".format(table_entity.eid, entity.eid))
 
                 else:
                     redis_conn.createRelationship(table_entity.eid, entity.eid, "READ")
                     redis_conn.setRelationship(table_entity.eid, entity.eid, "READ", {"hive_success":hive_success})
-                    redis_conn.incrRelationshipCounter(table_entity.eid, entity.eid, "READ", "instance_count", incrBy=1)
                     logging.info("READ Relation between {0} {1} position 2\n".format(table_entity.eid, entity.eid))
             else:
                 if outmost_query is not None and outmost_query != entity.eid:
                     redis_conn.createRelationship(table_entity.eid, entity.eid, "SUBQUERYWRITE")
                     redis_conn.setRelationship(table_entity.eid, entity.eid, "SUBQUERYWRITE", {"hive_success":hive_success})
-                    redis_conn.incrRelationshipCounter(table_entity.eid, entity.eid, "SUBQUERYWRITE", "instance_count", incrBy=1)
                     logging.info("SUBQUERYWRITE Relation between {0} {1} position 3\n".format(table_entity.eid, entity.eid))
 
                 else:
                     redis_conn.createRelationship(table_entity.eid, entity.eid, "WRITE")
                     redis_conn.setRelationship(table_entity.eid, entity.eid, "WRITE", {"hive_success":hive_success})
-                    redis_conn.incrRelationshipCounter(table_entity.eid, entity.eid, "WRITE", "instance_count", incrBy=1)
                     logging.info("WRITE Relation between {0} {1} position 4\n".format(table_entity.eid, entity.eid))
 
             '''
             Makes sure to follow context for the table and outmost query.
             '''
             if table_entity.eid is not None:
-                for query in context.queue:
-                    if query['etype'] == EntityType.SQL_QUERY:
-                        redis_conn.createRelationship(table_entity.eid, query['eid'], "READ")
-                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "READ", "instance_count", incrBy=1)
-                    elif query['etype'] == EntityType.SQL_SUBQUERY:
-                        redis_conn.createRelationship(table_entity.eid, query['eid'], "SUBQUERYREAD")
-                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "SUBQUERYREAD", "instance_count", incrBy=1)
-                    elif query['etype'] == EntityType.SQL_STORED_PROCEDURE:
-                        redis_conn.createRelationship(table_entity.eid, query['eid'], "STOREDPROCEDUREREAD")
-                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "STOREDPROCEDUREREAD", "instance_count", incrBy=1)
+                if isinput:
+                    for query in context.queue:
+                        if query['etype'] == EntityType.SQL_QUERY:
+                            redis_conn.createRelationship(table_entity.eid, query['eid'], "READ")
+                            redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "READ", "instance_count", incrBy=1)
+                        elif query['etype'] == EntityType.SQL_SUBQUERY:
+                            redis_conn.createRelationship(table_entity.eid, query['eid'], "SUBQUERYREAD")
+                            redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "SUBQUERYREAD", "instance_count", incrBy=1)
+                        elif query['etype'] == EntityType.SQL_STORED_PROCEDURE:
+                            redis_conn.createRelationship(table_entity.eid, query['eid'], "STOREDPROCEDUREREAD")
+                            redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "STOREDPROCEDUREREAD", "instance_count", incrBy=1)
+                else:
+                    for query in context.queue:
+                        if query['etype'] == EntityType.SQL_QUERY:
+                            redis_conn.createRelationship(table_entity.eid, query['eid'], "WRITE")
+                            redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "WRITE", "instance_count", incrBy=1)
+                        elif query['etype'] == EntityType.SQL_SUBQUERY:
+                            redis_conn.createRelationship(table_entity.eid, query['eid'], "SUBQUERYWRITE")
+                            redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "SUBQUERYWRITE", "instance_count", incrBy=1)
+                        elif query['etype'] == EntityType.SQL_STORED_PROCEDURE:
+                            redis_conn.createRelationship(table_entity.eid, query['eid'], "STOREDPROCEDUREWRITE")
+                            redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "STOREDPROCEDUREWRITE", "instance_count", incrBy=1)
+                    
 
                 context.tables.append(table_entity.eid)
 
