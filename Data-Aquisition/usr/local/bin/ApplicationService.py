@@ -32,6 +32,7 @@ import flightpath.services.app_get_column_stats as column_stats
 import flightpath.services.app_get_query_stats as query_stats
 import flightpath.services.app_get_query_pie_chart as query_pie_chart
 import flightpath.services.app_get_access_patterns as access_patterns
+import flightpath.services.app_cleanup_user as cleanup_user
 from flightpath import FPConnector
 from json import *
 import elasticsearch
@@ -414,6 +415,8 @@ def callback(ch, method, properties, body):
             resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant)}
         elif msg_dict['opcode'] == "ElasticNodesForTenant":
             resp_dict = {'elastic_nodes': FPConnector.get_elastic_nodes(tenant)}
+        elif msg_dict['opcode'] == "CleanupUser":
+            resp_dict = cleanup_user.execute(tenant)
         else:
             api_config= ConfigParser.RawConfigParser()
             api_config.read("/etc/xplain/application-api.cfg")
