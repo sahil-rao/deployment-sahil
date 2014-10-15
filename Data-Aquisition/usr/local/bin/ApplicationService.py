@@ -336,6 +336,7 @@ def callback(ch, method, properties, body):
         return
 
     logging.info("ApplicationService: Got message : "+ str(msg_dict))
+    logging.info("Correlation ID : "+ properties.correlation_id)
     if "opcode" not in msg_dict:
         return
 
@@ -437,6 +438,7 @@ def callback(ch, method, properties, body):
         resp_dict = {"status" : "Failed"}
 
     try:
+        logging.info("Responding to coorelation ID : "+ properties.correlation_id)
         ch.basic_publish(exchange='',
                          routing_key=properties.reply_to,
                          properties=pika.BasicProperties(correlation_id = \
