@@ -413,7 +413,6 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
             logging.info("Sent message to Math pos1:" + str(msg_dict))
              
             incrementPendingMessage(collection, redis_conn, uid,message_id)
-            collection.update({'uid':uid},{'$inc':{"Math3MessageCount":1}})
 
 def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context):
 
@@ -1022,7 +1021,6 @@ def callback(ch, method, properties, body):
         
     mongoconn.close()
     connection1.basicAck(ch,method)
-    collection.update({'uid':uid},{'$inc':{"RemoveCompilerMessageCount":1}})
     callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
