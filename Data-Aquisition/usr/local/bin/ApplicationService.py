@@ -337,7 +337,9 @@ def callback(ch, method, properties, body):
 
     logging.info("ApplicationService: Got message : "+ str(msg_dict))
     logging.info("Correlation ID : "+ properties.correlation_id)
-    if "opcode" not in msg_dict:
+    if "opcode" not in msg_dict or 'tenant' not in msg_dict:
+        logging.info('ApplicationService there was no opcode or tenant in msg_dict.')
+        connection1.basicAck(ch,method)
         return
 
     tenant = msg_dict["tenant"]
