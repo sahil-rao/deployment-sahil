@@ -414,6 +414,67 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
              
             incrementPendingMessage(collection, redis_conn, uid,message_id)
 
+def create_query_character(signature_keywords):
+    '''
+    Takes in a SignatureKeywords list and creates the filtered
+    version for the UI. Takes ranking into account.
+    '''
+    character = []
+
+    if 'Single Table' in signature_keywords[0]:
+        temp_character = signature_keywords[0].split(':')[1]
+        
+        if 'No Table Only' in temp_character:
+            character.append('No Table Only')
+            return character
+        
+        character.append('Single Table : ')
+        if 'Only' in temp_character:
+            character.append(temp_character)
+            return character
+
+        if 'Group By' in temp_character:
+            character.append('Group By')
+        if 'Aggregation' in temp_character:
+            character.append('Aggregation')
+        if 'Where' in temp_character:
+            character.append('Filter')
+        if 'Case' in temp_character:
+            character.append('Case')
+        if 'Order By' in temp_character:
+            character.append('Order By')
+        if 'SELECT' in temp_character:
+            character.append('SELECT')
+        if 'In' in temp_character:
+            character.append('In')
+        if 'Exists' in temp_character:
+            character.append('Exists')
+
+        return character[:3]
+    else:
+        if 'Join' in signature_keywords:
+            character.append('Join')
+        if 'Group By' in signature_keywords:
+            character.append('Group By')
+        if 'Subquery' in signature_keywords:
+            character.append('Subquery')
+        if 'Views' in signature_keywords:
+            character.append('Views')
+        if 'Aggregation' in signature_keywords:
+            character.append('Aggregation')
+        if 'Where' in signature_keywords:
+            character.append('Filter')
+        if 'Case' in signature_keywords:
+            character.append('Case')
+        if 'Order By' in signature_keywords:
+            character.append('Order By')
+        if 'In' in signature_keywords:
+            character.append('In')
+        if 'Exists' in signature_keywords:
+            character.append('Exists')
+
+        return character[:2]
+
 def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context):
 
     """
@@ -435,7 +496,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         logging.info("No compile_doc found")
         return None, None
 
-    profile_dict = { "uid" : uid, "profile": { "Compiler" : {}}}
+    profile_dict = { "uid" : uid, "profile": { 'character':[],"Compiler" : {}}}
     comp_profile = profile_dict["profile"]["Compiler"]
 
     q_hash = None
@@ -462,6 +523,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if 'OperatorList' in compile_doc[key] and \
                 'PROCEDURE' in compile_doc[key]['OperatorList']:
                 etype = EntityType.SQL_STORED_PROCEDURE
+            if 'SignatureKeywords' in compile_doc[key]:
+                character = create_query_character(compile_doc[key]['SignatureKeywords'])
+                profile_dict['profile']['character'] = character
 
     custom_id = None
     if data is not None and "custom_id" in data:
