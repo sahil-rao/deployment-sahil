@@ -426,11 +426,13 @@ def create_query_character(signature_keywords):
         
         if 'No Table Only' in temp_character:
             character.append('No Table Only')
+            character = [' '.join(character)]
             return character
         
         character.append('Single Table : ')
         if 'Only' in temp_character:
             character.append(temp_character)
+            character = [' '.join(character)]
             return character
 
         if 'Group By' in temp_character:
@@ -514,7 +516,11 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     for key in compile_doc:
         comp_profile[key] = compile_doc[key]
         if key == "gsp":
-            if "queryHash" in compile_doc[key]:
+            if "queryExtendedHash" in compile_doc[key]:
+                q_hash =  compile_doc[key]["queryExtendedHash"]
+                profile_dict["md5"] = q_hash
+                logging.info("Compiler {0} Program {1}  md5 {2}".format(key, query, q_hash))
+            elif "queryHash" in compile_doc[key]:
                 q_hash =  compile_doc[key]["queryHash"]
                 profile_dict["md5"] = q_hash
                 logging.info("Compiler {0} Program {1}  md5 {2}".format(key, query, q_hash))
