@@ -217,7 +217,7 @@ class callback_context():
         if Self.uploadLimit == 0:
             return True
 
-        if int(upStats["query_processed"]) > int(Self.uploadLimit):
+        if int(upStats["query_processed"]) >= int(Self.uploadLimit):
             Self.collection.update({'uid':"0"},{'$set':{"limit_reached":"True"}})
             return False
 
