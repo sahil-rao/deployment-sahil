@@ -23,11 +23,20 @@ def getMatchingDocuments(entities):
 	uploadStatsArray = list()
 	for uploadStats in uploadStatsCursor:
 		uploadStatsTempDict = dict()
-		if 'timestamp' in uploadStats and 'RemoveCompilerMessageCount' in uploadStats and 'filename' in uploadStats:
+		if 'timestamp' in uploadStats:
 			uploadStatsTempDict['time'] = time.ctime((int(uploadStats['timestamp'])/1000))
-			uploadStatsTempDict['queriesUploaded'] = uploadStats['RemoveCompilerMessageCount']
+
+                if "total_queries" in uploadStats:
+			uploadStatsTempDict['queriesUploaded'] = uploadStats['total_queries']
+		else:
+			uploadStatsTempDict['queriesUploaded'] = 0
+
+                if "filename" in uploadStats:
 			uploadStatsTempDict['filename'] = uploadStats['filename'].split('/')[2]
-			uploadStatsArray.append(uploadStatsTempDict)
+		else:
+			uploadStatsTempDict['filename'] = ""
+
+		uploadStatsArray.append(uploadStatsTempDict)
 	return uploadStatsArray
 
 
@@ -69,7 +78,7 @@ def sendEmail(formattedData):
 	msg['Subject'] = '12 Hour Activity Update for ' + cluster
 	msg['From'] = fromAddress
 	msg['To'] = ", ".join(recipients)
-	plainTextBody += 'The following are the uploads of users in the last 12 hours: '
+	plainTextBody = 'The following are the uploads of users in the last 12 hours: '
 	part1 = MIMEText(plainTextBody, 'plain')
 	part2 = MIMEText(formattedData, 'html')
 	msg.attach(part1)
@@ -89,6 +98,7 @@ def run():
     except:
         mongo_host = getMongoServer()
 
+    print "Starting new run on uploadUpdateEmail"
     client = MongoClient(host=mongo_host)
     tenantCursor = client['xplainIO'].organizations.find({},{"_id":0, "guid":1, "users":1})
     uploadInfo = dict()
@@ -100,10 +110,12 @@ def run():
     	uploadStatsDocs = db.uploadStats
     	uploadsOfInterest = getMatchingDocuments(uploadStatsDocs)
     	if len(uploadsOfInterest) > 0:
+        	print tenant, " # of uploads of interest :", len(uploadsOfInterest)
     		uploadInfo[tenantID['users'][0]] = uploadsOfInterest
     
     if len(uploadInfo) > 0:
 	    formattedData = formatDataforEmail(uploadInfo)
+            print "Sending upload stats Email" 
 	    sendEmail(formattedData)
 
 
