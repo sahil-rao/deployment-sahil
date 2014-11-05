@@ -452,7 +452,11 @@ def create_query_character(signature_keywords):
         if 'Exists' in temp_character:
             character.append('Exists')
 
-        return character[:3]
+        #Logic to get rid of comma between 
+        #'Single Table' and first operator
+        start_character = ''.join(character[:2])
+        character = [start_character] + character[2:]
+        return character[:2]
     else:
         if 'Join' in signature_keywords:
             character.append('Join')
