@@ -12,6 +12,7 @@ from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
+from flightpath import uploadstats
 from json import *
 from baazmath.interface.BaazCSV import *
 from subprocess import Popen, PIPE
@@ -168,9 +169,10 @@ def callback(ch, method, properties, body):
                 received_msgID = msg_dict['message_id']
             except:
                 received_msgID = None
-            collection.update({'uid':uid},{'$inc':{"Math.tmpcount":1, "Math.time":(endTime-startTime)}})
+            #flagcollection.update({'uid':uid},{'$inc':{"Math.tmpcount":1, "Math.time":(endTime-startTime)}})
+            uploadstats.increment('Math.tmpcount')
+            uploadstats.increment('Math.time', amount=(endTime-startTime))
             decrementPendingMessage(collection, redis_conn, uid, received_msgID)
-            collection.update({'uid':uid},{'$inc':{"DecrementMath1MessageCount":1}})
 
         connection1.basicAck(ch,method)
         return
@@ -200,7 +202,9 @@ def callback(ch, method, properties, body):
             return
       
         collection = MongoClient(mongo_url)[tenant].uploadStats
-        collection.update({'uid':uid},{'$inc':{"Math.count":1}})
+        #flagcollection.update({'uid':uid},{'$inc':{"Math.count":1}})
+        uploadstats.open(tenant, uid)
+        uploadstats.increment('Math.count')
     else:
         """
         We do not expect anything without UID. Discard message if not present.
@@ -272,6 +276,9 @@ def callback(ch, method, properties, body):
         stats_failure_key = "Math." + section + ".failure"
         stats_time_key = "Math." + section + ".time"
         stats_phase_key = "Math." + section + ".phase"
+
+        uploadstats.increment(stats_success_key, stats_failure_key, amount=0)
+        
         if mathconfig.has_option(section, "BatchMode") and\
             mathconfig.get(section, "BatchMode") == "True" and\
             received_msgID is not None:
@@ -303,7 +310,8 @@ def callback(ch, method, properties, body):
             methodToCall(tenant, ctx)
 
             if 'uid' in msg_dict:
-                collection.update({'uid':uid},{"$inc": {stats_success_key: 1, stats_failure_key: 0}})
+                #flagcollection.update({'uid':uid},{"$inc": {stats_success_key: 1, stats_failure_key: 0}})
+                uploadstats.increment(stats_success_key)
 
             if mathconfig.has_option(section, "NotificationName"):
                 notif_queue = mathconfig.get(section, "NotificationQueue")
@@ -314,17 +322,21 @@ def callback(ch, method, properties, body):
         except:
             logging.exception("Section :"+section)
 	    if 'uid' in msg_dict:
-                collection.update({'uid':uid},{"$inc": {stats_success_key: 0, stats_failure_key: 1}})
+                #flagcollection.update({'uid':uid},{"$inc": {stats_success_key: 0, stats_failure_key: 1}})
+                uploadstats.increment(stats_failure_key)
         if 'uid' in msg_dict:
             sectionEndTime = time.time()
-            collection.update({'uid':uid},{"$inc": {stats_time_key: (sectionEndTime-sectionStartTime)}})
+            #flagcollection.update({'uid':uid},{"$inc": {stats_time_key: (sectionEndTime-sectionStartTime)}})
+            uploadstats.increment(stats_time_key, amount=(sectionEndTime-sectionStartTime))
             if opcode == "PhaseTwoAnalysis":
                 stats_ip_key = "Math." + section + ".socket"
                 
-                collection.update({'uid':uid},{"$set": {stats_phase_key: 2, stats_ip_key: socket.gethostbyname(socket.gethostname())}})
+                #flagcollection.update({'uid':uid},{"$set": {stats_phase_key: 2, stats_ip_key: socket.gethostbyname(socket.gethostname())}})
+                uploadstats.setvals({stats_phase_key: 2, stats_ip_key: socket.gethostbyname(socket.gethostname())})
 
             else:
-                collection.update({'uid':uid},{"$set": {stats_phase_key: 1}})
+                #flagcollection.update({'uid':uid},{"$set": {stats_phase_key: 1}})
+                uploadstats.setvals({stats_phase_key: 1})
 
     logging.info("Event Processing Complete")     
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
@@ -340,7 +352,8 @@ def callback(ch, method, properties, body):
             "total_queries" in stats_dict and\
             "processed_queries" in stats_dict and\
             "query_message_id" in msg_dict:
-            collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
+            #flagcollection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
+            uploadstats.increment('processed_queries')
             
             #if received_msgID is not None and\
             #    (int(received_msgID.split("-")[1])%40) == 0:
@@ -361,7 +374,9 @@ def callback(ch, method, properties, body):
     endTime = time.time()
     if msg_dict.has_key('uid'):
 	#if uid has been set, the variable will be set already
-        collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
+        #flagcollection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
+        uploadstats.increment('Math.time', amount=(endTime-startTime))
+    uploadstats.close()
 
 connection1 = RabbitConnection(callback, ['mathqueue'],[], {},BAAZ_MATH_LOG_FILE)
 

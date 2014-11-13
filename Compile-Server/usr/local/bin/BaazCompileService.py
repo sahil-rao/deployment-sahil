@@ -13,6 +13,7 @@ from baazmath.workflows.hbase_analytics import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from flightpath.services.mq_template import *
+from flightpath import uploadstats
 from subprocess import Popen, PIPE
 from json import *
 import sys
@@ -652,29 +653,38 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if compile_doc[key].has_key("ErrorSignature") \
                     and len(compile_doc[key]["ErrorSignature"]) > 0:
                     if etype == "SQL_QUERY":
-                        collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
+                        #flagcollection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
+                        uploadstats.increment(stats_failure_key, state_runsuccess_key)
                     elif etype == "SQL_SUBQUERY":
-                        collection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
+                        #flagcollection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
+                        uploadstats.increment(stats_sub_failure_key)
                     elif etype == "SQL_STORED_PROCEDURE":
-                        collection.update({'uid':uid},{"$inc": {stats_proc_success_key:0, stats_proc_failure_key: 1}})
+                        #flagcollection.update({'uid':uid},{"$inc": {stats_proc_success_key:0, stats_proc_failure_key: 1}})
+                        uploadstats.increment(stats_proc_failure_key)
                 else:
                     if etype == "SQL_QUERY":
-                        collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
+                        #flagcollection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
+                        uploadstats.increment(stats_success_key, stats_runsuccess_key)
                     elif etype == "SQL_SUBQUERY":
-                        collection.update({'uid':uid},{"$inc": {stats_sub_success_key:1, stats_sub_failure_key: 0}})
+                        #flagcollection.update({'uid':uid},{"$inc": {stats_sub_success_key:1, stats_sub_failure_key: 0}})
+                        uploadstats.increment(stats_sub_success_key)
                     elif etype == "SQL_STORED_PROCEDURE":
-                        collection.update({'uid':uid},{"$inc": {stats_proc_success_key:1, stats_proc_failure_key: 0}})
+                        #flagcollection.update({'uid':uid},{"$inc": {stats_proc_success_key:1, stats_proc_failure_key: 0}})
+                        uploadstats.increment(stats_proc_success_key)
 
             return entity, "UpdateQueryProfile"
         except:
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))
             if uid is not None:
                 if etype == "SQL_QUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                    uploadstats.increment(stats_runfailure_key)
                 elif etype == "SQL_SUBQUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_sub_failure_key: 1, stats_runsuccess_key: 0}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_sub_failure_key: 1, stats_runsuccess_key: 0}})
+                    uploadstats.increment(stats_sub_failure_key)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    collection.update({'uid':uid},{"$inc": {stats_proc_failure_key: 1, stats_runsuccess_key: 0}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_proc_failure_key: 1, stats_runsuccess_key: 0}})
+                    uploadstats.increment(stats_proc_failure_key)
             return None, None
 
     '''
@@ -702,6 +712,17 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             stats_proc_failure_key = "Compiler." + key + ".storeproc_failure"
             stats_sub_success_key = "Compiler." + key + ".subquery_success"
             stats_sub_failure_key = "Compiler." + key + ".subquery_failure"
+
+            uploadstats.increment(stats_newdbs_key,
+                stats_newtables_key,
+                stats_runsuccess_key,
+                stats_runfailure_key,
+                stats_success_key,
+                stats_failure_key,
+                stats_proc_success_key,
+                stats_proc_failure_key,
+                stats_sub_success_key,
+                stats_sub_failure_key, amount=0)
 
             if compile_doc[key].has_key("subQueries") and\
                 len(compile_doc[key]["subQueries"]) > 0:
@@ -733,8 +754,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                                mongoconn, redis_conn, tenant, uid, entity, True,  
                                                context, tableEidList)
                 if uid is not None:
-                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
-                                      stats_newtables_key: tmpAdditions[1]}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
+                    uploadstats.increment(stats_newdbs_key, amount=tmpAdditions[0])
+                    uploadstats.increment(stats_newtables_key, amount=tmpAdditions[1])
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
     
             if compile_doc[key].has_key("OutputTableList"):
@@ -742,42 +764,54 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                                 mongoconn, redis_conn, tenant, uid, entity, False,
                                                 context, tableEidList)
                 if uid is not None:
-                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
+                    uploadstats.increment(stats_newdbs_key, amount=tmpAdditions[0])
+                    uploadstats.increment(stats_newtables_key, amount=tmpAdditions[1])
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
 
             if compile_doc[key].has_key("ddlcolumns"):
                 tmpAdditions = processColumns(compile_doc[key]["ddlcolumns"], 
                                               mongoconn, redis_conn, tenant, uid, entity)
                 if uid is not None:
-                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
-                                      stats_newtables_key: tmpAdditions[1]}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
+                    uploadstats.increment(stats_newdbs_key, amount=tmpAdditions[0])
+                    uploadstats.increment(stats_newtables_key, amount=tmpAdditions[1])
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
 
             if compile_doc[key].has_key("ErrorSignature") \
                 and len(compile_doc[key]["ErrorSignature"]) > 0:
                 if etype == "SQL_QUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
+                    uploadstats.increment(stats_failure_key, stats_runsuccess_key)
                 elif etype == "SQL_SUBQUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
+                    uploadstats.increment(stats_sub_failure_key)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    collection.update({'uid':uid},{"$inc": {stats_proc_success_key:0, stats_proc_failure_key: 1}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_proc_success_key:0, stats_proc_failure_key: 1}})
+                    uploadstats.increment(stats_proc_failure_key)
             else:
                 if etype == "SQL_QUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
+                    uploadstats.increment(stats_success_key, stats_runsuccess_key)
                 elif etype == "SQL_SUBQUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_sub_success_key:1, stats_sub_failure_key: 0}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_sub_success_key:1, stats_sub_failure_key: 0}})
+                    uploadstats.increment(stats_sub_success_key)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    collection.update({'uid':uid},{"$inc": {stats_proc_success_key:1, stats_proc_failure_key: 0}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_proc_success_key:1, stats_proc_failure_key: 0}})
+                    uploadstats.increment(stats_proc_success_key)
 
         except:
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))     
             if uid is not None:
                 if etype == "SQL_QUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                    uploadstats.increment(stats_runfailure_key)
                 elif etype == "SQL_SUBQUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_sub_failure_key: 1, stats_runsuccess_key: 0}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_sub_failure_key: 1, stats_runsuccess_key: 0}})
+                    uploadstats.increment(stats_sub_failure_key)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    collection.update({'uid':uid},{"$inc": {stats_proc_failure_key: 1, stats_runsuccess_key: 0}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_proc_failure_key: 1, stats_runsuccess_key: 0}})
+                    uploadstats.increment(stats_proc_failure_key)
             return None, None
 
     if update == True and etype != "SQL_QUERY":
@@ -867,10 +901,13 @@ def callback(ch, method, properties, body):
             #connection1.basicAck(ch,method)
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
-      
+
+        redis_conn = RedisConnector(tenant)
         collection = MongoClient(mongo_url)[tenant].uploadStats
         dashboard_data = MongoClient(mongo_url)[tenant].dashboard_data
-        collection.update({'uid':uid},{'$inc':{"Compiler.count":1}})
+        #flagcollection.update({'uid':uid},{'$inc':{"Compiler.count":1}})
+        uploadstats.open(tenant, uid)
+        uploadstats.increment('Compiler.count')
     else:
         """
         We do not expect anything without UID. Discard message if not present.
@@ -1057,7 +1094,8 @@ def callback(ch, method, properties, body):
             except:
                 logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
                 if msg_dict.has_key('uid'):
-                    collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                    #flagcollection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                    uploadstats.increment(stats_runfailure_key)
                 #mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
 
         try:
@@ -1089,12 +1127,14 @@ def callback(ch, method, properties, body):
 
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already
-        collection.update({'uid':uid},{"$inc": {"Compiler.time":(endTime-startTime)}})
+        #flagcollection.update({'uid':uid},{"$inc": {"Compiler.time":(endTime-startTime)}})
+        uploadstats.increment('Compiler.time', amount=(endTime-startTime))
         
     mongoconn.close()
     connection1.basicAck(ch,method)
     callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
+    uploadstats.close()
 
 
 connection1 = RabbitConnection(callback, ['compilerqueue'],['mathqueue'], {},BAAZ_COMPILER_LOG_FILE)

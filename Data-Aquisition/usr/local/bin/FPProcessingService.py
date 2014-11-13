@@ -13,6 +13,7 @@ from flightpath.Provenance import getMongoServer
 import sys
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
+from flightpath import uploadstats
 from json import *
 import elasticsearch
 import shutil
@@ -325,7 +326,6 @@ class callback_context():
     
 def callback(ch, method, properties, body):
     starttime = time.time()
-    
     try:
         msg_dict = loads(body)
     except:
@@ -387,9 +387,11 @@ def callback(ch, method, properties, body):
 
         if msg_dict.has_key('uid'):
             uid = msg_dict['uid']
-
+            uploadstats.open(tenant, uid)
             collection = MongoClient(mongo_url)[tenant].uploadStats
-            collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}, '$set':{"FPProcessing.socket":socket.gethostbyname(socket.gethostname())}})
+            #flagcollection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}, '$set':{"FPProcessing.socket":socket.gethostbyname(socket.gethostname())}})
+            uploadstats.increment('FPProcessing.count')
+            uploadstats.setvals({"FPProcessing.socket":socket.gethostbyname(socket.gethostname())})
             startProcessingPhase(collection, uid)
             if metrics_url is not None:
                 try:
@@ -568,13 +570,15 @@ def callback(ch, method, properties, body):
         mongoconn.close()
         if msg_dict.has_key('uid'):
             #if uid has been set, the variable will be set already
-            collection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.time()-starttime)}})
+            #flagcollection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.time()-starttime)}})
+            uploadstats.setvals({"FPProcessing.time":(time.time()-starttime)})
             if r_collection is not None:
                 r_collection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.time()-starttime)}})
     except:
         logging.exception("While closing mongo")
 
     connection1.basicAck(ch,method)
+    uploadstats.close()
 
 connection1 = RabbitConnection(callback, ['ftpupload'],['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}},BAAZ_FP_LOG_FILE)
 
