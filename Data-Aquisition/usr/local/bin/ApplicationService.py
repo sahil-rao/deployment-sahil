@@ -196,13 +196,10 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
     prog_id = None
     queryList = None
     transformType = ""
-    for inst in instances:
-        if 'entity_id' in inst:
-            prog_id = inst['entity_id']
-            transformType = 'SingleTable'
-        elif "patID" in inst:
-            prog_id = inst["patID"]
-            transformType = 'SinglePattern'
+
+    if len(instances) > 0:
+        prog_id = instances
+        transformType = 'SingleTable'
 
     if prog_id is None:
         logging.info("No program ID found for ddl_request")
