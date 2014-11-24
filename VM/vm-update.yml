@@ -116,6 +116,8 @@
     copy: src=/home/xplain/redis-sentinel.conf dest=/etc/init/redis-sentinel.conf 
   - name: Start sentinel
     service: name=redis-sentinel state=started
+  - name: Start running redis server
+    service: name=redis-server state=started
 
   - name: Untar flightpath
     shell: tar -zxf /home/xplain/flightpath-deployment.tar.gz chdir=/
