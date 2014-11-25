@@ -425,7 +425,7 @@ def create_query_character(signature_keywords):
         temp_character = signature_keywords[0].split(':')[1]
         
         if 'No Table Only' in temp_character:
-            character.append('No Table Only')
+            character.append('No Table')
             character = [' '.join(character)]
             return character
         
