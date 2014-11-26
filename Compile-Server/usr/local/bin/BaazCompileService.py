@@ -425,7 +425,7 @@ def create_query_character(signature_keywords):
         temp_character = signature_keywords[0].split(':')[1]
         
         if 'No Table Only' in temp_character:
-            character.append('No Table Only')
+            character.append('No Table')
             character = [' '.join(character)]
             return character
         
@@ -640,27 +640,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
     context.queue.append({'eid': entity.eid, 'etype': etype})
     if update == True and etype == "SQL_QUERY":
-        """
-        Update instance count, store the instance and update the instance counts in 
-        relationships.
-        """
-
-        redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True, incrBy=1)
-
-        entityProfile = entity.profile
-        if "Compiler" in entityProfile\
-                and "gsp" in entityProfile['Compiler']\
-                and "ErrorSignature" in entityProfile['Compiler']['gsp']\
-                and entityProfile['Compiler']['gsp']["ErrorSignature"] == ""\
-                and etype == "SQL_QUERY":
-
-            unique_count = smc.generate_json()["unique_uniquequeries"]
-            mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                {'$inc' : {"TotalQueries": 1},'$set': { "unique_count": unique_count}}, upsert = True)
-        else:
-            logging.info("No ErrorSignature found in update.")
-
-        updateRelationCounter(redis_conn, entity.eid)
 
         inst_dict = None
         if custom_id is not None:
