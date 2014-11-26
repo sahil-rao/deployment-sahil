@@ -496,6 +496,31 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             4. If the query is a stored procedure, creates the entity with an etype of SQL_STORED_PROCEDURE.
             5. If the query is a subquery, creates the entity with an etype of SQL_SUBQUERY.
     """
+    if "gsp" in compile_doc:
+        compile_doc_fields = ["ErrorSignature", 
+                      "SignatureKeywords",
+                      "OperatorList",
+                      "selectColumnNames",
+                      "groupByColumns",
+                      "orderByColumns",
+                      "whereColExpr",
+                      "joinPredicates",
+                      "queryHash",
+                      "queryNameHash",
+                      "InputTableList",
+                      "OutputTableList",
+                      "ComplexityScore"]
+
+        for field in compile_doc_fields:
+            if field in compile_doc["gsp"] and compile_doc["gsp"][field] is not None:
+                try:
+                    smc.process(field, compile_doc["gsp"][field])
+                except:
+                    logging.exception("Error in Scale Mode Connector")
+                    #Break if query was not parsed
+                if field == "ErrorSignature" and compile_doc["gsp"][field]:
+                    break
+                            
     entity = None
     tableEidList = set()
     if compile_doc is None:
@@ -1027,32 +1052,6 @@ def callback(ch, method, properties, body):
                 logging.info("Loading file : "+ output_file_name)
                 with open(output_file_name) as data_file:    
                     compile_doc = load(data_file)
-
-                if "gsp" in compile_doc:
-
-                    compile_doc_fields = ["ErrorSignature", 
-                                  "SignatureKeywords",
-                                  "OperatorList",
-                                  "selectColumnNames",
-                                  "groupByColumns",
-                                  "orderByColumns",
-                                  "whereColExpr",
-                                  "joinPredicates",
-                                  "queryHash",
-                                  "queryNameHash",
-                                  "InputTableList",
-                                  "OutputTableList",
-                                  "ComplexityScore"]
-
-                    for field in compile_doc_fields:
-                        if field in compile_doc["gsp"] and compile_doc["gsp"][field] is not None:
-                            try:
-                                smc.process(field, compile_doc["gsp"][field])
-                            except:
-                                logging.exception("Error in Scale Mode Connector")
-                                #Break if query was not parsed
-                            if field == "ErrorSignature" and compile_doc["gsp"][field]:
-                                break
 
                 if compile_doc is not None:
                     for key in compile_doc:
