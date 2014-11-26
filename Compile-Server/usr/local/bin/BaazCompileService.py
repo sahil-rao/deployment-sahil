@@ -117,6 +117,7 @@ def end_of_phase_callback(params, current_phase):
         return
 
     logging.info("Changing processing Phase")
+    
     msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"} 
     msg_dict['uid'] = params['uid']
     message = dumps(msg_dict)
@@ -496,31 +497,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             4. If the query is a stored procedure, creates the entity with an etype of SQL_STORED_PROCEDURE.
             5. If the query is a subquery, creates the entity with an etype of SQL_SUBQUERY.
     """
-    if "gsp" in compile_doc:
-        compile_doc_fields = ["ErrorSignature", 
-                      "SignatureKeywords",
-                      "OperatorList",
-                      "selectColumnNames",
-                      "groupByColumns",
-                      "orderByColumns",
-                      "whereColExpr",
-                      "joinPredicates",
-                      "queryHash",
-                      "queryNameHash",
-                      "InputTableList",
-                      "OutputTableList",
-                      "ComplexityScore"]
-
-        for field in compile_doc_fields:
-            if field in compile_doc["gsp"] and compile_doc["gsp"][field] is not None:
-                try:
-                    smc.process(field, compile_doc["gsp"][field])
-                except:
-                    logging.exception("Error in Scale Mode Connector")
-                    #Break if query was not parsed
-                if field == "ErrorSignature" and compile_doc["gsp"][field]:
-                    break
-                            
+                         
     entity = None
     tableEidList = set()
     if compile_doc is None:
@@ -542,6 +519,42 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     else:
         etype = EntityType.SQL_SUBQUERY
 
+    if "gsp" in compile_doc:
+        compile_doc_fields = ["SignatureKeywords",
+                      "OperatorList",
+                      "selectColumnNames",
+                      "groupByColumns",
+                      "orderByColumns",
+                      "whereColExpr",
+                      "joinPredicates",
+                      "InputTableList",
+                      "OutputTableList",
+                      "ComplexityScore"]
+        if etype == EntityType.SQL_QUERY:
+            compile_doc_fields += ["queryHash", "queryNameHash", "ErrorSignature"]
+
+        for field in compile_doc_fields:
+            if field in compile_doc["gsp"] and compile_doc["gsp"][field] is not None:
+                try:
+                    smc.process(field, compile_doc["gsp"][field])
+                except:
+                    logging.exception("Error in Scale Mode Connector")
+                    #Break if query was not parsed
+                if field == "ErrorSignature" and compile_doc["gsp"][field]:
+                    break
+                
+    smc_json = smc.generate_json()
+    unique_count = smc_json["unique_uniquequeries"]
+    sem_unique_count = smc_json["unique_queries"]
+    total_query_count = smc_json["parsed"]
+    logging.info("Updating query counts " + str(unique_count))
+    mongoconn.db.dashboard_data.update(
+        {'tenant':tenant}, {'$set': {
+            "TotalQueries": total_query_count,
+            "semantically_unique_count": sem_unique_count,
+            "unique_count": unique_count
+        }}, upsert = True)
+    
     for key in compile_doc:
         comp_profile[key] = compile_doc[key]
         if key == "gsp":
@@ -604,20 +617,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
                 if "Compiler" in entityProfile\
                         and "gsp" in entityProfile['Compiler']\
-                        and "ErrorSignature" in entityProfile['Compiler']['gsp']\
-                        and entityProfile['Compiler']['gsp']["ErrorSignature"] == ""\
-                        and etype == "SQL_QUERY":
-                    unique_count = smc.generate_json()["unique_uniquequeries"]
-                    logging.info("Updating query counts " + str(unique_count))
-                    mongoconn.db.dashboard_data.update({'tenant':tenant},\
-                        {'$inc' : {"TotalQueries": 1, "semantically_unique_count": 1 }, 
-                        '$set': { "unique_count": unique_count}}, \
-                            upsert = True)
-                else:
-                    logging.info("No ErrorSignature found.")
-
-                if "Compiler" in entityProfile\
-                        and "gsp" in entityProfile['Compiler']\
                         and "ComplexityScore" in entityProfile['Compiler']['gsp']:
                     redis_conn.incrEntityCounter(entity.eid, "ComplexityScore", sort = True,
                         incrBy= entityProfile["Compiler"]["gsp"]["ComplexityScore"])
@@ -637,6 +636,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 return None, None
     else:
         update = True
+
+    
 
     context.queue.append({'eid': entity.eid, 'etype': etype})
     if update == True and etype == "SQL_QUERY":
