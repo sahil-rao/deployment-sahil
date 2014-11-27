@@ -694,10 +694,20 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         context.queue[-2] is used here because the last element 
         on the queue is the current query.
         '''
-        if etype == EntityType.SQL_QUERY:
-            subquery_rel_created = redis_conn.createRelationship(context.queue[-2]['eid'], entity.eid, "STORED_PROCEDURE_QUERY")
+
+        current_query = context.queue[-2]['eid']
+
+        if etype == EntityType.SQL_QUERY:    
+            '''
+            Stored procedure -> Query relationship
+            '''
+            redis_conn.incrRelationshipCounter(current_query, entity.eid, "STORED_PROCEDURE_QUERY", "count")
+                
         elif etype == EntityType.SQL_SUBQUERY:
-            subquery_rel_created = redis_conn.createRelationship(context.queue[-2]['eid'], entity.eid, "SQL_SUBQUERY")
+            '''
+            Query -> Subquery relationship
+            '''
+            redis_conn.incrRelationshipCounter(current_query, entity.eid, "SQL_SUBQUERY", "count")
 
     for key in compile_doc:
         try:
