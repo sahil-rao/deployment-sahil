@@ -383,7 +383,8 @@ def callback(ch, method, properties, body):
                 resp_dict["totalQueries"] = rc.getScaleModeTotalQueryCount(uid)
                 resp_dict["progress"] = rc.getProgress(uid) 
         elif msg_dict['opcode'] == "TopFact":
-            resp_dict = top_fact.execute(tenant)
+            operator = msg_dict['operator'] if 'operator' in msg_dict else None
+            resp_dict = top_fact.execute(tenant, operator)
         elif msg_dict['opcode'] == "TopDim":
             resp_dict = top_dim.execute(tenant)
         elif msg_dict['opcode'] == "TopTablesByPattern":
