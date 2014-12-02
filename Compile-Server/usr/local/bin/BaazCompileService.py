@@ -531,7 +531,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                       "OutputTableList",
                       "ComplexityScore"]
         if etype == EntityType.SQL_QUERY:
-            compile_doc_fields += ["queryHash", "queryNameHash", "ErrorSignature"]
+            compile_doc_fields = ["ErrorSignature", "queryHash", "queryNameHash"] + compile_doc_fields
 
         for field in compile_doc_fields:
             if field in compile_doc["gsp"] and compile_doc["gsp"][field] is not None:
