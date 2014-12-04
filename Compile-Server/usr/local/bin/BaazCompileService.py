@@ -544,9 +544,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     break
                 
     smc_json = smc.generate_json()
-    unique_count = smc_json["unique_uniquequeries"]
-    sem_unique_count = smc_json["unique_queries"]
-    total_query_count = smc_json["parsed"]
+    unique_count = int(smc_json["unique_uniquequeries"])
+    sem_unique_count = int(smc_json["unique_queries"])
+    total_query_count = int(smc_json["parsed"])
     logging.info("Updating query counts " + str(unique_count))
     mongoconn.db.dashboard_data.update(
         {'tenant':tenant}, {'$set': {
