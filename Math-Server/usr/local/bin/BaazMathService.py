@@ -328,6 +328,13 @@ def callback(ch, method, properties, body):
 
     logging.info("Event Processing Complete")     
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
+    if opcode == "PhaseTwoAnalysis":
+        out_dict = {
+            "tenantId": tenant,
+            "messageType": "PhaseTwoComplete"
+        }
+        connection1.publish(ch, '', 'node-update-queue', dumps(out_dict))
+        
 
     """
      Progress Bar update
