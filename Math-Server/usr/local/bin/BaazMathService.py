@@ -329,12 +329,7 @@ def callback(ch, method, properties, body):
     logging.info("Event Processing Complete")     
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
     if opcode == "PhaseTwoAnalysis":
-        out_dict = {
-            "tenantId": tenant,
-            "messageType": "PhaseTwoComplete"
-        }
-        connection1.publish(ch, '', 'node-update-queue', dumps(out_dict))
-        
+        collection.update({'uid':"0"},{'$set': { "done":True}})        
 
     """
      Progress Bar update
@@ -346,8 +341,9 @@ def callback(ch, method, properties, body):
         if stats_dict is not None and\
             "total_queries" in stats_dict and\
             "processed_queries" in stats_dict and\
-            "query_message_id" in msg_dict:
-            collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
+            ("query_message_id" in msg_dict or opcode == "PhaseTwoAnalysis"):
+            if opcode != "PhaseTwoAnalysis":
+                collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
             
             #if received_msgID is not None and\
             #    (int(received_msgID.split("-")[1])%40) == 0:
