@@ -13,8 +13,8 @@ from flightpath.RedisConnector import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from json import *
-from baazmath.interface.BaazCSV import *
-from subprocess import Popen, PIPE
+#from baazmath.interface.BaazCSV import *
+#from subprocess import Popen, PIPE
 import sys
 import pika
 import shutil
@@ -28,9 +28,7 @@ import logging
 import importlib
 import socket
 
-BAAZ_DATA_ROOT="/mnt/volume1/"
-BAAZ_PROCESSING_DIRECTORY="processing"
-BAAZ_MATH_LOG_FILE = "/var/log/BaazMathService.err"
+XPLAIN_LOG_FILE = "/var/log/XplainAdvAnalyticsService.err"
 
 config = ConfigParser.RawConfigParser ()
 config.read("/var/Baaz/hosts.cfg")
@@ -47,11 +45,11 @@ For VM there is not S3 connectivity. Save the logs with a timestamp.
 At some point we should move to using a log rotate handler in the VM.
 """
 if not usingAWS:
-    if os.path.isfile(BAAZ_MATH_LOG_FILE):
+    if os.path.isfile(XPLAIN_LOG_FILE):
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-        shutil.copy(BAAZ_MATH_LOG_FILE, BAAZ_MATH_LOG_FILE+timestr)
+        shutil.copy(XPLAIN_LOG_FILE, XPLAIN_LOG_FILE+timestr)
 
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_MATH_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=XPLAIN_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
 
 """
 In AWS use S3 log rotate to save the log files.
@@ -59,7 +57,7 @@ In AWS use S3 log rotate to save the log files.
 if usingAWS:
     boto_conn = boto.connect_s3()
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
-    logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_MATH_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
+    logging.getLogger().addHandler(RotatingS3FileHandler(XPLAIN_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
 
 def generateBaseStats(tenant):
     """
@@ -208,42 +206,10 @@ def callback(ch, method, properties, body):
     	connection1.basicAck(ch,method)
         return
 
-    callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
-    '''
-    Deprecated because we no longer use mysql for analytics workflows.
-    
-    if opcode == "BaseStats":
-        logging.info("Got Base Stats\n")
-        try:
-            generateBaseStats(tenant)
-            proc = Popen('mysql -ubaazdep -pbaazdep --local-infile -A HADOOP_DEV < /usr/lib/reports/queries/HADOOP/JobReports.sql', 
-                         stdout=PIPE, shell=True) 
-            proc.wait()
-            storeResourceProfile(tenant)
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.generateBaseStats.success": 1, "Math.generateBaseStats.failure": 0}})
-        except:
-	    if msg_dict.has_key('uid'):
-                collection.update({'uid':uid},{"$inc": {"Math.generateBaseStats.success": 0, "Math.generateBaseStats.failure": 1}})
-            pass
-
-        """ Compute single table profile of SQL queries
-        """
-        logging.info("Generating BaseStats for {0}\n".format(tenant))     
-        decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
-        
-        connection1.basicAck(ch,method)
-
-        endTime = time.time()
-        if msg_dict.has_key('uid'):
-	    #if uid has been set, the variable will be set already
-            collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
-
-        return
-    '''
+    callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
 
     mathconfig = ConfigParser.RawConfigParser()
-    mathconfig.read("/etc/xplain/analytics.cfg")
+    mathconfig.read("/etc/xplain/adv_analytics.cfg")
 
     for section in mathconfig.sections():
         sectionStartTime = time.time()
@@ -366,9 +332,9 @@ def callback(ch, method, properties, body):
 	#if uid has been set, the variable will be set already
         collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
 
-connection1 = RabbitConnection(callback, ['mathqueue'],[], {},BAAZ_MATH_LOG_FILE)
+connection1 = RabbitConnection(callback, ['advanalytics'],[], {},XPLAIN_LOG_FILE)
 
-logging.info("BaazMath going to start consuming")
+logging.info("XplainAdvAnalytics going to start consuming")
 
 connection1.run()
-logging.info("Closing BaazMath")
+logging.info("Closing XplainAdvAnalytics")

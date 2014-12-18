@@ -9,6 +9,8 @@ sudo start compileserver
 sudo start compileservice 
 sudo stop mathservice 
 sudo start mathservice 
+sudo stop advanalytics
+sudo start advanalytics
 sudo stop nodejs                                 
 sudo start nodejs  
 sudo stop applicationservice
