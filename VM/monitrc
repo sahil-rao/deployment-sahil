@@ -272,6 +272,10 @@ check process mathservice with pidfile /var/run/BaazMathService.pid
     start program = "start mathservice"
     stop program = "stop mathservice"
 
+check process advanalyticsservice with pidfile /var/run/advanalyticsservice.pid
+    start program = "/sbin/start advanalyticsservice" with timeout 30 seconds
+    stop program = "/sbin/stop advanalyticsservice"
+
 check process node with pidfile /var/run/nodejs.pid
     start program = "/sbin/start nodejs"
     stop program = "/sbin/stop nodejs"

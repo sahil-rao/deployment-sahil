@@ -4,6 +4,8 @@
 
 - hosts: localhost
   tasks:
+  - name: Copy hosts.cfg
+    copy: src=/home/xplain/hosts.cfg dest=/var/Baaz/hosts.cfg
   #Should eventually replace this script with package manager
   - name: Copy rabbit install script
     copy: src=installrabbit.sh dest=/home/xplain/installrabbit.sh owner=root group=root mode=0744
@@ -85,6 +87,8 @@
   - name: Start Elasticsearch Service
     service: name=elasticsearch state=started
     sudo: yes
+  - name: Install elasticsearch py
+    pip: name=elasticsearch version=1.1.1
 
   #Redis deployments
   - name: Add APT repository with latest version of redis

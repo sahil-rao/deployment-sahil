@@ -495,7 +495,7 @@ def callback(ch, method, properties, body):
 
         parseDir(tenant, logpath, cb_ctx)
 
-        callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
+        callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
         decrementPendingMessage(collection, redis_conn, uid, message_id, end_of_phase_callback, callback_params)
         logging.info("Decrementing message count: " + message_id)
 
