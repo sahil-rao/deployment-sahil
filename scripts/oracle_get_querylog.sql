@@ -1,16 +1,8 @@
 set linesize 100 
-#set heading off
-#set feed off
-#set echo off
-#set feedback off
-#set sqlprompt ''
-#set pagesize 0
 set trimspool on
-#set headsep off
-#set numw 32
 set long 100
-spool query_log.xqlog 
 
+--This code is used to drop table and in case of exception if its not present ignore it
 BEGIN
    EXECUTE IMMEDIATE 'DROP TABLE sql_text_table';
 EXCEPTION
@@ -21,11 +13,13 @@ EXCEPTION
 END;
 /
 
+--This query is used to create table, which has information that we fetch from v$sql
 create table sql_text_table as
 select sql_id, elapsed_time, module, parsing_user_id, parsing_schema_id, '"'||regexp_replace(sql_fulltext, CHR(10), ' ')||'"' as sql_fulltext
 from v$sql
 where parsing_schema_name=upper('&1') and parsing_user_id > 99;
 
+--This procedure is used to dump sql_text_table create above into CSV file
 CREATE OR REPLACE procedure DUMP_TABLE_TO_CSV( p_tname in varchar2,
                                     p_dir   in varchar2,
                                     p_filename in varchar2 )
@@ -77,9 +71,10 @@ CREATE OR REPLACE procedure DUMP_TABLE_TO_CSV( p_tname in varchar2,
    end;
 /
 
+--This is function is used to create a directory where CSV file will be copied
 CREATE OR REPLACE DIRECTORY SQL_TEXT_DIR AS '/tmp';
 
+--This line execute above stored procedure
 exec DUMP_TABLE_TO_CSV('sql_text_table','SQL_TEXT_DIR','sql_text.csv');
 
-spool off;
 exit;
