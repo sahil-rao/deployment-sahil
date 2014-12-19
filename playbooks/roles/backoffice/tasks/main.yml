@@ -63,7 +63,7 @@
   service: name=mathservice state=stopped
   sudo: yes
 - name: Stop advanalytics.
-  service: name=advanalyticsservice state=stopped
+  service: name=advanalytics state=stopped
   sudo: yes
 # - name: Start mathservice (upstart).
 #   service: name=mathservice state=started
