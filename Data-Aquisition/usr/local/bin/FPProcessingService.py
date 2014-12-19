@@ -226,6 +226,20 @@ class callback_context():
     def __incrementProcessedQueryCount(Self):
         Self.collection.update({'uid':"0"},{'$inc':{"query_processed": 1}}) 
 
+    def stats_callback(Self, table_stats):
+        #Query mongo based to table name in order to update stats
+        if 'table_name' in table_stats: 
+            table = Self.mongoconn.db.entities.find_one({"name": table_stats['table_name'], \
+                                                         "etype": "SQL_TABLE"}, {"eid":1, "_id":0})
+            if table == None:
+               #create table entity with stats info in it
+               eid = IdentityService.getNewIdentity(Self.tenant, True)
+               table_entity = Self.mongoconn.addEn(eid, table_stats['table_name'], Self.tenant,\
+                    EntityType.SQL_TABLE, {"uid" : Self.uid, "stats":table_stats}, None)
+            else:
+               #update table entity with stats info in it
+               Self.mongoconn.update({"name": table_stats['table_name']},{'$set':{'stats': table_stats}})
+        
     def callback(Self, eid, update=False, name=None, etype=None, data=None):
 
         if eid is None:
