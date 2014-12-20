@@ -156,7 +156,7 @@ def elasticConnect(tenantID):
 
 class callback_context():
 
-    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode=False, skipLimit=False, sourcePlatform=None):
+    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode=False, skipLimit=False, testMode=False, sourcePlatform=None):
         Self.tenant = tenant
         Self.uid = uid
         Self.ch = ch
@@ -168,6 +168,7 @@ class callback_context():
         Self.skipLimit = skipLimit
         Self.sourcePlatform = sourcePlatform
         Self.scale_mode = scale_mode
+        Self.testMode = testMode
         Self.queryNumThreshold = 20000
 
     def get_source_platform(Self):
@@ -273,6 +274,9 @@ class callback_context():
                 """
                 if Self.scale_mode: 
                     compiler_msg['opcode'] = "scale_mode"
+                if Self.testMode:
+                    compiler_msg['test_mode'] = 1
+
                 message = dumps(compiler_msg)
                 connection1.publish(Self.ch,'','compilerqueue',message)
                 incrementPendingMessage(Self.collection, Self.redis_conn, Self.uid, message_id)
@@ -483,6 +487,10 @@ def callback(ch, method, properties, body):
     if "skip_limit" in msg_dict and msg_dict["skip_limit"] == 1:
         skipLimit = True
 
+    testMode = False
+    if "test_mode" in msg_dict and msg_dict["test_mode"] == 1:
+        testMode = True
+
     try:
         """
         Parse the data.
@@ -505,7 +513,7 @@ def callback(ch, method, properties, body):
         logging.info("Incremementing message count: " + message_id)
 
         cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection, 
-                                  scale_mode, skipLimit, source_platform)
+                                  scale_mode, skipLimit, testMode, source_platform)
 
         parseDir(tenant, logpath, cb_ctx)
 
