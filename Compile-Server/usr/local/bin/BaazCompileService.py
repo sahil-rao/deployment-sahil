@@ -399,7 +399,10 @@ def updateRelationCounter(redis_conn, eid):
         if rel['rtype'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
 
-def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msgID):
+def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msg):
+    if received_msg is not None and "test_mode" in received_msg:
+        return
+
     if entity is not None:
         if opcode is not None:
             msg_dict = {'tenant':tenant, 'opcode':opcode, "entityid":entity.eid} 
@@ -407,8 +410,9 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
                 msg_dict['uid'] = uid
             message_id = genMessageID("Comp", collection, entity.eid)
             msg_dict['message_id'] = message_id
-            if received_msgID is not None:
-                msg_dict['query_message_id'] = received_msgID
+            if received_msg is not None:
+                if "message_id" in received_msg:
+                    msg_dict['query_message_id'] = received_msg["message_id"]
             message = dumps(msg_dict)
             connection1.publish(ch,'','mathqueue',message)
             logging.info("Sent message to Math pos1:" + str(msg_dict))
@@ -736,7 +740,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     logging.info("Processing Sub queries " + sub_q)
                     sub_entity, sub_opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, 
                                                     tenant, uid, sub_q, data, {key:sub_q_dict}, source_platform, smc, context)
-                    sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode, None)
+                    temp_msg = {'test_mode':1} if context.test_mode else None
+                    sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode, temp_msg)
 
                     if sub_entity is not None:
                         context.queue.pop()
@@ -870,7 +875,6 @@ def callback(ch, method, properties, body):
         decrementPendingMessage(collection, redis_conn, uid, received_msgID)
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
-
     
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
@@ -1056,12 +1060,18 @@ def callback(ch, method, properties, body):
 
         try:
             context = Compiler_Context()
+            context.test_mode = False
             context.tables = []
             context.queue = []
 
+            if 'test_mode' in msg_dict:
+                context.test_mode = True
+
+            temp_msg = {'test_mode':1} if context.test_mode else {'message_id': received_msgID}
+
             entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform, smc, context)
 
-            sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msgID)
+            sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg)
         except:
             logging.exception("Failure in processing compiler output for Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
 
