@@ -596,7 +596,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         if custom_id is not None:
             profile_dict['custom_id'] = custom_id
         if data is not None:
-            profile_dict['stats'] = data
+            profile_dict['profile']['stats'] = data
         try:
             eid = IdentityService.getNewIdentity(tenant, True)
             entity = mongoconn.addEn(eid, query, tenant,\
