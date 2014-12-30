@@ -28,6 +28,7 @@ import flightpath.services.app_get_tail_tables as tail_tables
 import flightpath.services.app_get_columns_by_operator as columns_by_operator
 import flightpath.services.app_get_simple_queries as simple_queries
 import flightpath.services.app_get_table_stats as table_stats
+import flightpath.services.app_get_table_transform_stats as table_transform_stats
 import flightpath.services.app_get_column_stats as column_stats
 import flightpath.services.app_get_query_stats as query_stats
 import flightpath.services.app_get_query_pie_chart as query_pie_chart
@@ -366,6 +367,10 @@ def callback(ch, method, properties, body):
             logging.info("Got the opcode For Mongo Translation")
             instances = msg_dict["job_instances"]
             resp_dict = process_mongo_rewrite_request(ch, properties, tenant, instances)
+        elif msg_dict['opcode'] == "TableTransformStats":
+            #get list of patterns that are being transformed
+            instances = msg_dict["job_instances"]
+            resp_dict = table_transform_stats.execute(tenant, instances)
         elif msg_dict["opcode"] == "TableDetails":
             entity_id = msg_dict["entity_id"]
             resp_dict = table_details.execute(tenant, entity_id)
