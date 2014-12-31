@@ -250,7 +250,7 @@ class callback_context():
                                                 EntityType.SQL_TABLE_COLUMN, column_entry, None)
             else:
                #update table entity with stats info in it
-               Self.mongoconn.update({"name": stats['column_name']},{'$set':{'column_entry.stats': stats}})
+               Self.mongoconn.db.entities.update({"name": stats['column_name']},{'$set':{'column_entry.stats': stats}})
         else: 
             #Query mongo based to table name in order to update table stats
             table = Self.mongoconn.db.entities.find_one({"name": stats['table_name'], \
@@ -262,7 +262,7 @@ class callback_context():
                     EntityType.SQL_TABLE, {"uid" : Self.uid, "stats":stats}, None)
             else:
                #update table entity with stats info in it
-               Self.mongoconn.update({"name": stats['table_name']},{'$set':{'stats': stats}})
+               Self.mongoconn.db.entities.update({"name": stats['table_name']},{'$set':{'stats': stats}})
         
     def callback(Self, eid, update=False, name=None, etype=None, data=None):
 
