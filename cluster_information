@@ -1,0 +1,99 @@
+Current AWS infrastructure information of Xplain.io
+
+Xplain.io Website
+=================
+Production: www.xplain.io (54.68.242.142)
+Development: (54.191.76.81)
+Access Key: Xplain-Site.pem
+ssh -i Xplain-Site.pem ubuntu@54.68.242.142
+
+Application Clusters
+--------------------
+To Access any of the cluster machines, login to deployment root machines of the cluster 
+as described and then ssh using IP address to any of the cluster machines:
+
+Delta Cluster
+=============
+
+Description: Current production cluster.
+Application Access: app.xplain.io (50.112.142.152)
+Management Access: delta-root.xplain.io (54.187.225.139)
+
+Access Key to cluster: XplainIO-Launch1.pem
+ssh -i XplainIO-Launch1.pem ubuntu@delta-root.xplain.io
+
+Key for access to cluster machines: XplainIO-Release-Deployment.pem (Present in deployment root machines)
+Configuration: 1 DBSilo (Mongo, Redis, ElasticSearch)
+               2 Rabbit MQ nodes
+               18 Backoffice Servers
+               1 NodeJS Web application server
+
+[tag_Name_Backoffice]
+172.31.38.21
+172.31.38.22
+172.31.38.24
+172.31.38.26:39]
+172.31.32.60
+
+[tag_Name_DeploymentRoot]
+172.31.42.112 
+
+[tag_Name_MongoDBServer]
+172.31.44.204
+172.31.44.205
+172.31.46.102
+
+[tag_Name_NodeJS]
+172.31.32.186
+
+[tag_Name_QueueServer]
+172.31.36.91
+172.31.36.223
+
+[tag_Name_Redis]
+172.31.39.207
+172.31.45.249
+
+[tag_Name_ElasticSearch]
+172.31.45.194
+
+Staging Cluster
+===============
+
+Description: Current production cluster.
+Application Access: node-staging.xplain.io (54.215.128.229)
+Management Access: staging.xplain.io (54.193.8.179)
+
+Access Key to cluster: Baaz-Developer.pem
+ssh -i Baaz-Developer.pem ubuntu@staging.xplain.io
+
+Key for access to cluster machines: Baaz-Developer.pem (Present in deployment root machines)
+Configuration: 1 DBSilo (Mongo, Redis, ElasticSearch)
+               2 Rabbit MQ nodes
+               4 Backoffice Servers
+               1 NodeJS Web application server
+
+[tag_Name_MongoDBServer]
+10.0.0.231
+
+[tag_Name_Backoffice]
+10.0.0.100
+10.0.0.235
+10.0.0.22
+10.0.0.127
+
+[tag_Name_QueueServer]
+10.0.0.196
+10.0.0.91
+
+[tag_Name_Redis]
+10.0.0.211
+
+[tag_Name_ElasticSearch]
+10.0.0.193
+
+[tag_Name_NodeJS]
+10.0.0.232 
+
+[tag_Name_DeploymentRoot]
+10.0.0.165 
