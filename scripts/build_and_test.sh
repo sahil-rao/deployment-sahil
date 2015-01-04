@@ -117,11 +117,16 @@ gzip Baaz-Analytics-Service.tar
 s3cmd sync Baaz-Analytics-Service.tar.gz s3://$S3Bucket/
 
 cd /home/ubuntu/build/compiler
-tar -cf Baaz-Basestats-Report.tar reports 
+tar -cf Baaz-Basestats-Report.tar reports
 gzip Baaz-Basestats-Report.tar
 s3cmd sync Baaz-Basestats-Report.tar.gz s3://$S3Bucket/
 
 rm $LOCKFILE
 
-cd /home/ubuntu/build/analytics/baazmath/test/workflow_tests
+echo 'Starting Testing suite.'
+cd /home/ubuntu/build/analytics/baazmath/test/
+tar -cf Baaz-Test-Suite.tar workflow_tests
+gzip Baaz-Test-Suite.tar
+s3cmd sync Baaz-Test-Suite.tar.gz s3://$S3Bucket/
+cd workflow_tests
 ansible-playbook test_analytics.yml
