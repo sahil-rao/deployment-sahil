@@ -1,10 +1,12 @@
 set linesize 100 
 set trimspool on
 set long 100
+set serveroutput on
 
 --This code is used to drop table and in case of exception if its not present ignore it
 BEGIN
    EXECUTE IMMEDIATE 'DROP TABLE sql_text_table';
+   dbms_output.put_line('Droping the Table');
 EXCEPTION
    WHEN OTHERS THEN
       IF SQLCODE != -942 THEN
@@ -15,7 +17,7 @@ END;
 
 --This query is used to create table, which has information that we fetch from v$sql
 create table sql_text_table as
-select sql_id, elapsed_time, module, parsing_user_id, parsing_schema_id, '"'||regexp_replace(sql_fulltext, CHR(10), ' ')||'"' as sql_fulltext
+select sql_id, elapsed_time, '"'||regexp_replace(sql_fulltext, CHR(10), ' ')||'"' as sql_fulltext
 from v$sql
 where parsing_schema_name=upper('&1') and parsing_user_id > 99;
 
@@ -77,4 +79,15 @@ CREATE OR REPLACE DIRECTORY SQL_TEXT_DIR AS '/tmp';
 --This line execute above stored procedure
 exec DUMP_TABLE_TO_CSV('sql_text_table','SQL_TEXT_DIR','sql_text.csv');
 
+--This code is used to drop table and in case of exception if its not present ignore it
+BEGIN
+   EXECUTE IMMEDIATE 'DROP TABLE sql_text_table';
+   dbms_output.put_line('Droping the Table');
+EXCEPTION
+   WHEN OTHERS THEN
+      IF SQLCODE != -942 THEN
+         RAISE;
+      END IF;
+END;
+/
 exit;
