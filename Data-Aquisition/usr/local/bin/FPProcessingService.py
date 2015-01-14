@@ -231,38 +231,50 @@ class callback_context():
         #check if this are table or column stats
         if 'column_name' in stats:
             column_entry = {}
-            table_entity = Self.mongoconn.getEntityByName(stats['table_name'])
+            table_name = stats['table_name'].lower()
+            table_entity = Self.mongoconn.getEntityByName(table_name)
             if table_entity is None:
-               #this means table doesnt not exsist create it
-               eid = IdentityService.getNewIdentity(Self.tenant, True)
-               table_entity = Self.mongoconn.addEn(eid, stats['table_name'], Self.tenant,\
-                    EntityType.SQL_TABLE, {"uid" : Self.uid}, None)
+                #this means table doesnt not exsist create it
+                eid = IdentityService.getNewIdentity(Self.tenant, True)
+                table_entry = {"uid" : Self.uid}
+                table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
+                                EntityType.SQL_TABLE, table_entry, None)
             #check if column is already present or not
-            col = Self.mongoconn.db.entities.find_one({"name": stats['column_name'], \
-                                                       "etype": "SQL_TABLE_COLUMN"}, {"eid":1, "_id":0})
-            if col is None:
+            column_entity_name = table_name + "." + stats['column_name'].lower()
+            column_entity = Self.mongoconn.getEntityByName(column_entity_name)
+
+            if column_entity is None:
                 eid = IdentityService.getNewIdentity(Self.tenant, True)
                 column_entry['tableEid'] = table_entity.eid
                 column_entry["uid"] = Self.uid
                 column_entry["stats"] = stats
-                column_entity_name = stats['table_name'].lower() + "." + stats['column_name'].lower()
                 column_entity = Self.mongoconn.addEn(eid, column_entity_name, Self.tenant,\
                                                 EntityType.SQL_TABLE_COLUMN, column_entry, None)
+                '''
+                Table --> Column relationship.
+                '''
+                if column_entity.eid == eid:
+                    Self.redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
+                    Self.redis_conn.createEntityProfile(column_entity.eid, "SQL_TABLE_COLUMN")
             else:
-               #update table entity with stats info in it
-               Self.mongoconn.db.entities.update({"name": stats['column_name']},{'$set':{'column_entry.stats': stats}})
+                #update table entity with stats info in it
+                Self.mongoconn.db.entities.update({"eid": column_entity.eid},{'$set':{'stats': stats}})
         else: 
             #Query mongo based to table name in order to update table stats
-            table = Self.mongoconn.db.entities.find_one({"name": stats['TABLE_NAME'], \
-                                                         "etype": "SQL_TABLE"}, {"eid":1, "_id":0})
-            if table == None:
-               #create table entity with stats info in it
-               eid = IdentityService.getNewIdentity(Self.tenant, True)
-               table_entity = Self.mongoconn.addEn(eid, stats['TABLE_NAME'], Self.tenant,\
-                    EntityType.SQL_TABLE, {"uid" : Self.uid, "stats":stats}, None)
+            table_name = stats['TABLE_NAME'].lower()
+            table_entity = Self.mongoconn.getEntityByName(table_name)
+
+            if table_entity is None:
+                #create table entity with stats info in it
+                eid = IdentityService.getNewIdentity(Self.tenant, True)
+                table_entry = {"uid" : Self.uid, "stats":stats}
+                table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
+                                EntityType.SQL_TABLE, table_entry, None)
+                if table_entity.eid != eid:
+                    Self.mongoconn.db.entities.update({"eid": table_entity.eid},{'$set':{'stats': stats}})
             else:
-               #update table entity with stats info in it
-               Self.mongoconn.db.entities.update({"name": stats['TABLE_NAME']},{'$set':{'stats': stats}})
+                #update table entity with stats info in it
+                Self.mongoconn.db.entities.update({"eid": table_entity.eid},{'$set':{'stats': stats}})
         
     def callback(Self, eid, update=False, name=None, etype=None, data=None):
 
