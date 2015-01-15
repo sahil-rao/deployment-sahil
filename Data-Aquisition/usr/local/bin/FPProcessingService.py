@@ -232,6 +232,7 @@ class callback_context():
         if 'column_name' in stats:
             column_entry = {}
             table_name = stats['table_name'].lower()
+            column_name = stats['column_name'].lower()
             table_entity = Self.mongoconn.getEntityByName(table_name)
             if table_entity is None:
                 #this means table doesnt not exsist create it
@@ -240,7 +241,7 @@ class callback_context():
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
             #check if column is already present or not
-            column_entity_name = table_name + "." + stats['column_name'].lower()
+            column_entity_name = table_name + "." + column_name
             column_entity = Self.mongoconn.getEntityByName(column_entity_name)
 
             if column_entity is None:
@@ -248,6 +249,8 @@ class callback_context():
                 column_entry['tableEid'] = table_entity.eid
                 column_entry["uid"] = Self.uid
                 column_entry["stats"] = stats
+                column_entry['columnName'] = column_name
+                column_entry['tableName'] = table_name
                 column_entity = Self.mongoconn.addEn(eid, column_entity_name, Self.tenant,\
                                                 EntityType.SQL_TABLE_COLUMN, column_entry, None)
                 '''
