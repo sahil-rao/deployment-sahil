@@ -17,6 +17,19 @@ cp /home/ubuntu/build/deployment/VM/README .
 cp /home/ubuntu/build/deployment/VM/refresh.sh .
 cp /home/ubuntu/build/deployment/VM/vm-update.yml .
 cp /home/ubuntu/build/deployment/VM/setup-update.sh .
+cp /home/ubuntu/build/deployment/VM/xplaincompile.conf .
+cp /home/ubuntu/build/deployment/VM/setupSilo.py .
+cp /home/ubuntu/build/deployment/VM/hosts.cfg .
+
+cp /home/ubuntu/build/deployment/Data-Aquisition/etc/xplain/application-api.cfg .
+cp /home/ubuntu/build/deployment/Math-Server/etc/xplain/adv_analytics.cfg .
+cp /home/ubuntu/build/deployment/Math-Server/etc/xplain/analytics.cfg .
+
+cp /home/ubuntu/build/deployment/VM/erlang.cookie.j2 .
+cp /home/ubuntu/build/deployment/VM/installrabbit.sh .
+cp /home/ubuntu/build/deployment/VM/redis.conf .
+cp /home/ubuntu/build/deployment/VM/sentinel.conf .
+cp /home/ubuntu/build/deployment/VM/redis-sentinel.conf .
 
 cp /home/ubuntu/build/graph/dist/flightpath-*.tar.gz ./flightpath-deployment.tar.gz
 cp /home/ubuntu/build/UI/xplain.io.tar.gz .
