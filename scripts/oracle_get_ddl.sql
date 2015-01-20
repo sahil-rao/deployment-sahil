@@ -1,3 +1,7 @@
+-- __copyright__ = 'Copyright 2014, Xplain.IO Inc.'
+-- __license__ = ''
+--__version__ = '0.1'
+
 set head off
 set feed off
 set echo off
@@ -24,3 +28,4 @@ FROM dba_tables
 where owner=upper('&1');
 
 spool off;
+exit;
