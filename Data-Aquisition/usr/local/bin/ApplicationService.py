@@ -275,7 +275,7 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
         if len(prog_id) == 0:
             EntityId = prog_id[0]
         data_dict = {"InputFile": oFile_path, "OutputFile": output_file_name, 
-                     "EntityId": EntityId, "TenantId": "100"}
+                     "EntityId": EntityId, "TenantId": "100", "Version": "1"}
         data = dumps(data_dict)
         client_socket.send("1\n");
 
