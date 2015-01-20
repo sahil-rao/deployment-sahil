@@ -1,3 +1,7 @@
+-- __copyright__ = 'Copyright 2014, Xplain.IO Inc.'
+-- __license__ = ''
+--__version__ = '0.1'
+
 set linesize 100 
 set trimspool on
 set long 100

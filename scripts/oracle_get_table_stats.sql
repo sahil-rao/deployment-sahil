@@ -1,3 +1,7 @@
+-- __copyright__ = 'Copyright 2014, Xplain.IO Inc.'
+-- __license__ = ''
+--__version__ = '0.1'
+
 set head off 
 set feed off 
 set echo off
@@ -18,10 +22,11 @@ end;
 /
 
 --Below query is used to get table stats info, the '||' is used for concatentation 
-select table_name||','||avg_row_len||','||num_rows||','||CASE WHEN num_rows <=9999 THEN 'Extra Small'
+select table_name||','||avg_row_len||','||num_rows||','||CASE WHEN num_rows <=99999 THEN 'Extra Small'
                                                               WHEN num_rows <=999999 THEN 'Small'
-                                                              WHEN num_rows <=99999999 THEN 'Large'
-                                                              WHEN num_rows <=99999999 THEN 'Extra Large'
+                                                              WHEN num_rows <=99999999 THEN 'Medium'
+                                                              WHEN num_rows <=999999999 THEN 'Large'
+                                                              WHEN num_rows <=1000000000 THEN 'Extra Large'
                                                               ELSE '1B+'
                                                               END AS row_range
 from dba_tables
