@@ -227,6 +227,11 @@ class callback_context():
     def __incrementProcessedQueryCount(Self):
         Self.collection.update({'uid':"0"},{'$inc':{"query_processed": 1}}) 
 
+    def query_stats_callback(Self, query_stats):
+        if Self.mongoconn.db.entities.find({"custom_id": query_stats['custom_id']}):
+            #check if this are table or column stats
+            Self.mongoconn.db.entities.update({"custom_id": query_stats['custom_id']},{'$set':{'profile.stats': query_stats}})
+
     def stats_callback(Self, stats):
         #check if this are table or column stats
         if 'column_name' in stats:
