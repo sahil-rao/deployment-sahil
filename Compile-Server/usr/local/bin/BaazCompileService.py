@@ -305,7 +305,7 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
 def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinput, context, tableEidList=None, hive_success=0):
     dbCount = 0
     tableCount = 0
-    if table is None :
+    if table is None or table['tableName'] is None:
         return [dbCount, tableCount]
 
     outmost_query = None
