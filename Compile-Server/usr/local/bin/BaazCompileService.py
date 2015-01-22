@@ -302,6 +302,140 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
     
     return [dbCount, tableCount]
 
+def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinput, context, tableEidList=None, hive_success=0):
+    dbCount = 0
+    tableCount = 0
+    if table is None :
+        return [dbCount, tableCount]
+
+    outmost_query = None
+    queue_len = len(context.queue)
+    if queue_len > 0:
+        if context.queue[0]['etype'] == EntityType.SQL_STORED_PROCEDURE:
+            if queue_len > 1:
+                outmost_query = context.queue[1]['eid']
+        elif context.queue[0]['etype'] == EntityType.SQL_QUERY:
+            outmost_query = context.queue[0]['eid']
+
+    endict = {"uid" : uid}
+    #mongoconn.startBatchUpdate()
+    tableentry = table
+    database_name = None
+    entryname = tableentry["tableName"].lower()
+    entryname = entryname.replace('"', '')
+    matches = table_regex.search(entryname)
+
+    if matches is not None:
+        database_name = matches.group(1)
+        tablename = matches.group(2)
+    else:
+        tablename = entryname
+        if "databaseName" in tableentry:
+            database_name = tableentry["databaseName"].lower()
+
+    """
+    Create the Table Entity first if it does not already exist.
+    """
+    table_entity = mongoconn.getEntityByName(tablename)
+    if table_entity is None:
+        logging.info("Creating table entity for {0} position 5\n".format(tablename))     
+        eid = IdentityService.getNewIdentity(tenant, True)
+        table_entity = mongoconn.addEn(eid, tablename, tenant,\
+                  EntityType.SQL_TABLE, endict, None)
+
+        if eid == table_entity.eid:
+            redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
+            redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
+            tableCount = tableCount + 1
+
+    tableEidList.add(table_entity.eid)
+
+    """
+    If the database is found then create database Entity if it does not already exist.
+    """
+    database_entity = None
+    if database_name is not None:
+        database_entity = mongoconn.getEntityByName(database_name)
+        if database_entity is None:
+            logging.info("Creating database entity for {0}\n".format(database_name))     
+            eid = IdentityService.getNewIdentity(tenant, True)
+            mongoconn.addEn(eid, database_name, tenant,\
+                      EntityType.SQL_DATABASE, endict, None)
+            database_entity = mongoconn.getEntityByName(database_name)
+            dbCount = dbCount + 1
+
+    """
+    Create relations, first between tables and query             
+        Then between query and database, table and database
+    """
+    if entity is not None and table_entity is not None:
+        if isinput:
+
+            if outmost_query is not None and outmost_query != entity.eid:
+                redis_conn.createRelationship(table_entity.eid, entity.eid, "SUBQUERYREAD")
+                redis_conn.setRelationship(table_entity.eid, entity.eid, "SUBQUERYREAD", {"hive_success":hive_success})
+                logging.info("SUBQUERYREAD Relation between {0} {1} position 1\n".format(table_entity.eid, entity.eid))
+
+            else:
+                redis_conn.createRelationship(table_entity.eid, entity.eid, "READ")
+                redis_conn.setRelationship(table_entity.eid, entity.eid, "READ", {"hive_success":hive_success})
+                logging.info("READ Relation between {0} {1} position 2\n".format(table_entity.eid, entity.eid))
+        else:
+            if outmost_query is not None and outmost_query != entity.eid:
+                redis_conn.createRelationship(table_entity.eid, entity.eid, "SUBQUERYWRITE")
+                redis_conn.setRelationship(table_entity.eid, entity.eid, "SUBQUERYWRITE", {"hive_success":hive_success})
+                logging.info("SUBQUERYWRITE Relation between {0} {1} position 3\n".format(table_entity.eid, entity.eid))
+
+            else:
+                redis_conn.createRelationship(table_entity.eid, entity.eid, "WRITE")
+                redis_conn.setRelationship(table_entity.eid, entity.eid, "WRITE", {"hive_success":hive_success})
+                logging.info("WRITE Relation between {0} {1} position 4\n".format(table_entity.eid, entity.eid))
+
+        '''
+        Makes sure to follow context for the table and outmost query.
+        '''
+        if table_entity.eid is not None:
+            if isinput:
+                for query in context.queue:
+                    if query['etype'] == EntityType.SQL_QUERY:
+                        redis_conn.createRelationship(table_entity.eid, query['eid'], "READ")
+                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "READ", "instance_count", incrBy=1)
+                    elif query['etype'] == EntityType.SQL_SUBQUERY:
+                        redis_conn.createRelationship(table_entity.eid, query['eid'], "SUBQUERYREAD")
+                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "SUBQUERYREAD", "instance_count", incrBy=1)
+                    elif query['etype'] == EntityType.SQL_STORED_PROCEDURE:
+                        redis_conn.createRelationship(table_entity.eid, query['eid'], "STOREDPROCEDUREREAD")
+                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "STOREDPROCEDUREREAD", "instance_count", incrBy=1)
+            else:
+                for query in context.queue:
+                    if query['etype'] == EntityType.SQL_QUERY:
+                        redis_conn.createRelationship(table_entity.eid, query['eid'], "WRITE")
+                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "WRITE", "instance_count", incrBy=1)
+                    elif query['etype'] == EntityType.SQL_SUBQUERY:
+                        redis_conn.createRelationship(table_entity.eid, query['eid'], "SUBQUERYWRITE")
+                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "SUBQUERYWRITE", "instance_count", incrBy=1)
+                    elif query['etype'] == EntityType.SQL_STORED_PROCEDURE:
+                        redis_conn.createRelationship(table_entity.eid, query['eid'], "STOREDPROCEDUREWRITE")
+                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "STOREDPROCEDUREWRITE", "instance_count", incrBy=1)
+                
+
+            context.tables.append(table_entity.eid)
+
+    if database_entity is not None:
+        if table_entity is not None:
+            redis_conn.createRelationship(database_entity.eid, table_entity.eid, "CONTAINS")
+            logging.info("Relation between {0} {1} position 5\n".format(database_entity.eid, table_entity.eid))
+
+        """ Note this assumes that formRelations is idempotent
+        """
+        if entity is not None:
+            redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
+            logging.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))     
+
+    #mongoconn.finishBatchUpdate()
+    
+    return [dbCount, tableCount]
+
 def process_scale_mode(tenant, uid, instances, smc):
     
     for inst in instances:
@@ -533,7 +667,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                       "joinPredicates",
                       "InputTableList",
                       "OutputTableList",
-                      "ComplexityScore"]
+                      "ComplexityScore",
+                      "createTableName",
+                      "ddlColumns"]
         if etype == EntityType.SQL_QUERY:
             compile_doc_fields = ["ErrorSignature", "queryHash", "queryNameHash"] + compile_doc_fields
 
@@ -773,6 +909,15 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if compile_doc[key].has_key("ddlColumns"):
                 tmpAdditions = processColumns(compile_doc[key]["ddlColumns"], 
                                               mongoconn, redis_conn, tenant, uid, entity)
+                if uid is not None:
+                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
+                                      stats_newtables_key: tmpAdditions[1]}})
+                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
+
+
+            if compile_doc[key].has_key("createTableName"):
+                tmpAdditions = processCreateTable(compile_doc[key]["createTableName"], 
+                                              mongoconn, redis_conn, tenant, uid, entity, False, context ,tableEidList)
                 if uid is not None:
                     collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
                                       stats_newtables_key: tmpAdditions[1]}})
