@@ -34,6 +34,7 @@ import flightpath.services.app_get_query_stats as query_stats
 import flightpath.services.app_get_query_pie_chart as query_pie_chart
 import flightpath.services.app_get_access_patterns as access_patterns
 import flightpath.services.app_cleanup_user as cleanup_user
+import flightpath.services.app_add_table_volume as add_table_volume
 from flightpath import FPConnector
 from json import *
 import elasticsearch
@@ -354,6 +355,7 @@ def callback(ch, method, properties, body):
             instances = msg_dict["job_instances"]
             db = MongoClient(mongo_url)[tenant]
             redis_conn = RedisConnector(tenant)
+            add_table_volume.execute(tenant, msg_dict)
             resp_dict = process_ddl_request(ch, properties, tenant, "hbase", instances, db, redis_conn)
         if msg_dict["opcode"] == "ImpalaDDL":
 
@@ -361,6 +363,7 @@ def callback(ch, method, properties, body):
             instances = msg_dict["job_instances"]
             db = MongoClient(mongo_url)[tenant]
             redis_conn = RedisConnector(tenant)
+            add_table_volume.execute(tenant, msg_dict)
             resp_dict = process_ddl_request(ch, properties, tenant, "impala", instances, db, redis_conn)
         elif msg_dict["opcode"] == "MongoTransform":
     
