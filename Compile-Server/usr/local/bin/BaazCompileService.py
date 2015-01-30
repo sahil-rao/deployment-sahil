@@ -777,6 +777,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 return None, None
     else:
         update = True
+        #update the stats since they were provided
+        if data is not None:
+            mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': data}})
 
     
 
