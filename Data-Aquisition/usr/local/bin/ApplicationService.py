@@ -229,13 +229,15 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
                 queryList = join_group['profile']['FullQueryList']
 
     """
-        Invoke analytics workflow to generate Hbase analytics.
+        Invoke analytics workflow to generate target object analytics.
     """
     result = None
     if target == "hbase":
         result = Hbase.run_workflow(tenant, prog_id, queryList)
     elif target == "impala":
         result = Impala.run_workflow(tenant, prog_id, queryList)
+    elif target == "hive":
+        result = Impala.run_workflow(tenant, prog_id, queryList, target)
 
 
     """
