@@ -22,6 +22,7 @@ cp /home/ubuntu/build/deployment/VM/setupSilo.py .
 cp /home/ubuntu/build/deployment/VM/hosts.cfg .
 
 cp /home/ubuntu/build/deployment/Data-Aquisition/etc/xplain/application-api.cfg .
+cp /home/ubuntu/build/deployment/Data-Aquisition/etc/xplain/target_platforms .
 cp /home/ubuntu/build/deployment/Math-Server/etc/xplain/adv_analytics.cfg .
 cp /home/ubuntu/build/deployment/Math-Server/etc/xplain/analytics.cfg .
 

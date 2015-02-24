@@ -9,6 +9,8 @@
     copy: src=/home/xplain/hosts.cfg dest=/var/Baaz/hosts.cfg
   - name: Copy application-api.cfg
     copy: src=/home/xplain/application-api.cfg dest=/etc/xplain/application-api.cfg
+  - name: Copy targe_platforms.cfg
+    copy: src=/home/xplain/targe_platforms.cfg dest=/etc/xplain/targe_platforms.cfg
   - name: Copy adv_analytics.cfg
     copy: src=/home/xplain/adv_analytics.cfg dest=/etc/xplain/adv_analytics.cfg
   - name: Copy analytics.cfg
