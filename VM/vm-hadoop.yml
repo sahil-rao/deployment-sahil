@@ -1,0 +1,536 @@
+---
+# This Playbook would deploy the whole Baazdata cluster with replication and sharding.
+
+
+- hosts: localhost
+  tasks:
+  #copy config files.
+  - name: Create xplain directory
+    command: mkdir /etc/xplain
+    sudo: yes
+    ignore_errors: True
+
+  #start of Impala process initialization
+  - name: Untar Impala prebuild code
+    shell: tar -zxf /home/xplain/Impala.tar.gz
+  - name: Remove old Hive from /usr/local
+    shell: rm -rf /usr/local/hive
+    sudo: yes
+    ignore_errors: True
+  - name: Copy over Hive to /usr/local
+    copy: src=/home/xplain/Impala/thirdparty/hive-0.13.1-cdh5.3.0 dest=/usr/local/
+    sudo: yes 
+  - name: Rename Hive in /usr/local
+    command: mv /usr/local/hive-0.13.1-cdh5.3.0 /usr/local/hive
+    sudo: yes
+  - name: Remove old Hadoop from /usr/local
+    shell: rm -rf /usr/local/hadoop
+    sudo: yes
+    ignore_errors: True
+  - name: Copy over Hadoop to /usr/local
+    copy: src=/home/xplain/Impala/thirdparty/hadoop-2.5.0-cdh5.3.0 dest=/usr/local/
+    sudo: yes
+  - name: Rename Hadoop in /usr/local
+    command: mv /usr/local/hadoop-2.5.0-cdh5.3.0 /usr/local/hadoop
+    sudo: yes
+  - name: Install sasl dependency..
+    command: apt-get install python-dev libsasl2-dev gcc g++
+    sudo: yes
+    ignore_errors: True
+  - name: Install sasl
+    pip: name=sasl
+    sudo: yes
+    ignore_errors: True
+  - name: Install thrift
+    pip: name=sasl
+    sudo: yes
+    ignore_errors: True
+  - name: Install prettytable
+    pip: name=prettytable
+    sudo: yes
+    ignore_errors: True
+
+  - name: Create a directory for Hadoop configuration files
+    shell: mkdir -p /etc/hadoop/conf
+    sudo: yes
+  - name: Create a directory for Hive configuration files
+    shell: mkdir -p /etc/hive/conf
+    sudo: yes
+  - name: Create a directory for Impala configuration files
+    shell: mkdir -p /etc/impala/conf
+    sudo: yes
+
+  #change permission if not accurate
+  - name: Update Hadoop permissions
+    shell: chown -R xplain:root /usr/local/hadoop
+    sudo: yes
+  - name: Update Hive permissions
+    shell: chown -R xplain:root /usr/local/hive
+  - name: Update Hadoop daemon permission
+    shell: chmod 777 /usr/local/hadoop/sbin/hadoop-daemon.sh
+    sudo: yes
+  - name: Update Hadoop yarn daemon permission
+    shell: chmod 755 /usr/local/hadoop/sbin/yarn-daemon.sh
+    sudo: yes
+  - name: Update binary permissions
+    shell: chmod 755 /usr/local/hadoop/bin/hdfs
+    sudo: yes
+  - name: Update binary permissions
+    shell: chmod 755 /usr/local/hadoop/bin/hadoop
+    sudo: yes
+  - name: Update binary permissions
+    shell: chmod 755 /usr/local/hadoop/bin/yarn
+    sudo: yes
+  - name: Update binary permissions
+    shell: chmod 755 /usr/local/hive/bin/hive
+    sudo: yes
+  - name: Update root permissions
+    shell: sudo chmod 555 /
+    sudo: yes
+  - name: Create a yarn directory
+    shell: mkdir -p /var/lib/hadoop-yarn
+    sudo: yes
+  - name: Create a hadoop directory
+    shell: mkdir -p /var/lib/hadoop-hdfs
+    sudo: yes
+  - name: Update Hadoop dir permissions
+    shell: chown -R xplain:root /var/lib/hadoop-hdfs
+    sudo: yes
+  - name: Create a hadoop directory
+    shell: mkdir -p /var/run/hadoop-hdfs
+    sudo: yes
+  - name: Update Hadoop dir permissions
+    shell: chown -R xplain:root /var/run/hadoop-hdfs
+    sudo: yes
+  - name: Install mysql jar files
+    shell: apt-get install libmysql-java
+    sudo: yes
+  - name: create a symlink for mysql jar file
+    shell: cp /usr/share/java/mysql-connector-java-5.1.16.jar /usr/local/hive/lib/
+    sudo: yes
+  - name: copy boost lib
+    shell: cp /home/xplain/Impala/libboost_thread.so.1.46.1 /usr/lib/
+    sudo: yes
+  - name: copy boost lib
+    shell: cp /home/xplain/Impala/libboost_regex.so.1.46.1 /usr/lib/
+    sudo: yes
+  - name: copy boost lib
+    shell: cp /home/xplain/Impala/libboost_system.so.1.46.1 /usr/lib/
+    sudo: yes
+  - name: copy boost lib
+    shell: cp /home/xplain/Impala/libboost_filesystem.so.1.46.1 /usr/lib/
+    sudo: yes
+  - name: copy boost lib
+    shell: cp /home/xplain/Impala/libboost_date_time.so.1.46.1 /usr/lib/
+    sudo: yes
+  - name: copy icui lib
+    shell: cp /home/xplain/Impala/libicudata.so.48 /usr/lib/
+    sudo: yes
+  - name: copy icui lib
+    shell: cp /home/xplain/Impala/libicui18n.so.48 /usr/lib/
+    sudo: yes
+  - name: copy icui lib
+    shell: cp /home/xplain/Impala/libicuuc.so.48 /usr/lib/
+    sudo: yes
+
+  #mysql configuration for hive metastore
+  - name: create a database metastore in mysql
+    mysql_db: name=metastore login_user=root login_password=mysql state=present
+  - name: feed database.sql to server
+    shell: mysql --user=root --password=mysql --database=metastore < /usr/local/hive/scripts/metastore/upgrade/mysql/hive-schema-0.13.0.mysql.sql
+    ignore_errors: True
+  - name: create working directory for Hive
+    shell: mkdir -p /var/run/hive
+    sudo: yes
+  - name: create working directory for Hive
+    shell: mkdir -p /var/log/hive
+    sudo: yes
+  - name: Change the permission of dir
+    shell: chown -R xplain:root /var/run/hive
+    sudo: yes
+  - name: Change the permission of dir
+    shell: chown -R xplain:root /var/log/hive 
+    sudo: yes
+  - name: create working directory for Impala
+    shell: mkdir -p /var/run/impala
+    sudo: yes
+  - name: Change the permission of dir
+    shell: chown -R xplain:root /var/run/impala 
+    sudo: yes
+  - name: create working directory for Impala
+    shell: mkdir -p /var/log/impala
+    sudo: yes
+  - name: Change the permission of dir
+    shell: chown -R xplain:root /var/log/impala 
+    sudo: yes
+
+  - name: Copy over Hadoop core configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/core-site.xml /etc/hadoop/conf/
+    sudo: yes
+  - name: Copy over Hadoop core configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/core-site.xml /etc/impala/conf/
+    sudo: yes
+  - name: Copy over Hadoop core configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/core-site.xml /etc/hive/conf/
+    sudo: yes
+  - name: Copy over Hadoop core configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/core-site.xml /usr/local/hadoop/etc/hadoop
+    sudo: yes
+  - name: Copy over Hadoop hdfs configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/hdfs-site.xml /etc/hadoop/conf/
+    sudo: yes
+  - name: Copy over Hadoop hdfs configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/hdfs-site.xml /etc/impala/conf/
+    sudo: yes
+  - name: Copy over Hadoop hdfs configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/hdfs-site.xml /etc/hive/conf/
+    sudo: yes
+  - name: Copy over Hadoop hdfs configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/hdfs-site.xml /usr/local/hadoop/etc/hadoop
+    sudo: yes
+  - name: Copy over Hadoop yarn configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/yarn-site.xml /etc/hadoop/conf/
+    sudo: yes
+  - name: Copy over Hadoop yarn configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/yarn-site.xml /etc/impala/conf/
+    sudo: yes
+  - name: Copy over Hadoop yarn configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/yarn-site.xml /etc/hive/conf/
+    sudo: yes
+  - name: Copy over Hadoop yarn configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/yarn-site.xml /usr/local/hadoop/etc/hadoop
+    sudo: yes
+  - name: Copy over Hadoop mapred configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/mapred-site.xml /etc/hadoop/conf/
+    sudo: yes
+  - name: Copy over Hadoop mapred configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/mapred-site.xml /etc/impala/conf/
+    sudo: yes
+  - name: Copy over Hadoop mapred configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/mapred-site.xml /etc/hive/conf/
+    sudo: yes
+  - name: Copy over Hadoop mapred configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/mapred-site.xml /usr/local/hadoop/etc/hadoop
+    sudo: yes
+  - name: Copy over Hadoop ENV file
+    command: cp /home/xplain/Impala/fe/src/test/resources/hadoop-env.sh /etc/hadoop/conf/
+    sudo: yes
+  - name: Copy over Hadoop ENV file
+    command: cp /home/xplain/Impala/fe/src/test/resources/hadoop-env.sh /etc/impala/conf/
+    sudo: yes
+  - name: Copy over Hadoop ENV file
+    command: cp /home/xplain/Impala/fe/src/test/resources/hadoop-env.sh /etc/hive/conf/
+    sudo: yes
+  - name: Copy over Hadoop ENV file
+    command: cp /home/xplain/Impala/fe/src/test/resources/hadoop-env.sh /usr/local/hadoop/etc/hadoop
+    sudo: yes
+  - name: Copy over Hive configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/hive-site.xml /etc/hive/conf/
+    sudo: yes
+  - name: Copy over Hive configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/hive-site.xml /etc/hadoop/conf/
+    sudo: yes
+  - name: Copy over Hive configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/hive-site.xml /etc/impala/conf/
+    sudo: yes
+  - name: Copy over Hive configuration file
+    command: cp /home/xplain/Impala/fe/src/test/resources/hive-site.xml /usr/local/hive/conf/
+    sudo: yes
+  - name: Copy over Impala state store binary to /usr/bin
+    command: cp /home/xplain/Impala/be/build/debug/statestore/statestored /usr/bin/statestored
+    sudo: yes
+    ignore_errors: True
+  - name: Copy over Impala catalog binary to /usr/bin
+    command: cp /home/xplain/Impala/be/build/debug/catalog/catalogd /usr/bin/catalogd
+    sudo: yes
+    ignore_errors: True
+  - name: Copy over Impala server binary to /usr/bin
+    command: cp /home/xplain/Impala/be/build/debug/service/impalad /usr/bin/impalad
+    sudo: yes
+    ignore_errors: True
+  - name: Update binary permissions
+    shell: chmod 755 /usr/bin/impalad
+    sudo: yes
+  - name: Copy over Impala config to /etc/default
+    command: cp /home/xplain/Impala/impala /etc/default/
+    sudo: yes
+
+    #copy system start up scripts
+  - name: Copy over System V files into /etc/init.d/
+    command: cp /home/xplain/Impala/hadoop-hdfs-datanode /etc/init.d/hadoop-hdfs-datanode
+    sudo: yes
+  - name: Copy over System V files into /etc/init.d/
+    command: cp /home/xplain/Impala/hadoop-hdfs-namenode /etc/init.d/hadoop-hdfs-namenode
+    sudo: yes
+  - name: Copy over System V files into /etc/init.d/
+    command: cp /home/xplain/Impala/hadoop-hdfs-secondarynamenode /etc/init.d/hadoop-hdfs-secondarynamenode
+    sudo: yes
+  - name: Copy over System V files into /etc/init.d/
+    command: cp /home/xplain/Impala/hadoop-yarn-nodemanager /etc/init.d/hadoop-yarn-nodemanager
+    sudo: yes
+  - name: Copy over System V files into /etc/init.d/
+    command: cp /home/xplain/Impala/hadoop-yarn-resourcemanager /etc/init.d/hadoop-yarn-resourcemanager
+    sudo: yes
+  - name: Copy over System V files into /etc/init.d/
+    command: cp /home/xplain/Impala/hive-metastore /etc/init.d/hive-metastore
+    sudo: yes
+  - name: Copy over System V files into /etc/init.d/
+    command: cp /home/xplain/Impala/impala-catalog /etc/init.d/impala-catalog
+    sudo: yes
+  - name: Copy over System V files into /etc/init.d/
+    command: cp /home/xplain/Impala/impala-server /etc/init.d/impala-server
+    sudo: yes
+  - name: Copy over System V files into /etc/init.d/
+    command: cp /home/xplain/Impala/impala-state-store /etc/init.d/impala-state-store
+    sudo: yes
+  
+    #create a symlinks for that points to above start up script
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-hdfs-namenode S85hadoop-hdfs-namenode chdir=/etc/rc2.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-hdfs-datanode S85hadoop-hdfs-datanode chdir=/etc/rc2.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-hdfs-secondarynamenode S85hadoop-hdfs-secondarynamenode chdir=/etc/rc2.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-yarn-resourcemanager S85hadoop-yarn-resourcemanager chdir=/etc/rc2.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-yarn-nodemanager S85hadoop-yarn-nodemanager chdir=/etc/rc2.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hive-metastore S85hive-metastore chdir=/etc/rc2.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/impala-state-store S90impala-state-store chdir=/etc/rc2.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/impala-server S91impala-server chdir=/etc/rc2.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/impala-catalog S92impala-catalog chdir=/etc/rc2.d
+    ignore_errors: True
+  
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-hdfs-namenode S85hadoop-hdfs-namenode chdir=/etc/rc3.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-hdfs-datanode S85hadoop-hdfs-datanode chdir=/etc/rc3.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-hdfs-secondarynamenode S85hadoop-hdfs-secondarynamenode chdir=/etc/rc3.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-yarn-resourcemanager S85hadoop-yarn-resourcemanager chdir=/etc/rc3.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-yarn-nodemanager S85hadoop-yarn-nodemanager chdir=/etc/rc3.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hive-metastore S85hive-metastore chdir=/etc/rc3.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/impala-state-store S90impala-state-store chdir=/etc/rc3.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/impala-server S91impala-server chdir=/etc/rc3.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/impala-catalog S92impala-catalog chdir=/etc/rc3.d
+    ignore_errors: True
+  
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-hdfs-namenode S85hadoop-hdfs-namenode chdir=/etc/rc4.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-hdfs-datanode S85hadoop-hdfs-datanode chdir=/etc/rc4.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-hdfs-secondarynamenode S85hadoop-hdfs-secondarynamenode chdir=/etc/rc4.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-yarn-resourcemanager S85hadoop-yarn-resourcemanager chdir=/etc/rc4.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-yarn-nodemanager S85hadoop-yarn-nodemanager chdir=/etc/rc4.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hive-metastore S85hive-metastore chdir=/etc/rc4.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/impala-state-store S90impala-state-store chdir=/etc/rc4.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/impala-server S91impala-server chdir=/etc/rc4.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/impala-catalog S92impala-catalog chdir=/etc/rc4.d
+    ignore_errors: True
+  
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-hdfs-namenode S85hadoop-hdfs-namenode chdir=/etc/rc5.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-hdfs-datanode S85hadoop-hdfs-datanode chdir=/etc/rc5.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-hdfs-secondarynamenode S85hadoop-hdfs-secondarynamenode chdir=/etc/rc5.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-yarn-resourcemanager S85hadoop-yarn-resourcemanager chdir=/etc/rc5.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hadoop-yarn-nodemanager S85hadoop-yarn-nodemanager chdir=/etc/rc5.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/hive-metastore S85hive-metastore chdir=/etc/rc5.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/impala-state-store S90impala-state-store chdir=/etc/rc5.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/impala-server S91impala-server chdir=/etc/rc5.d
+    ignore_errors: True
+  - name: Create a symoblic link for all Hadoop, Hive and Impala process
+    sudo: yes
+    command: ln -s ../init.d/impala-catalog S92impala-catalog chdir=/etc/rc5.d
+    ignore_errors: True
+
+  - name: Create Bigtop directory
+    command: mkdir -p /usr/lib/bigtop-utils
+    sudo: yes
+  - name: Copy Bigtop dependency files
+    copy: src=/home/xplain/Impala/bigtop-detect-classpath dest=/usr/lib/bigtop-utils/
+    sudo: yes
+  - name: Copy Bigtop dependency files
+    copy: src=/home/xplain/Impala/bigtop-detect-javahome dest=/usr/lib/bigtop-utils/
+    sudo: yes
+  - name: Copy Bigtop dependency files
+    copy: src=/home/xplain/Impala/bigtop-detect-javalibs dest=/usr/lib/bigtop-utils/
+    sudo: yes
+  - name: Copy Bigtop dependency files
+    copy: src=/home/xplain/Impala/jsvc dest=/usr/lib/bigtop-utils/
+    sudo: yes
+
+  #delete hdfs directory
+  - name: Delete hdfs namenode dir
+    command: rm -rf /home/xplain/Impala/testdata/cluster/cdh5/node-1/data/dfs/nn
+    sudo: yes
+  - name: Delete hdfs datanode dir
+    command: rm -rf /home/xplain/Impala/testdata/cluster/cdh5/node-1/data/dfs/dn
+    sudo: yes
+  - name: format hdfs namenode
+    command: /usr/local/hadoop/bin/hdfs namenode -format
+  - name: Change the permission for namenode
+    command: chown -R xplain:xplain /home/xplain/Impala/testdata/cluster/cdh5/node-1/data/dfs/nn
+    sudo: yes
+
+  - name: Stop Hadoop namenode
+    command: pkill -f "namenode"
+    ignore_errors: True
+    sudo: yes
+  - name: Start Hadoop namenode
+    service: name=hadoop-hdfs-namenode state=started
+    ignore_errors: True
+    sudo: yes
+  - name: Stop Hadoop datanode
+    command: pkill -f "datanode" 
+    ignore_errors: True
+    sudo: yes
+  - name: Start Hadoop datanode
+    sudo: yes
+    command: service hadoop-hdfs-datanode start
+    ignore_errors: True
+  - name: Stop Hadoop secondarynamenode
+    command: pkill -f "secondarynamenode"
+    ignore_errors: True
+    sudo: yes
+  - name: Start Hadoop secondarynamenode
+    service: name=hadoop-hdfs-secondarynamenode state=started
+    ignore_errors: True
+    sudo: yes
+  - name: Stop Hadoop yarn resourcemanager
+    command: pkill -f "resourcemanager"
+    ignore_errors: True
+    sudo: yes
+  - name: Start Hadoop yarn resourcemanager
+    service: name=hadoop-yarn-resourcemanager state=started
+    ignore_errors: True
+    sudo: yes
+  - name: Stop Hadoop yarn nodemanager
+    command: pkill -f "nodemanager"
+    ignore_errors: True
+    sudo: yes
+  - name: Start Hadoop yarn nodemanager
+    service: name=hadoop-yarn-nodemanager state=started
+    ignore_errors: True
+    sudo: yes
+  - name: Stop Hive Metastore
+    service: name=hive-metastore state=stopped
+    ignore_errors: True
+    sudo: yes
+  - name: Start Hive Metastore
+    service: name=hive-metastore state=started
+    ignore_errors: True
+    sudo: yes
+  - name: Stop Impala Statestore
+    service: name=impala-state-store state=stopped
+    ignore_errors: True
+    sudo: yes
+  - name: Start Impala Statestore
+    service: name=impala-state-store state=started
+    ignore_errors: True
+    sudo: yes
+  - name: Stop Impala Server
+    service: name=impala-server state=stopped
+    ignore_errors: True
+    sudo: yes
+  - name: Start Impala Server
+    service: name=impala-server state=started
+    ignore_errors: True
+    sudo: yes
+  - name: Stop Impala Catalog
+    service: name=impala-catalog state=stopped
+    ignore_errors: True
+    sudo: yes
+  - name: Start Impala Catalog
+    service: name=impala-catalog state=started
+    ignore_errors: True
+    sudo: yes
