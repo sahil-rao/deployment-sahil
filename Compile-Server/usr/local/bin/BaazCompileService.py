@@ -781,7 +781,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         if data is not None:
             mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': data}})
 
-    
+
 
     context.queue.append({'eid': entity.eid, 'etype': etype})
     if update == True and etype == "SQL_QUERY":
@@ -790,7 +790,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         if custom_id is not None:
             inst_dict = {'custom_id':custom_id}
         mongoconn.updateInstance(entity, query, None, inst_dict)
-        
+
         try:
             for key in compile_doc:
                 stats_runsuccess_key = "Compiler." + key + ".run_success"
@@ -801,10 +801,11 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 stats_proc_failure_key = "Compiler." + key + ".storeproc_failure"
                 stats_sub_success_key = "Compiler." + key + ".subquery_success"
                 stats_sub_failure_key = "Compiler." + key + ".subquery_failure"
-            
+
                 if compile_doc[key].has_key("ErrorSignature") \
                     and len(compile_doc[key]["ErrorSignature"]) > 0:
                     if etype == "SQL_QUERY":
+                        #No need to add HAQR call here since this is executed only when there is a repetition of hash
                         collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
                     elif etype == "SQL_SUBQUERY":
                         collection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
@@ -930,6 +931,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 and len(compile_doc[key]["ErrorSignature"]) > 0:
                 if etype == "SQL_QUERY":
                     collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
+                    if key == "impala":
+                        analyzeHAQR(query,key,tenant,uid,source_platform)
                 elif etype == "SQL_SUBQUERY":
                     collection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
                 elif etype == "SQL_STORED_PROCEDURE":
@@ -958,6 +961,84 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         return entity, "UpdateQueryProfile"
         
     return entity, "GenerateQueryProfile"
+
+def analyzeHAQR(query, platform, tenant, uid,source_platform):
+    if platform != "impala":
+        return #currently HAQR supported only for impala
+
+    timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
+    destination = BAAZ_DATA_ROOT+'compile-' + tenant + "/" + timestr
+
+    if not os.path.exists(destination):
+        os.makedirs(destination)
+
+    dest_file_name = destination + "/input.query"
+    dest_file = open(dest_file_name, "w+")
+    dest_file.write(query)
+    dest_file.flush()
+    dest_file.close()
+
+    output_file_name = destination + "/haqr.out"
+
+    queryFsmFile = "/usr/local/bin/QueryFSM.csv";
+    selectFsmFile = "/usr/local/bin/SelectFSM.csv";
+    whereFsmFile = "/usr/local/bin/WhereFSM.csv";
+    groupByFsmFile = "/usr/local/bin/GroupbyFSM.csv";
+    whereSubClauseFsmFile = "/usr/local/bin/WhereSubclauseFSM.csv";
+    fromFsmFile = "/usr/local/bin/FromFSM.csv";
+    selectSubClauseFsmFile = "/usr/local/bin/SelectSubclauseFSM.csv";
+    groupBySubClauseFsmFile = "/usr/local/bin/GroupBySubclauseFSM.csv";
+
+    data_dict = {
+        "InputFile": dest_file_name,
+        "OutputFile": output_file_name,
+        "EntityId": uid,
+        "TenantId": tenant,
+        "queryFsmFile": queryFsmFile,
+        "selectFsmFile": selectFsmFile,
+        "whereFsmFile": whereFsmFile,
+        "groupByFsmFile": groupByFsmFile,
+        "whereSubClauseFsmFile": whereSubClauseFsmFile,
+        "fromFsmFile": fromFsmFile,
+        "selectSubClauseFsmFile": selectSubClauseFsmFile,
+        "groupBySubClauseFsmFile": groupBySubClauseFsmFile,
+        "source_platform": source_platform
+    }
+
+    data = dumps(data_dict)
+
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    retry_count = 0
+    socket_connected = False
+
+    while (socket_connected == False) and (retry_count < 2):
+
+        retry_count += 1
+        try:
+            client_socket.connect(("localhost", 12121))
+            socket_connected = True
+        except:
+            logging.error("Unable to connect to JVM socket on try #%s." %retry_count)
+            time.sleep(1)
+        if socket_connected == False:
+            raise Exception("Unable to connect to JVM socket.")
+
+    client_socket.send("1\n");
+    """
+    For HAQR processing the opcode is 4.
+    """
+    client_socket.send("4\n");
+    data = data + "\n"
+    client_socket.send(data)
+    rx_data = client_socket.recv(512)
+
+    if rx_data == "Done":
+        logging.info("HAQR Got Done")
+
+    client_socket.close()
+
+    return
 
 def callback(ch, method, properties, body):
     startTime = time.time()
