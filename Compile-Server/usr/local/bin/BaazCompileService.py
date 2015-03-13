@@ -932,7 +932,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if etype == "SQL_QUERY":
                     collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
                     if key == "impala":
-                        analyzeHAQR(query,key,tenant,uid,source_platform)
+                        analyzeHAQR(query,key,tenant,entity.eid,source_platform,mongoconn,redis_conn)
                 elif etype == "SQL_SUBQUERY":
                     collection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
                 elif etype == "SQL_STORED_PROCEDURE":
@@ -962,7 +962,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         
     return entity, "GenerateQueryProfile"
 
-def analyzeHAQR(query, platform, tenant, uid,source_platform):
+def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_conn):
     if platform != "impala":
         return #currently HAQR supported only for impala
 
@@ -980,19 +980,19 @@ def analyzeHAQR(query, platform, tenant, uid,source_platform):
 
     output_file_name = destination + "/haqr.out"
 
-    queryFsmFile = "/usr/local/bin/QueryFSM.csv";
-    selectFsmFile = "/usr/local/bin/SelectFSM.csv";
-    whereFsmFile = "/usr/local/bin/WhereFSM.csv";
-    groupByFsmFile = "/usr/local/bin/GroupbyFSM.csv";
-    whereSubClauseFsmFile = "/usr/local/bin/WhereSubclauseFSM.csv";
-    fromFsmFile = "/usr/local/bin/FromFSM.csv";
-    selectSubClauseFsmFile = "/usr/local/bin/SelectSubclauseFSM.csv";
-    groupBySubClauseFsmFile = "/usr/local/bin/GroupBySubclauseFSM.csv";
+    queryFsmFile = "/etc/xplain/QueryFSM.csv";
+    selectFsmFile = "/etc/xplain/SelectFSM.csv";
+    whereFsmFile = "/etc/xplain/WhereFSM.csv";
+    groupByFsmFile = "/etc/xplain/GroupbyFSM.csv";
+    whereSubClauseFsmFile = "/etc/xplain/WhereSubclauseFSM.csv";
+    fromFsmFile = "/etc/xplain/FromFSM.csv";
+    selectSubClauseFsmFile = "/etc/xplain/SelectSubclauseFSM.csv";
+    groupBySubClauseFsmFile = "/etc/xplain/GroupBySubclauseFSM.csv";
 
     data_dict = {
         "InputFile": dest_file_name,
         "OutputFile": output_file_name,
-        "EntityId": uid,
+        "EntityId": eid,
         "TenantId": tenant,
         "queryFsmFile": queryFsmFile,
         "selectFsmFile": selectFsmFile,
@@ -1037,6 +1037,112 @@ def analyzeHAQR(query, platform, tenant, uid,source_platform):
         logging.info("HAQR Got Done")
 
     client_socket.close()
+
+    data = None
+    logging.info("Loading file : "+ output_file_name)
+    with open(output_file_name) as data_file:
+        data = load(data_file)
+
+    logging.info(dumps(data))
+
+    mongoconn.db.entities.update({'eid':eid},{"$set":{'profile.Compiler.HAQR':data}})
+    updateRedisforHAQR(redis_conn,data,tenant,eid)
+
+    return
+
+def updateRedisforHAQR(redis_conn,data,tenant,eid):
+    redis_conn.createEntityProfile(tenant+"HAQR", "HAQR")
+    redis_conn.createEntityProfile(eid+"HAQR", "HAQR")
+
+    if data['sourceStatus']=='SUCCESS':
+        redis_conn.incrEntityCounter(tenant+"HAQR", "sourceSucess", sort=False, incrBy=1)
+    else:
+        redis_conn.incrEntityCounter(tenant+"HAQR", "sourceFailure", sort=False, incrBy=1)
+
+    if data['platformCompilationStatus']['Impala']['queryStatus']=="SUCCESS":
+        redis_conn.incrEntityCounter(tenant+"HAQR", "impalaSuccess", sort=False, incrBy=1)
+    else:
+        #need a set for this in redis?
+        #querySet.add(data['platformCompilationStatus']['Impala']['queryHash'])
+        #query_html_page += '<tr><td>'+str(i)+'</td><td>'+data['platformCompilationStatus']['Impala']['query']+'</td></tr>'
+        redis_conn.incrEntityCounter(tenant+"HAQR", "impalaFail", sort=False, incrBy=1)
+
+    if data['platformCompilationStatus']['Impala']['clauseStatus']['Select']['clauseStatus']=="SUCCESS":
+        redis_conn.incrEntityCounter(tenant+"HAQR", "impalaSelectSuccess", sort=False, incrBy=1)
+    else:
+        redis_conn.incrEntityCounter(tenant+"HAQR", "impalaSelectFail", sort=False, incrBy=1)
+        #if 'clauseHash' in data['platformCompilationStatus']['Impala']['clauseStatus']['Select']:
+            #need a set for this in redis?
+            #selectSet.add(data['platformCompilationStatus']['Impala']['clauseStatus']['Select']['clauseHash'])
+            #sc_html_page+='<tr><td>'+str(si)+'</td><td>'+data['platformCompilationStatus']['Impala']['clauseStatus']['Select']['clauseString']+'</td></tr>'
+        if 'subClauseList' in data['platformCompilationStatus']['Impala']['clauseStatus']['Select']:
+            for subClause in data['platformCompilationStatus']['Impala']['clauseStatus']['Select']['subClauseList']:
+                if subClause['clauseStatus']=="SUCCESS":
+                    redis_conn.incrEntityCounter(tenant+"HAQR", "impalaSelectSubClauseSuccess", sort=False, incrBy=1)
+                else:
+                    redis_conn.incrEntityCounter(tenant+"HAQR", "impalaSelectSubClauseFailure", sort=False, incrBy=1)
+                    redis_conn.incrEntityCounter(eid+"HAQR", "impalaQueryByClauseSelectFailure", sort=False, incrBy=1)
+                    #need a set for this in redis?
+                    #selectSCSet.add(subClause['clauseHash'])
+                    #ssci+=1
+                    #ssc_html_page+='<tr><td>'+str(ssci)+'</td><td>'+subClause['clauseString']+'</td></tr>'
+    if data['platformCompilationStatus']['Impala']['clauseStatus']['From']['clauseStatus']=="SUCCESS":
+        redis_conn.incrEntityCounter(tenant+"HAQR", "impalaFromSuccess", sort=False, incrBy=1)
+    elif data['platformCompilationStatus']['Impala']['clauseStatus']['From']['clauseStatus']=="AUTO_SUGGEST":
+        redis_conn.incrEntityCounter(tenant+"HAQR", "impalaFromAutoCorrect", sort=False, incrBy=1)
+        redis_conn.incrEntityCounter(eid+"HAQR", "impalaQueryByClauseFromFailure", sort=False, incrBy=1)
+        #faci+=1
+        #fac_html_page+='<tr><td>'+str(faci)+'</td><td>'+data['platformCompilationStatus']['Impala']['clauseStatus']['From']['category']+\
+        #'</td><td>'+data['platformCompilationStatus']['Impala']['clauseStatus']['From']['clauseString']+'</td><td>'+\
+        #data['platformCompilationStatus']['Impala']['clauseStatus']['From']['suggestedFix']+'</td><td>'+'</tr>'
+    else:
+        redis_conn.incrEntityCounter(tenant+"HAQR", "impalaFromFailure", sort=False, incrBy=1)
+        redis_conn.incrEntityCounter(eid+"HAQR", "impalaQueryByClauseFromFailure", sort=False, incrBy=1)
+        #if 'clauseHash' in data['platformCompilationStatus']['Impala']['clauseStatus']['From']:
+        #    fi+=1
+        #    fromSet.add(data['platformCompilationStatus']['Impala']['clauseStatus']['From']['clauseHash'])
+        #    fc_html_page+='<tr><td>'+str(fi)+'</td><td>'+data['platformCompilationStatus']['Impala']['clauseStatus']['From']['clauseString']+'</td></tr>'
+
+    if "Group By" in data['platformCompilationStatus']['Impala']['clauseStatus']:
+        if data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]['clauseStatus']=="SUCCESS":
+            redis_conn.incrEntityCounter(tenant+"HAQR", "impalaGroupBySuccess", sort=False, incrBy=1)
+        else:
+            redis_conn.incrEntityCounter(tenant+"HAQR", "impalaGroupByFailure", sort=False, incrBy=1)
+            # if 'clauseHash' in data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]:
+            #     gi+=1
+            #     groupSet.add(data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]['clauseHash'])
+            #     gc_html_page+='<tr><td>'+str(gi)+'</td><td>'+data['platformCompilationStatus']['Impala']['clauseStatus']['Group By']['clauseString']+'</td></tr>'
+            if 'subClauseList' in data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]:
+                for subClause in data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]['subClauseList']:
+                    if subClause['clauseStatus']=="SUCCESS":
+                        redis_conn.incrEntityCounter(tenant+"HAQR", "impalaGroupBySubClauseSuccess", sort=False, incrBy=1)
+                    else:
+                        redis_conn.incrEntityCounter(tenant+"HAQR", "impalaGroupBySubClauseFailure", sort=False, incrBy=1)
+                        redis_conn.incrEntityCounter(eid+"HAQR", "impalaQueryByClauseGroupByFailure", sort=False, incrBy=1)
+
+                        #gsci+=1
+                        #gsc_html_page+='<tr><td>'+str(gsci)+'</td><td>'+subClause['clauseString']+'</td></tr>'
+                        #groupSCSet.add(subClause['clauseHash'])
+
+    if "Where" in data['platformCompilationStatus']['Impala']['clauseStatus']:
+        if data['platformCompilationStatus']['Impala']['clauseStatus']["Where"]['clauseStatus']=="SUCCESS":
+            redis_conn.incrEntityCounter(tenant+"HAQR", "impalaWhereSuccess", sort=False, incrBy=1)
+        else:
+            redis_conn.incrEntityCounter(tenant+"HAQR", "impalaWhereFailure", sort=False, incrBy=1)
+            # if 'clauseHash' in data['platformCompilationStatus']['Impala']['clauseStatus']["Where"]:
+            #     wi+=1
+            #     whereSet.add(data['platformCompilationStatus']['Impala']['clauseStatus']["Where"]['clauseHash'])
+            #     wc_html_page+='<tr><td>'+str(wi)+'</td><td>'+data['platformCompilationStatus']['Impala']['clauseStatus']['Where']['clauseString']+'</td></tr>'
+            if 'subClauseList' in data['platformCompilationStatus']['Impala']['clauseStatus']["Where"]:
+                for subClause in data['platformCompilationStatus']['Impala']['clauseStatus']["Where"]['subClauseList']:
+                    if subClause['clauseStatus']=="SUCCESS":
+                        redis_conn.incrEntityCounter(tenant+"HAQR", "impalaWhereSubClauseSuccess", sort=False, incrBy=1)
+                    else:
+                        redis_conn.incrEntityCounter(tenant+"HAQR", "impalaWhereSubClauseFailure", sort=False, incrBy=1)
+                        redis_conn.incrEntityCounter(eid+"HAQR", "impalaQueryByClauseWhereFailure", sort=False, incrBy=1)
+                        # wsci+=1
+                        # wsc_html_page+='<tr><td>'+str(wsci)+'</td><td>'+subClause['clauseString']+'</td></tr>'
+                        # whereSCSet.add(subClause['clauseHash'])
 
     return
 
