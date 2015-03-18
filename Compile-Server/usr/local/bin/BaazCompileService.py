@@ -931,8 +931,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 and len(compile_doc[key]["ErrorSignature"]) > 0:
                 if etype == "SQL_QUERY":
                     collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
-                    #if key == "impala":
-                        #analyzeHAQR(query,key,tenant,entity.eid,source_platform,mongoconn,redis_conn)
+                    # if key == "impala":
+                    #     analyzeHAQR(query,key,tenant,entity.eid,source_platform,mongoconn,redis_conn)
                 elif etype == "SQL_SUBQUERY":
                     collection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
                 elif etype == "SQL_STORED_PROCEDURE":
@@ -1057,6 +1057,7 @@ def updateRedisforHAQR(redis_conn,data,tenant,eid):
         redis_conn.incrEntityCounter("HAQR", "sourceSucess", sort=False, incrBy=1)
     else:
         redis_conn.incrEntityCounter("HAQR", "sourceFailure", sort=False, incrBy=1)
+        return
 
     if data['platformCompilationStatus']['Impala']['queryStatus']=="SUCCESS":
         redis_conn.incrEntityCounter("HAQR", "impalaSuccess", sort=False, incrBy=1)
