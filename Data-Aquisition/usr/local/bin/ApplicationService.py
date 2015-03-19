@@ -366,7 +366,10 @@ def callback(ch, method, properties, body):
             db = MongoClient(mongo_url)[tenant]
             redis_conn = RedisConnector(tenant)
             add_table_volume.execute(tenant, msg_dict)
-            resp_dict = process_ddl_request(ch, properties, tenant, "impala", instances, db, redis_conn)
+            if 'target' in msg_dict:
+                resp_dict = process_ddl_request(ch, properties, tenant, msg_dict['target'], instances, db, redis_conn)
+            else:
+                resp_dict = process_ddl_request(ch, properties, tenant, "impala", instances, db, redis_conn)
         elif msg_dict["opcode"] == "MongoTransform":
     
             logging.info("Got the opcode For Mongo Translation")
