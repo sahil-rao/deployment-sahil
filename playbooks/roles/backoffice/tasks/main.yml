@@ -214,6 +214,14 @@
   pip: name=sasl
   sudo: yes
   ignore_errors: True
+- name: Install impyla
+  pip: name=impyla
+  sudo: yes
+  ignore_errors: True
+- name: Install pyhs2
+  pip: name=pyhs2
+  sudo: yes
+  ignore_errors: True
 
 - name: Create a directory for Hadoop configuration files
   shell: mkdir -p /etc/hadoop/conf
@@ -490,6 +498,10 @@
   ignore_errors: True
 - name: Create a symoblic link for all Hadoop, Hive and Impala process
   sudo: yes
+  command: ln -s ../init.d/hive-server2 S85hive-server2 chdir=/etc/rc2.d
+  ignore_errors: True
+- name: Create a symoblic link for all Hadoop, Hive and Impala process
+  sudo: yes
   command: ln -s ../init.d/impala-state-store S90impala-state-store chdir=/etc/rc2.d
   ignore_errors: True
 - name: Create a symoblic link for all Hadoop, Hive and Impala process
@@ -524,6 +536,10 @@
 - name: Create a symoblic link for all Hadoop, Hive and Impala process
   sudo: yes
   command: ln -s ../init.d/hive-metastore S85hive-metastore chdir=/etc/rc3.d
+  ignore_errors: True
+- name: Create a symoblic link for all Hadoop, Hive and Impala process
+  sudo: yes
+  command: ln -s ../init.d/hive-server2 S85hive-server2 chdir=/etc/rc3.d
   ignore_errors: True
 - name: Create a symoblic link for all Hadoop, Hive and Impala process
   sudo: yes
@@ -564,6 +580,10 @@
   ignore_errors: True
 - name: Create a symoblic link for all Hadoop, Hive and Impala process
   sudo: yes
+  command: ln -s ../init.d/hive-server2 S85hive-server2 chdir=/etc/rc4.d
+  ignore_errors: True
+- name: Create a symoblic link for all Hadoop, Hive and Impala process
+  sudo: yes
   command: ln -s ../init.d/impala-state-store S90impala-state-store chdir=/etc/rc4.d
   ignore_errors: True
 - name: Create a symoblic link for all Hadoop, Hive and Impala process
@@ -598,6 +618,10 @@
 - name: Create a symoblic link for all Hadoop, Hive and Impala process
   sudo: yes
   command: ln -s ../init.d/hive-metastore S85hive-metastore chdir=/etc/rc5.d
+  ignore_errors: True
+- name: Create a symoblic link for all Hadoop, Hive and Impala process
+  sudo: yes
+  command: ln -s ../init.d/hive-server2 S85hive-server2 chdir=/etc/rc5.d
   ignore_errors: True
 - name: Create a symoblic link for all Hadoop, Hive and Impala process
   sudo: yes
@@ -684,6 +708,14 @@
   sudo: yes
 - name: Start Hive Metastore
   service: name=hive-metastore state=started
+  ignore_errors: True
+  sudo: yes
+- name: Stop Hive Server2
+  service: name=hive-server2 state=stopped
+  ignore_errors: True
+  sudo: yes
+- name: Start Hive Server2
+  service: name=hive-server2 state=started
   ignore_errors: True
   sudo: yes
 - name: Stop Impala Statestore
