@@ -107,9 +107,9 @@
 - name: copy monitrc file
   template: src=roles/backoffice/files/monitrc dest=/etc/monit/monitrc
   sudo: yes
-- name: Start hive server
-  action: service name=hive state=started
-  sudo: yes
+#- name: Start hive server
+#  action: service name=hive state=started
+#  sudo: yes
 - name: Install Elasticsearch
   pip: name=elasticsearch
   sudo: yes
@@ -201,6 +201,9 @@
   sudo: yes
 - name: Rename Hadoop in /usr/local
   command: mv /usr/local/hadoop-2.5.0-cdh5.3.0 /usr/local/hadoop
+  sudo: yes
+- name: Update easy install
+  command: easy_install -U setuptools
   sudo: yes
 - name: Install sasl dependency..
   command: apt-get install python-dev libsasl2-dev gcc g++
@@ -460,6 +463,9 @@
   sudo: yes
 - name: Copy over System V files into /etc/init.d/
   command: cp /home/ubuntu/Impala/hive-metastore /etc/init.d/hive-metastore
+  sudo: yes
+- name: Copy over System V files into /etc/init.d/
+  command: cp /home/ubuntu/Impala/hive-server2 /etc/init.d/hive-server2
   sudo: yes
 - name: Copy over System V files into /etc/init.d/
   command: cp /home/ubuntu/Impala/impala-catalog /etc/init.d/impala-catalog
