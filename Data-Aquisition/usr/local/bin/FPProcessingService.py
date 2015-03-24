@@ -188,7 +188,7 @@ class callback_context():
         
         Self.redis_conn.setScaleModeTotalQueryCount( min(queries_left, int(total_queries_found)), Self.uid )
         Self.collection.update({'uid':Self.uid},{'$set':{"total_queries": min(queries_left, total_queries_found), "processed_queries":0}})
-        if total_queries_found > Self.queryNumThreshold:
+        if total_queries_found > Self.queryNumThreshold and Self.__getScaleMode():
             Self.scale_mode = True
 
     def __getUploadLimit(Self):
@@ -205,6 +205,18 @@ class callback_context():
             upLimit = org["upLimit"]
             
         return upLimit
+
+    def __getScaleMode(Self):
+        #if Self.CLUSTER_MODE == "development":
+        #    return True
+
+        userdb = MongoClient(getMongoServer(Self.tenant))["xplainIO"]
+        org = userdb.organizations.find_one({"guid":Self.tenant}, {"scaleMode":1})
+        
+        if "scaleMode" in org:
+            return org["scaleMode"]
+            
+        return True
 
     def __checkQueryLimit(Self):
         upStats = Self.collection.find_one({'uid':"0"})
