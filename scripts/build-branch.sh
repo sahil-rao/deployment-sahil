@@ -10,27 +10,27 @@ mkdir /home/ubuntu/build
 cd  /home/ubuntu/build
 
 #Checkout deployment
-git clone -b $1 https://github.com/baazdata/deployment.git
+git clone https://github.com/baazdata/deployment.git --branch $1 --single-branch
 #cd /home/ubuntu/build/deployment
 #git pull --rebase
 
 #Checkout analytics
-git clone -b $1 https://github.com/baazdata/analytics.git
+git clone https://github.com/baazdata/analytics.git --branch $1 --single-branch
 #cd /home/ubuntu/build/analytics
 #git pull --rebase
 
 #Checkout compiler
-git clone -b $1 https://github.com/baazdata/compiler.git
+git clone https://github.com/baazdata/compiler.git --branch $1 --single-branch
 #cd /home/ubuntu/build/compiler
 #git pull --rebase
 
 #Checkout graph
-git clone -b $1 https://github.com/baazdata/graph.git
+git clone https://github.com/baazdata/graph.git --branch $1 --single-branch
 #cd /home/ubuntu/build/graph
 #git pull --rebase
 
 #Checkout UI
-git clone -b $1 https://github.com/baazdata/UI.git
+git clone https://github.com/baazdata/UI.git --branch $1 --single-branch
 #cd /home/ubuntu/build/UI
 #git pull --rebase
 
