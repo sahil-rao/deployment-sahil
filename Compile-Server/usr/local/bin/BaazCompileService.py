@@ -998,6 +998,7 @@ def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_con
     fromFsmFile = "/etc/xplain/FromFSM.csv";
     selectSubClauseFsmFile = "/etc/xplain/SelectSubclauseFSM.csv";
     groupBySubClauseFsmFile = "/etc/xplain/GroupBySubclauseFSM.csv";
+    fromSubClauseFsmFile = "/etc/xplain/FromSubclauseFSM.csv";
 
     data_dict = {
         "InputFile": dest_file_name,
@@ -1012,6 +1013,7 @@ def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_con
         "fromFsmFile": fromFsmFile,
         "selectSubClauseFsmFile": selectSubClauseFsmFile,
         "groupBySubClauseFsmFile": groupBySubClauseFsmFile,
+        "fromSubClauseFsmFile": fromSubClauseFsmFile,
         "source_platform": source_platform
     }
 
