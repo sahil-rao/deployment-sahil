@@ -646,6 +646,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     comp_profile = profile_dict["profile"]["Compiler"]
 
     q_hash = None
+    q_name_hash = None
 
     if len(context.queue) < 1:
         etype = EntityType.SQL_QUERY
@@ -707,6 +708,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 q_hash =  compile_doc[key]["queryHash"]
                 profile_dict["md5"] = q_hash
                 logging.info("Compiler {0} Program {1}  md5 {2}".format(key, query, q_hash))
+            if "queryNameHash" in compile_doc[key]:
+                q_name_hash =  compile_doc[key]["queryNameHash"]
             if "queryTemplate" in compile_doc[key]:
                 profile_dict["logical_name"] = compile_doc[key]["queryTemplate"]
             if 'OperatorList' in compile_doc[key] and \
@@ -749,10 +752,13 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 redis_conn.createEntityProfile(entity.eid, etype)
                 redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
                 
-                inst_dict = None
+                inst_dict = {"query": query}
+                if data is not None:
+                    inst_dict.update(data)
                 if custom_id is not None:
-                    inst_dict = {'custom_id':custom_id}
-                mongoconn.updateInstance(entity, query, None, inst_dict)
+                    mongoconn.updateInstance(entity, custom_id, None, inst_dict)
+                else:
+                    mongoconn.updateInstance(entity, eid, None, inst_dict)
 
                 entityProfile = entity.profile
 
@@ -786,10 +792,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     context.queue.append({'eid': entity.eid, 'etype': etype})
     if update == True and etype == "SQL_QUERY":
 
-        inst_dict = None
+        inst_dict = {"query": query}
+        if data is not None:
+            inst_dict.update(data)
         if custom_id is not None:
-            inst_dict = {'custom_id':custom_id}
-        mongoconn.updateInstance(entity, query, None, inst_dict)
+            mongoconn.updateInstance(entity, custom_id, None, inst_dict)
+        else:
+            eid = IdentityService.getNewIdentity(tenant, True)
+            mongoconn.updateInstance(entity, eid, None, inst_dict)
 
         try:
             for key in compile_doc:
