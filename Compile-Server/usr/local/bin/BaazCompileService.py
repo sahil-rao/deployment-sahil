@@ -1075,19 +1075,12 @@ def updateRedisforHAQR(redis_conn,data,tenant,eid):
     if data['platformCompilationStatus']['Impala']['queryStatus']=="SUCCESS":
         redis_conn.incrEntityCounter("HAQR", "impalaSuccess", sort=False, incrBy=1)
     else:
-        #need a set for this in redis?
-        #querySet.add(data['platformCompilationStatus']['Impala']['queryHash'])
-        #query_html_page += '<tr><td>'+str(i)+'</td><td>'+data['platformCompilationStatus']['Impala']['query']+'</td></tr>'
         redis_conn.incrEntityCounter("HAQR", "impalaFail", sort=False, incrBy=1)
 
     if data['platformCompilationStatus']['Impala']['clauseStatus']['Select']['clauseStatus']=="SUCCESS":
         redis_conn.incrEntityCounter("HAQR", "impalaSelectSuccess", sort=False, incrBy=1)
     else:
         redis_conn.incrEntityCounter("HAQR", "impalaSelectFail", sort=False, incrBy=1)
-        #if 'clauseHash' in data['platformCompilationStatus']['Impala']['clauseStatus']['Select']:
-            #need a set for this in redis?
-            #selectSet.add(data['platformCompilationStatus']['Impala']['clauseStatus']['Select']['clauseHash'])
-            #sc_html_page+='<tr><td>'+str(si)+'</td><td>'+data['platformCompilationStatus']['Impala']['clauseStatus']['Select']['clauseString']+'</td></tr>'
         if 'subClauseList' in data['platformCompilationStatus']['Impala']['clauseStatus']['Select']:
             for subClause in data['platformCompilationStatus']['Impala']['clauseStatus']['Select']['subClauseList']:
                 if subClause['clauseStatus']=="SUCCESS":
@@ -1095,36 +1088,27 @@ def updateRedisforHAQR(redis_conn,data,tenant,eid):
                 else:
                     redis_conn.incrEntityCounter("HAQR", "impalaSelectSubClauseFailure", sort=False, incrBy=1)
                     redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseSelectFailure", sort=False, incrBy=1)
-                    #need a set for this in redis?
-                    #selectSCSet.add(subClause['clauseHash'])
-                    #ssci+=1
-                    #ssc_html_page+='<tr><td>'+str(ssci)+'</td><td>'+subClause['clauseString']+'</td></tr>'
     if data['platformCompilationStatus']['Impala']['clauseStatus']['From']['clauseStatus']=="SUCCESS":
         redis_conn.incrEntityCounter("HAQR", "impalaFromSuccess", sort=False, incrBy=1)
     elif data['platformCompilationStatus']['Impala']['clauseStatus']['From']['clauseStatus']=="AUTO_SUGGEST":
         redis_conn.incrEntityCounter("HAQR", "impalaFromAutoCorrect", sort=False, incrBy=1)
-        redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseFromFailure", sort=False, incrBy=1)
-        #faci+=1
-        #fac_html_page+='<tr><td>'+str(faci)+'</td><td>'+data['platformCompilationStatus']['Impala']['clauseStatus']['From']['category']+\
-        #'</td><td>'+data['platformCompilationStatus']['Impala']['clauseStatus']['From']['clauseString']+'</td><td>'+\
-        #data['platformCompilationStatus']['Impala']['clauseStatus']['From']['suggestedFix']+'</td><td>'+'</tr>'
     else:
         redis_conn.incrEntityCounter("HAQR", "impalaFromFailure", sort=False, incrBy=1)
-        redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseFromFailure", sort=False, incrBy=1)
-        #if 'clauseHash' in data['platformCompilationStatus']['Impala']['clauseStatus']['From']:
-        #    fi+=1
-        #    fromSet.add(data['platformCompilationStatus']['Impala']['clauseStatus']['From']['clauseHash'])
-        #    fc_html_page+='<tr><td>'+str(fi)+'</td><td>'+data['platformCompilationStatus']['Impala']['clauseStatus']['From']['clauseString']+'</td></tr>'
-
+    if 'subClauseList' in data['platformCompilationStatus']['Impala']['clauseStatus']["From"]:
+        for subClause in data['platformCompilationStatus']['Impala']['clauseStatus']["From"]['subClauseList']:
+            if subClause['clauseStatus']=="SUCCESS":
+                redis_conn.incrEntityCounter("HAQR", "impalaFromSubClauseSuccess", sort=False, incrBy=1)
+            elif subClause['clauseStatus']=="AUTO_SUGGEST":
+                redis_conn.incrEntityCounter("HAQR", "impalaFromSubClauseAutoCorrect", sort=False, incrBy=1)
+            else:
+                redis_conn.incrEntityCounter("HAQR", "impalaFromSubClauseFailure", sort=False, incrBy=1)
+                redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseFromFailure", sort=False, incrBy=1)
+    
     if "Group By" in data['platformCompilationStatus']['Impala']['clauseStatus']:
         if data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]['clauseStatus']=="SUCCESS":
             redis_conn.incrEntityCounter("HAQR", "impalaGroupBySuccess", sort=False, incrBy=1)
         else:
             redis_conn.incrEntityCounter("HAQR", "impalaGroupByFailure", sort=False, incrBy=1)
-            # if 'clauseHash' in data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]:
-            #     gi+=1
-            #     groupSet.add(data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]['clauseHash'])
-            #     gc_html_page+='<tr><td>'+str(gi)+'</td><td>'+data['platformCompilationStatus']['Impala']['clauseStatus']['Group By']['clauseString']+'</td></tr>'
             if 'subClauseList' in data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]:
                 for subClause in data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]['subClauseList']:
                     if subClause['clauseStatus']=="SUCCESS":
@@ -1133,19 +1117,11 @@ def updateRedisforHAQR(redis_conn,data,tenant,eid):
                         redis_conn.incrEntityCounter("HAQR", "impalaGroupBySubClauseFailure", sort=False, incrBy=1)
                         redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseGroupByFailure", sort=False, incrBy=1)
 
-                        #gsci+=1
-                        #gsc_html_page+='<tr><td>'+str(gsci)+'</td><td>'+subClause['clauseString']+'</td></tr>'
-                        #groupSCSet.add(subClause['clauseHash'])
-
     if "Where" in data['platformCompilationStatus']['Impala']['clauseStatus']:
         if data['platformCompilationStatus']['Impala']['clauseStatus']["Where"]['clauseStatus']=="SUCCESS":
             redis_conn.incrEntityCounter("HAQR", "impalaWhereSuccess", sort=False, incrBy=1)
         else:
             redis_conn.incrEntityCounter("HAQR", "impalaWhereFailure", sort=False, incrBy=1)
-            # if 'clauseHash' in data['platformCompilationStatus']['Impala']['clauseStatus']["Where"]:
-            #     wi+=1
-            #     whereSet.add(data['platformCompilationStatus']['Impala']['clauseStatus']["Where"]['clauseHash'])
-            #     wc_html_page+='<tr><td>'+str(wi)+'</td><td>'+data['platformCompilationStatus']['Impala']['clauseStatus']['Where']['clauseString']+'</td></tr>'
             if 'subClauseList' in data['platformCompilationStatus']['Impala']['clauseStatus']["Where"]:
                 for subClause in data['platformCompilationStatus']['Impala']['clauseStatus']["Where"]['subClauseList']:
                     if subClause['clauseStatus']=="SUCCESS":
@@ -1153,10 +1129,6 @@ def updateRedisforHAQR(redis_conn,data,tenant,eid):
                     else:
                         redis_conn.incrEntityCounter("HAQR", "impalaWhereSubClauseFailure", sort=False, incrBy=1)
                         redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseWhereFailure", sort=False, incrBy=1)
-                        # wsci+=1
-                        # wsc_html_page+='<tr><td>'+str(wsci)+'</td><td>'+subClause['clauseString']+'</td></tr>'
-                        # whereSCSet.add(subClause['clauseHash'])
-
     return
 
 def callback(ch, method, properties, body):
