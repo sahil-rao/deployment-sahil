@@ -548,10 +548,10 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
                 if "message_id" in received_msg:
                     msg_dict['query_message_id'] = received_msg["message_id"]
             message = dumps(msg_dict)
-            connection1.publish(ch,'','mathqueue',message)
-            logging.info("Sent message to Math pos1:" + str(msg_dict))
-             
+            logging.info("Sending message to Math pos1:" + str(msg_dict))
             incrementPendingMessage(collection, redis_conn, uid,message_id)
+            connection1.publish(ch,'','mathqueue',message)
+            
 
 def create_query_character(signature_keywords):
     '''
@@ -561,7 +561,9 @@ def create_query_character(signature_keywords):
     character = []
 
     if 'Single Table' in signature_keywords[0]:
-        temp_character = signature_keywords[0].split(':')[1]
+        temp_character = signature_keywords[0].split(':')
+        if len(temp_character) > 1:
+            temp_character = temp_character[1]
         
         if 'No Table Only' in temp_character:
             character.append('No Table')
@@ -942,7 +944,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if etype == "SQL_QUERY":
                     collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
                     if key == "impala":
-                        analyzeHAQR(query,key,tenant,entity.eid,source_platform,mongoconn,redis_conn)
+                        try:
+                            analyzeHAQR(query,key,tenant,entity.eid,source_platform,mongoconn,redis_conn)
+                        except:
+                            logging.exception('analyzeHAQR has failed.')
                 elif etype == "SQL_SUBQUERY":
                     collection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
                 elif etype == "SQL_STORED_PROCEDURE":
@@ -1393,6 +1398,7 @@ def callback(ch, method, properties, body):
 
             sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg)
         except:
+            collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
             logging.exception("Failure in processing compiler output for Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
 
         if not usingAWS:
