@@ -23,7 +23,6 @@ import flightpath.services.app_get_top_fact as top_fact
 import flightpath.services.app_get_top_dim as top_dim
 import flightpath.services.app_get_top_table_by_patterns as top_tables_by_pattern
 import flightpath.services.app_get_top_tables as top_tables
-import flightpath.services.app_get_top_queries as top_queries
 import flightpath.services.app_get_tail_tables as tail_tables
 import flightpath.services.app_get_columns_by_operator as columns_by_operator
 import flightpath.services.app_get_simple_queries as simple_queries
@@ -404,8 +403,6 @@ def callback(ch, method, properties, body):
             resp_dict = top_tables_by_pattern.execute(tenant)
         elif msg_dict['opcode'] == "TopTables":
             resp_dict = top_tables.execute(tenant)
-        elif msg_dict['opcode'] == "TopQueries":
-            resp_dict = top_queries.execute(tenant)
         elif msg_dict['opcode'] == "TailTables":
             resp_dict = tail_tables.execute(tenant)
         elif msg_dict['opcode'] == "ColumnByOperator":
