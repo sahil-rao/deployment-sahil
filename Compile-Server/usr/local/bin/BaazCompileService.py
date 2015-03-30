@@ -893,6 +893,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 logging.info("Processing Sub queries")
 
                 #mark the query as complex query
+                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"complex_query_count":1}}, upsert = True)
                 collection.update({'uid':uid},{"$inc": {"complex_query_count":1}}, upsert = True)
 
                 for sub_q_dict in compile_doc[key]["subQueries"]:
@@ -911,7 +912,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         context.queue.pop()
             else:
                 #mark the query as simple query
-                collection.update({'uid':uid},{"$inc": {"simple_query_count":1}}, upsert = True)
+                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"simple_query_count":1}}, upsert = True)
 
             hive_success = 0
             if key == "hive" and 'ErrorSignature' in compile_doc:
