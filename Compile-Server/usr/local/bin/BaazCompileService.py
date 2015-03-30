@@ -639,6 +639,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     """
                          
     entity = None
+    elapsed_time = None
     tableEidList = set()
     if compile_doc is None:
         logging.info("No compile_doc found")
@@ -742,6 +743,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             profile_dict['custom_id'] = custom_id
         if data is not None:
             profile_dict['profile']['stats'] = data
+            if 'ELAPSED_TIME' in data:
+                elapsed_time = data['ELAPSED_TIME']
         try:
             eid = IdentityService.getNewIdentity(tenant, True)
             entity = mongoconn.addEn(eid, query, tenant,\
@@ -753,7 +756,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
                 redis_conn.createEntityProfile(entity.eid, etype)
                 redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
-                
+                if elapsed_time is not None:
+                    redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=elapsed_time)
+
                 inst_dict = {"query": query}
                 if data is not None:
                     inst_dict.update(data)
@@ -802,6 +807,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         else:
             eid = IdentityService.getNewIdentity(tenant, True)
             mongoconn.updateInstance(entity, eid, None, inst_dict)
+            if 'elapsed_time' in data:
+                elapsed_time = data['elapsed_time']
+            if elapsed_time is not None:
+                redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=elapsed_time)
 
         try:
             for key in compile_doc:
@@ -883,6 +892,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 len(compile_doc[key]["subQueries"]) > 0:
                 logging.info("Processing Sub queries")
 
+                #mark the query as complex query
+                collection.update({'uid':uid},{"$inc": {"complex_query_count":1}}, upsert = True)
+
                 for sub_q_dict in compile_doc[key]["subQueries"]:
 
                     if "origQuery" not in sub_q_dict:
@@ -897,6 +909,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
                     if sub_entity is not None:
                         context.queue.pop()
+            else:
+                #mark the query as simple query
+                collection.update({'uid':uid},{"$inc": {"simple_query_count":1}}, upsert = True)
 
             hive_success = 0
             if key == "hive" and 'ErrorSignature' in compile_doc:
