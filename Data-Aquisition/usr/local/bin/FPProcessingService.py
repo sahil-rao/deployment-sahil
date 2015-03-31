@@ -156,7 +156,7 @@ def elasticConnect(tenantID):
 
 class callback_context():
 
-    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode=False, skipLimit=False, testMode=False, sourcePlatform=None):
+    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode=False, skipLimit=False, testMode=False, sourcePlatform=None, header_info = None):
         Self.tenant = tenant
         Self.uid = uid
         Self.ch = ch
@@ -170,9 +170,13 @@ class callback_context():
         Self.scale_mode = scale_mode
         Self.testMode = testMode
         Self.queryNumThreshold = 20000
+        Self.header_info = header_info
 
     def get_source_platform(Self):
         return Self.sourcePlatform
+
+    def get_header_info(Self):
+        return Self.header_info
 
     def query_count(Self, total_queries_found):
         """
@@ -460,6 +464,10 @@ def callback(ch, method, properties, body):
         filename = msg_dict["filename"]
         filename = urllib.unquote(filename)
 
+        header_info = None
+        if 'header_info' in msg_dict:
+            header_info = msg_dict['header_info']
+
         if msg_dict.has_key('uid'):
             uid = msg_dict['uid']
 
@@ -570,7 +578,7 @@ def callback(ch, method, properties, body):
         logging.info("Incremementing message count: " + message_id)
 
         cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection, 
-                                  scale_mode, skipLimit, testMode, source_platform)
+                                  scale_mode, skipLimit, testMode, source_platform, header_info)
 
         parseDir(tenant, logpath, cb_ctx)
 
