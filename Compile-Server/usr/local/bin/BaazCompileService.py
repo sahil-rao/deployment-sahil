@@ -622,6 +622,18 @@ def create_query_character(signature_keywords):
 
         return character[:2]
 
+def check_query_type(query_character_list):
+    found_single_table = False
+    if query_character_list is None:
+        return False
+    for char_entry in query_character_list:
+        if 'Single Table' in char_entry:
+            found_single_table = True
+        if found_single_table and 'Only' in char_entry:
+            return True
+        else:
+            return False
+
 def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context):
 
     """
@@ -722,6 +734,16 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 character = create_query_character(compile_doc[key]['SignatureKeywords'])
                 profile_dict['profile']['character'] = character
 
+            #check if this is a simple or complex query
+            if etype == EntityType.SQL_QUERY and 'SignatureKeywords' in compile_doc[key]:
+                is_simple = check_query_type(compile_doc[key]['SignatureKeywords'])
+                if is_simple:
+                    #mark the query as complex query
+                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"simple_query_count":1}}, upsert = True)
+                else:
+                    #mark the query as simple query
+                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"complex_query_count":1}}, upsert = True)
+
     custom_id = None
     if data is not None and "custom_id" in data:
         custom_id = data['custom_id']
@@ -793,7 +815,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         #update the stats since they were provided
         if data is not None:
             mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': data}})
-
 
 
     context.queue.append({'eid': entity.eid, 'etype': etype})
@@ -875,7 +896,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             '''
             redis_conn.incrRelationshipCounter(current_query, entity.eid, "SQL_SUBQUERY", "count")
 
-    for key in compile_doc:
+
+    for i, key in enumerate(compile_doc):
         try:
             stats_newdbs_key = "Compiler." + key + ".newDBs"
             stats_newtables_key = "Compiler." + key + ".newTables"
@@ -892,10 +914,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 len(compile_doc[key]["subQueries"]) > 0:
                 logging.info("Processing Sub queries")
 
-                #mark the query as complex query
-                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"complex_query_count":1}}, upsert = True)
-                collection.update({'uid':uid},{"$inc": {"complex_query_count":1}}, upsert = True)
-
                 for sub_q_dict in compile_doc[key]["subQueries"]:
 
                     if "origQuery" not in sub_q_dict:
@@ -910,9 +928,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
                     if sub_entity is not None:
                         context.queue.pop()
-            else:
-                #mark the query as simple query
-                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"simple_query_count":1}}, upsert = True)
 
             hive_success = 0
             if key == "hive" and 'ErrorSignature' in compile_doc:
