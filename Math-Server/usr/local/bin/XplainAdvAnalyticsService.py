@@ -28,6 +28,7 @@ import logging
 import importlib
 import socket
 
+BAAZ_DATA_ROOT="/mnt/volume1/"
 XPLAIN_LOG_FILE = "/var/log/XplainAdvAnalyticsService.err"
 
 config = ConfigParser.RawConfigParser ()
@@ -145,6 +146,182 @@ def analytics_callback(params):
 class analytics_context:
     pass
 
+def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
+    if platform != "impala":
+        return #currently HAQR supported only for impala
+
+    timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
+    destination = BAAZ_DATA_ROOT+'compile-' + tenant + "/" + timestr
+
+    if not os.path.exists(destination):
+        os.makedirs(destination)
+
+    dest_file_name = destination + "/input.query"
+    dest_file = open(dest_file_name, "w+")
+    query = query.encode('ascii', 'ignore')
+    dest_file.write(query)
+    dest_file.flush()
+    dest_file.close()
+
+    output_file_name = destination + "/haqr.out"
+
+    queryFsmFile = "/etc/xplain/QueryFSM.csv";
+    selectFsmFile = "/etc/xplain/SelectFSM.csv";
+    whereFsmFile = "/etc/xplain/WhereFSM.csv";
+    groupByFsmFile = "/etc/xplain/GroupbyFSM.csv";
+    whereSubClauseFsmFile = "/etc/xplain/WhereSubclauseFSM.csv";
+    fromFsmFile = "/etc/xplain/FromFSM.csv";
+    selectSubClauseFsmFile = "/etc/xplain/SelectSubclauseFSM.csv";
+    groupBySubClauseFsmFile = "/etc/xplain/GroupBySubclauseFSM.csv";
+    fromSubClauseFsmFile = "/etc/xplain/FromSubclauseFSM.csv";
+
+    data_dict = {
+        "InputFile": dest_file_name,
+        "OutputFile": output_file_name,
+        "EntityId": eid,
+        "TenantId": tenant,
+        "queryFsmFile": queryFsmFile,
+        "selectFsmFile": selectFsmFile,
+        "whereFsmFile": whereFsmFile,
+        "groupByFsmFile": groupByFsmFile,
+        "whereSubClauseFsmFile": whereSubClauseFsmFile,
+        "fromFsmFile": fromFsmFile,
+        "selectSubClauseFsmFile": selectSubClauseFsmFile,
+        "groupBySubClauseFsmFile": groupBySubClauseFsmFile,
+        "fromSubClauseFsmFile": fromSubClauseFsmFile,
+        "source_platform": source_platform
+    }
+
+    data = dumps(data_dict)
+
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+    retry_count = 0
+    socket_connected = False
+
+    while (socket_connected == False) and (retry_count < 2):
+
+        retry_count += 1
+        try:
+            client_socket.connect(("localhost", 12121))
+            socket_connected = True
+        except:
+            logging.error("Unable to connect to JVM socket on try #%s." %retry_count)
+            time.sleep(1)
+        if socket_connected == False:
+            raise Exception("Unable to connect to JVM socket.")
+
+    client_socket.send("1\n");
+    """
+    For HAQR processing the opcode is 4.
+    """
+    client_socket.send("4\n");
+    data = data + "\n"
+    client_socket.send(data)
+    rx_data = client_socket.recv(512)
+
+    if rx_data == "Done":
+        logging.info("HAQR Got Done")
+
+    client_socket.close()
+    data = None
+    logging.info("Loading file : "+ output_file_name)
+    with open(output_file_name) as data_file:
+        data = load(data_file)
+
+    logging.info(dumps(data))
+
+    db.entities.update({'eid':eid},{"$set":{'profile.Compiler.HAQR':data}})
+    updateRedisforHAQR(redis_conn,data,tenant,eid)
+
+    return
+
+def updateRedisforHAQR(redis_conn,data,tenant,eid):
+    redis_conn.createEntityProfile("HAQR", "HAQR")
+
+    redis_conn.incrEntityCounter("HAQR", "numInvocation", sort=False, incrBy=1)
+    if data['sourceStatus']=='SUCCESS':
+        redis_conn.incrEntityCounter("HAQR", "sourceSucess", sort=False, incrBy=1)
+    else:
+        redis_conn.incrEntityCounter("HAQR", "sourceFailure", sort=False, incrBy=1)
+        return
+
+    if data['platformCompilationStatus']['Impala']['queryStatus']=="SUCCESS":
+        redis_conn.incrEntityCounter("HAQR", "impalaSuccess", sort=False, incrBy=1)
+    else:
+        redis_conn.incrEntityCounter("HAQR", "impalaFail", sort=False, incrBy=1)
+
+    if data['platformCompilationStatus']['Impala']['clauseStatus'] is not None and \
+       'Select' in data['platformCompilationStatus']['Impala']['clauseStatus']:
+        if data['platformCompilationStatus']['Impala']['clauseStatus']['Select']['clauseStatus']=="SUCCESS":
+            redis_conn.incrEntityCounter("HAQR", "impalaSelectSuccess", sort=False, incrBy=1)
+        else:
+            redis_conn.incrEntityCounter("HAQR", "impalaSelectFail", sort=False, incrBy=1)
+            if 'subClauseList' in data['platformCompilationStatus']['Impala']['clauseStatus']['Select']:
+                for subClause in data['platformCompilationStatus']['Impala']['clauseStatus']['Select']['subClauseList']:
+                    if subClause['clauseStatus']=="SUCCESS":
+                        redis_conn.incrEntityCounter("HAQR", "impalaSelectSubClauseSuccess", sort=False, incrBy=1)
+                    else:
+                        redis_conn.incrEntityCounter("HAQR", "impalaSelectSubClauseFailure", sort=False, incrBy=1)
+                        redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseSelectFailure", sort=False, incrBy=1)
+
+    if data['platformCompilationStatus']['Impala']['clauseStatus'] is not None and \
+       'From' in data['platformCompilationStatus']['Impala']['clauseStatus']:
+        if data['platformCompilationStatus']['Impala']['clauseStatus']['From']['clauseStatus']=="SUCCESS":
+            redis_conn.incrEntityCounter("HAQR", "impalaFromSuccess", sort=False, incrBy=1)
+        elif data['platformCompilationStatus']['Impala']['clauseStatus']['From']['clauseStatus']=="AUTO_SUGGEST":
+            redis_conn.incrEntityCounter("HAQR", "impalaFromAutoCorrect", sort=False, incrBy=1)
+        else:
+            redis_conn.incrEntityCounter("HAQR", "impalaFromFailure", sort=False, incrBy=1)
+
+        if 'subClauseList' in data['platformCompilationStatus']['Impala']['clauseStatus']["From"]:
+            for subClause in data['platformCompilationStatus']['Impala']['clauseStatus']["From"]['subClauseList']:
+                if subClause['clauseStatus']=="SUCCESS":
+                    redis_conn.incrEntityCounter("HAQR", "impalaFromSubClauseSuccess", sort=False, incrBy=1)
+                elif subClause['clauseStatus']=="AUTO_SUGGEST":
+                    redis_conn.incrEntityCounter("HAQR", "impalaFromSubClauseAutoCorrect", sort=False, incrBy=1)
+                else:
+                    redis_conn.incrEntityCounter("HAQR", "impalaFromSubClauseFailure", sort=False, incrBy=1)
+                    redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseFromFailure", sort=False, incrBy=1)
+
+    if data['platformCompilationStatus']['Impala']['clauseStatus'] is not None and \
+       "Group By" in data['platformCompilationStatus']['Impala']['clauseStatus']:
+        if data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]['clauseStatus']=="SUCCESS":
+            redis_conn.incrEntityCounter("HAQR", "impalaGroupBySuccess", sort=False, incrBy=1)
+        else:
+            redis_conn.incrEntityCounter("HAQR", "impalaGroupByFailure", sort=False, incrBy=1)
+            if 'subClauseList' in data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]:
+                for subClause in data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]['subClauseList']:
+                    if subClause['clauseStatus']=="SUCCESS":
+                        redis_conn.incrEntityCounter("HAQR", "impalaGroupBySubClauseSuccess", sort=False, incrBy=1)
+                    else:
+                        redis_conn.incrEntityCounter("HAQR", "impalaGroupBySubClauseFailure", sort=False, incrBy=1)
+                        redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseGroupByFailure", sort=False, incrBy=1)
+
+    if data['platformCompilationStatus']['Impala']['clauseStatus'] is not None and \
+       "Where" in data['platformCompilationStatus']['Impala']['clauseStatus']:
+        if data['platformCompilationStatus']['Impala']['clauseStatus']["Where"]['clauseStatus']=="SUCCESS":
+            redis_conn.incrEntityCounter("HAQR", "impalaWhereSuccess", sort=False, incrBy=1)
+        else:
+            redis_conn.incrEntityCounter("HAQR", "impalaWhereFailure", sort=False, incrBy=1)
+            if 'subClauseList' in data['platformCompilationStatus']['Impala']['clauseStatus']["Where"]:
+                for subClause in data['platformCompilationStatus']['Impala']['clauseStatus']["Where"]['subClauseList']:
+                    if subClause['clauseStatus']=="SUCCESS":
+                        redis_conn.incrEntityCounter("HAQR", "impalaWhereSubClauseSuccess", sort=False, incrBy=1)
+                    else:
+                        redis_conn.incrEntityCounter("HAQR", "impalaWhereSubClauseFailure", sort=False, incrBy=1)
+                        redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseWhereFailure", sort=False, incrBy=1)
+    return
+
+def process_HAQR_request(msg_dict):
+    mongo_url = getMongoServer(msg_dict['tenant'])
+    db = MongoClient(mongo_url)[msg_dict['tenant']]
+    redis_conn = RedisConnector(msg_dict['tenant'])
+    
+    analyzeHAQR(msg_dict['query'], msg_dict['key'], msg_dict['tenant'], \
+                msg_dict['eid'], msg_dict['source_platform'], db, redis_conn)
+    pass
+
 def callback(ch, method, properties, body):
 
     startTime = time.time()
@@ -175,6 +352,10 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict['tenant']
     opcode = msg_dict['opcode']
+    #check if the request is for HAQR processing
+    if opcode == "HAQRPhase":
+        process_HAQR_request(msg_dict)
+
     try:
         received_msgID = msg_dict['message_id']
     except:

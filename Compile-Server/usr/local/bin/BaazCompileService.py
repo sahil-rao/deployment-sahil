@@ -552,6 +552,12 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
             incrementPendingMessage(collection, redis_conn, uid,message_id)
             connection1.publish(ch,'','mathqueue',message)
             
+def sendAdvAnalyticsMessage(ch, msg_dict):
+    if msg_dict is None:
+        return
+
+    message = dumps(msg_dict)
+    connection1.publish(ch,'','advanalytics',message)
 
 def create_query_character(signature_keywords):
     '''
@@ -976,7 +982,16 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
                     if key == "impala":
                         try:
-                            analyzeHAQR(query,key,tenant,entity.eid,source_platform,mongoconn,redis_conn)
+                            #call advance analytics to start HAQR Phase
+                            adv_analy_dict = {'tenant': tenant,
+                                              'query': query,
+                                              'key': key,
+                                              'eid' : eid,
+                                              'source_platform': source_platform,
+                                              'opcode': "HAQRPhase"
+                                             }
+                            sendAdvAnalyticsMessage(ch, adv_analy_dict)
+                            #analyzeHAQR(query,key,tenant,entity.eid,source_platform,mongoconn,redis_conn)
                         except:
                             logging.exception('analyzeHAQR has failed.')
                 elif etype == "SQL_SUBQUERY":
@@ -1456,7 +1471,6 @@ def callback(ch, method, properties, body):
     connection1.basicAck(ch,method)
     callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
-
 
 connection1 = RabbitConnection(callback, ['compilerqueue'],['mathqueue'], {},BAAZ_COMPILER_LOG_FILE)
 
