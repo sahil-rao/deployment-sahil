@@ -640,6 +640,34 @@ def check_query_type(query_character_list):
         else:
             return False
 
+def check_query_and_update_count(tenant, mongoconn, redis_conn, eid, operatorList, is_update_dashboard):
+    for operator in operatorList:
+        if operator == 'SELECT':
+            if is_update_dashboard:
+                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"selectCount":1}}, upsert = True)
+            else:
+                redis_conn.incrEntityCounter(eid, "selectCount", sort = True,incrBy=1)
+        if operator == 'CREATE':
+            if is_update_dashboard:
+                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"createCount":1}}, upsert = True)
+            else:
+                redis_conn.incrEntityCounter(eid, "createCount", sort = True,incrBy=1)
+        if operator == 'INSERT':
+            if is_update_dashboard:
+                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"insertCount":1}}, upsert = True)
+            else:
+                redis_conn.incrEntityCounter(eid, "insertCount", sort = True,incrBy=1)
+        if operator == 'UPDATE':
+            if is_update_dashboard:
+                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"updateCount":1}}, upsert = True)
+            else:
+                redis_conn.incrEntityCounter(eid, "updateCount", sort = True,incrBy=1)
+        if operator == 'DELETE':
+            if is_update_dashboard:
+                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"deleteCount":1}}, upsert = True)
+            else:
+                redis_conn.incrEntityCounter(eid, "deleteCount", sort = True,incrBy=1)
+
 def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context):
 
     """
@@ -786,7 +814,13 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
                 if elapsed_time is not None:
                     redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=elapsed_time)
-
+                #check category of the query
+                if 'OperatorList' in compile_doc['gsp']:
+                    #update dashboard data
+                    check_query_and_update_count(tenant, mongoconn, redis_conn, None, compile_doc['gsp']['OperatorList'], True)
+                    #update redis
+                    check_query_and_update_count(tenant, mongoconn, redis_conn, entity.eid, compile_doc['gsp']['OperatorList'], False)
+                
                 inst_dict = {"query": query}
                 if data is not None:
                     inst_dict.update(data)
@@ -826,6 +860,12 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     context.queue.append({'eid': entity.eid, 'etype': etype})
     if update == True and etype == "SQL_QUERY":
 
+        #check category of the query and update counts
+        if 'OperatorList' in compile_doc['gsp']:
+            #update dashboard data
+            check_query_and_update_count(tenant, mongoconn, redis_conn, None, compile_doc['gsp']['OperatorList'], True)
+            #update redis
+            check_query_and_update_count(tenant, mongoconn, redis_conn, entity.eid, compile_doc['gsp']['OperatorList'], False)
         inst_dict = {"query": query}
         if data is not None:
             inst_dict.update(data)
