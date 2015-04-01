@@ -302,6 +302,118 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
     
     return [dbCount, tableCount]
 
+def getTableName(tableentry):
+    database_name = None
+    tablename = None
+    entryname = tableentry["TableName"].lower()
+    entryname = entryname.replace('"', '')
+    matches = table_regex.search(entryname)
+
+    if matches is not None:
+        database_name = matches.group(1)
+        tablename = matches.group(2)
+    else:
+        tablename = entryname
+        if "databaseName" in tableentry:
+            database_name = tableentry["databaseName"].lower()
+    return tablename
+
+def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, entity, context, inputTableList, tableEidList=None, hive_success=0):
+    dbCount = 0
+    tableCount = 0
+    if viewName is None:
+        return [dbCount, tableCount]
+
+    outmost_query = None
+    queue_len = len(context.queue)
+    if queue_len > 0:
+        if context.queue[0]['etype'] == EntityType.SQL_STORED_PROCEDURE:
+            if queue_len > 1:
+                outmost_query = context.queue[1]['eid']
+        elif context.queue[0]['etype'] == EntityType.SQL_QUERY:
+            outmost_query = context.queue[0]['eid']
+
+    endict = {"uid" : uid, "profile" : { "table_type" : "view"}}
+    database_name = None
+    entryname = viewName.lower()
+    entryname = entryname.replace('"', '')
+    matches = table_regex.search(entryname)
+
+    if matches is not None:
+        database_name = matches.group(1)
+        viewname = matches.group(2)
+    else:
+        viewname = entryname
+
+    """
+    Create the Table Entity first if it does not already exist.
+    """
+    view_entity = mongoconn.getEntityByName(viewname)
+    if view_entity is None:
+        logging.info("Creating table entity for view {0}\n".format(viewname))     
+        eid = IdentityService.getNewIdentity(tenant, True)
+        view_entity = mongoconn.addEn(eid, viewname, tenant,\
+                  EntityType.SQL_TABLE, endict, None)
+
+        if eid == view_entity.eid:
+            redis_conn.createEntityProfile(view_entity.eid, "SQL_TABLE")
+            redis_conn.incrEntityCounter(view_entity.eid, "instance_count", sort=True, incrBy=0)
+            tableCount = tableCount + 1
+    else:
+        """
+        Mark this table as view
+        """
+        entity_col.update({"eid": view_entity.eid}, {'$set': {'profile.table_type': 'view'}})
+
+    tableEidList.add(view_entity.eid)
+
+    """
+    If the database is found then create database Entity if it does not already exist.
+    """
+    database_entity = None
+    if database_name is not None:
+        database_entity = mongoconn.getEntityByName(database_name)
+        if database_entity is None:
+            logging.info("Creating database entity for {0}\n".format(database_name))     
+            eid = IdentityService.getNewIdentity(tenant, True)
+            mongoconn.addEn(eid, database_name, tenant,\
+                      EntityType.SQL_DATABASE, endict, None)
+            database_entity = mongoconn.getEntityByName(database_name)
+            dbCount = dbCount + 1
+
+    """
+    Create relations, first between table(View) and query             
+        Then between query and database, table and database
+    """
+    if entity is not None and view_entity is not None:
+        redis_conn.createRelationship(view_entity.eid, entity.eid, "CREATE")
+        redis_conn.setRelationship(view_entity.eid, entity.eid, "CREATE", {"hive_success":hive_success})
+        logging.info("CREATE Relation between {0} {1} position 2\n".format(view_entity.eid, entity.eid))
+
+
+    if database_entity is not None:
+        if view_entity is not None:
+            redis_conn.createRelationship(database_entity.eid, view_entity.eid, "CONTAINS")
+            logging.info("Relation between {0} {1} position 5\n".format(database_entity.eid, view_entity.eid))
+
+        """ Note this assumes that formRelations is idempotent
+        """
+        if entity is not None:
+            redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
+            logging.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))     
+
+    for tableentry in inputTableList:
+        tablename = getTableName(tableentry)
+        table_entity = mongoconn.getEntityByName(tablename)
+        if table_entity is None:
+            logging.info("No table with name {0} found\n".format(tablename))     
+            continue
+
+        redis_conn.createRelationship(view_entity.eid, table_entity.eid, "VIEW_TABLE")
+        logging.info("Relation VIEW_TABLE between {0} {1}\n".format(view_entity.eid, table_entity.eid))     
+
+    return [dbCount, tableCount]
+
 def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinput, context, tableEidList=None, hive_success=0):
     dbCount = 0
     tableCount = 0
@@ -982,7 +1094,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
             mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
 
+            inputTableList = None
             if compile_doc[key].has_key("InputTableList"):
+                inputTableList = compile_doc[key]["InputTableList"]
                 tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], 
                                                mongoconn, redis_conn, tenant, uid, entity, True,  
                                                context, tableEidList)
@@ -1015,6 +1129,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
                                       stats_newtables_key: tmpAdditions[1]}})
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
+
+            if compile_doc[key].has_key("viewName"):
+                tmpAdditions = processCreateView(compile_doc[key]["viewName"], mongoconn, redis_conn, mongoconn.db.entities,
+                                                 tenant, uid, entity,context , inputTableList, tableEidList)
+                if uid is not None:
+                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
+                                      stats_newtables_key: tmpAdditions[1]}})
+                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"ViewCount":tmpAdditions[1]}}, upsert = True) 
 
             if compile_doc[key].has_key("ErrorSignature") \
                 and len(compile_doc[key]["ErrorSignature"]) > 0:
