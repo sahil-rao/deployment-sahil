@@ -548,10 +548,9 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
                 if "message_id" in received_msg:
                     msg_dict['query_message_id'] = received_msg["message_id"]
             message = dumps(msg_dict)
-            connection1.publish(ch,'','mathqueue',message)
             logging.info("Sent message to Math pos1:" + str(msg_dict))
-             
             incrementPendingMessage(collection, redis_conn, uid,message_id)
+            connection1.publish(ch,'','mathqueue',message)
 
 def create_query_character(signature_keywords):
     '''
@@ -561,7 +560,9 @@ def create_query_character(signature_keywords):
     character = []
 
     if 'Single Table' in signature_keywords[0]:
-        temp_character = signature_keywords[0].split(':')[1]
+        temp_character = signature_keywords[0].split(':')
+        if len(temp_character) > 1:
+            temp_character = temp_character[1]
         
         if 'No Table Only' in temp_character:
             character.append('No Table')
@@ -1418,6 +1419,7 @@ def callback(ch, method, properties, body):
 
             sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg)
         except:
+            collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
             logging.exception("Failure in processing compiler output for Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
 
         if not usingAWS:
