@@ -844,7 +844,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     #Break if query was not parsed
                 if field == "ErrorSignature" and compile_doc["gsp"][field]:
                     break
-                
+        
     smc_json = smc.generate_json()
     unique_count = int(smc_json["unique_uniquequeries"])
     sem_unique_count = int(smc_json["unique_queries"])
@@ -927,7 +927,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if elapsed_time is not None:
                     redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=elapsed_time)
                 #check category of the query
-                if 'OperatorList' in compile_doc['gsp']:
+                if 'gsp' in compile_doc and \
+                   'OperatorList' in compile_doc['gsp']:
                     #update dashboard data
                     check_query_and_update_count(tenant, mongoconn, redis_conn, None, compile_doc['gsp']['OperatorList'], True)
                     #update redis
