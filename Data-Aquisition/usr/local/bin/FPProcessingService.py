@@ -471,11 +471,11 @@ def callback(ch, method, properties, body):
         header_info = None
         if 'header_info' in msg_dict:
             header_info = msg_dict['header_info']
-        delimiter = {}
-        if 'col_delim' in msg_dict:
-            delimiter['column'] = msg_dict['col_delim']
-        if 'row_delim' in msg_dict:
-            delimiter['row'] = msg_dict['row_delim']
+        delimiter = {'col_delim': None, 'row_delim': None}
+        if 'col_delim' in msg_dict and msg_dict['col_delim']:
+            delimiter['col_delim'] = msg_dict['col_delim']
+        if 'row_delim' in msg_dict and msg_dict['row_delim']:
+            delimiter['row_delim'] = msg_dict['row_delim']
 
         if msg_dict.has_key('uid'):
             uid = msg_dict['uid']
