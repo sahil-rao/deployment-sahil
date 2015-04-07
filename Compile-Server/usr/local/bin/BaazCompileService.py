@@ -925,7 +925,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 redis_conn.createEntityProfile(entity.eid, etype)
                 redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
                 if elapsed_time is not None:
-                    redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=elapsed_time)
+                    try:
+                        redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
+                    except:
+                        logging.info("No or junk elapsed time found:%s", elapsed_time)
                 #check category of the query
                 if 'gsp' in compile_doc and \
                    'OperatorList' in compile_doc['gsp']:
@@ -990,8 +993,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if 'elapsed_time' in data:
                 elapsed_time = data['elapsed_time']
             if elapsed_time is not None:
-                redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=elapsed_time)
-
+                try:
+                    redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
+                except:
+                    logging.info("No or junk elapsed time found:%s", elapsed_time)
         try:
             for key in compile_doc:
                 stats_runsuccess_key = "Compiler." + key + ".run_success"
