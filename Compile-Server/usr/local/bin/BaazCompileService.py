@@ -759,7 +759,7 @@ def check_query_and_update_count(tenant, mongoconn, redis_conn, eid, operatorLis
                 mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"selectCount":1}}, upsert = True)
             else:
                 redis_conn.incrEntityCounter(eid, "selectCount", sort = True,incrBy=1)
-        if operator == 'CREATE':
+        if operator == 'CREATE_TABLE' or operator == 'VIEW':
             if is_update_dashboard:
                 mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"createCount":1}}, upsert = True)
             else:
