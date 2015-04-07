@@ -1,20 +1,20 @@
 ---
-- name: Set Mongodb Repo Keyserver
-  shell: sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
-- name: Set Mongodb repo list
-  shell: echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list 
-- name: Update apt
-  apt: update_cache=yes
-  sudo: yes
-- name: Install Mongodb
-  apt: name=mongodb-org state=present
-  sudo: yes
-- name: Install Monit service
-  apt: pkg=monit state=present
-  sudo: yes
-- name: Copy Mongodb config
-  copy: src=roles/mongodb/files/mongodb.conf dest=/etc/mongod.conf
-  sudo: yes
+#- name: Set Mongodb Repo Keyserver
+#  shell: sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
+#- name: Set Mongodb repo list
+#  shell: echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list 
+#- name: Update apt
+#  apt: update_cache=yes
+#  sudo: yes
+#- name: Install Mongodb
+#  apt: name=mongodb-org state=present
+#  sudo: yes
+#- name: Install Monit service
+#  apt: pkg=monit state=present
+#  sudo: yes
+#- name: Copy Mongodb config
+#  copy: src=roles/mongodb/files/mongodb.conf dest=/etc/mongod.conf
+#  sudo: yes
 - name: Create Mongo log
   file: path=/mnt/volume1/mongo/log owner=mongodb state=directory
   sudo: yes
