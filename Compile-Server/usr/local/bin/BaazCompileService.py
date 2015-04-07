@@ -161,6 +161,11 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity):
                 redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
                 redis_conn.setRelationship(table_entity.eid, column_entity.eid,
                                            "TABLE_COLUMN", {'weight':1, "columnName":column_entity.columnName})
+        else:
+            eid = column_entity.eid
+            if 'dataType' in column_entry and 'primaryKey' in column_entry and 'foreignKey' in column_entry:
+                mongoconn.db.entities.update({'eid':eid}, {'$set': column_entry})
+
 
     """
     Create relationships.
