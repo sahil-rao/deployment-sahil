@@ -414,7 +414,12 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
             logging.info("No table with name {0} found\n".format(tablename))     
             continue
 
-        redis_conn.createRelationship(view_entity.eid, table_entity.eid, "VIEW_TABLE")
+        '''
+        create relationship only if view eid and table eid are different,
+        since inputable list can include view table eid also
+        '''
+        if view_entity.eid != table_entity.eid:
+            redis_conn.createRelationship(view_entity.eid, table_entity.eid, "VIEW_TABLE")
         logging.info("Relation VIEW_TABLE between {0} {1}\n".format(view_entity.eid, table_entity.eid))     
 
     return [dbCount, tableCount]
