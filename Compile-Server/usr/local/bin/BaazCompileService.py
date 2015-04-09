@@ -131,8 +131,8 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity):
         if "tableName" not in column_entry:
             continue
 
-        tablename = column_entry["tableName"]
-        columnname = column_entry["columnName"]
+        tablename = column_entry["tableName"].replace('"', '')
+        columnname = column_entry["columnName"].replace('"', '')
         table_entity = mongoconn.getEntityByName(tablename)
 
         column_entity_name = tablename.lower() + "." + columnname.lower()
