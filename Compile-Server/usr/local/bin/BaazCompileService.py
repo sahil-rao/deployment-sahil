@@ -889,7 +889,16 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 else:
                     #mark the query as simple query
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"complex_query_count":1}}, upsert = True)
-
+            if "combinedQueryList" in compile_doc[key]:
+                for entry in compile_doc[key]['combinedQueryList']:
+                    if "combinerClause" in entry:
+                        if entry["combinerClause"] == "UNION":
+                            #mark the query as simple query
+                            mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"union_count":1}}, upsert = True)
+                        if entry["combinerClause"] == "UNION_ALL":
+                            #mark the query as simple query
+                            mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"union_all_count":1}}, upsert = True)
+                
     custom_id = None
     if data is not None and "custom_id" in data:
         custom_id = data['custom_id']
