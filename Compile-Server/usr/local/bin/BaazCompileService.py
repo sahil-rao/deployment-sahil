@@ -943,13 +943,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
                     except:
                         logging.info("No or junk elapsed time found:%s", elapsed_time)
-                #check category of the query
-                if 'gsp' in compile_doc and \
-                   'OperatorList' in compile_doc['gsp']:
-                    #update dashboard data
-                    check_query_and_update_count(tenant, mongoconn, redis_conn, None, compile_doc['gsp']['OperatorList'], True)
-                    #update redis
-                    check_query_and_update_count(tenant, mongoconn, redis_conn, entity.eid, compile_doc['gsp']['OperatorList'], False)
                 
                 inst_dict = {"query": query}
                 if data is not None:
@@ -990,12 +983,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     context.queue.append({'eid': entity.eid, 'etype': etype})
     if update == True and etype == "SQL_QUERY":
 
-        #check category of the query and update counts
-        if 'OperatorList' in compile_doc['gsp']:
-            #update dashboard data
-            check_query_and_update_count(tenant, mongoconn, redis_conn, None, compile_doc['gsp']['OperatorList'], True)
-            #update redis
-            check_query_and_update_count(tenant, mongoconn, redis_conn, entity.eid, compile_doc['gsp']['OperatorList'], False)
         inst_dict = {"query": query}
         if data is not None:
             inst_dict.update(data)
