@@ -414,7 +414,12 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
             logging.info("No table with name {0} found\n".format(tablename))     
             continue
 
-        redis_conn.createRelationship(view_entity.eid, table_entity.eid, "VIEW_TABLE")
+        '''
+        create relationship only if view eid and table eid are different,
+        since inputable list can include view table eid also
+        '''
+        if view_entity.eid != table_entity.eid:
+            redis_conn.createRelationship(view_entity.eid, table_entity.eid, "VIEW_TABLE")
         logging.info("Relation VIEW_TABLE between {0} {1}\n".format(view_entity.eid, table_entity.eid))     
 
     return [dbCount, tableCount]
@@ -943,13 +948,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
                     except:
                         logging.info("No or junk elapsed time found:%s", elapsed_time)
-                #check category of the query
-                if 'gsp' in compile_doc and \
-                   'OperatorList' in compile_doc['gsp']:
-                    #update dashboard data
-                    check_query_and_update_count(tenant, mongoconn, redis_conn, None, compile_doc['gsp']['OperatorList'], True)
-                    #update redis
-                    check_query_and_update_count(tenant, mongoconn, redis_conn, entity.eid, compile_doc['gsp']['OperatorList'], False)
                 
                 inst_dict = {"query": query}
                 if data is not None:
@@ -990,12 +988,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     context.queue.append({'eid': entity.eid, 'etype': etype})
     if update == True and etype == "SQL_QUERY":
 
-        #check category of the query and update counts
-        if 'OperatorList' in compile_doc['gsp']:
-            #update dashboard data
-            check_query_and_update_count(tenant, mongoconn, redis_conn, None, compile_doc['gsp']['OperatorList'], True)
-            #update redis
-            check_query_and_update_count(tenant, mongoconn, redis_conn, entity.eid, compile_doc['gsp']['OperatorList'], False)
         inst_dict = {"query": query}
         if data is not None:
             inst_dict.update(data)
