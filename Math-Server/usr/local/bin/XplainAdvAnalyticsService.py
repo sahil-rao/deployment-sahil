@@ -354,7 +354,10 @@ def callback(ch, method, properties, body):
     opcode = msg_dict['opcode']
     #check if the request is for HAQR processing
     if opcode == "HAQRPhase":
-        process_HAQR_request(msg_dict)
+        try:
+            process_HAQR_request(msg_dict)
+        except:
+            logging.exception('HAQR failed for tenant: %s.'%(tenant))
 
     try:
         received_msgID = msg_dict['message_id']
