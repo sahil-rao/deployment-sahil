@@ -124,9 +124,11 @@
 - name: disable redis-server from init.d
   shell: update-rc.d -f redis-server disable
   sudo: yes
+  ignore_errors: True
 - name: remove redis-server from init.d
   shell: update-rc.d -f redis-server remove
   sudo: yes
+  ignore_errors: True
 - name: Create redis config directory
   file: path=/etc/redis/local owner=redis group=redis mode=777 state=directory
   sudo: yes
