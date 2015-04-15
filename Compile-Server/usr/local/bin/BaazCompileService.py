@@ -830,6 +830,13 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         etype = EntityType.SQL_SUBQUERY
 
     if "gsp" in compile_doc:
+        #check for meta query and drop it
+        if etype == 'EntityType.SQL_QUERY':
+            if 'OperatorList' in compile_doc['gsp'] and \
+                'METAQUERY' in compile_doc['gsp']['OperatorList']:
+                logging.info("Metaquery found %s", query)
+                return None, None
+
         compile_doc_fields = ["SignatureKeywords",
                       "OperatorList",
                       "selectColumnNames",
