@@ -172,7 +172,7 @@ def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
     whereSubClauseFsmFile = "/etc/xplain/WhereSubclauseFSM.csv";
     fromFsmFile = "/etc/xplain/FromFSM.csv";
     selectSubClauseFsmFile = "/etc/xplain/SelectSubclauseFSM.csv";
-    groupBySubClauseFsmFile = "/etc/xplain/GroupBySubclauseFSM.csv";
+    groupBySubClauseFsmFile = "/etc/xplain/GroupbySubclauseFSM.csv";
     fromSubClauseFsmFile = "/etc/xplain/FromSubclauseFSM.csv";
 
     data_dict = {
