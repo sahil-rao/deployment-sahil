@@ -343,6 +343,8 @@ def callback(ch, method, properties, body):
         return
 
     tenant = msg_dict["tenant"]
+    msg_dict["connection"] = connection1
+    msg_dict["ch"] = ch
     mongo_url = getMongoServer(tenant)
     resp_dict = None
 
