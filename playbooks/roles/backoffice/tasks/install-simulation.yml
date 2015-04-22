@@ -1,4 +1,4 @@
-#Impala configuration related changes
+---
 - name: Install Java repo
   command: add-apt-repository -y ppa:webupd8team/java
   sudo: yes
