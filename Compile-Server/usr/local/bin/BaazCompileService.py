@@ -897,7 +897,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 profile_dict['profile']['character'] = character
 
             #check if this is a simple or complex query
-            if etype == EntityType.SQL_QUERY and 'SignatureKeywords' in compile_doc[key]:
+            if etype == EntityType.SQL_QUERY and 'SignatureKeywords' in compile_doc[key] and \
+               'ErrorSignature' in compile_doc[key] and compile_doc[key]["ErrorSignature"] == "":
                 is_simple = check_query_type(compile_doc[key]['SignatureKeywords'])
                 if is_simple:
                     #mark the query as complex query
