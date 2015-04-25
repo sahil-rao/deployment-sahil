@@ -854,7 +854,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         for field in compile_doc_fields:
             if field in compile_doc["gsp"] and compile_doc["gsp"][field] is not None:
                 try:
-                    smc.process(field, compile_doc["gsp"][field])
+                    smc.process(field, compile_doc["gsp"][field], etype)
                 except:
                     logging.exception("Error in Scale Mode Connector")
                     #Break if query was not parsed
