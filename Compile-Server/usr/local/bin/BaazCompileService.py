@@ -391,9 +391,9 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
         Then between query and database, table and database
     """
     if entity is not None and view_entity is not None:
-        redis_conn.createRelationship(view_entity.eid, entity.eid, "CREATE")
-        redis_conn.setRelationship(view_entity.eid, entity.eid, "CREATE", {"hive_success":hive_success})
-        logging.info("CREATE Relation between {0} {1} position 2\n".format(view_entity.eid, entity.eid))
+        redis_conn.createRelationship(view_entity.eid, entity.eid, "WRITE")
+        redis_conn.setRelationship(view_entity.eid, entity.eid, "WRITE", {"hive_success":hive_success})
+        logging.info("WRITE Relation between {0} {1} position 2\n".format(view_entity.eid, entity.eid))
 
 
     if database_entity is not None:
