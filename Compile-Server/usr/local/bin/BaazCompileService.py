@@ -391,9 +391,9 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
         Then between query and database, table and database
     """
     if entity is not None and view_entity is not None:
-        redis_conn.createRelationship(view_entity.eid, entity.eid, "CREATE")
-        redis_conn.setRelationship(view_entity.eid, entity.eid, "CREATE", {"hive_success":hive_success})
-        logging.info("CREATE Relation between {0} {1} position 2\n".format(view_entity.eid, entity.eid))
+        redis_conn.createRelationship(view_entity.eid, entity.eid, "WRITE")
+        redis_conn.setRelationship(view_entity.eid, entity.eid, "WRITE", {"hive_success":hive_success})
+        logging.info("WRITE Relation between {0} {1} position 2\n".format(view_entity.eid, entity.eid))
 
 
     if database_entity is not None:
@@ -832,10 +832,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
     if "gsp" in compile_doc:
         #check for meta query and drop it
-        if etype == 'EntityType.SQL_QUERY':
+        if etype == EntityType.SQL_QUERY:
             if 'OperatorList' in compile_doc['gsp'] and \
                 'METAQUERY' in compile_doc['gsp']['OperatorList']:
-                logging.info("Metaquery found %s", query)
                 return None, None
 
         compile_doc_fields = ["SignatureKeywords",
@@ -857,7 +856,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         for field in compile_doc_fields:
             if field in compile_doc["gsp"] and compile_doc["gsp"][field] is not None:
                 try:
-                    smc.process(field, compile_doc["gsp"][field])
+                    smc.process(field, compile_doc["gsp"][field], etype)
                 except:
                     logging.exception("Error in Scale Mode Connector")
                     #Break if query was not parsed
@@ -900,7 +899,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 profile_dict['profile']['character'] = character
 
             #check if this is a simple or complex query
-            if etype == EntityType.SQL_QUERY and 'SignatureKeywords' in compile_doc[key]:
+            if etype == EntityType.SQL_QUERY and 'SignatureKeywords' in compile_doc[key] and \
+               'ErrorSignature' in compile_doc[key] and compile_doc[key]["ErrorSignature"] == "":
                 is_simple = check_query_type(compile_doc[key]['SignatureKeywords'])
                 if is_simple:
                     #mark the query as complex query

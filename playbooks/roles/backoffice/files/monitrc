@@ -281,6 +281,10 @@ check process advanalytics with pidfile /var/run/advanalyticsservice.pid
     start program = "/sbin/start advanalytics" with timeout 30 seconds
     stop program = "/sbin/stop advanalytics"
 
+check process impalasimulation with pidfile /var/run/ImpalaSimulation.pid
+    start program = "/sbin/start impalasimulation" with timeout 30 seconds
+    stop program = "/sbin/stop impalasimulation"
+
 check process redis-sentinel with pidfile /var/run/sentinel.pid
     start program = "/sbin/start redis-sentinel"
     stop program = "/sbin/stop redis-sentinel"
