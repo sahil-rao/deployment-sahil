@@ -265,6 +265,8 @@ class callback_context():
                 table_entry = {"uid" : Self.uid}
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
+                Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
+                Self.redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
             #check if column is already present or not
             column_entity_name = table_name + "." + column_name
             column_entity = Self.mongoconn.getEntityByName(column_entity_name)
@@ -300,6 +302,8 @@ class callback_context():
                 table_entry = {"uid" : Self.uid, "stats":stats}
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
+                Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
+                Self.redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
                 if table_entity.eid != eid:
                     Self.mongoconn.db.entities.update({"eid": table_entity.eid},{'$set':{'stats': stats}})
             else:
