@@ -284,6 +284,7 @@ class callback_context():
                 Table --> Column relationship.
                 '''
                 if column_entity.eid == eid:
+                    Self.redis_conn.createEntityProfile(column_entity.eid, "SQL_TABLE_COLUMN")
                     Self.redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
                     Self.redis_conn.createEntityProfile(column_entity.eid, "SQL_TABLE_COLUMN")
                     Self.redis_conn.setRelationship(table_entity.eid, column_entity.eid,
