@@ -151,7 +151,7 @@ def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
         return #currently HAQR supported only for impala
 
     timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-    destination = BAAZ_DATA_ROOT+'compile-' + tenant + "/" + timestr
+    destination = BAAZ_DATA_ROOT+'haqr-' + tenant + "/" + timestr
 
     if not os.path.exists(destination):
         os.makedirs(destination)
