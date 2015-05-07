@@ -33,6 +33,22 @@
 - name: Install S3 CMD
   apt: pkg=s3cmd state=present
   sudo: yes
+- name: Install sasl dependency..
+  command: apt-get install python-dev libsasl2-dev gcc g++
+  sudo: yes
+  ignore_errors: True
+- name: Install sasl
+  pip: name=sasl
+  sudo: yes
+  ignore_errors: True
+- name: Install impyla
+  pip: name=impyla
+  sudo: yes
+  ignore_errors: True
+- name: Install pyhs2
+  pip: name=pyhs2
+  sudo: yes
+  ignore_errors: True
 - name: Copy s3cmd config file
   copy: src=/home/ubuntu/.s3cfg dest=/home/ubuntu/.s3cfg
 - name: Copy s3cmd config file
@@ -59,82 +75,27 @@
 - name: Install python mysqldb
   apt: pkg=python-mysqldb state=present
   sudo: yes
-- name: Mysql user addition
-  mysql_user: name=baazdep password=baazdep priv=*.*:ALL state=present
-- name: Mysql DB
-  mysql_db: name=HADOOP_DEV state=present
-- name: Install pika
-  shell: sudo pip install numpy
-#Start of Compiler module deployment.
-- name: Install Java7
-  apt: pkg=openjdk-7-jdk state=present
-  sudo: yes
-- name: Download Hive-0.13
-  get_url: url=http://apache.tradebit.com/pub/hive/stable/apache-hive-0.13.1-bin.tar.gz  dest=/home/ubuntu/hive-0.13.1.tar.gz
-- name: Untar Hive 
-  shell: tar -zxf /home/ubuntu/hive-0.13.1.tar.gz chdir=/home/ubuntu/
-- name: Instal Hive
-  shell: mv /home/ubuntu/apache-hive-0.13.1-bin /usr/lib/hive
-  sudo: yes
-- name: Download Hive in /usr/local/
-  command: chdir=/usr/local/ wget http://mirror.olnevhost.net/pub/apache/hive/hive-0.12.0/hive-0.12.0-bin.tar.gz
-  sudo: yes
-- name: Remove any existing hive directory
-  file: path=/usr/local/hive-0.12.0-bin/ state=absent
-  sudo: yes
-  ignore_errors: True
-- name: Untar Hive in /usr/local/
-  command: chdir=/usr/local/ tar -xzf hive-0.12.0-bin.tar.gz
-  sudo: yes
-- name: Delete Hive tar file in /usr/local/
-  command: chdir=/usr/local/ rm hive-0.12.0-bin.tar.gz
-  sudo: yes
-- name: Download Hadoop in /usr/local/
-  command: chdir=/usr/local/ wget http://mirrors.advancedhosters.com/apache/hadoop/common/hadoop-0.23.11/hadoop-0.23.11.tar.gz
-  sudo: yes
-- name: Remove any existing hadoop directory
-  file: path=/usr/local/hadoop-0.23.11/ state=absent
-  sudo: yes
-  ignore_errors: True
-- name: Remove any existing hadoop link directory
-  file: path=/usr/local/hadoop/ state=absent
-  sudo: yes
-  ignore_errors: True
-- name: Untar hadoop in /usr/local/
-  command: chdir=/usr/local/ tar -xzf hadoop-0.23.11.tar.gz
-  sudo: yes
-- name: Delete Hadoop tar file in /usr/local/
-  command: chdir=/usr/local/ rm hadoop-0.23.11.tar.gz
-  sudo: yes
-- name: Create symbolic link for hadoop
-  command: chdir=/usr/local/ ln -s hadoop-0.23.11 hadoop
-  ignore_errors: True
-  sudo: yes
-- name: Create hive directory
-  file: dest=/mnt/volume1/hive/ mode=0777 state=directory
-  sudo: yes
-- name: Create hive log directory
-  file: dest=/var/log/hive/ mode=0777 state=directory
-  sudo: yes
-- name: Create hive warehouse directory
-  file: dest=/mnt/volume1/warehouse/ mode=0777 state=directory
-  sudo: yes
-- name: Copy hive-site.xml to /usr/local/hive-0.12.0-bin/conf/
-  copy: src=roles/backoffice/files/hive-site.xml dest=/usr/local/hive-0.12.0-bin/conf/hive-site.xml
-  sudo: yes
-- name: Mysql DB
-  mysql_db: name=hadoop state=present
-- name: Create mysql user hive 
-  mysql_user: name=hive password=hive priv=hadoop.*:ALL state=present
-- name: Install mysql connector into hive lib directory
-  copy: src=roles/backoffice/files/mysql-connector-java-5.1.30-bin.jar dest=/usr/local/hive-0.12.0-bin/lib/
-  sudo: yes
-- name: install python hive client libraries
-  shell: cp -r /usr/local/hive-0.12.0-bin/lib/py/* /usr/local/lib/python2.7/dist-packages/
-  sudo: yes
-- name: Install hive upstart script
-  copy: src=roles/backoffice/files/hive.conf dest=/etc/init/
-  sudo: yes
 - name: Install redis python client
   pip: name=redis
+  sudo: yes
+- name: Install Java repo
+  command: add-apt-repository -y ppa:webupd8team/java
+  sudo: yes
+- name: Run the update
+  command: apt-get update
+  sudo: yes
+  ignore_errors: True
+- name: Update config for java update
+  shell: echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
+- name: Install java version
+  command: apt-get install -y oracle-jdk7-installer
+  sudo: yes
+- name: Set JAVA HOME
+  shell: JAVA_HOME="/usr/lib/jvm/java-7-oracle"
+  sudo: yes
+- name: Change the permission of /etc/enviornment file
+  command: chmod 666 /etc/environment
+  sudo: yes
+- name: update /etc/enviornment file with java info
+  command: echo "JAVA_HOME=\"/usr/lib/jvm/java-7-oracle\"" >> /etc/environment
   sudo: yes
