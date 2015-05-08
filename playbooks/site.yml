@@ -40,3 +40,8 @@
 - hosts: tag_Name_DeploymentRoot
   roles:
   - role: deploymentroot
+
+- hosts: tag_Name_RedisSentinel
+  roles:
+  - role: redis_sentinel
+    sudo: true

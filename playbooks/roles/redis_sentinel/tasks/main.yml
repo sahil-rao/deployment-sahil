@@ -1,0 +1,30 @@
+#REDIS SENTINEL DEPLOYMENT
+- name: Install Redis APT Package
+  apt: name=redis-server update_cache=yes
+  sudo: yes
+- name: Stop running redis server
+  service: name=redis-server state=stopped
+  sudo: yes
+- name: disable redis-server from init.d
+  shell: update-rc.d -f redis-server disable
+  sudo: yes
+  ignore_errors: True
+- name: remove redis-server from init.d
+  shell: update-rc.d -f redis-server remove
+  sudo: yes
+  ignore_errors: True
+- name: Create redis config directory
+  file: path=/etc/redis/local owner=redis group=redis mode=777 state=directory
+  sudo: yes
+- name: Create redis config directory
+  file: path=/var/log/sentinel owner=redis group=redis mode=777 state=directory
+  sudo: yes
+- name: Copy sentinel config file
+  template: src=roles/redis_sentinel/templates/sentinel.conf dest=/etc/redis/local/sentinel.conf owner=redis group=redis mode=0644
+  sudo: yes
+- name: Write upstart script in /etc/init/redis-sentinel.conf
+  copy: src=roles/redis_sentinel/files/redis-sentinel.conf dest=/etc/init/redis-sentinel.conf
+  sudo: yes
+- name: Start sentinel
+  service: name=redis-sentinel state=started
+  sudo: yes
