@@ -1076,7 +1076,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             '''
             redis_conn.incrRelationshipCounter(current_query, entity.eid, "SQL_SUBQUERY", "count")
 
-
     for i, key in enumerate(compile_doc):
         try:
             stats_newdbs_key = "Compiler." + key + ".newDBs"
@@ -1164,6 +1163,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 and len(compile_doc[key]["ErrorSignature"]) > 0:
                 if etype == "SQL_QUERY":
                     collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
+                    #if its 'gsp' and it failed we do not send it to HAQR...
+                    if key == "gsp":
+                        continue
                     if key == "impala":
                         try:
                             #call advance analytics to start HAQR Phase
@@ -1204,7 +1206,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     if update == True and etype != "SQL_QUERY":
         redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True, incrBy=1)
         return entity, "UpdateQueryProfile"
-        
+
     return entity, "GenerateQueryProfile"
 
 def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_conn):
