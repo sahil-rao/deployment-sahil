@@ -809,6 +809,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     """
                          
     entity = None
+    is_failed_in_gsp = False
     elapsed_time = None
     tableEidList = set()
     if compile_doc is None:
@@ -1026,6 +1027,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
                 if compile_doc[key].has_key("ErrorSignature") \
                     and len(compile_doc[key]["ErrorSignature"]) > 0:
+                    if key == 'gsp':
+                        is_failed_in_gsp = True
                     if etype == "SQL_QUERY":
                         #No need to add HAQR call here since this is executed only when there is a repetition of hash
                         collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
@@ -1164,7 +1167,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if etype == "SQL_QUERY":
                     collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
                     #if its 'gsp' and it failed we do not send it to HAQR...
-                    if key == "gsp":
+                    if is_failed_in_gsp == True:
                         continue
                     if key == "impala":
                         try:
