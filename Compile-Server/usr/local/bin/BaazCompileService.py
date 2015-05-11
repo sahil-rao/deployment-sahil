@@ -78,15 +78,15 @@ for fname in dirList:
         continue
     classpath = classpath + fullpath + ":"
 
-HIVE_MODULES='/usr/lib/hive/lib'
-dirList=os.listdir(HIVE_MODULES)
-for fname in dirList:
-    fullpath = os.path.join(HIVE_MODULES, fname)
-    if not os.path.isfile(fullpath):
-        continue
-    if not fullpath.lower().endswith(".jar"):
-        continue
-    classpath = classpath + fullpath + ":"
+#HIVE_MODULES='/usr/lib/hive/lib'
+#dirList=os.listdir(HIVE_MODULES)
+#for fname in dirList:
+#    fullpath = os.path.join(HIVE_MODULES, fname)
+#    if not os.path.isfile(fullpath):
+#        continue
+#    if not fullpath.lower().endswith(".jar"):
+#        continue
+#    classpath = classpath + fullpath + ":"
 
 PIG_FEATURE = ['UNKNOWN', 'MERGE_JOIN', 'REPLICATED_JOIN', 'SKEWED_JOIN', 'HASH_JOIN',\
      'COLLECTED_GROUP', 'MERGE_COGROUP', 'COGROUP', 'GROUP_BY', 'ORDER_BY', 'DISTINCT', \
