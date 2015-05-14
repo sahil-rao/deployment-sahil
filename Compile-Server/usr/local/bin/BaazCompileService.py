@@ -864,6 +864,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     #Break if query was not parsed
                 if field == "ErrorSignature" and compile_doc["gsp"][field]:
                     break
+    else:
+        is_failed_in_gsp = True
         
     smc_json = smc.generate_json()
     unique_count = int(smc_json["unique_uniquequeries"])
@@ -919,6 +921,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         if entry["combinerClause"] == "UNION_ALL":
                             #mark the query as simple query
                             mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"union_all_count":1}}, upsert = True)
+            if 'ErrorSignature' in compile_doc[key] and len(compile_doc[key]["ErrorSignature"]) > 0:
+                is_failed_in_gsp = True
                 
     custom_id = None
     if data is not None and "custom_id" in data:
@@ -1027,8 +1031,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
                 if compile_doc[key].has_key("ErrorSignature") \
                     and len(compile_doc[key]["ErrorSignature"]) > 0:
-                    if key == 'gsp':
-                        is_failed_in_gsp = True
                     if etype == "SQL_QUERY":
                         #No need to add HAQR call here since this is executed only when there is a repetition of hash
                         collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
