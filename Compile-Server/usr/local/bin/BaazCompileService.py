@@ -1169,8 +1169,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if etype == "SQL_QUERY":
                     collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
                     #if its 'gsp' and it failed we do not send it to HAQR...
-                    if is_failed_in_gsp == True:
-                        continue
+                    #if is_failed_in_gsp == True:
+                    #    continue
                     if key == "impala":
                         try:
                             #call advance analytics to start HAQR Phase
