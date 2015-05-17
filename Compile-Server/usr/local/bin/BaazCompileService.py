@@ -47,7 +47,7 @@ if CLUSTER_NAME is not None:
     bucket_location = CLUSTER_NAME
 
 """
-For VM there is not S3 connectivity. Save the logs with a timestamp. 
+For VM there is not S3 connectivity. Save the logs with a timestamp.
 At some point we should move to using a log rotate handler in the VM.
 """
 if not usingAWS:
@@ -117,13 +117,13 @@ def end_of_phase_callback(params, current_phase):
         return
 
     logging.info("Changing processing Phase")
-    
-    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"} 
+
+    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"}
     msg_dict['uid'] = params['uid']
     message = dumps(msg_dict)
     params['connection'].publish(params['channel'],'',params['queuename'],message)
     return
-    
+
 def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity):
     tableCount = 0
     table_entity = None
@@ -210,7 +210,7 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
         """
         table_entity = mongoconn.getEntityByName(tablename)
         if table_entity is None:
-            logging.info("Creating table entity for {0} position 5\n".format(tablename))     
+            logging.info("Creating table entity for {0} position 5\n".format(tablename))
             eid = IdentityService.getNewIdentity(tenant, True)
             table_entity = mongoconn.addEn(eid, tablename, tenant,\
                       EntityType.SQL_TABLE, endict, None)
@@ -229,7 +229,7 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
         if database_name is not None:
             database_entity = mongoconn.getEntityByName(database_name)
             if database_entity is None:
-                logging.info("Creating database entity for {0}\n".format(database_name))     
+                logging.info("Creating database entity for {0}\n".format(database_name))
                 eid = IdentityService.getNewIdentity(tenant, True)
                 mongoconn.addEn(eid, database_name, tenant,\
                           EntityType.SQL_DATABASE, endict, None)
@@ -237,7 +237,7 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                 dbCount = dbCount + 1
 
         """
-        Create relations, first between tables and query             
+        Create relations, first between tables and query
             Then between query and database, table and database
         """
         if entity is not None and table_entity is not None:
@@ -254,14 +254,14 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                     logging.info("READ Relation between {0} {1} position 2\n".format(table_entity.eid, entity.eid))
             else:
                 if outmost_query is not None and outmost_query != entity.eid:
-                    redis_conn.createRelationship(table_entity.eid, entity.eid, "SUBQUERYWRITE")
-                    redis_conn.setRelationship(table_entity.eid, entity.eid, "SUBQUERYWRITE", {"hive_success":hive_success})
-                    logging.info("SUBQUERYWRITE Relation between {0} {1} position 3\n".format(table_entity.eid, entity.eid))
+                    redis_conn.createRelationship(entity.eid, table_entity.eid, "SUBQUERYWRITE")
+                    redis_conn.setRelationship(entity.eid, table_entity.eid, "SUBQUERYWRITE", {"hive_success":hive_success})
+                    logging.info("SUBQUERYWRITE Relation between {0} {1} position 3\n".format(entity.eid, table_entity.eid))
 
                 else:
-                    redis_conn.createRelationship(table_entity.eid, entity.eid, "WRITE")
-                    redis_conn.setRelationship(table_entity.eid, entity.eid, "WRITE", {"hive_success":hive_success})
-                    logging.info("WRITE Relation between {0} {1} position 4\n".format(table_entity.eid, entity.eid))
+                    redis_conn.createRelationship(entity.eid,table_entity.eid, "WRITE")
+                    redis_conn.setRelationship(entity.eid,table_entity.eid, "WRITE", {"hive_success":hive_success})
+                    logging.info("WRITE Relation between {0} {1} position 4\n".format(entity.eid,table_entity.eid))
 
             '''
             Makes sure to follow context for the table and outmost query.
@@ -281,15 +281,15 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                 else:
                     for query in context.queue:
                         if query['etype'] == EntityType.SQL_QUERY:
-                            redis_conn.createRelationship(table_entity.eid, query['eid'], "WRITE")
-                            redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "WRITE", "instance_count", incrBy=1)
+                            redis_conn.createRelationship(query['eid'], table_entity.eid, "WRITE")
+                            redis_conn.incrRelationshipCounter(query['eid'], table_entity.eid, "WRITE", "instance_count", incrBy=1)
                         elif query['etype'] == EntityType.SQL_SUBQUERY:
-                            redis_conn.createRelationship(table_entity.eid, query['eid'], "SUBQUERYWRITE")
-                            redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "SUBQUERYWRITE", "instance_count", incrBy=1)
+                            redis_conn.createRelationship(query['eid'], table_entity.eid, "SUBQUERYWRITE")
+                            redis_conn.incrRelationshipCounter(query['eid'], table_entity.eid, "SUBQUERYWRITE", "instance_count", incrBy=1)
                         elif query['etype'] == EntityType.SQL_STORED_PROCEDURE:
-                            redis_conn.createRelationship(table_entity.eid, query['eid'], "STOREDPROCEDUREWRITE")
-                            redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "STOREDPROCEDUREWRITE", "instance_count", incrBy=1)
-                    
+                            redis_conn.createRelationship(query['eid'], table_entity.eid, "STOREDPROCEDUREWRITE")
+                            redis_conn.incrRelationshipCounter(query['eid'], table_entity.eid, "STOREDPROCEDUREWRITE", "instance_count", incrBy=1)
+
 
                 context.tables.append(table_entity.eid)
 
@@ -302,10 +302,10 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
             """
             if entity is not None:
                 redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
-                logging.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))     
+                logging.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))
 
     #mongoconn.finishBatchUpdate()
-    
+
     return [dbCount, tableCount]
 
 def getTableName(tableentry):
@@ -356,7 +356,7 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
     """
     view_entity = mongoconn.getEntityByName(viewname)
     if view_entity is None:
-        logging.info("Creating table entity for view {0}\n".format(viewname))     
+        logging.info("Creating table entity for view {0}\n".format(viewname))
         eid = IdentityService.getNewIdentity(tenant, True)
         view_entity = mongoconn.addEn(eid, viewname, tenant,\
                   EntityType.SQL_TABLE, endict, None)
@@ -380,7 +380,7 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
     if database_name is not None:
         database_entity = mongoconn.getEntityByName(database_name)
         if database_entity is None:
-            logging.info("Creating database entity for {0}\n".format(database_name))     
+            logging.info("Creating database entity for {0}\n".format(database_name))
             eid = IdentityService.getNewIdentity(tenant, True)
             mongoconn.addEn(eid, database_name, tenant,\
                       EntityType.SQL_DATABASE, endict, None)
@@ -388,13 +388,13 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
             dbCount = dbCount + 1
 
     """
-    Create relations, first between table(View) and query             
+    Create relations, first between table(View) and query
         Then between query and database, table and database
     """
     if entity is not None and view_entity is not None:
-        redis_conn.createRelationship(view_entity.eid, entity.eid, "WRITE")
-        redis_conn.setRelationship(view_entity.eid, entity.eid, "WRITE", {"hive_success":hive_success})
-        logging.info("WRITE Relation between {0} {1} position 2\n".format(view_entity.eid, entity.eid))
+        redis_conn.createRelationship(entity.eid, view_entity.eid, "WRITE")
+        redis_conn.setRelationship(entity.eid, view_entity.eid, "WRITE", {"hive_success":hive_success})
+        logging.info("WRITE Relation between {0} {1} position 2\n".format(entity.eid, view_entity.eid))
 
 
     if database_entity is not None:
@@ -406,13 +406,13 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
         """
         if entity is not None:
             redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
-            logging.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))     
+            logging.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))
 
     for tableentry in inputTableList:
         tablename = getTableName(tableentry)
         table_entity = mongoconn.getEntityByName(tablename)
         if table_entity is None:
-            logging.info("No table with name {0} found\n".format(tablename))     
+            logging.info("No table with name {0} found\n".format(tablename))
             continue
 
         '''
@@ -421,7 +421,7 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
         '''
         if view_entity.eid != table_entity.eid:
             redis_conn.createRelationship(view_entity.eid, table_entity.eid, "VIEW_TABLE")
-        logging.info("Relation VIEW_TABLE between {0} {1}\n".format(view_entity.eid, table_entity.eid))     
+        logging.info("Relation VIEW_TABLE between {0} {1}\n".format(view_entity.eid, table_entity.eid))
 
     return [dbCount, tableCount]
 
@@ -461,7 +461,7 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
     """
     table_entity = mongoconn.getEntityByName(tablename)
     if table_entity is None:
-        logging.info("Creating table entity for {0} position 5\n".format(tablename))     
+        logging.info("Creating table entity for {0} position 5\n".format(tablename))
         eid = IdentityService.getNewIdentity(tenant, True)
         table_entity = mongoconn.addEn(eid, tablename, tenant,\
                   EntityType.SQL_TABLE, endict, None)
@@ -480,7 +480,7 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
     if database_name is not None:
         database_entity = mongoconn.getEntityByName(database_name)
         if database_entity is None:
-            logging.info("Creating database entity for {0}\n".format(database_name))     
+            logging.info("Creating database entity for {0}\n".format(database_name))
             eid = IdentityService.getNewIdentity(tenant, True)
             mongoconn.addEn(eid, database_name, tenant,\
                       EntityType.SQL_DATABASE, endict, None)
@@ -488,7 +488,7 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
             dbCount = dbCount + 1
 
     """
-    Create relations, first between tables and query             
+    Create relations, first between tables and query
         Then between query and database, table and database
     """
     if entity is not None and table_entity is not None:
@@ -505,14 +505,14 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
                 logging.info("READ Relation between {0} {1} position 2\n".format(table_entity.eid, entity.eid))
         else:
             if outmost_query is not None and outmost_query != entity.eid:
-                redis_conn.createRelationship(table_entity.eid, entity.eid, "SUBQUERYWRITE")
-                redis_conn.setRelationship(table_entity.eid, entity.eid, "SUBQUERYWRITE", {"hive_success":hive_success})
-                logging.info("SUBQUERYWRITE Relation between {0} {1} position 3\n".format(table_entity.eid, entity.eid))
+                redis_conn.createRelationship(entity.eid, table_entity.eid, "SUBQUERYWRITE")
+                redis_conn.setRelationship(entity.eid, table_entity.eid, "SUBQUERYWRITE", {"hive_success":hive_success})
+                logging.info("SUBQUERYWRITE Relation between {0} {1} position 3\n".format(entity.eid, table_entity.eid))
 
             else:
-                redis_conn.createRelationship(table_entity.eid, entity.eid, "WRITE")
-                redis_conn.setRelationship(table_entity.eid, entity.eid, "WRITE", {"hive_success":hive_success})
-                logging.info("WRITE Relation between {0} {1} position 4\n".format(table_entity.eid, entity.eid))
+                redis_conn.createRelationship(entity.eid, table_entity.eid, "WRITE")
+                redis_conn.setRelationship(entity.eid, table_entity.eid, "WRITE", {"hive_success":hive_success})
+                logging.info("WRITE Relation between {0} {1} position 4\n".format(entity.eid, table_entity.eid))
 
         '''
         Makes sure to follow context for the table and outmost query.
@@ -532,15 +532,15 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
             else:
                 for query in context.queue:
                     if query['etype'] == EntityType.SQL_QUERY:
-                        redis_conn.createRelationship(table_entity.eid, query['eid'], "WRITE")
-                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "WRITE", "instance_count", incrBy=1)
+                        redis_conn.createRelationship(query['eid'], table_entity.eid, "WRITE")
+                        redis_conn.incrRelationshipCounter(query['eid'], table_entity.eid, "WRITE", "instance_count", incrBy=1)
                     elif query['etype'] == EntityType.SQL_SUBQUERY:
-                        redis_conn.createRelationship(table_entity.eid, query['eid'], "SUBQUERYWRITE")
-                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "SUBQUERYWRITE", "instance_count", incrBy=1)
+                        redis_conn.createRelationship(query['eid'], table_entity.eid, "SUBQUERYWRITE")
+                        redis_conn.incrRelationshipCounter(query['eid'], table_entity.eid, "SUBQUERYWRITE", "instance_count", incrBy=1)
                     elif query['etype'] == EntityType.SQL_STORED_PROCEDURE:
-                        redis_conn.createRelationship(table_entity.eid, query['eid'], "STOREDPROCEDUREWRITE")
-                        redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "STOREDPROCEDUREWRITE", "instance_count", incrBy=1)
-                
+                        redis_conn.createRelationship(query['eid'], table_entity.eid, "STOREDPROCEDUREWRITE")
+                        redis_conn.incrRelationshipCounter(query['eid'], table_entity.eid, "STOREDPROCEDUREWRITE", "instance_count", incrBy=1)
+
 
             context.tables.append(table_entity.eid)
 
@@ -553,14 +553,14 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
         """
         if entity is not None:
             redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
-            logging.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))     
+            logging.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))
 
     #mongoconn.finishBatchUpdate()
-    
+
     return [dbCount, tableCount]
 
 def process_scale_mode(tenant, uid, instances, smc):
-    
+
     for inst in instances:
         """
         Create input and output folders for compiler
@@ -571,7 +571,7 @@ def process_scale_mode(tenant, uid, instances, smc):
             logging.error("Could not find query")
             continue
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-        destination = '/mnt/volume1/compile-' + tenant + "/" + timestr 
+        destination = '/mnt/volume1/compile-' + tenant + "/" + timestr
         if not os.path.exists(destination):
             os.makedirs(destination)
         dest_file_name = destination + "/input.query"
@@ -609,10 +609,10 @@ def process_scale_mode(tenant, uid, instances, smc):
 
         compile_doc = None
         logging.info("Loading file : "+ output_file_name)
-        with open(output_file_name) as data_file:    
+        with open(output_file_name) as data_file:
             compile_doc = load(data_file)["gsp"]
 
-        compile_doc_fields = ["ErrorSignature", 
+        compile_doc_fields = ["ErrorSignature",
                               "SignatureKeywords",
                               "OperatorList",
                               "selectColumnNames",
@@ -663,7 +663,7 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
 
     if entity is not None:
         if opcode is not None:
-            msg_dict = {'tenant':tenant, 'opcode':opcode, "entityid":entity.eid} 
+            msg_dict = {'tenant':tenant, 'opcode':opcode, "entityid":entity.eid}
             if uid is not None:
                 msg_dict['uid'] = uid
             message_id = genMessageID("Comp", collection, entity.eid)
@@ -675,7 +675,7 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
             logging.info("Sending message to Math pos1:" + str(msg_dict))
             incrementPendingMessage(collection, redis_conn, uid,message_id)
             connection1.publish(ch,'','mathqueue',message)
-            
+
 def sendAdvAnalyticsMessage(ch, msg_dict):
     if msg_dict is None:
         return
@@ -694,12 +694,12 @@ def create_query_character(signature_keywords):
         temp_character = signature_keywords[0].split(':')
         if len(temp_character) > 1:
             temp_character = temp_character[1]
-        
+
         if 'No Table Only' in temp_character:
             character.append('No Table')
             character = [' '.join(character)]
             return character
-        
+
         character.append('Single Table : ')
         if 'Only' in temp_character:
             character.append(temp_character)
@@ -723,7 +723,7 @@ def create_query_character(signature_keywords):
         if 'Exists' in temp_character:
             character.append('Exists')
 
-        #Logic to get rid of comma between 
+        #Logic to get rid of comma between
         #'Single Table' and first operator
         start_character = ''.join(character[:2])
         character = [start_character] + character[2:]
@@ -807,7 +807,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             4. If the query is a stored procedure, creates the entity with an etype of SQL_STORED_PROCEDURE.
             5. If the query is a subquery, creates the entity with an etype of SQL_SUBQUERY.
     """
-                         
+
     entity = None
     is_failed_in_gsp = False
     elapsed_time = None
@@ -866,7 +866,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     break
     else:
         is_failed_in_gsp = True
-        
+
     smc_json = smc.generate_json()
     unique_count = int(smc_json["unique_uniquequeries"])
     sem_unique_count = int(smc_json["unique_queries"])
@@ -878,11 +878,11 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             "semantically_unique_count": sem_unique_count,
             "unique_count": unique_count
         }}, upsert = True)
-    
+
     for key in compile_doc:
         comp_profile[key] = compile_doc[key]
         if key == "gsp":
-            
+
             if "queryExtendedHash" in compile_doc[key]:
                 q_hash =  compile_doc[key]["queryExtendedHash"]
                 profile_dict["md5"] = q_hash
@@ -923,7 +923,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                             mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"union_all_count":1}}, upsert = True)
             if 'ErrorSignature' in compile_doc[key] and len(compile_doc[key]["ErrorSignature"]) > 0:
                 is_failed_in_gsp = True
-                
+
     custom_id = None
     if data is not None and "custom_id" in data:
         custom_id = data['custom_id']
@@ -950,7 +950,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         try:
             eid = IdentityService.getNewIdentity(tenant, True)
             entity = mongoconn.addEn(eid, query, tenant,\
-                       etype, profile_dict, None) 
+                       etype, profile_dict, None)
             if entity is None:
                 logging.info("No Entity found")
                 return None, None
@@ -963,7 +963,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
                     except:
                         logging.info("No or junk elapsed time found:%s", elapsed_time)
-                
+
                 inst_dict = {"query": query}
                 if data is not None:
                     inst_dict.update(data)
@@ -986,7 +986,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
         except DuplicateKeyError:
             inst_dict = {}
-            
+
             if custom_id is not None:
                 inst_dict = {'custom_id':custom_id}
             entity = mongoconn.searchEntity({"md5":q_hash})
@@ -1063,18 +1063,18 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     '''
     if len(context.queue) > 1:
         '''
-        context.queue[-2] is used here because the last element 
+        context.queue[-2] is used here because the last element
         on the queue is the current query.
         '''
 
         current_query = context.queue[-2]['eid']
 
-        if etype == EntityType.SQL_QUERY:    
+        if etype == EntityType.SQL_QUERY:
             '''
             Stored procedure -> Query relationship
             '''
             redis_conn.incrRelationshipCounter(current_query, entity.eid, "STORED_PROCEDURE_QUERY", "count")
-                
+
         elif etype == EntityType.SQL_SUBQUERY:
             '''
             Query -> Subquery relationship
@@ -1105,7 +1105,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         continue
                     sub_q = sub_q_dict["origQuery"]
                     logging.info("Processing Sub queries " + sub_q)
-                    sub_entity, sub_opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, 
+                    sub_entity, sub_opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection,
                                                     tenant, uid, sub_q, data, {key:sub_q_dict}, source_platform, smc, context)
                     temp_msg = {'test_mode':1} if context.test_mode else None
                     sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode, temp_msg)
@@ -1123,46 +1123,46 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             inputTableList = None
             if compile_doc[key].has_key("InputTableList"):
                 inputTableList = compile_doc[key]["InputTableList"]
-                tmpAdditions = processTableSet(compile_doc[key]["InputTableList"], 
-                                               mongoconn, redis_conn, tenant, uid, entity, True,  
+                tmpAdditions = processTableSet(compile_doc[key]["InputTableList"],
+                                               mongoconn, redis_conn, tenant, uid, entity, True,
                                                context, tableEidList)
                 if uid is not None:
-                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
+                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0],
                                       stats_newtables_key: tmpAdditions[1]}})
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
-    
+
             if compile_doc[key].has_key("OutputTableList"):
-                tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"], 
+                tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"],
                                                 mongoconn, redis_conn, tenant, uid, entity, False,
                                                 context, tableEidList)
                 if uid is not None:
                     collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
-                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
+                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
 
             if compile_doc[key].has_key("ddlColumns"):
-                tmpAdditions = processColumns(compile_doc[key]["ddlColumns"], 
+                tmpAdditions = processColumns(compile_doc[key]["ddlColumns"],
                                               mongoconn, redis_conn, tenant, uid, entity)
                 if uid is not None:
-                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
+                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0],
                                       stats_newtables_key: tmpAdditions[1]}})
-                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
+                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
 
 
             if compile_doc[key].has_key("createTableName"):
-                tmpAdditions = processCreateTable(compile_doc[key]["createTableName"], 
+                tmpAdditions = processCreateTable(compile_doc[key]["createTableName"],
                                               mongoconn, redis_conn, tenant, uid, entity, False, context ,tableEidList)
                 if uid is not None:
-                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
+                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0],
                                       stats_newtables_key: tmpAdditions[1]}})
-                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True) 
+                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
 
             if compile_doc[key].has_key("viewName"):
                 tmpAdditions = processCreateView(compile_doc[key]["viewName"], mongoconn, redis_conn, mongoconn.db.entities,
                                                  tenant, uid, entity,context , inputTableList, tableEidList)
                 if uid is not None:
-                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], 
+                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0],
                                       stats_newtables_key: tmpAdditions[1]}})
-                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"ViewCount":tmpAdditions[1]}}, upsert = True) 
+                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"ViewCount":tmpAdditions[1]}}, upsert = True)
 
             if compile_doc[key].has_key("ErrorSignature") \
                 and len(compile_doc[key]["ErrorSignature"]) > 0:
@@ -1198,7 +1198,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     collection.update({'uid':uid},{"$inc": {stats_proc_success_key:1, stats_proc_failure_key: 0}})
 
         except:
-            logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))     
+            logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))
             if uid is not None:
                 if etype == "SQL_QUERY":
                     collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
@@ -1345,7 +1345,7 @@ def updateRedisforHAQR(redis_conn,data,tenant,eid):
             else:
                 redis_conn.incrEntityCounter("HAQR", "impalaFromSubClauseFailure", sort=False, incrBy=1)
                 redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseFromFailure", sort=False, incrBy=1)
-    
+
     if "Group By" in data['platformCompilationStatus']['Impala']['clauseStatus']:
         if data['platformCompilationStatus']['Impala']['clauseStatus']["Group By"]['clauseStatus']=="SUCCESS":
             redis_conn.incrEntityCounter("HAQR", "impalaGroupBySuccess", sort=False, incrBy=1)
@@ -1380,14 +1380,14 @@ def callback(ch, method, properties, body):
     msg_dict = loads(body)
 
     logging.info("compiler Got message "+ str(msg_dict))
-     
+
 
     """
     Validate the message.
-    """ 
+    """
     if not msg_dict.has_key("tenant") or \
        not msg_dict.has_key("job_instances"):
-        logging.error("Invalid message received\n")     
+        logging.error("Invalid message received\n")
 
     tenant = msg_dict["tenant"]
     instances = msg_dict["job_instances"]
@@ -1437,7 +1437,7 @@ def callback(ch, method, properties, body):
         decrementPendingMessage(collection, redis_conn, uid, received_msgID)
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
-    
+
     if msg_dict.has_key('uid'):
         uid = msg_dict['uid']
 
@@ -1453,7 +1453,7 @@ def callback(ch, method, properties, body):
             #connection1.basicAck(ch,method)
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
-      
+
         collection = MongoClient(mongo_url)[tenant].uploadStats
         dashboard_data = MongoClient(mongo_url)[tenant].dashboard_data
         collection.update({'uid':uid},{'$inc':{"Compiler.count":1}})
@@ -1463,7 +1463,7 @@ def callback(ch, method, properties, body):
         """
         #connection1.basicAck(ch,method)
         ch.basic_ack(delivery_tag=method.delivery_tag)
-           
+
         return
 
     mongoconn = Connector.getConnector(tenant)
@@ -1490,7 +1490,7 @@ def callback(ch, method, properties, body):
         compile_doc = None
         prog_id = ""
         if "entity_id" in inst:
-            prog_id = inst["entity_id"] 
+            prog_id = inst["entity_id"]
             try:
                 entity = mongoconn.getEntity(prog_id)
             except:
@@ -1510,19 +1510,19 @@ def callback(ch, method, properties, body):
         Create a destination/processing folder.
         """
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-        destination = '/mnt/volume1/compile-' + tenant + "/" + timestr 
+        destination = '/mnt/volume1/compile-' + tenant + "/" + timestr
         if not os.path.exists(destination):
             os.makedirs(destination)
 
         dest_file_name = destination + "/input.query"
 
-        #inst_id = inst["inst_id"] 
+        #inst_id = inst["inst_id"]
         #if prog_collector.has_key(prog_id):
         #    prog_collector[prog_id].append(inst_id)
         #else:
         #    prog_collector[prog_id] = [inst_id]
         #counter = counter + 1
-        logging.info("Event received for {0}, entity {1}\n".format(tenant, prog_id))     
+        logging.info("Event received for {0}, entity {1}\n".format(tenant, prog_id))
         dest_file = open(dest_file_name, "w+")
         dest_file.write(query)
         dest_file.flush()
@@ -1535,7 +1535,7 @@ def callback(ch, method, properties, body):
         comp_outs = {}
 
         """
-          Get the list of compilers we need to run. 
+          Get the list of compilers we need to run.
           Run each valid compiler we find.
         """
         for section in compconfig.sections():
@@ -1573,7 +1573,7 @@ def callback(ch, method, properties, body):
                 if socket_connected == False:
                     raise Exception("Unable to connect to JVM socket.")
 
-                data_dict = { "InputFile": dest_file_name, "OutputFile": output_file_name, 
+                data_dict = { "InputFile": dest_file_name, "OutputFile": output_file_name,
                               "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
                 if source_platform is not None:
                     data_dict["source_platform"] = source_platform
@@ -1602,12 +1602,12 @@ def callback(ch, method, properties, body):
                     """
                     mongoconn.close()
                     #connection1.basicAck(ch,method)
-                    ch.basic_ack(delivery_tag=method.delivery_tag)   
+                    ch.basic_ack(delivery_tag=method.delivery_tag)
                     return
 
                 compile_doc = None
                 logging.info("Loading file : "+ output_file_name)
-                with open(output_file_name) as data_file:    
+                with open(output_file_name) as data_file:
                     compile_doc = load(data_file)
 
                 if compile_doc is not None:
@@ -1615,7 +1615,7 @@ def callback(ch, method, properties, body):
                         comp_outs[key] = compile_doc[key]
 
             except:
-                logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
+                logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))
                 if msg_dict.has_key('uid'):
                     collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
                 #mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
@@ -1636,7 +1636,7 @@ def callback(ch, method, properties, body):
             sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg)
         except:
             collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
-            logging.exception("Failure in processing compiler output for Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
+            logging.exception("Failure in processing compiler output for Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))
 
         if not usingAWS:
             continue
@@ -1645,19 +1645,19 @@ def callback(ch, method, properties, body):
         Copy over any intermediate file to S3 and remove the directory.
         """
         try:
-            shutil.rmtree(destination)     
+            shutil.rmtree(destination)
         except:
-            logging.exception("Tenent {0} removing intermediate file failed.\n".format(tenant))    
+            logging.exception("Tenent {0} removing intermediate file failed.\n".format(tenant))
 
 
-    logging.info("Event Processing Complete")     
-    
+    logging.info("Event Processing Complete")
+
     endTime = time.time()
 
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already
         collection.update({'uid':uid},{"$inc": {"Compiler.time":(endTime-startTime)}})
-        
+
     mongoconn.close()
     connection1.basicAck(ch,method)
     callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
