@@ -311,6 +311,12 @@ def updateRedisforHAQR(redis_conn,data,tenant,eid):
                     else:
                         redis_conn.incrEntityCounter("HAQR", "impalaWhereSubClauseFailure", sort=False, incrBy=1)
                         redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseWhereFailure", sort=False, incrBy=1)
+
+    if data['platformCompilationStatus']['Impala']['clauseStatus'] is not None and \
+        "Other" in data['platformCompilationStatus']['Impala']['clauseStatus']:
+        if data['platformCompilationStatus']['Impala']['clauseStatus']["Other"]['clauseStatus']=="FAIL":
+            redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseOtherFailure", sort=False, incrBy=1)
+
     return
 
 def process_HAQR_request(msg_dict):
