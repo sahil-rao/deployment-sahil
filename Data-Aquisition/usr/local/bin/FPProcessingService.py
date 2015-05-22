@@ -172,6 +172,8 @@ class callback_context():
         Self.queryNumThreshold = 20000
         Self.header_info = header_info
         Self.delimiter = delimiter
+        Self.col_stat_table_name_list = []
+        Self.table_stat_table_name_list = []
 
     def get_source_platform(Self):
         return Self.sourcePlatform
@@ -267,6 +269,15 @@ class callback_context():
                                 EntityType.SQL_TABLE, table_entry, None)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 Self.redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
+                logging.info("### BEFORE UPDATING MONGO COLLECTION ###")
+                #updated the upload stats for table
+                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.gsp.newTables": 1}}, upsert = True)
+            else:
+                if table_name not in Self.col_stat_table_name_list:
+                    #updated the upload stats for table
+                    Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.gsp.totalTables": 1}}, upsert = True)
+                    Self.col_stat_table_name_list.append(table_name)
+
             #check if column is already present or not
             column_entity_name = table_name + "." + column_name
             column_entity = Self.mongoconn.getEntityByName(column_entity_name)
@@ -280,6 +291,8 @@ class callback_context():
                 column_entry['tableName'] = table_name
                 column_entity = Self.mongoconn.addEn(eid, column_entity_name, Self.tenant,\
                                                 EntityType.SQL_TABLE_COLUMN, column_entry, None)
+                #updated the upload stats for column
+                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.gsp.newColumns": 1}}, upsert = True)
                 '''
                 Table --> Column relationship.
                 '''
@@ -292,6 +305,8 @@ class callback_context():
             else:
                 #update table entity with stats info in it
                 Self.mongoconn.db.entities.update({"eid": column_entity.eid},{'$set':{'stats': stats}})
+                #updated the upload stats for column
+                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.gsp.totalColumns": 1}}, upsert = True)
         else: 
             #Query mongo based to table name in order to update table stats
             table_name = stats['TABLE_NAME'].lower()
@@ -306,10 +321,16 @@ class callback_context():
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 Self.redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
                 if table_entity.eid != eid:
-                    Self.mongoconn.db.entities.update({"eid": table_entity.eid},{'$set':{'stats': stats}})
+                    Self.mongoconn.db.entitieys.update({"eid": table_entity.eid},{'$set':{'stats': stats}})
+                #updated the upload stats for table
+                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.gsp.newTables": 1}}, upsert = True)
             else:
                 #update table entity with stats info in it
                 Self.mongoconn.db.entities.update({"eid": table_entity.eid},{'$set':{'stats': stats}})
+                if table_name not in Self.table_stat_table_name_list:
+                    #updated the upload stats for table
+                    Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.gsp.totalTables": 1}}, upsert = True)
+                    Self.table_stat_table_name_list.append(table_name)
         
     def callback(Self, eid, update=False, name=None, etype=None, data=None):
 
