@@ -23,6 +23,10 @@
   roles:
   - role: nodejsserver
 
+- hosts: tag_Name_Nginx
+  roles:
+  - role: nginx
+
 - hosts: tag_Name_Foundation
   roles:
   - role: foundation
