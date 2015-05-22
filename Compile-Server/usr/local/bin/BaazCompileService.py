@@ -737,6 +737,8 @@ def create_query_character(signature_keywords):
             character.append('Subquery')
         if 'Views' in signature_keywords:
             character.append('Views')
+        if 'Union' in signature_keywords:
+            character.append('Union')
         if 'Aggregation' in signature_keywords:
             character.append('Aggregation')
         if 'Where' in signature_keywords:
