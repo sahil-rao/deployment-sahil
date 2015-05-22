@@ -269,7 +269,6 @@ class callback_context():
                                 EntityType.SQL_TABLE, table_entry, None)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 Self.redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
-                logging.info("### BEFORE UPDATING MONGO COLLECTION ###")
                 #updated the upload stats for table
                 Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.gsp.newTables": 1}}, upsert = True)
             else:
