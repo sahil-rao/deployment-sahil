@@ -15,6 +15,6 @@
   command: /usr/sbin/nginx
   sudo: yes
   ignore_errors: yes
-- Reload nginx
+- name: Reload nginx
   command: /usr/sbin/nginx -s reload
   sudo: yes
