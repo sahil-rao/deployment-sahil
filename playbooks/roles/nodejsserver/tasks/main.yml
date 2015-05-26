@@ -22,9 +22,6 @@
 - name: Create /var/xplain{{ port }}
   file: path=/var/xplain{{ port }} state=directory owner=root mode=0644
   sudo: yes
-- name: Create user node
-  user: name=node state=present
-  sudo: yes
 ### UNPACK S3 TARBALLS ###
 - name: Get Baazdata App
   shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}xplain.io.tar.gz .
