@@ -9,7 +9,7 @@
   file: path=/var/www state=directory
   sudo: yes
 - name: Template and copy nginx conf file
-  template: src=nginx.conf dest=/etc/nginx/nginx.conf
+  template: src=nginx.conf dest=/etc/nginx/sites-enabled/default
   sudo: yes
 - name: Start nginx
   command: /usr/sbin/nginx
