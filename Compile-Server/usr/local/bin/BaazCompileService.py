@@ -818,7 +818,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         logging.info("No compile_doc found")
         return None, None
 
-    profile_dict = { "uid" : uid, "profile": { 'character':[],"Compiler" : {}}}
+    compiler_to_use = get_compiler(source_platform)
+    profile_dict = {"uid": uid, "profile": {'character': [], "Compiler": {}}, 'compiler_to_use': compiler_to_use}
     comp_profile = profile_dict["profile"]["Compiler"]
 
     q_hash = None
@@ -834,11 +835,12 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     else:
         etype = EntityType.SQL_SUBQUERY
 
-    if "gsp" in compile_doc:
+    compiler = compiler_to_use
+    if compiler in compile_doc:
         #check for meta query and drop it
         if etype == EntityType.SQL_QUERY:
-            if 'OperatorList' in compile_doc['gsp'] and \
-                'METAQUERY' in compile_doc['gsp']['OperatorList']:
+            if 'OperatorList' in compile_doc[compiler] and \
+                'METAQUERY' in compile_doc[compiler]['OperatorList']:
                 return None, None
 
         compile_doc_fields = ["SignatureKeywords",
@@ -858,13 +860,13 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             compile_doc_fields = ["ErrorSignature", "queryHash", "queryNameHash"] + compile_doc_fields
 
         for field in compile_doc_fields:
-            if field in compile_doc["gsp"] and compile_doc["gsp"][field] is not None:
+            if field in compile_doc[compiler] and compile_doc[compiler][field] is not None:
                 try:
-                    smc.process(field, compile_doc["gsp"][field], etype)
+                    smc.process(field, compile_doc[compiler][field], etype)
                 except:
                     logging.exception("Error in Scale Mode Connector")
                     #Break if query was not parsed
-                if field == "ErrorSignature" and compile_doc["gsp"][field]:
+                if field == "ErrorSignature" and compile_doc[compiler][field]:
                     break
     else:
         is_failed_in_gsp = True
@@ -883,7 +885,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
     for key in compile_doc:
         comp_profile[key] = compile_doc[key]
-        if key == "gsp":
+        if key == compiler:
 
             if "queryExtendedHash" in compile_doc[key]:
                 q_hash =  compile_doc[key]["queryExtendedHash"]
@@ -977,10 +979,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 entityProfile = entity.profile
 
                 if "Compiler" in entityProfile\
-                        and "gsp" in entityProfile['Compiler']\
-                        and "ComplexityScore" in entityProfile['Compiler']['gsp']:
+                        and compiler in entityProfile['Compiler']\
+                        and "ComplexityScore" in entityProfile['Compiler'][compiler]:
                     redis_conn.incrEntityCounter(entity.eid, "ComplexityScore", sort = True,
-                        incrBy= entityProfile["Compiler"]["gsp"]["ComplexityScore"])
+                        incrBy= entityProfile["Compiler"][compiler]["ComplexityScore"])
                 else:
                     logging.info("No ComplexityScore found.")
             else:
