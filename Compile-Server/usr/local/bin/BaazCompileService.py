@@ -819,7 +819,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         return None, None
 
     compiler_to_use = get_compiler(source_platform)
-    profile_dict = {"uid": uid, "profile": {'character': [], "Compiler": {}}, 'compiler_to_use': compiler_to_use}
+    profile_dict = {"uid": uid, "profile": {'character': [], "Compiler": {}}, 'compiler_to_use': compiler_to_use, 'parse_success': True}
     comp_profile = profile_dict["profile"]["Compiler"]
 
     q_hash = None
@@ -927,6 +927,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                             mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"union_all_count":1}}, upsert = True)
             if 'ErrorSignature' in compile_doc[key] and len(compile_doc[key]["ErrorSignature"]) > 0:
                 is_failed_in_gsp = True
+                profile_dict['parse_success'] = False
 
     custom_id = None
     if data is not None and "custom_id" in data:
