@@ -1102,7 +1102,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             stats_sub_success_key = "Compiler." + key + ".subquery_success"
             stats_sub_failure_key = "Compiler." + key + ".subquery_failure"
 
-            if compile_doc[key].has_key("subQueries") and\
+            if key == compiler_to_use and compile_doc[key].has_key("subQueries") and\
                 len(compile_doc[key]["subQueries"]) > 0:
                 logging.info("Processing Sub queries")
 
