@@ -874,9 +874,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     smc_json = smc.generate_json()
     unique_count = int(smc_json["unique_uniquequeries"])
     sem_unique_count = int(smc_json["unique_queries"])
-    if compiler_to_use == 'impala':
-        #putting this in because compiler doesn't output query hash yet.
-        sem_unique_count = unique_count
     total_query_count = int(smc_json["parsed"])
     logging.info("Updating query counts " + str(unique_count))
     mongoconn.db.dashboard_data.update(
