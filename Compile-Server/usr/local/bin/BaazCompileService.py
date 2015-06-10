@@ -1128,7 +1128,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
             mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
 
-            inputTableList = None
+            inputTableList = []
             if compile_doc[key].has_key("InputTableList"):
                 inputTableList = compile_doc[key]["InputTableList"]
                 tmpAdditions = processTableSet(compile_doc[key]["InputTableList"],
