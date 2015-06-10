@@ -55,7 +55,7 @@ metrics_url = None
 
 
 """
-For VM there is not S3 connectivity. Save the logs with a timestamp. 
+For VM there is not S3 connectivity. Save the logs with a timestamp.
 At some point we should move to using a log rotate handler in the VM.
 """
 if not usingAWS:
@@ -80,18 +80,18 @@ def end_of_phase_callback(params, current_phase):
         return
 
     logging.info("Changing processing Phase")
-    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"} 
+    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"}
     msg_dict['uid'] = params['uid']
     message = dumps(msg_dict)
-    params['connection'].publish(params['channel'],'',params['queuename'],message) 
+    params['connection'].publish(params['channel'],'',params['queuename'],message)
     return
 
 def performTenantCleanup(tenant):
-    logging.info("Cleaning Tenant "+ tenant) 
-    destination = BAAZ_DATA_ROOT + tenant     
+    logging.info("Cleaning Tenant "+ tenant)
+    destination = BAAZ_DATA_ROOT + tenant
     if os.path.exists(destination):
         shutil.rmtree(destination)
-    destination = '/mnt/volume1/compile-' + tenant 
+    destination = '/mnt/volume1/compile-' + tenant
     if os.path.exists(destination):
         shutil.rmtree(destination)
 
@@ -174,6 +174,7 @@ class callback_context():
         Self.delimiter = delimiter
         Self.col_stat_table_name_list = []
         Self.table_stat_table_name_list = []
+        Self.compiler_to_use = get_compiler(Self.sourcePlatform)
 
     def get_source_platform(Self):
         return Self.sourcePlatform
@@ -195,7 +196,7 @@ class callback_context():
         queries_left = total_queries_found
         if 'query_processed' in overall_stats and Self.uploadLimit !=0 and not Self.skipLimit:
             queries_left = int(Self.uploadLimit) - int( overall_stats['query_processed'])
-        
+
         Self.redis_conn.setScaleModeTotalQueryCount( min(queries_left, int(total_queries_found)), Self.uid )
         Self.collection.update({'uid':Self.uid},{'$set':{"total_queries": min(queries_left, total_queries_found), "processed_queries":0}})
         if total_queries_found > Self.queryNumThreshold and Self.__getScaleMode():
@@ -207,13 +208,13 @@ class callback_context():
 
         userdb = MongoClient(getMongoServer(Self.tenant))["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
-        
+
         if "upLimit" not in org:
             upLimit = 1000
             userdb.organizations.update({"guid":Self.tenant}, {"$set": {"upLimit":upLimit}})
         else:
             upLimit = org["upLimit"]
-            
+
         return upLimit
 
     def __getScaleMode(Self):
@@ -222,10 +223,10 @@ class callback_context():
 
         userdb = MongoClient(getMongoServer(Self.tenant))["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"scaleMode":1})
-        
+
         if "scaleMode" in org:
             return org["scaleMode"]
-            
+
         return True
 
     def __checkQueryLimit(Self):
@@ -236,7 +237,7 @@ class callback_context():
         if "query_processed" not in upStats:
             Self.collection.update({'uid':"0"},{'$set':{"query_processed":0}})
             return True
-         
+
         if Self.uploadLimit == 0:
             return True
 
@@ -247,7 +248,7 @@ class callback_context():
         return True
 
     def __incrementProcessedQueryCount(Self):
-        Self.collection.update({'uid':"0"},{'$inc':{"query_processed": 1}}) 
+        Self.collection.update({'uid':"0"},{'$inc':{"query_processed": 1}})
 
     def query_stats_callback(Self, query_stats):
         if Self.mongoconn.db.entities.find({"custom_id": query_stats['custom_id']}):
@@ -270,11 +271,11 @@ class callback_context():
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 Self.redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
                 #updated the upload stats for table
-                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.gsp.newTables": 1}}, upsert = True)
+                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.%s.newTables"%(Self.compiler_to_use): 1}}, upsert = True)
             else:
                 if table_name not in Self.col_stat_table_name_list:
                     #updated the upload stats for table
-                    Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.gsp.totalTables": 1}}, upsert = True)
+                    Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.%s.totalTables"%(Self.compiler_to_use): 1}}, upsert = True)
                     Self.col_stat_table_name_list.append(table_name)
 
             #check if column is already present or not
@@ -291,7 +292,7 @@ class callback_context():
                 column_entity = Self.mongoconn.addEn(eid, column_entity_name, Self.tenant,\
                                                 EntityType.SQL_TABLE_COLUMN, column_entry, None)
                 #updated the upload stats for column
-                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.gsp.newColumns": 1}}, upsert = True)
+                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.%s.newColumns"%(Self.compiler_to_use): 1}}, upsert = True)
                 '''
                 Table --> Column relationship.
                 '''
@@ -305,8 +306,8 @@ class callback_context():
                 #update table entity with stats info in it
                 Self.mongoconn.db.entities.update({"eid": column_entity.eid},{'$set':{'stats': stats}})
                 #updated the upload stats for column
-                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.gsp.totalColumns": 1}}, upsert = True)
-        else: 
+                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.%s.totalColumns"%(Self.compiler_to_use): 1}}, upsert = True)
+        else:
             #Query mongo based to table name in order to update table stats
             table_name = stats['TABLE_NAME'].lower()
             table_entity = Self.mongoconn.getEntityByName(table_name)
@@ -322,19 +323,19 @@ class callback_context():
                 if table_entity.eid != eid:
                     Self.mongoconn.db.entitieys.update({"eid": table_entity.eid},{'$set':{'stats': stats}})
                 #updated the upload stats for table
-                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.gsp.newTables": 1}}, upsert = True)
+                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.%s.newTables"%(Self.compiler_to_use): 1}}, upsert = True)
             else:
                 #update table entity with stats info in it
                 Self.mongoconn.db.entities.update({"eid": table_entity.eid},{'$set':{'stats': stats}})
                 if table_name not in Self.table_stat_table_name_list:
                     #updated the upload stats for table
-                    Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.gsp.totalTables": 1}}, upsert = True)
+                    Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.%s.totalTables"%(Self.compiler_to_use): 1}}, upsert = True)
                     Self.table_stat_table_name_list.append(table_name)
-        
+
     def callback(Self, eid, update=False, name=None, etype=None, data=None):
 
         if eid is None:
-            if not etype == 'SQL_QUERY': 
+            if not etype == 'SQL_QUERY':
                 return
 
             if not Self.skipLimit and not Self.__checkQueryLimit():
@@ -343,7 +344,7 @@ class callback_context():
             Self.redis_conn.incrEntityCounter("dashboard_data", "TotalQueries", sort=False, incrBy=1)
             logging.info(Self.redis_conn.getEntityProfile('dashboard_data'))
             if update == False:
-                jinst_dict = {} 
+                jinst_dict = {}
                 jinst_dict['program_type'] = "SQL"
                 jinst_dict['query'] = name
                 if data is not None:
@@ -359,10 +360,10 @@ class callback_context():
                 message_id = genMessageID("FP", Self.collection)
                 compiler_msg['message_id'] = message_id
                 """
-                Send scale_mode opcode to compiler if scale_mode is set to true by either SQLScriptConnector trigger 
+                Send scale_mode opcode to compiler if scale_mode is set to true by either SQLScriptConnector trigger
                 OR short circuit opcode from ftpqueue
                 """
-                if Self.scale_mode: 
+                if Self.scale_mode:
                     compiler_msg['opcode'] = "scale_mode"
                 if Self.testMode:
                     compiler_msg['test_mode'] = 1
@@ -375,20 +376,20 @@ class callback_context():
             else:
                 Self.redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
 
-                queryEntity = Self.mongoconn.db.entities.find_one({eid:"eid"},{'profile.Compiler.gsp.ErrorSignature':1})
+                queryEntity = Self.mongoconn.db.entities.find_one({eid:"eid"},{'profile.Compiler.%s.ErrorSignature'%(Self.compiler_to_use):1})
 
                 if "profile" not in queryEntity:
                     logging.info("Failed in FP sendToCompiler 1")
                 elif "Compiler" not in queryEntity["profile"]:
                     logging.info("Failed in FP sendToCompiler 2")
-                elif "gsp" not in queryEntity["profile"]["Compiler"]:
+                elif Self.compiler_to_use not in queryEntity["profile"]["Compiler"]:
                     logging.info("Failed in FP sendToCompiler 3")
-                elif "OperatorList" not in queryEntity["profile"]["Compiler"]["gsp"]:
+                elif "OperatorList" not in queryEntity["profile"]["Compiler"][Self.compiler_to_use]:
                     logging.info("Failed in FP sendToCompiler 4")
 
-                elif len(queryEntity["profile"]["Compiler"]["gsp"]["OperatorList"]) > 1:
-                    unique_queries = Self.mongoconn.db.entities.find({'profile.Compiler.gsp.OperatorList':{"$exists":1},
-                        "$where":'this.profile.Compiler.gsp.OperatorList.length > 1'},{"eid":1,"_id":0})
+                elif len(queryEntity["profile"]["Compiler"][Self.compiler_to_use]["OperatorList"]) > 1:
+                    unique_queries = Self.mongoconn.db.entities.find({'profile.Compiler.%s.OperatorList'%(Self.compiler_to_use):{"$exists":1},
+                        "$where":'this.profile.Compiler.%s.OperatorList.length > 1'%(Self.compiler_to_use)},{"eid":1,"_id":0})
                     uniqueEids = [x['eid'] for x in unique_queries]
                     unique_count = Self.mongoconn.db.entity_instances.find({"eid":{'$in':uniqueEids}}).count()
                     Self.mongoconn.db.dashboard_data.update({'tenant':Self.tenant},\
@@ -407,7 +408,7 @@ class callback_context():
         if entity.etype == 'HADOOP_JOB':
 
             pub = True
-            jinst_dict = {'entity_id':entity.eid} 
+            jinst_dict = {'entity_id':entity.eid}
             prog_type = ""
             if entity.instances[0].config_data.has_key("hive.query.string"):
                 jinst_dict['program_type'] = "Hive"
@@ -430,10 +431,10 @@ class callback_context():
                 connection1.publish(Self.ch,'','compilerqueue',message)
                 incrementPendingMessage(Self.collection, Self.redis_conn, Self.uid, message_id)
                 logging.info("Published Compiler Message {0}\n".format(message))
-    
+
 def callback(ch, method, properties, body):
     starttime = time.time()
-    
+
     try:
         msg_dict = loads(body)
     except:
@@ -442,11 +443,11 @@ def callback(ch, method, properties, body):
     logging.info("FPPS Got message "+ str( msg_dict))
     """
     Validate the message.
-    """ 
+    """
     if not msg_dict.has_key("tenent") or \
-       (not msg_dict.has_key("filename") and 
+       (not msg_dict.has_key("filename") and
         not msg_dict.has_key("opcode")):
-        logging.error("Invalid message received\n")     
+        logging.error("Invalid message received\n")
         logging.error(body)
         connection1.basicAck(ch,method)
         return
@@ -458,7 +459,7 @@ def callback(ch, method, properties, body):
     try:
         filename = None
         opcode = None
-        
+
         if msg_dict.has_key("opcode") and msg_dict["opcode"] == "DeleteTenant":
             performTenantCleanup(tenant)
 
@@ -522,15 +523,15 @@ def callback(ch, method, properties, body):
 
         if usingAWS:
             """
-            Check if the file exists in S3. 
-            """ 
+            Check if the file exists in S3.
+            """
             if CLUSTER_NAME is not None:
                 source = "partner-logs/" + source
             file_key = bucket.get_key(source)
             if file_key is None:
-                logging.error("NOT FOUND: {0} not in S3\n".format(source))     
+                logging.error("NOT FOUND: {0} not in S3\n".format(source))
                 connection1.basicAck(ch,method)
-                
+
                 return
 
             """
@@ -539,7 +540,7 @@ def callback(ch, method, properties, body):
             checkpoint = source + ".processed"
             #chkpoint_key = bucket.get_key(checkpoint)
             #if chkpoint_key is not None:
-            #    errlog.write("ALREADY PROCESSED: {0} \n".format(source))     
+            #    errlog.write("ALREADY PROCESSED: {0} \n".format(source))
             #    errlog.flush()
             #    return
         else:
@@ -547,7 +548,7 @@ def callback(ch, method, properties, body):
 
         """
         Download the file and extract:
-        """ 
+        """
         dest_file = BAAZ_DATA_ROOT + tenant + "/" + filename
         destination = os.path.dirname(dest_file)
         logging.info("Destination: "+str(destination))
@@ -573,14 +574,14 @@ def callback(ch, method, properties, body):
             tar.extractall(path=logpath)
             tar.close()
         else:
-            shutil.copy(dest_file, logpath) 
+            shutil.copy(dest_file, logpath)
     except:
         logging.exception("Downloading file")
 
-    logging.info("Extracted file : {0} \n".format(dest_file))     
+    logging.info("Extracted file : {0} \n".format(dest_file))
     if not usingAWS:
         logging.info("Extracted file to /mnt/volume1/[tenent]/processing")
-   
+
     """
     Check if this upload has requested to skip the limit check.
     """
@@ -613,7 +614,7 @@ def callback(ch, method, properties, body):
         incrementPendingMessage(collection, redis_conn, uid, message_id)
         logging.info("Incremementing message count: " + message_id)
 
-        cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection, 
+        cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection,
                                   scale_mode, skipLimit, testMode, source_platform, header_info, delimiter)
 
         parseDir(tenant, logpath, cb_ctx)
@@ -629,10 +630,10 @@ def callback(ch, method, properties, body):
             chkpoint_key = Key(bucket)
             chkpoint_key.key = checkpoint
             chkpoint_key.set_contents_from_string("Processed")
-            logging.info("Processed file : {0} \n".format(dest_file))  
+            logging.info("Processed file : {0} \n".format(dest_file))
 
         """
-        If we are in scale mode, close mongo, ack, and exit. 
+        If we are in scale mode, close mongo, ack, and exit.
         Do not send messages to Math or update mongo collections.
         """
         if cb_ctx.scale_mode:
