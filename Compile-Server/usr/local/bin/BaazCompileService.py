@@ -907,9 +907,12 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 profile_dict['profile']['character'] = character
 
             #check if this is a simple or complex query
-            if etype == EntityType.SQL_QUERY and 'SignatureKeywords' in compile_doc[key] and \
-               'ErrorSignature' in compile_doc[key] and compile_doc[key]["ErrorSignature"] == "":
-                is_simple = check_query_type(compile_doc[key]['SignatureKeywords'])
+            if etype == EntityType.SQL_QUERY and \
+                    'ErrorSignature' in compile_doc[key] and compile_doc[key]["ErrorSignature"] == "":
+                temp_keywords = None
+                if 'SignatureKeywords' in compile_doc[key]:
+                    temp_keywords = compile_doc[key]['SignatureKeywords']
+                is_simple = check_query_type(temp_keywords)
                 if is_simple:
                     #mark the query as complex query
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"simple_query_count":1}}, upsert = True)
