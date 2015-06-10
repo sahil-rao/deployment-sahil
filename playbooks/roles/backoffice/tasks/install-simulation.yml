@@ -1,4 +1,6 @@
 ---
+#uncomment below change for impala enablement
+
 - name: Install Java repo
   command: add-apt-repository -y ppa:webupd8team/java
   sudo: yes
@@ -22,28 +24,32 @@
   sudo: yes
 
 - name: Get Impala Module
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Impala.tar.gz .
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Impala.tar.gz /mnt/
   sudo: yes
 - name: Untar Impala prebuild code
-  shell: tar -zxf /home/ubuntu/Impala.tar.gz
-- name: Remove old Hive from /usr/local
-  shell: rm -rf /usr/local/hive
+  shell: tar -zxf /mnt/Impala.tar.gz
+- name: create /mnt/local
+  shell: mkdir /mnt/local
   sudo: yes
   ignore_errors: True
-- name: Copy over Hive to /usr/local
-  command: cp -R /home/ubuntu/Impala/thirdparty/hive-0.13.1-cdh5.3.0 /usr/local/
+- name: Remove old Hive from /mnt/local
+  shell: rm -rf /mnt/local/hive
   sudo: yes
-- name: Rename Hive in /usr/local
-  command: mv /usr/local/hive-0.13.1-cdh5.3.0 /usr/local/hive
+  ignore_errors: True
+- name: Copy over Hive to /mnt/local
+  command: cp -R /mnt/Impala/thirdparty/hive-0.13.1-cdh5.3.0 /mnt/local/
   sudo: yes
-- name: Remove old Hadoop from /usr/local
-  shell: rm -rf /usr/local/hadoop
+- name: Rename Hive in /mnt/local
+  command: mv /mnt/local/hive-0.13.1-cdh5.3.0 /mnt/local/hive
   sudo: yes
-- name: Copy over Hadoop to /usr/local
-  command: cp -R /home/ubuntu/Impala/thirdparty/hadoop-2.5.0-cdh5.3.0 /usr/local/
+- name: Remove old Hadoop from /mnt/local
+  shell: rm -rf /mnt/local/hadoop
   sudo: yes
-- name: Rename Hadoop in /usr/local
-  command: mv /usr/local/hadoop-2.5.0-cdh5.3.0 /usr/local/hadoop
+- name: Copy over Hadoop to /mnt/local
+  command: cp -R /mnt/Impala/thirdparty/hadoop-2.5.0-cdh5.3.0 /mnt/local/
+  sudo: yes
+- name: Rename Hadoop in /mnt/local
+  command: mv /mnt/local/hadoop-2.5.0-cdh5.3.0 /mnt/local/hadoop
   sudo: yes
 - name: Update easy install
   command: easy_install -U setuptools
@@ -81,28 +87,28 @@
 
 #change permission if not accurate
 - name: Update Hadoop permissions
-  shell: chown -R ubuntu:root /usr/local/hadoop
+  shell: chown -R ubuntu:root /mnt/local/hadoop
   sudo: yes
 - name: Update Hive permissions
-  shell: chown -R ubuntu:root /usr/local/hive
+  shell: chown -R ubuntu:root /mnt/local/hive
   sudo: yes
 - name: Update Hadoop daemon permission
-  shell: chmod 777 /usr/local/hadoop/sbin/hadoop-daemon.sh
+  shell: chmod 777 /mnt/local/hadoop/sbin/hadoop-daemon.sh
   sudo: yes
 - name: Update Hadoop yarn daemon permission
-  shell: chmod 755 /usr/local/hadoop/sbin/yarn-daemon.sh
+  shell: chmod 755 /mnt/local/hadoop/sbin/yarn-daemon.sh
   sudo: yes
 - name: Update binary permissions
-  shell: chmod 755 /usr/local/hadoop/bin/hdfs
+  shell: chmod 755 /mnt/local/hadoop/bin/hdfs
   sudo: yes
 - name: Update binary permissions
-  shell: chmod 755 /usr/local/hadoop/bin/hadoop
+  shell: chmod 755 /mnt/local/hadoop/bin/hadoop
   sudo: yes
 - name: Update binary permissions
-  shell: chmod 755 /usr/local/hadoop/bin/yarn
+  shell: chmod 755 /mnt/local/hadoop/bin/yarn
   sudo: yes
 - name: Update binary permissions
-  shell: chmod 755 /usr/local/hive/bin/hive
+  shell: chmod 755 /mnt/local/hive/bin/hive
   sudo: yes
 - name: Update root permissions
   shell: sudo chmod 555 /
@@ -126,34 +132,34 @@
   shell: apt-get install libmysql-java
   sudo: yes
 - name: create a symlink for mysql jar file
-  shell: cp /usr/share/java/mysql-connector-java-5.1.28.jar /usr/local/hive/lib/
+  shell: cp /usr/share/java/mysql-connector-java-5.1.28.jar /mnt/local/hive/lib/
   sudo: yes
 - name: copy boost lib
-  shell: cp /home/ubuntu/Impala/libboost_thread.so.1.46.1 /usr/lib/
+  shell: cp /mnt/Impala/libboost_thread.so.1.46.1 /usr/lib/
   sudo: yes
 - name: copy boost lib
-  shell: cp /home/ubuntu/Impala/libboost_regex.so.1.46.1 /usr/lib/
+  shell: cp /mnt/Impala/libboost_regex.so.1.46.1 /usr/lib/
   sudo: yes
 - name: copy boost lib
-  shell: cp /home/ubuntu/Impala/libboost_system.so.1.46.1 /usr/lib/
+  shell: cp /mnt/Impala/libboost_system.so.1.46.1 /usr/lib/
   sudo: yes
 - name: copy boost lib
-  shell: cp /home/ubuntu/Impala/libboost_filesystem.so.1.46.1 /usr/lib/
+  shell: cp /mnt/Impala/libboost_filesystem.so.1.46.1 /usr/lib/
   sudo: yes
 - name: copy boost lib
-  shell: cp /home/ubuntu/Impala/libboost_date_time.so.1.46.1 /usr/lib/
+  shell: cp /mnt/Impala/libboost_date_time.so.1.46.1 /usr/lib/
   sudo: yes
 - name: copy icui lib
-  shell: cp /home/ubuntu/Impala/libicudata.so.48 /usr/lib/
+  shell: cp /mnt/Impala/libicudata.so.48 /usr/lib/
   sudo: yes
 - name: copy icui lib
-  shell: cp /home/ubuntu/Impala/libicui18n.so.48 /usr/lib/
+  shell: cp /mnt/Impala/libicui18n.so.48 /usr/lib/
   sudo: yes
 - name: copy icui lib
-  shell: cp /home/ubuntu/Impala/libicuuc.so.48 /usr/lib/
+  shell: cp /mnt/Impala/libicuuc.so.48 /usr/lib/
   sudo: yes
 - name: copy hdfs lib
-  shell: cp /home/ubuntu/Impala/libhdfs.so.0.0.0 /usr/lib/
+  shell: cp /mnt/Impala/libhdfs.so.0.0.0 /usr/lib/
   sudo: yes
 
 #mysql configuration for hive metastore
@@ -167,7 +173,7 @@
 - name: create a database metastore in mysql
   mysql_db: name=metastore login_user=root login_password=mysql state=present
 - name: feed database.sql to server
-  mysql_db: login_user=root login_password=mysql name=metastore state=import target=/usr/local/hive/scripts/metastore/upgrade/mysql/hive-schema-0.13.0.mysql.sql
+  mysql_db: login_user=root login_password=mysql name=metastore state=import target=/mnt/local/hive/scripts/metastore/upgrade/mysql/hive-schema-0.13.0.mysql.sql
   sudo: yes
   ignore_errors: True
 - name: create working directory for Hive
@@ -196,87 +202,87 @@
   sudo: yes
 
 - name: Copy over Hadoop core configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/core-site.xml /etc/hadoop/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/core-site.xml /etc/hadoop/conf/
   sudo: yes
 - name: Copy over Hadoop core configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/core-site.xml /etc/impala/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/core-site.xml /etc/impala/conf/
   sudo: yes
 - name: Copy over Hadoop core configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/core-site.xml /etc/hive/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/core-site.xml /etc/hive/conf/
   sudo: yes
 - name: Copy over Hadoop core configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/core-site.xml /usr/local/hadoop/etc/hadoop
+  command: cp /mnt/Impala/fe/src/test/resources/core-site.xml /mnt/local/hadoop/etc/hadoop
   sudo: yes
 - name: Copy over Hadoop hdfs configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/hdfs-site.xml /etc/hadoop/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/hdfs-site.xml /etc/hadoop/conf/
   sudo: yes
 - name: Copy over Hadoop hdfs configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/hdfs-site.xml /etc/impala/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/hdfs-site.xml /etc/impala/conf/
   sudo: yes
 - name: Copy over Hadoop hdfs configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/hdfs-site.xml /etc/hive/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/hdfs-site.xml /etc/hive/conf/
   sudo: yes
 - name: Copy over Hadoop hdfs configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/hdfs-site.xml /usr/local/hadoop/etc/hadoop
+  command: cp /mnt/Impala/fe/src/test/resources/hdfs-site.xml /mnt/local/hadoop/etc/hadoop
   sudo: yes
 - name: Copy over Hadoop yarn configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/yarn-site.xml /etc/hadoop/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/yarn-site.xml /etc/hadoop/conf/
   sudo: yes
 - name: Copy over Hadoop yarn configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/yarn-site.xml /etc/impala/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/yarn-site.xml /etc/impala/conf/
   sudo: yes
 - name: Copy over Hadoop yarn configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/yarn-site.xml /etc/hive/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/yarn-site.xml /etc/hive/conf/
   sudo: yes
 - name: Copy over Hadoop yarn configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/yarn-site.xml /usr/local/hadoop/etc/hadoop
+  command: cp /mnt/Impala/fe/src/test/resources/yarn-site.xml /mnt/local/hadoop/etc/hadoop
   sudo: yes
 - name: Copy over Hadoop mapred configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/mapred-site.xml /etc/hadoop/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/mapred-site.xml /etc/hadoop/conf/
   sudo: yes
 - name: Copy over Hadoop mapred configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/mapred-site.xml /etc/impala/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/mapred-site.xml /etc/impala/conf/
   sudo: yes
 - name: Copy over Hadoop mapred configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/mapred-site.xml /etc/hive/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/mapred-site.xml /etc/hive/conf/
   sudo: yes
 - name: Copy over Hadoop mapred configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/mapred-site.xml /usr/local/hadoop/etc/hadoop
+  command: cp /mnt/Impala/fe/src/test/resources/mapred-site.xml /mnt/local/hadoop/etc/hadoop
   sudo: yes
 - name: Copy over Hadoop ENV file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/hadoop-env.sh /etc/hadoop/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/hadoop-env.sh /etc/hadoop/conf/
   sudo: yes
 - name: Copy over Hadoop ENV file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/hadoop-env.sh /etc/impala/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/hadoop-env.sh /etc/impala/conf/
   sudo: yes
 - name: Copy over Hadoop ENV file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/hadoop-env.sh /etc/hive/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/hadoop-env.sh /etc/hive/conf/
   sudo: yes
 - name: Copy over Hadoop ENV file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/hadoop-env.sh /usr/local/hadoop/etc/hadoop
+  command: cp /mnt/Impala/fe/src/test/resources/hadoop-env.sh /mnt/local/hadoop/etc/hadoop
   sudo: yes
 - name: Copy over Hive configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/hive-site.xml /etc/hive/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/hive-site.xml /etc/hive/conf/
   sudo: yes
 - name: Copy over Hive configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/hive-site.xml /etc/hadoop/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/hive-site.xml /etc/hadoop/conf/
   sudo: yes
 - name: Copy over Hive configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/hive-site.xml /etc/impala/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/hive-site.xml /etc/impala/conf/
   sudo: yes
 - name: Copy over Hive configuration file
-  command: cp /home/ubuntu/Impala/fe/src/test/resources/hive-site.xml /usr/local/hive/conf/
+  command: cp /mnt/Impala/fe/src/test/resources/hive-site.xml /mnt/local/hive/conf/
   sudo: yes
 - name: Copy over Impala state store binary to /usr/bin
-  command: cp /home/ubuntu/Impala/be/build/debug/statestore/statestored /usr/bin/statestored
+  command: cp /mnt/Impala/be/build/debug/statestore/statestored /usr/bin/statestored
   sudo: yes
   ignore_errors: True
 - name: Copy over Impala catalog binary to /usr/bin
-  command: cp /home/ubuntu/Impala/be/build/debug/catalog/catalogd /usr/bin/catalogd
+  command: cp /mnt/Impala/be/build/debug/catalog/catalogd /usr/bin/catalogd
   sudo: yes
   ignore_errors: True
 - name: Copy over Impala server binary to /usr/bin
-  command: cp /home/ubuntu/Impala/be/build/debug/service/impalad /usr/bin/impalad
+  command: cp /mnt/Impala/be/build/debug/service/impalad /usr/bin/impalad
   sudo: yes
   ignore_errors: True
 - name: Update binary permissions
@@ -284,40 +290,40 @@
   sudo: yes
   ignore_errors: True
 - name: Copy over Impala config to /etc/default
-  command: cp /home/ubuntu/Impala/impala /etc/default/
+  command: cp /mnt/Impala/impala /etc/default/
   sudo: yes
   ignore_errors: True
 
 #copy system start up scripts
 - name: Copy over System V files into /etc/init.d/
-  command: cp /home/ubuntu/Impala/hadoop-hdfs-datanode /etc/init.d/hadoop-hdfs-datanode
+  command: cp /mnt/Impala/hadoop-hdfs-datanode /etc/init.d/hadoop-hdfs-datanode
   sudo: yes
 - name: Copy over System V files into /etc/init.d/
-  command: cp /home/ubuntu/Impala/hadoop-hdfs-namenode /etc/init.d/hadoop-hdfs-namenode
+  command: cp /mnt/Impala/hadoop-hdfs-namenode /etc/init.d/hadoop-hdfs-namenode
   sudo: yes
 - name: Copy over System V files into /etc/init.d/
-  command: cp /home/ubuntu/Impala/hadoop-hdfs-secondarynamenode /etc/init.d/hadoop-hdfs-secondarynamenode
+  command: cp /mnt/Impala/hadoop-hdfs-secondarynamenode /etc/init.d/hadoop-hdfs-secondarynamenode
   sudo: yes
 - name: Copy over System V files into /etc/init.d/
-  command: cp /home/ubuntu/Impala/hadoop-yarn-nodemanager /etc/init.d/hadoop-yarn-nodemanager
+  command: cp /mnt/Impala/hadoop-yarn-nodemanager /etc/init.d/hadoop-yarn-nodemanager
   sudo: yes
 - name: Copy over System V files into /etc/init.d/
-  command: cp /home/ubuntu/Impala/hadoop-yarn-resourcemanager /etc/init.d/hadoop-yarn-resourcemanager
+  command: cp /mnt/Impala/hadoop-yarn-resourcemanager /etc/init.d/hadoop-yarn-resourcemanager
   sudo: yes
 - name: Copy over System V files into /etc/init.d/
-  command: cp /home/ubuntu/Impala/hive-metastore /etc/init.d/hive-metastore
+  command: cp /mnt/Impala/hive-metastore /etc/init.d/hive-metastore
   sudo: yes
 - name: Copy over System V files into /etc/init.d/
-  command: cp /home/ubuntu/Impala/hive-server2 /etc/init.d/hive-server2
+  command: cp /mnt/Impala/hive-server2 /etc/init.d/hive-server2
   sudo: yes
 - name: Copy over System V files into /etc/init.d/
-  command: cp /home/ubuntu/Impala/impala-catalog /etc/init.d/impala-catalog
+  command: cp /mnt/Impala/impala-catalog /etc/init.d/impala-catalog
   sudo: yes
 - name: Copy over System V files into /etc/init.d/
-  command: cp /home/ubuntu/Impala/impala-server /etc/init.d/impala-server
+  command: cp /mnt/Impala/impala-server /etc/init.d/impala-server
   sudo: yes
 - name: Copy over System V files into /etc/init.d/
-  command: cp /home/ubuntu/Impala/impala-state-store /etc/init.d/impala-state-store
+  command: cp /mnt/Impala/impala-state-store /etc/init.d/impala-state-store
   sudo: yes
 
 #create a symlinks for that points to above start up script
@@ -489,27 +495,27 @@
   command: mkdir -p /usr/lib/bigtop-utils
   sudo: yes
 - name: Copy Bigtop dependency files
-  command: cp /home/ubuntu/Impala/bigtop-detect-classpath /usr/lib/bigtop-utils/
+  command: cp /mnt/Impala/bigtop-detect-classpath /usr/lib/bigtop-utils/
   sudo: yes
 - name: Copy Bigtop dependency files
-  command: cp /home/ubuntu/Impala/bigtop-detect-javahome /usr/lib/bigtop-utils/
+  command: cp /mnt/Impala/bigtop-detect-javahome /usr/lib/bigtop-utils/
   sudo: yes
 - name: Copy Bigtop dependency files
-  command: cp /home/ubuntu/Impala/bigtop-detect-javalibs /usr/lib/bigtop-utils/
+  command: cp /mnt/Impala/bigtop-detect-javalibs /usr/lib/bigtop-utils/
   sudo: yes
 - name: Copy Bigtop dependency files
-  command: cp /home/ubuntu/Impala/jsvc /usr/lib/bigtop-utils/
+  command: cp /mnt/Impala/jsvc /usr/lib/bigtop-utils/
   sudo: yes
 
 #delete hdfs directory
 - name: Delete hdfs namenode dir
-  command: rm -rf /home/ubuntu/Impala/testdata/cluster/cdh5/node-1/data/dfs/nn
+  command: rm -rf /mnt/Impala/testdata/cluster/cdh5/node-1/data/dfs/nn
   sudo: yes
 - name: Delete hdfs datanode dir
-  command: rm -rf /home/ubuntu/Impala/testdata/cluster/cdh5/node-1/data/dfs/dn
+  command: rm -rf /mnt/Impala/testdata/cluster/cdh5/node-1/data/dfs/dn
   sudo: yes
 - name: format hdfs namenode
-  command: /usr/local/hadoop/bin/hdfs namenode -format
+  command: /mnt/local/hadoop/bin/hdfs namenode -format
 
 - name: Stop Hadoop namenode
   command: pkill -f "namenode"
@@ -591,4 +597,3 @@
   service: name=impala-catalog state=started
   ignore_errors: True
   sudo: yes
-
