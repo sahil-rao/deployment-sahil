@@ -487,6 +487,11 @@ def callback(ch, method, properties, body):
     if opcode == "PhaseTwoAnalysis":
         collection.update({'uid':"0"},{'$set': { "done":True}})        
 
+    if int(redis_conn.numMessagesPending(uid)) == 0:
+        #The length function in the if statement is a count of the mending messages
+        timest = int(time.time() * 1000)
+        collection.update({'uid':uid},{'$set': { "Phase2MessageProcessed":timest}}, upsert=True)
+
     """
      Progress Bar update
     """
