@@ -5,6 +5,9 @@
 - name: NTP installed
   apt: name=ntp state=present
   sudo: yes
+- name: Remove everything from under the /mnt/volumne1 directory
+  shell: rm -rf /mnt/volume1/*
+  sudo: yes
 - name: Save configuration file
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
   sudo: yes
