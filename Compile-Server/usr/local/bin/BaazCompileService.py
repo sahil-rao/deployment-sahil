@@ -1640,8 +1640,10 @@ def callback(ch, method, properties, body):
             temp_msg = {'test_mode':1} if context.test_mode else {'message_id': received_msgID}
 
             entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform, smc, context)
-
-            sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg)
+            if entity is not None and opcode is not None:
+                sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg)
+            else:
+                collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
         except:
             collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
             logging.exception("Failure in processing compiler output for Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))
