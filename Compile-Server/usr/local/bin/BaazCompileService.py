@@ -737,6 +737,8 @@ def create_query_character(signature_keywords):
             character.append('Subquery')
         if 'Views' in signature_keywords:
             character.append('Views')
+        if 'Union' in signature_keywords:
+            character.append('Union')
         if 'Aggregation' in signature_keywords:
             character.append('Aggregation')
         if 'Where' in signature_keywords:
@@ -816,7 +818,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         logging.info("No compile_doc found")
         return None, None
 
-    profile_dict = { "uid" : uid, "profile": { 'character':[],"Compiler" : {}}}
+    compiler_to_use = get_compiler(source_platform)
+    profile_dict = {"uid": uid, "profile": {'character': [], "Compiler": {}}, 'compiler_to_use': compiler_to_use, 'parse_success': True}
     comp_profile = profile_dict["profile"]["Compiler"]
 
     q_hash = None
@@ -832,11 +835,12 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     else:
         etype = EntityType.SQL_SUBQUERY
 
-    if "gsp" in compile_doc:
+    compiler = compiler_to_use
+    if compiler in compile_doc:
         #check for meta query and drop it
         if etype == EntityType.SQL_QUERY:
-            if 'OperatorList' in compile_doc['gsp'] and \
-                'METAQUERY' in compile_doc['gsp']['OperatorList']:
+            if 'OperatorList' in compile_doc[compiler] and \
+                'METAQUERY' in compile_doc[compiler]['OperatorList']:
                 return None, None
 
         compile_doc_fields = ["SignatureKeywords",
@@ -856,13 +860,13 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             compile_doc_fields = ["ErrorSignature", "queryHash", "queryNameHash"] + compile_doc_fields
 
         for field in compile_doc_fields:
-            if field in compile_doc["gsp"] and compile_doc["gsp"][field] is not None:
+            if field in compile_doc[compiler] and compile_doc[compiler][field] is not None:
                 try:
-                    smc.process(field, compile_doc["gsp"][field], etype)
+                    smc.process(field, compile_doc[compiler][field], etype)
                 except:
                     logging.exception("Error in Scale Mode Connector")
                     #Break if query was not parsed
-                if field == "ErrorSignature" and compile_doc["gsp"][field]:
+                if field == "ErrorSignature" and compile_doc[compiler][field]:
                     break
     else:
         is_failed_in_gsp = True
@@ -881,7 +885,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
     for key in compile_doc:
         comp_profile[key] = compile_doc[key]
-        if key == "gsp":
+        if key == compiler:
 
             if "queryExtendedHash" in compile_doc[key]:
                 q_hash =  compile_doc[key]["queryExtendedHash"]
@@ -903,9 +907,12 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 profile_dict['profile']['character'] = character
 
             #check if this is a simple or complex query
-            if etype == EntityType.SQL_QUERY and 'SignatureKeywords' in compile_doc[key] and \
-               'ErrorSignature' in compile_doc[key] and compile_doc[key]["ErrorSignature"] == "":
-                is_simple = check_query_type(compile_doc[key]['SignatureKeywords'])
+            if etype == EntityType.SQL_QUERY and \
+                    'ErrorSignature' in compile_doc[key] and compile_doc[key]["ErrorSignature"] == "":
+                temp_keywords = None
+                if 'SignatureKeywords' in compile_doc[key]:
+                    temp_keywords = compile_doc[key]['SignatureKeywords']
+                is_simple = check_query_type(temp_keywords)
                 if is_simple:
                     #mark the query as complex query
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"simple_query_count":1}}, upsert = True)
@@ -923,6 +930,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                             mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"union_all_count":1}}, upsert = True)
             if 'ErrorSignature' in compile_doc[key] and len(compile_doc[key]["ErrorSignature"]) > 0:
                 is_failed_in_gsp = True
+                profile_dict['parse_success'] = False
 
     custom_id = None
     if data is not None and "custom_id" in data:
@@ -975,10 +983,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 entityProfile = entity.profile
 
                 if "Compiler" in entityProfile\
-                        and "gsp" in entityProfile['Compiler']\
-                        and "ComplexityScore" in entityProfile['Compiler']['gsp']:
+                        and compiler in entityProfile['Compiler']\
+                        and "ComplexityScore" in entityProfile['Compiler'][compiler]:
                     redis_conn.incrEntityCounter(entity.eid, "ComplexityScore", sort = True,
-                        incrBy= entityProfile["Compiler"]["gsp"]["ComplexityScore"])
+                        incrBy= entityProfile["Compiler"][compiler]["ComplexityScore"])
                 else:
                     logging.info("No ComplexityScore found.")
             else:
@@ -1094,7 +1102,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             stats_sub_success_key = "Compiler." + key + ".subquery_success"
             stats_sub_failure_key = "Compiler." + key + ".subquery_failure"
 
-            if compile_doc[key].has_key("subQueries") and\
+            if key == compiler_to_use and compile_doc[key].has_key("subQueries") and\
                 len(compile_doc[key]["subQueries"]) > 0:
                 logging.info("Processing Sub queries")
 
@@ -1120,7 +1128,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
             mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
 
-            inputTableList = None
+            inputTableList = []
             if compile_doc[key].has_key("InputTableList"):
                 inputTableList = compile_doc[key]["InputTableList"]
                 tmpAdditions = processTableSet(compile_doc[key]["InputTableList"],
@@ -1632,8 +1640,10 @@ def callback(ch, method, properties, body):
             temp_msg = {'test_mode':1} if context.test_mode else {'message_id': received_msgID}
 
             entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform, smc, context)
-
-            sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg)
+            if entity is not None and opcode is not None:
+                sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg)
+            else:
+                collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
         except:
             collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
             logging.exception("Failure in processing compiler output for Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))

@@ -311,6 +311,12 @@ def updateRedisforHAQR(redis_conn,data,tenant,eid):
                     else:
                         redis_conn.incrEntityCounter("HAQR", "impalaWhereSubClauseFailure", sort=False, incrBy=1)
                         redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseWhereFailure", sort=False, incrBy=1)
+
+    if data['platformCompilationStatus']['Impala']['clauseStatus'] is not None and \
+        "Other" in data['platformCompilationStatus']['Impala']['clauseStatus']:
+        if data['platformCompilationStatus']['Impala']['clauseStatus']["Other"]['clauseStatus']=="FAIL":
+            redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseOtherFailure", sort=False, incrBy=1)
+
     return
 
 def process_HAQR_request(msg_dict):
@@ -480,6 +486,11 @@ def callback(ch, method, properties, body):
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
     if opcode == "PhaseTwoAnalysis":
         collection.update({'uid':"0"},{'$set': { "done":True}})        
+
+    if int(redis_conn.numMessagesPending(uid)) == 0:
+        #The length function in the if statement is a count of the mending messages
+        timest = int(time.time() * 1000)
+        collection.update({'uid':uid},{'$set': { "Phase2MessageProcessed":timest}}, upsert=True)
 
     """
      Progress Bar update
