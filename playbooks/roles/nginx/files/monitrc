@@ -257,7 +257,7 @@ set alert samir@xplain.io # receive all alerts
 set httpd port 2812
    allow localhost
 
-check process node with pidfile /var/run/nginx.pid
+check process nginx with pidfile /var/run/nginx.pid
     start program = "/usr/sbin/nginx"
     stop program = "/usr/sbin/nginx -s stop"
     alert sean@xplain.io only on { nonexist }
