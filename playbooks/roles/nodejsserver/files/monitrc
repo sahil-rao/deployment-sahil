@@ -260,6 +260,7 @@ set httpd port 2812
 check process node with pidfile /var/run/nodejs.pid
     start program = "/sbin/start nodejs"
     stop program = "/sbin/stop nodejs"
+    if failed port 3000 protocol http then restart 
     alert sean@xplain.io only on { nonexist }
     alert samir@xplain.io only on { nonexist }
 
