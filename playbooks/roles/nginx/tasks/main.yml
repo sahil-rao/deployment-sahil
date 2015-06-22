@@ -1,0 +1,29 @@
+---
+- name: Add nginx ppa
+  apt_repository: repo='ppa:nginx/stable'
+  sudo: yes
+- name: Install nginx
+  apt: name=nginx state=present
+  sudo: yes
+- name: Install monit service
+  apt: pkg=monit state=present
+  sudo: yes
+- name: Create /var/www
+  file: path=/var/www state=directory
+  sudo: yes
+- name: Template and copy nginx conf file
+  template: src=nginx.conf dest=/etc/nginx/sites-enabled/default
+  sudo: yes
+- name: Start nginx
+  command: /usr/sbin/nginx
+  sudo: yes
+  ignore_errors: yes
+- name: Reload nginx
+  command: /usr/sbin/nginx -s reload
+  sudo: yes
+- name: copy monitrc file
+  template: src=roles/nginx/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+- name: Start monit service
+  shell: monit reload
+  sudo: yes

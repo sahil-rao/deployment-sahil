@@ -257,9 +257,10 @@ set alert samir@xplain.io # receive all alerts
 set httpd port 2812
    allow localhost
 
-check process node with pidfile /var/run/nodejs.pid
+check process node with pidfile /var/run/nodejs{{ port }}.pid
     start program = "/sbin/start nodejs"
     stop program = "/sbin/stop nodejs"
+    if failed port 3000 protocol http then restart 
     alert sean@xplain.io only on { nonexist }
     alert samir@xplain.io only on { nonexist }
 

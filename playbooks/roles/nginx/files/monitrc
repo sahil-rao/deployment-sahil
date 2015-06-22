@@ -115,8 +115,9 @@ set mmonit http://monit:monit@{{ groups['tag_Name_DeploymentRoot'][0] }}:8080/co
 # set alert manager@foo.bar only on { timeout }  # receive just service-
 #                                                # timeout alert
 #
-set alert parna@xplain.io only on { timeout }    # receive only timeout alerts
-set alert samir@xplain.io only on { timeout }    # receive only timeout alerts
+set alert sean@xplain.io # receive all alerts
+set alert samir@xplain.io # receive all alerts
+
 #
 ## Monit has an embedded web server which can be used to view status of 
 ## services monitored and manage services from a web interface. See the
@@ -253,34 +254,12 @@ set alert samir@xplain.io only on { timeout }    # receive only timeout alerts
 #
    include /etc/monit/conf.d/*
 #
-
 set httpd port 2812
    allow localhost
 
-check process dataacquisitionservice with pidfile /var/run/dataacquisitionservice.pid
-    start program = "/sbin/start dataacquisitionservice" with timeout 30 seconds
-    stop program = "/sbin/stop dataacquisitionservice"
+check process nginx with pidfile /var/run/nginx.pid
+    start program = "/usr/sbin/nginx"
+    stop program = "/usr/sbin/nginx -s stop"
+    alert sean@xplain.io only on { nonexist }
+    alert samir@xplain.io only on { nonexist }
 
-check process applicationservice with pidfile /var/run/applicationservice.pid
-    start program = "/sbin/start applicationservice" with timeout 30 seconds
-    stop program = "/sbin/stop applicationservice"
-
-check process compileserver with pidfile /var/run/compileserver.pid
-    start program = "/sbin/start compileserver" with timeout 30 seconds
-    stop program = "/sbin/stop compileserver"
-
-check process compileservice with pidfile /var/run/compileservice.pid
-    start program = "/sbin/start compileservice" with timeout 30 seconds
-    stop program = "/sbin/stop compileservice"
-
-check process mathservice with pidfile /var/run/mathservice.pid
-    start program = "/sbin/start mathservice" with timeout 30 seconds
-    stop program = "/sbin/stop mathservice"
-
-check process advanalytics with pidfile /var/run/advanalyticsservice.pid
-    start program = "/sbin/start advanalytics" with timeout 30 seconds
-    stop program = "/sbin/stop advanalytics"
-
-check process impalasimulation with pidfile /var/run/ImpalaSimulation.pid
-    start program = "/sbin/start impalasimulation" with timeout 30 seconds
-    stop program = "/sbin/stop impalasimulation"

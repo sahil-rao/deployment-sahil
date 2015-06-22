@@ -27,7 +27,7 @@
   shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Impala.tar.gz /mnt/
   sudo: yes
 - name: Untar Impala prebuild code
-  shell: tar -zxf /mnt/Impala.tar.gz
+  shell: tar -zxf /mnt/Impala.tar.gz chdir=/mnt/
 - name: create /mnt/local
   shell: mkdir /mnt/local
   sudo: yes
