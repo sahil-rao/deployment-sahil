@@ -10,7 +10,7 @@
 
 # Ex 1: Ungrouped hosts, specify before any group headers.
 
-localhost
+localhost port=3000
 
 
 
