@@ -627,15 +627,10 @@ def process_scale_mode(tenant, uid, instances, smc):
                               "ComplexityScore",
                               "viewName"]
 
-        for field in compile_doc_fields:
-            if field in compile_doc and compile_doc[field] is not None:
-                try:
-                    smc.process(field, compile_doc[field])
-                except:
-                    logging.exception("Error in Scale Mode Connector")
-                #Break if query was not parsed
-                if field == "ErrorSignature" and compile_doc[field]:
-                    break
+        try:
+            smc.process(compile_doc, compile_doc_fields, 'gsp', {})
+        except:
+            logging.exception("Error in ScaleModeConnector")
 
         if compile_doc["ErrorSignature"] == "":
             filter_compile_doc = compile_doc.copy()
@@ -859,15 +854,11 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         if etype == EntityType.SQL_QUERY:
             compile_doc_fields = ["ErrorSignature", "queryHash", "queryNameHash"] + compile_doc_fields
 
-        for field in compile_doc_fields:
-            if field in compile_doc[compiler] and compile_doc[compiler][field] is not None:
-                try:
-                    smc.process(field, compile_doc[compiler][field], etype)
-                except:
-                    logging.exception("Error in Scale Mode Connector")
-                    #Break if query was not parsed
-                if field == "ErrorSignature" and compile_doc[compiler][field]:
-                    break
+        try:
+            smc.process(compile_doc, compile_doc_fields, compiler, data, {'etype': etype})
+        except:
+            logging.exception("Error in ScaleModeConnector")
+
     else:
         is_failed_in_gsp = True
 
