@@ -836,7 +836,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         if etype == EntityType.SQL_QUERY:
             if 'OperatorList' in compile_doc[compiler] and \
                 'METAQUERY' in compile_doc[compiler]['OperatorList']:
-                return None, None
+                meta_key = "Compiler."+compiler+".metaQueryCount"
+                collection.update({'uid':uid}, {'$inc' : {meta_key:1}}, upsert = True)
+                etype = EntityType.SQL_METAQUERY
+                #return None, None
 
         compile_doc_fields = ["SignatureKeywords",
                       "OperatorList",
@@ -960,6 +963,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if elapsed_time is not None:
                     try:
                         redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
+                        redis_conn.incrEntityCounter("dashboard_data", "total_elapsed_time", sort=False, incrBy=float(elapsed_time))
                     except:
                         logging.info("No or junk elapsed time found:%s", elapsed_time)
 
@@ -1015,6 +1019,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if elapsed_time is not None:
                 try:
                     redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
+                    redis_conn.incrEntityCounter("dashboard_data", "total_elapsed_time", sort=False, incrBy=float(elapsed_time))
                 except:
                     logging.info("No or junk elapsed time found:%s", elapsed_time)
         try:

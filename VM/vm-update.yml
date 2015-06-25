@@ -196,7 +196,7 @@
   - name: Untar flightpath
     shell: tar -zxf /home/xplain/flightpath-deployment.tar.gz chdir=/
   - name: Copy node upstart configuration file
-    copy: src=/home/xplain/nodejs.conf dest=/etc/init/nodejs.conf
+    template: src=/home/xplain/nodejs.conf dest=/etc/init/nodejs.conf
   - name: Copy xplain_admin upstart configuration file
     copy: src=/home/xplain/xplain_admin.conf dest=/etc/init/xplain_admin.conf
   - name: Untar Baazdata App
