@@ -858,7 +858,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             compile_doc_fields = ["ErrorSignature", "queryHash", "queryNameHash"] + compile_doc_fields
 
         try:
-            smc.process(compile_doc, compile_doc_fields, compiler, data, {'etype': etype})
+            smc.process(compile_doc, compile_doc_fields, compiler, {'etype': etype}, data)
         except:
             logging.exception("Error in ScaleModeConnector")
 
