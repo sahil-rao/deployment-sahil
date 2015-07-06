@@ -576,7 +576,7 @@ def process_scale_mode(tenant, uid, instances, smc):
             os.makedirs(destination)
         dest_file_name = destination + "/input.query"
         dest_file = open(dest_file_name, "w+")
-        dest_file.write(query)
+        dest_file.write(query.encode('utf8'))
         dest_file.flush()
         dest_file.close()
         output_file_name = destination + "/gsp.out"
@@ -610,7 +610,7 @@ def process_scale_mode(tenant, uid, instances, smc):
         compile_doc = None
         logging.info("Loading file : "+ output_file_name)
         with open(output_file_name) as data_file:
-            compile_doc = load(data_file)["gsp"]
+            compile_doc = load(data_file)
 
         compile_doc_fields = ["ErrorSignature",
                               "SignatureKeywords",
@@ -628,14 +628,9 @@ def process_scale_mode(tenant, uid, instances, smc):
                               "viewName"]
 
         try:
-            smc.process(compile_doc, compile_doc_fields, 'gsp', {})
+            smc.process(compile_doc, compile_doc_fields, 'gsp', {'etype': 'SQL_QUERY'})
         except:
             logging.exception("Error in ScaleModeConnector")
-
-        if compile_doc["ErrorSignature"] == "":
-            filter_compile_doc = compile_doc.copy()
-            fmc = FilterModeConnector(tenant)
-            fmc.process_query(filter_compile_doc)
 
 def updateRelationCounter(redis_conn, eid):
 
