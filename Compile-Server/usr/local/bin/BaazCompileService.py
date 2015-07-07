@@ -979,6 +979,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         incrBy= entityProfile["Compiler"][compiler]["ComplexityScore"])
                 else:
                     logging.info("No ComplexityScore found.")
+                temp_keywords = entityProfile["Compiler"][compiler]['SignatureKeywords']
+                is_simple = check_query_type(temp_keywords)
+                if is_simple:
+                    #mark the query as complex query
+                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"unique_simple_query_count":1}}, upsert = True)
+                else:
+                    #mark the query as simple query
+                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"unique_complex_query_count":1}}, upsert = True)
             else:
                 update = True
 
