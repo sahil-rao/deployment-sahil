@@ -120,6 +120,9 @@
   pip: name=elasticsearch
   sudo: yes
 
+- name: Install httplib2
+  pip: name=httplib2
+  sudo: yes
 #REDIS SENTINEL DEPLOYMENT
 #- name: Install Redis APT Package
 #  apt: name=redis-server update_cache=yes
