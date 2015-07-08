@@ -673,12 +673,18 @@ def sendAdvAnalyticsMessage(ch, msg_dict):
     message = dumps(msg_dict)
     connection1.publish(ch,'','advanalytics',message)
 
-def create_query_character(signature_keywords):
+def create_query_character(signature_keywords, operator_list):
     '''
-    Takes in a SignatureKeywords list and creates the filtered
+    Takes in SignatureKeywords and OperatorList lists and creates the filtered
     version for the UI. Takes ranking into account.
     '''
     character = []
+
+    operators = ['INSERT']
+    for operator in operators:
+        if '%s_VALUES'%(operator) in operator_list:
+            character.append('%s: singleton'%(operator))
+            return character
 
     if 'Single Table' in signature_keywords[0]:
         temp_character = signature_keywords[0].split(':')
@@ -719,6 +725,10 @@ def create_query_character(signature_keywords):
         character = [start_character] + character[2:]
         return character[:2]
     else:
+        prefix = []
+        if 'Insert' in signature_keywords:
+            prefix.append('INSERT: ')
+
         if 'Join' in signature_keywords:
             character.append('Join')
         if 'Group By' in signature_keywords:
@@ -742,6 +752,11 @@ def create_query_character(signature_keywords):
         if 'Exists' in signature_keywords:
             character.append('Exists')
 
+        if 'SELECT' in operator_list:
+            character.append('SELECT')
+
+        start_character = ''.join(prefix + character[:1])
+        character = [start_character] + character[1:]
         return character[:2]
 
 def check_query_type(query_character_list):
@@ -892,7 +907,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 'PROCEDURE' in compile_doc[key]['OperatorList']:
                 etype = EntityType.SQL_STORED_PROCEDURE
             if 'SignatureKeywords' in compile_doc[key]:
-                character = create_query_character(compile_doc[key]['SignatureKeywords'])
+                operator_list = []
+                if 'OperatorList' in compile_doc[key]:
+                    operator_list = compile_doc[key]['OperatorList']
+                character = create_query_character(compile_doc[key]['SignatureKeywords'], operator_list)
                 profile_dict['profile']['character'] = character
 
             #check if this is a simple or complex query
