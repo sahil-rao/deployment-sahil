@@ -997,7 +997,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         incrBy= entityProfile["Compiler"][compiler]["ComplexityScore"])
                 else:
                     logging.info("No ComplexityScore found.")
-                if 'SignatureKeywords' in compile_doc[key]:
+                temp_keywords = None
+                if 'SignatureKeywords' in entityProfile["Compiler"][compiler]:
                     temp_keywords = entityProfile["Compiler"][compiler]['SignatureKeywords']
                 is_simple = check_query_type(temp_keywords)
                 if is_simple:
