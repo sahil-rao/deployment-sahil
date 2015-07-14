@@ -1425,9 +1425,15 @@ def callback(ch, method, properties, body):
         logging.info("Got the opcode for scale mode analysis")
         if 'uid' in msg_dict:
             uid = msg_dict['uid']
+            db = MongoClient(mongo_url)[tenant]
+            if not checkUID(db, uid):
+                ch.basic_ack(delivery_tag=method.delivery_tag)
+                logging.error("Invalid uid, dropping scale mode message")
+                return
         else:
             logging.error("No uid, dropping scale mode message")
             ch.basic_ack(delivery_tag=method.delivery_tag)
+            return
 
         redis_conn = RedisConnector(tenant)
         collection = MongoClient(mongo_url)[tenant].uploadStats
