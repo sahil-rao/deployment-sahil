@@ -256,6 +256,8 @@ class callback_context():
             Self.mongoconn.db.entities.update({"custom_id": query_stats['custom_id']},{'$set':{'profile.stats': query_stats}})
 
     def stats_callback(Self, stats):
+        #mark upload stats with stats file
+        Self.collection.update({'uid':Self.uid},{'$set': { "StatsFileProcessed":1}}, upsert=True)
         #check if this are table or column stats
         if 'column_name' in stats:
             column_entry = {}
@@ -700,7 +702,7 @@ def callback(ch, method, properties, body):
 
     connection1.basicAck(ch,method)
 
-connection1 = RabbitConnection(callback, ['ftpupload'],['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}},BAAZ_FP_LOG_FILE)
+connection1 = RabbitConnection(callback, ['ftpupload'],['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}},BAAZ_FP_LOG_FILE, 1)
 
 
 logging.info("FPProcessingService going to start consuming")
