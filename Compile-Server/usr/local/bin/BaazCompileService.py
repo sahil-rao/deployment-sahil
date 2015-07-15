@@ -339,7 +339,7 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
         elif context.queue[0]['etype'] == EntityType.SQL_QUERY:
             outmost_query = context.queue[0]['eid']
 
-    endict = {"uid" : uid, "profile" : { "table_type" : "view"}}
+    endict = {"uid" : uid, "profile" : { "is_view" : True}}
     database_name = None
     entryname = viewName.lower()
     entryname = entryname.replace('"', '')
@@ -369,7 +369,7 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
         """
         Mark this table as view
         """
-        entity_col.update({"eid": view_entity.eid}, {'$set': {'profile.table_type': 'view'}})
+        entity_col.update({"eid": view_entity.eid}, {'$set': {'profile.is_view': True}})
 
     tableEidList.add(view_entity.eid)
 
