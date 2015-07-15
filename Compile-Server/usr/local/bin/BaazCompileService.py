@@ -339,7 +339,7 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
         elif context.queue[0]['etype'] == EntityType.SQL_QUERY:
             outmost_query = context.queue[0]['eid']
 
-    endict = {"uid" : uid, "profile" : { "table_type" : "view"}}
+    endict = {"uid" : uid, "profile" : { "is_view" : True}}
     database_name = None
     entryname = viewName.lower()
     entryname = entryname.replace('"', '')
@@ -369,7 +369,7 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
         """
         Mark this table as view
         """
-        entity_col.update({"eid": view_entity.eid}, {'$set': {'profile.table_type': 'view'}})
+        entity_col.update({"eid": view_entity.eid}, {'$set': {'profile.is_view': True}})
 
     tableEidList.add(view_entity.eid)
 
@@ -761,8 +761,6 @@ def create_query_character(signature_keywords, operator_list):
 
 def check_query_type(query_character_list):
     found_single_table = False
-    if query_character_list is None:
-        return False
     for char_entry in query_character_list:
         if 'Single Table' in char_entry:
             found_single_table = True
@@ -919,13 +917,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 temp_keywords = None
                 if 'SignatureKeywords' in compile_doc[key]:
                     temp_keywords = compile_doc[key]['SignatureKeywords']
-                is_simple = check_query_type(temp_keywords)
-                if is_simple:
-                    #mark the query as complex query
-                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"simple_query_count":1}}, upsert = True)
-                else:
-                    #mark the query as simple query
-                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"complex_query_count":1}}, upsert = True)
+                    if temp_keywords is not None:
+                        is_simple = check_query_type(temp_keywords)
+                        if is_simple:
+                            #mark the query as complex query
+                            mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"simple_query_count":1}}, upsert = True)
+                        else:
+                            #mark the query as simple query
+                            mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"complex_query_count":1}}, upsert = True)
             if "combinedQueryList" in compile_doc[key]:
                 for entry in compile_doc[key]['combinedQueryList']:
                     if "combinerClause" in entry:
@@ -998,15 +997,20 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 else:
                     logging.info("No ComplexityScore found.")
                 temp_keywords = None
-                if 'SignatureKeywords' in entityProfile["Compiler"][compiler]:
+                if "Compiler" in entityProfile\
+                 and compiler in entityProfile['Compiler']\
+                 and 'ErrorSignature' in entityProfile['Compiler'][compiler]\
+                 and entityProfile['Compiler'][compiler]["ErrorSignature"] == ""\
+                 and 'SignatureKeywords' in entityProfile["Compiler"][compiler]:
                     temp_keywords = entityProfile["Compiler"][compiler]['SignatureKeywords']
-                is_simple = check_query_type(temp_keywords)
-                if is_simple:
-                    #mark the query as complex query
-                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"unique_simple_query_count":1}}, upsert = True)
-                else:
-                    #mark the query as simple query
-                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"unique_complex_query_count":1}}, upsert = True)
+                    if temp_keywords is not None:
+                        is_simple = check_query_type(temp_keywords)
+                        if is_simple:
+                            #mark the query as complex query
+                            mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"unique_simple_query_count":1}}, upsert = True)
+                        else:
+                            #mark the query as simple query
+                            mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"unique_complex_query_count":1}}, upsert = True)
             else:
                 update = True
 
