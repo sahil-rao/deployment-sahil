@@ -1644,6 +1644,18 @@ def callback(ch, method, properties, body):
 
                 compile_doc = None
                 logging.info("Loading file : "+ output_file_name)
+                if not os.path.isfile(output_file_name):
+                    file_found = False
+                    file_wait_count = 0
+                    while file_found is False and file_wait_count < 3:
+                        logging.info("Waiting for output file : "+ output_file_name)
+                        file_wait_count = file_wait_count + 1
+                        time.sleep(0.1)
+                        file_found = os.path.isfile(output_file_name)
+
+                    if file_found is False and file_wait_count == 3:
+                        raise Exception("Output file not found.")
+
                 with open(output_file_name) as data_file:
                     compile_doc = load(data_file)
 
