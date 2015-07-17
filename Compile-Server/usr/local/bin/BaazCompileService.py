@@ -713,7 +713,7 @@ def create_query_character(signature_keywords, operator_list):
         if 'Order By' in temp_character:
             character.append('Order By')
         if 'SELECT' in temp_character:
-            character.append('SELECT')
+            character.append('Select')
         if 'In' in temp_character:
             character.append('In')
         if 'Exists' in temp_character:
@@ -753,7 +753,7 @@ def create_query_character(signature_keywords, operator_list):
             character.append('Exists')
 
         if 'SELECT' in operator_list:
-            character.append('SELECT')
+            character.append('Select')
 
         start_character = ''.join(prefix + character[:1])
         character = [start_character] + character[1:]
