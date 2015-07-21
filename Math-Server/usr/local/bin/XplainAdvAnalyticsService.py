@@ -527,7 +527,7 @@ def callback(ch, method, properties, body):
 	#if uid has been set, the variable will be set already
         collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
 
-connection1 = RabbitConnection(callback, ['advanalytics'],[], {},XPLAIN_LOG_FILE)
+connection1 = RabbitConnection(callback, ['advanalytics'], [], {}, XPLAIN_LOG_FILE, 1)
 
 logging.info("XplainAdvAnalytics going to start consuming")
 

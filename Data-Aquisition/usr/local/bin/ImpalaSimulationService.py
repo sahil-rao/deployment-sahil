@@ -115,7 +115,7 @@ def callback(ch, method, properties, body):
 
     connection1.basicAck(ch,method)
 
-connection1 = RabbitConnection(callback, ['impalasimulation'], [], {}, APPSRV_LOG_FILE)
+connection1 = RabbitConnection(callback, ['impalasimulation'], [], {}, APPSRV_LOG_FILE, 1)
 
 
 logging.info("ImpalaSimulation going to start consuming")
