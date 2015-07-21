@@ -1204,9 +1204,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     #    continue
                     if key == "impala":
                         try:
+                            haqr_query = query
+                            if compiler_to_use in compile_doc and\
+                               "queryTemplate" in compile_doc[compiler_to_use]:
+                                   haqr_query = compile_doc[compiler_to_use]["queryTemplate"]
+
                             #call advance analytics to start HAQR Phase
                             adv_analy_dict = {'tenant': tenant,
-                                              'query': query,
+                                              'query': haqr_query,
                                               'key': key,
                                               'eid' : eid,
                                               'source_platform': source_platform,
