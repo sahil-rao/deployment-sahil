@@ -591,6 +591,7 @@ def process_scale_mode(tenant, uid, instances, smc):
 
         data = dumps(data_dict)
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        client_socket.settimeout(10)
         client_socket.connect(("localhost", 12121))
         client_socket.send("1\n");
 
@@ -1298,6 +1299,7 @@ def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_con
     data = dumps(data_dict)
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.settimeout(10)
 
     retry_count = 0
     socket_connected = False
@@ -1601,6 +1603,7 @@ def callback(ch, method, properties, body):
                 stats_failure_key = "Compiler." + compilername + ".failure"
 
                 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                client_socket.settimeout(10)
 
                 retry_count = 0
                 socket_connected = False
