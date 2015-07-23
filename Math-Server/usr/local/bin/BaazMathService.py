@@ -300,7 +300,10 @@ def callback(ch, method, properties, body):
             if 'outmost_query' in msg_dict:
                 ctx.outmost_query = msg_dict['outmost_query']
 
-            methodToCall(tenant, ctx)
+            ret = methodToCall(tenant, ctx)
+            if ret is not None and ret == False:
+                connection1.basicNack(ch,method)
+                return
 
             if 'uid' in msg_dict:
                 collection.update({'uid':uid},{"$inc": {stats_success_key: 1, stats_failure_key: 0}})
