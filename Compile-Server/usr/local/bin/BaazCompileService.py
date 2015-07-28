@@ -1020,9 +1020,18 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     if temp_keywords is not None:
                         is_simple = check_query_type(temp_keywords)
                         if is_simple:
+                            for entry in temp_keywords:
+                                simple_type_list = entry.split(':')
+                                set_key = tenant + ':eid:simple_query:set:' + simple_type_list[1]
+                                redis_conn.addToSet('simple_query', simple_type_list[1], entity.eid)
+                                redis_conn.r.sadd(tenant+':simple_query', set_key)
                             #mark the query as complex query
                             mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"unique_simple_query_count":1}}, upsert = True)
                         else:
+                            for entry in temp_keywords:
+                                set_key = tenant + ':eid:complex_query:set:' + entry
+                                redis_conn.addToSet('complex_query', entry, entity.eid)
+                                redis_conn.r.sadd(tenant+':complex_query', set_key)
                             #mark the query as simple query
                             mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"unique_complex_query_count":1}}, upsert = True)
             else:
