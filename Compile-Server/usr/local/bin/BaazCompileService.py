@@ -591,7 +591,7 @@ def process_scale_mode(tenant, uid, instances, smc):
 
         data = dumps(data_dict)
         client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client_socket.settimeout(10)
+        client_socket.settimeout(60)
         client_socket.connect(("localhost", 12121))
         client_socket.send("1\n");
 
@@ -610,6 +610,19 @@ def process_scale_mode(tenant, uid, instances, smc):
 
         compile_doc = None
         logging.info("Loading file : "+ output_file_name)
+        if not os.path.isfile(output_file_name):
+            file_found = False
+            file_wait_count = 0
+            while file_found is False and file_wait_count < 3:
+                logging.info("Waiting for output file : "+ output_file_name)
+                file_wait_count = file_wait_count + 1
+                time.sleep(0.1)
+                file_found = os.path.isfile(output_file_name)
+
+            if file_found is False and file_wait_count == 3:
+                logging.info("Output file not found : "+ output_file_name)
+                continue
+
         with open(output_file_name) as data_file:
             compile_doc = load(data_file)
 
@@ -1007,9 +1020,18 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     if temp_keywords is not None:
                         is_simple = check_query_type(temp_keywords)
                         if is_simple:
+                            for entry in temp_keywords:
+                                simple_type_list = entry.split(':')
+                                set_key = tenant + ':eid:simple_query:set:' + simple_type_list[1]
+                                redis_conn.addToSet('simple_query', simple_type_list[1], entity.eid)
+                                redis_conn.r.sadd(tenant+':simple_query', set_key)
                             #mark the query as complex query
                             mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"unique_simple_query_count":1}}, upsert = True)
                         else:
+                            for entry in temp_keywords:
+                                set_key = tenant + ':eid:complex_query:set:' + entry
+                                redis_conn.addToSet('complex_query', entry, entity.eid)
+                                redis_conn.r.sadd(tenant+':complex_query', set_key)
                             #mark the query as simple query
                             mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"unique_complex_query_count":1}}, upsert = True)
             else:
@@ -1299,7 +1321,7 @@ def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_con
     data = dumps(data_dict)
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.settimeout(10)
+    client_socket.settimeout(60)
 
     retry_count = 0
     socket_connected = False
@@ -1603,7 +1625,7 @@ def callback(ch, method, properties, body):
                 stats_failure_key = "Compiler." + compilername + ".failure"
 
                 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                client_socket.settimeout(10)
+                client_socket.settimeout(60)
 
                 retry_count = 0
                 socket_connected = False
