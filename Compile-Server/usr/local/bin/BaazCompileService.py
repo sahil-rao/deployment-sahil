@@ -562,6 +562,10 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
 def process_scale_mode(tenant, uid, instances, smc):
 
     for inst in instances:
+        msg_data = None
+        if "data" in inst:
+            msg_data = inst["data"]
+
         """
         Create input and output folders for compiler
         """
@@ -642,7 +646,7 @@ def process_scale_mode(tenant, uid, instances, smc):
                               "viewName"]
 
         try:
-            smc.process(compile_doc, compile_doc_fields, 'gsp', {'etype': 'SQL_QUERY'})
+            smc.process(compile_doc, compile_doc_fields, 'gsp', {'etype': 'SQL_QUERY'}, msg_data)
         except:
             logging.exception("Error in ScaleModeConnector")
 
