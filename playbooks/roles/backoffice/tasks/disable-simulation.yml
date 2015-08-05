@@ -1,0 +1,57 @@
+---
+- hosts: tag_Name_Backoffice
+  sudo: yes
+
+  tasks:
+    - name: Delete hdfs namenode dir
+      command: rm -rf /mnt/Impala/testdata/cluster/cdh5/node-1/data/dfs/nn
+      sudo: yes
+    - name: Delete hdfs datanode dir
+      command: rm -rf /mnt/Impala/testdata/cluster/cdh5/node-1/data/dfs/dn
+      sudo: yes
+    - name: format hdfs namenode
+      command: /mnt/local/hadoop/bin/hdfs namenode -format
+
+    - name: Stop Hadoop namenode
+      command: pkill -f "namenode"
+      ignore_errors: True
+      sudo: yes
+    - name: Stop Hadoop datanode
+      command: pkill -f "datanode"
+      ignore_errors: True
+      sudo: yes
+    - name: Stop Hadoop secondarynamenode
+      command: pkill -f "secondarynamenode"
+      ignore_errors: True
+      sudo: yes
+    - name: Stop Hadoop yarn resourcemanager
+      command: pkill -f "resourcemanager"
+      ignore_errors: True
+      sudo: yes
+    - name: Stop Hadoop yarn nodemanager
+      command: pkill -f "nodemanager"
+      ignore_errors: True
+      sudo: yes
+    - name: Stop Hive Metastore
+      service: name=hive-metastore state=stopped
+      ignore_errors: True
+      sudo: yes
+    - name: Stop Hive Server2
+      service: name=hive-server2 state=stopped
+      ignore_errors: True
+      sudo: yes
+    - name: Stop Impala Statestore
+      service: name=impala-state-store state=stopped
+      ignore_errors: True
+      sudo: yes
+    - name: Stop Impala Server
+      service: name=impala-server state=stopped
+      ignore_errors: True
+      sudo: yes
+    - name: Stop Impala Catalog
+      service: name=impala-catalog state=stopped
+      ignore_errors: True
+      sudo: yes
+    - name: Stop impalasimulation.
+      service: name=impalasimulation state=stopped
+      sudo: yes

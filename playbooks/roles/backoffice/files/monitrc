@@ -280,7 +280,3 @@ check process mathservice with pidfile /var/run/mathservice.pid
 check process advanalytics with pidfile /var/run/advanalyticsservice.pid
     start program = "/sbin/start advanalytics" with timeout 30 seconds
     stop program = "/sbin/stop advanalytics"
-
-check process impalasimulation with pidfile /var/run/ImpalaSimulation.pid
-    start program = "/sbin/start impalasimulation" with timeout 30 seconds
-    stop program = "/sbin/stop impalasimulation"
