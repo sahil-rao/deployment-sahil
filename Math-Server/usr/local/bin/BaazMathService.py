@@ -302,7 +302,9 @@ def callback(ch, method, properties, body):
 
             ret = methodToCall(tenant, ctx)
             if ret is not None and ret == False:
-                connection1.basicNack(ch,method)
+                connection1.requeue(ch,method, '', 'mathqueue', msg_dict)
+                decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
+                connection1.basicAck(ch,method)
                 return
 
             if 'uid' in msg_dict:
