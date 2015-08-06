@@ -3,7 +3,7 @@
   file: path=/var/Baaz state=directory
   sudo: yes
 - name: NTP installed
-  apt: name=ntp state=present
+  apt: name=ntp update_cache=yes state=present
   sudo: yes
 - name: Remove everything from under the /mnt/volumne1 directory
   shell: rm -rf /mnt/volume1/*
