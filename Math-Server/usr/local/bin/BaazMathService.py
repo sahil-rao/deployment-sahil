@@ -302,8 +302,13 @@ def callback(ch, method, properties, body):
 
             ret = methodToCall(tenant, ctx)
             if ret is not None and ret == False:
-                connection1.requeue(ch,method, '', 'mathqueue', msg_dict)
-                decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
+                '''
+                Attempt to requeue the message.
+                If failed 10 times, will decrement pending message.
+                '''
+                requeue_status = connection1.requeue(ch,method, '', 'mathqueue', msg_dict)
+                if not requeue_status:
+                    decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
                 connection1.basicAck(ch,method)
                 return
 
