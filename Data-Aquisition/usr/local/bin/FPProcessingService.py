@@ -169,7 +169,7 @@ class callback_context():
         Self.sourcePlatform = sourcePlatform
         Self.scale_mode = scale_mode
         Self.testMode = testMode
-        Self.queryNumThreshold = 20000
+        Self.queryNumThreshold = 50000
         Self.header_info = header_info
         Self.delimiter = delimiter
         Self.col_stat_table_name_list = []
@@ -210,7 +210,7 @@ class callback_context():
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
 
         if "upLimit" not in org:
-            upLimit = 1000
+            upLimit = 20000
             userdb.organizations.update({"guid":Self.tenant}, {"$set": {"upLimit":upLimit}})
         else:
             upLimit = org["upLimit"]
@@ -227,7 +227,7 @@ class callback_context():
         if "scaleMode" in org:
             return org["scaleMode"]
 
-        return True
+        return False
 
     def __checkQueryLimit(Self):
         upStats = Self.collection.find_one({'uid':"0"})
