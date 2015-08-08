@@ -123,6 +123,15 @@
 - name: Install httplib2
   pip: name=httplib2
   sudo: yes
+- name: install graphviz
+  apt: name=graphviz
+  sudo: yes
+- name: install libgraphviz-dev
+  apt: name=libgraphviz-dev
+  sudo: yes
+- name: Install pygraphviz
+  pip: name=pygraphviz
+  sudo: yes
 #REDIS SENTINEL DEPLOYMENT
 #- name: Install Redis APT Package
 #  apt: name=redis-server update_cache=yes
