@@ -34,6 +34,7 @@ import flightpath.services.app_get_workload_assessment as workload_assessment
 import flightpath.services.app_get_access_patterns as access_patterns
 import flightpath.services.app_cleanup_user as cleanup_user
 import flightpath.services.app_add_table_volume as add_table_volume
+import flightpath.services.app_get_impala_import as get_impala_import
 from flightpath import FPConnector
 from json import *
 import elasticsearch
@@ -51,8 +52,12 @@ import traceback
 
 APPSRV_LOG_FILE = "/var/log/applicationserice.err"
 
+BAAZ_DATA_ROOT="/mnt/volume1/"
+BAAZ_PROCESSING_DIRECTORY="processing"
+
 config = ConfigParser.RawConfigParser ()
 config.read("/var/Baaz/hosts.cfg")
+
 usingAWS = config.getboolean("mode", "usingAWS")
 if usingAWS:
     from boto.s3.key import Key
@@ -60,6 +65,19 @@ if usingAWS:
 
 rabbitserverIP = config.get("RabbitMQ", "server")
 metrics_url = None
+
+bucket_location = "partner-logs"
+log_bucket_location = "xplain-servicelogs"
+
+CLUSTER_MODE = config.get("ApplicationConfig", "mode")
+CLUSTER_NAME = config.get("ApplicationConfig", "clusterName")
+
+if CLUSTER_MODE is None:
+    CLUSTER_MODE = 'production'
+
+
+if CLUSTER_NAME is not None:
+    bucket_location = CLUSTER_NAME
 
 """
 For VM there is not S3 connectivity. Save the logs with a timestamp. 
@@ -371,6 +389,44 @@ def callback(ch, method, properties, body):
                 resp_dict = process_ddl_request(ch, properties, tenant, msg_dict['target'], instances, db, redis_conn)
             else:
                 resp_dict = process_ddl_request(ch, properties, tenant, "impala", instances, db, redis_conn)
+        elif msg_dict["opcode"] == "ImpalaImport":
+
+            logging.info("Got the opcode of Impala import")
+            filename = msg_dict["filename"]
+            filename = urllib.unquote(filename)
+            source = tenant + "/" + filename
+            if usingAWS:
+                """
+                Check if the file exists in S3.
+                """
+                if CLUSTER_NAME is not None:
+                    source = source
+                file_key = bucket.get_key(source)
+                if file_key is None:
+                    logging.error("NOT FOUND: {0} not in S3\n".format(source))
+                    connection1.basicAck(ch,method)
+                    return
+            """
+            Download the file and extract:
+            """
+            dest_file = BAAZ_DATA_ROOT + tenant + "/" + filename
+            destination = os.path.dirname(dest_file)
+            logging.info("Destination: "+str(destination))
+            if not os.path.exists(destination):
+                os.makedirs(destination)
+
+            if usingAWS:
+                d_file = open(dest_file, "w+")
+                file_key.get_contents_to_file(d_file)
+                d_file.close()
+
+            logpath = destination + "/" + BAAZ_PROCESSING_DIRECTORY
+            if os.path.exists(logpath):
+                shutil.rmtree(logpath)
+            os.makedirs(logpath)
+
+            shutil.copy(dest_file, logpath)
+            resp_dict = get_impala_import.execute(tenant, {'file':dest_file})
         elif msg_dict["opcode"] == "MongoTransform":
     
             logging.info("Got the opcode For Mongo Translation")
