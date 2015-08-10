@@ -479,7 +479,7 @@ def callback(ch, method, properties, body):
         elif msg_dict['opcode'] == "AccessPatterns":
             resp_dict = access_patterns.execute(tenant, msg_dict["accessPatternIds"])
         elif msg_dict['opcode'] == "MongoUrlForTenant":
-            resp_dict = {'mongo_url': FPConnector.get_mongo_url(tenant)}
+            resp_dict = {'mongo_url': getMongoServer(tenant)}
         elif msg_dict['opcode'] == "RedisMasterNameForTenant":
             resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant)}
         elif msg_dict['opcode'] == "ElasticNodesForTenant":
