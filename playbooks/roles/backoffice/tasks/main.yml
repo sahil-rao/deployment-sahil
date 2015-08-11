@@ -124,10 +124,10 @@
   pip: name=httplib2
   sudo: yes
 - name: install graphviz
-  apt: name=graphviz
+  apt: name=graphviz update_cache=yes
   sudo: yes
 - name: install libgraphviz-dev
-  apt: name=libgraphviz-dev
+  apt: name=libgraphviz-dev update_cache=yes
   sudo: yes
 - name: Install pygraphviz
   pip: name=pygraphviz
