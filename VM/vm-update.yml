@@ -150,10 +150,6 @@
     shell: tar -zxf /home/xplain/Baaz-Analytics.tar.gz chdir=/
   - name: Install Basestats scripts
     shell: tar -zxf /home/xplain/Baaz-Basestats-Report.tar.gz chdir=/usr/lib
-  - name: Mysql user addition
-    mysql_user: name=baazdep password=baazdep login_user=root login_password=mysql priv=*.*:ALL state=present
-  - name: Mysql DB
-    mysql_db: name=HADOOP_DEV login_user=root login_password=mysql state=present
   - name: Install Analytics Service
     shell: tar -zxf /home/xplain/Baaz-Analytics-Service.tar.gz chdir=/
   - name: Remove any previous service that may be installed.
@@ -189,10 +185,6 @@
   - name: Start compileservice
     service: name=compileservice state=started
 
-  - name: Create mysql user
-    mysql_user: name=baaz password=baaz login_user=root login_password=mysql priv=*.*:ALL state=present
-  - name: Create mysql DB
-    mysql_db: name=baazdata login_user=root login_password=mysql state=present
   - name: Untar flightpath
     shell: tar -zxf /home/xplain/flightpath-deployment.tar.gz chdir=/
   - name: Copy node upstart configuration file
@@ -202,10 +194,10 @@
   - name: Untar Baazdata App
     shell: tar -zxf /home/xplain/xplain.io.tar.gz
   - name: Remove the existing deployed code
-    file: path=/var/xplain state=absent
+    file: path=/var/xplain3000 state=absent
   - name: Move the new code
-    shell: mv /home/xplain/xplain.io /var/xplain
+    shell: mv /home/xplain/xplain.io /var/xplain3000
   - name: Install npm modules.
-    npm: path=/var/xplain
+    npm: path=/var/xplain3000
   - name: copy monitrc file
     copy: src=/home/xplain/monitrc dest=/etc/monit/monitrc
