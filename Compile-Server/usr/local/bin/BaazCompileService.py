@@ -1491,7 +1491,8 @@ def callback(ch, method, properties, body):
         if 'uid' in msg_dict:
             uid = msg_dict['uid']
             db = MongoClient(mongo_url)[tenant]
-            if not checkUID(db, uid):
+            redis_conn = RedisConnector(tenant)
+            if not checkUID(redis_conn, uid):
                 ch.basic_ack(delivery_tag=method.delivery_tag)
                 logging.error("Invalid uid, dropping scale mode message")
                 return
@@ -1516,7 +1517,8 @@ def callback(ch, method, properties, body):
         then drop the message.
         """
         db = MongoClient(mongo_url)[tenant]
-        if not checkUID(db, uid):
+        redis_conn = RedisConnector(tenant)
+        if not checkUID(redis_conn, uid):
             """
             Just drain the queue.
             """
@@ -1667,7 +1669,7 @@ def callback(ch, method, properties, body):
                 """
                 It is possible the tenant has been cleared. If this is the case then do not add an new entities.
                 """
-                if not checkUID(db, uid):
+                if not checkUID(redis_conn, uid):
                     """
                     Just drain the queue.
                     """

@@ -192,7 +192,7 @@ def callback(ch, method, properties, body):
         mongo_url = getMongoServer(tenant)
         db = MongoClient(mongo_url)[tenant]
         redis_conn = RedisConnector(tenant)
-        if not checkUID(db, uid):
+        if not checkUID(redis_conn, uid):
             """
             Just drain the queue.
             """
