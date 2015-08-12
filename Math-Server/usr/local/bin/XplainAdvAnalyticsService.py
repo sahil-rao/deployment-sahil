@@ -147,7 +147,7 @@ class analytics_context:
     pass
 
 def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
-    if platform != "impala":
+    if platform not in ["impala", "hive"]:
         return #currently HAQR supported only for impala
 
     timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
@@ -189,6 +189,7 @@ def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
         "selectSubClauseFsmFile": selectSubClauseFsmFile,
         "groupBySubClauseFsmFile": groupBySubClauseFsmFile,
         "fromSubClauseFsmFile": fromSubClauseFsmFile,
+        "target_platform": platform,
         "source_platform": source_platform
     }
 
@@ -236,16 +237,7 @@ def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
 
     return
 
-def updateRedisforHAQR(redis_conn,data,tenant,eid):
-    redis_conn.createEntityProfile("HAQR", "HAQR")
-
-    redis_conn.incrEntityCounter("HAQR", "numInvocation", sort=False, incrBy=1)
-    if data['sourceStatus']=='SUCCESS':
-        redis_conn.incrEntityCounter("HAQR", "sourceSucess", sort=False, incrBy=1)
-    else:
-        redis_conn.incrEntityCounter("HAQR", "sourceFailure", sort=False, incrBy=1)
-        return
-
+def updateRedisforimpala(redis_conn, data, tenant, eid):
     if data['platformCompilationStatus']['Impala']['queryStatus']=="SUCCESS":
         redis_conn.incrEntityCounter("HAQR", "impalaSuccess", sort=False, incrBy=1)
     else:
@@ -316,6 +308,94 @@ def updateRedisforHAQR(redis_conn,data,tenant,eid):
         "Other" in data['platformCompilationStatus']['Impala']['clauseStatus']:
         if data['platformCompilationStatus']['Impala']['clauseStatus']["Other"]['clauseStatus']=="FAIL":
             redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseOtherFailure", sort=False, incrBy=1)
+    return
+
+def updateRedisforhive(redis_conn, data, tenant, eid):
+    if data['platformCompilationStatus']['Hive']['queryStatus']=="SUCCESS":
+        redis_conn.incrEntityCounter("HAQR", "hiveSuccess", sort=False, incrBy=1)
+    else:
+        redis_conn.incrEntityCounter("HAQR", "hiveFail", sort=False, incrBy=1)
+
+    if data['platformCompilationStatus']['Hive']['clauseStatus'] is not None and \
+       'Select' in data['platformCompilationStatus']['Hive']['clauseStatus']:
+        if data['platformCompilationStatus']['Hive']['clauseStatus']['Select']['clauseStatus']=="SUCCESS":
+            redis_conn.incrEntityCounter("HAQR", "hiveSelectSuccess", sort=False, incrBy=1)
+        else:
+            redis_conn.incrEntityCounter("HAQR", "hiveSelectFail", sort=False, incrBy=1)
+            if 'subClauseList' in data['platformCompilationStatus']['Hive']['clauseStatus']['Select']:
+                for subClause in data['platformCompilationStatus']['Hive']['clauseStatus']['Select']['subClauseList']:
+                    if subClause['clauseStatus']=="SUCCESS":
+                        redis_conn.incrEntityCounter("HAQR", "hiveSelectSubClauseSuccess", sort=False, incrBy=1)
+                    else:
+                        redis_conn.incrEntityCounter("HAQR", "hiveSelectSubClauseFailure", sort=False, incrBy=1)
+                        redis_conn.incrEntityCounter(eid, "HAQRhiveQueryByClauseSelectFailure", sort=False, incrBy=1)
+
+    if data['platformCompilationStatus']['Hive']['clauseStatus'] is not None and \
+       'From' in data['platformCompilationStatus']['Hive']['clauseStatus']:
+        if data['platformCompilationStatus']['Hive']['clauseStatus']['From']['clauseStatus']=="SUCCESS":
+            redis_conn.incrEntityCounter("HAQR", "hiveFromSuccess", sort=False, incrBy=1)
+        elif data['platformCompilationStatus']['Hive']['clauseStatus']['From']['clauseStatus']=="AUTO_SUGGEST":
+            redis_conn.incrEntityCounter("HAQR", "hiveFromAutoCorrect", sort=False, incrBy=1)
+        else:
+            redis_conn.incrEntityCounter("HAQR", "hiveFromFailure", sort=False, incrBy=1)
+
+        if 'subClauseList' in data['platformCompilationStatus']['Hive']['clauseStatus']["From"]:
+            for subClause in data['platformCompilationStatus']['Hive']['clauseStatus']["From"]['subClauseList']:
+                if subClause['clauseStatus']=="SUCCESS":
+                    redis_conn.incrEntityCounter("HAQR", "hiveFromSubClauseSuccess", sort=False, incrBy=1)
+                elif subClause['clauseStatus']=="AUTO_SUGGEST":
+                    redis_conn.incrEntityCounter("HAQR", "hiveFromSubClauseAutoCorrect", sort=False, incrBy=1)
+                else:
+                    redis_conn.incrEntityCounter("HAQR", "hiveFromSubClauseFailure", sort=False, incrBy=1)
+                    redis_conn.incrEntityCounter(eid, "HAQRhiveQueryByClauseFromFailure", sort=False, incrBy=1)
+
+    if data['platformCompilationStatus']['Hive']['clauseStatus'] is not None and \
+       "Group By" in data['platformCompilationStatus']['Hive']['clauseStatus']:
+        if data['platformCompilationStatus']['Hive']['clauseStatus']["Group By"]['clauseStatus']=="SUCCESS":
+            redis_conn.incrEntityCounter("HAQR", "hiveGroupBySuccess", sort=False, incrBy=1)
+        else:
+            redis_conn.incrEntityCounter("HAQR", "hiveGroupByFailure", sort=False, incrBy=1)
+            if 'subClauseList' in data['platformCompilationStatus']['Hive']['clauseStatus']["Group By"]:
+                for subClause in data['platformCompilationStatus']['Hive']['clauseStatus']["Group By"]['subClauseList']:
+                    if subClause['clauseStatus']=="SUCCESS":
+                        redis_conn.incrEntityCounter("HAQR", "hiveGroupBySubClauseSuccess", sort=False, incrBy=1)
+                    else:
+                        redis_conn.incrEntityCounter("HAQR", "hiveGroupBySubClauseFailure", sort=False, incrBy=1)
+                        redis_conn.incrEntityCounter(eid, "HAQRhiveQueryByClauseGroupByFailure", sort=False, incrBy=1)
+
+    if data['platformCompilationStatus']['Hive']['clauseStatus'] is not None and \
+       "Where" in data['platformCompilationStatus']['Hive']['clauseStatus']:
+        if data['platformCompilationStatus']['Hive']['clauseStatus']["Where"]['clauseStatus']=="SUCCESS":
+            redis_conn.incrEntityCounter("HAQR", "hiveWhereSuccess", sort=False, incrBy=1)
+        else:
+            redis_conn.incrEntityCounter("HAQR", "hiveWhereFailure", sort=False, incrBy=1)
+            if 'subClauseList' in data['platformCompilationStatus']['Hive']['clauseStatus']["Where"]:
+                for subClause in data['platformCompilationStatus']['Hive']['clauseStatus']["Where"]['subClauseList']:
+                    if subClause['clauseStatus']=="SUCCESS":
+                        redis_conn.incrEntityCounter("HAQR", "hiveWhereSubClauseSuccess", sort=False, incrBy=1)
+                    else:
+                        redis_conn.incrEntityCounter("HAQR", "hiveWhereSubClauseFailure", sort=False, incrBy=1)
+                        redis_conn.incrEntityCounter(eid, "HAQRhiveQueryByClauseWhereFailure", sort=False, incrBy=1)
+
+    if data['platformCompilationStatus']['Hive']['clauseStatus'] is not None and \
+        "Other" in data['platformCompilationStatus']['Hive']['clauseStatus']:
+        if data['platformCompilationStatus']['Hive']['clauseStatus']["Other"]['clauseStatus']=="FAIL":
+            redis_conn.incrEntityCounter(eid, "HAQRhiveQueryByClauseOtherFailure", sort=False, incrBy=1)
+    return
+
+def updateRedisforHAQR(redis_conn,data,tenant,eid):
+    redis_conn.createEntityProfile("HAQR", "HAQR")
+
+    redis_conn.incrEntityCounter("HAQR", "numInvocation", sort=False, incrBy=1)
+    if data['sourceStatus']=='SUCCESS':
+        redis_conn.incrEntityCounter("HAQR", "sourceSucess", sort=False, incrBy=1)
+    else:
+        redis_conn.incrEntityCounter("HAQR", "sourceFailure", sort=False, incrBy=1)
+
+    if 'Impala' in data['platformCompilationStatus']:
+        updateRedisforimpala(redis_conn, data, tenant, eid)
+    if 'Hive' in data['platformCompilationStatus']:
+        updateRedisforhive(redis_conn, data, tenant, eid)
 
     return
 
@@ -326,7 +406,6 @@ def process_HAQR_request(msg_dict):
     
     analyzeHAQR(msg_dict['query'], msg_dict['key'], msg_dict['tenant'], \
                 msg_dict['eid'], msg_dict['source_platform'], db, redis_conn)
-    pass
 
 def callback(ch, method, properties, body):
 

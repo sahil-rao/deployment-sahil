@@ -1248,6 +1248,25 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                             #analyzeHAQR(query,key,tenant,entity.eid,source_platform,mongoconn,redis_conn)
                         except:
                             logging.exception('analyzeHAQR has failed.')
+                    if key == "hive":
+                        try:
+                            haqr_query = query
+                            if compiler_to_use in compile_doc and\
+                               "queryTemplate" in compile_doc[compiler_to_use]:
+                                   haqr_query = compile_doc[compiler_to_use]["queryTemplate"]
+
+                            #call advance analytics to start HAQR Phase
+                            adv_analy_dict = {'tenant': tenant,
+                                              'query': haqr_query,
+                                              'key': key,
+                                              'eid' : eid,
+                                              'source_platform': source_platform,
+                                              'opcode': "HAQRPhase"
+                                             }
+                            sendAdvAnalyticsMessage(ch, adv_analy_dict)
+                            #analyzeHAQR(query,key,tenant,entity.eid,source_platform,mongoconn,redis_conn)
+                        except:
+                            logging.exception('analyzeHAQR has failed.')
                 elif etype == "SQL_SUBQUERY":
                     collection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
                 elif etype == "SQL_STORED_PROCEDURE":
