@@ -95,7 +95,7 @@ In AWS use S3 log rotate to save the log files.
 """
 if usingAWS:
     boto_conn = boto.connect_s3()
-    bucket = boto_conn.get_bucket('partner-logs') 
+    bucket = boto_conn.get_bucket(bucket_location) 
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(APPSRV_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
 
@@ -399,8 +399,6 @@ def callback(ch, method, properties, body):
                 """
                 Check if the file exists in S3.
                 """
-                if CLUSTER_NAME is not None:
-                    source = source
                 file_key = bucket.get_key(source)
                 if file_key is None:
                     logging.error("NOT FOUND: {0} not in S3\n".format(source))
@@ -479,7 +477,7 @@ def callback(ch, method, properties, body):
         elif msg_dict['opcode'] == "AccessPatterns":
             resp_dict = access_patterns.execute(tenant, msg_dict["accessPatternIds"])
         elif msg_dict['opcode'] == "MongoUrlForTenant":
-            resp_dict = {'mongo_url': getMongoServer(tenant)}
+            resp_dict = {'mongo_url': FPConnector.get_mongo_url(tenant)}
         elif msg_dict['opcode'] == "RedisMasterNameForTenant":
             resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant)}
         elif msg_dict['opcode'] == "ElasticNodesForTenant":
