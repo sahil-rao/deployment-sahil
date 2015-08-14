@@ -1054,7 +1054,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         update = True
         #update the stats since they were provided
         if data is not None:
-            mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': data}})
+            if hasattr(entity, 'custom_id') and entity.custom_id == custom_id:
+                mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': data}})
+            elif not hasattr(entity, 'custom_id') and custom_id is None:
+                mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': data}})
 
 
     context.queue.append({'eid': entity.eid, 'etype': etype})
