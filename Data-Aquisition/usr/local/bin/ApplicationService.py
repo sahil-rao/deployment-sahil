@@ -396,6 +396,8 @@ def callback(ch, method, properties, body):
             filename = urllib.unquote(filename)
             source = tenant + "/" + filename
             if usingAWS:
+                if CLUSTER_NAME is not None:
+                    source = "partner-logs/" + source
                 """
                 Check if the file exists in S3.
                 """
@@ -424,6 +426,7 @@ def callback(ch, method, properties, body):
             os.makedirs(logpath)
 
             shutil.copy(dest_file, logpath)
+            logging.info("### COPIED FILED ###")
             resp_dict = get_impala_import.execute(tenant, {'file':dest_file})
         elif msg_dict["opcode"] == "MongoTransform":
     
