@@ -12,6 +12,7 @@ from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
+import baazmath.workflows.write_upload_stats as write_upload_stats
 from json import *
 #from baazmath.interface.BaazCSV import *
 #from subprocess import Popen, PIPE
@@ -419,18 +420,7 @@ def callback(ch, method, properties, body):
     """ 
     if not msg_dict.has_key("tenant") or \
        not msg_dict.has_key("opcode"):
-        logging.error("Invalid message received\n")     
-
-        endTime = time.time()
-        if msg_dict.has_key('uid'):
-            uid = msg_dict['uid']
-            try:
-                received_msgID = msg_dict['message_id']
-            except:
-                received_msgID = None
-            collection.update({'uid':uid},{'$inc':{"Math.tmpcount":1, "Math.time":(endTime-startTime)}})
-            decrementPendingMessage(collection, redis_conn, uid, received_msgID)
-            collection.update({'uid':uid},{'$inc':{"DecrementMath1MessageCount":1}})
+        logging.error("Invalid message received\n")
 
         connection1.basicAck(ch,method)
         return
@@ -467,7 +457,7 @@ def callback(ch, method, properties, body):
             return
       
         collection = MongoClient(mongo_url)[tenant].uploadStats
-        collection.update({'uid':uid},{'$inc':{"Math.count":1}})
+        redis_conn.incrEntityCounter(uid, 'Math.count', incrBy = 1)
     else:
         """
         We do not expect anything without UID. Discard message if not present.
@@ -538,7 +528,8 @@ def callback(ch, method, properties, body):
             methodToCall(tenant, ctx)
 
             if 'uid' in msg_dict:
-                collection.update({'uid':uid},{"$inc": {stats_success_key: 1, stats_failure_key: 0}})
+                redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 1)
+                redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy = 0)
 
             if mathconfig.has_option(section, "NotificationName"):
                 notif_queue = mathconfig.get(section, "NotificationQueue")
@@ -548,18 +539,18 @@ def callback(ch, method, properties, body):
                 connection1.publish(ch,'', notif_queue, dumps(message))
         except:
             logging.exception("Section :"+section)
-	    if 'uid' in msg_dict:
-                collection.update({'uid':uid},{"$inc": {stats_success_key: 0, stats_failure_key: 1}})
+        if 'uid' in msg_dict:
+            redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 0)
+            redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy = 1)
         if 'uid' in msg_dict:
             sectionEndTime = time.time()
-            collection.update({'uid':uid},{"$inc": {stats_time_key: (sectionEndTime-sectionStartTime)}})
+            redis_conn.incrEntityCounter(uid, stats_time_key, incrBy = sectionEndTime-sectionStartTime)
             if opcode == "PhaseTwoAnalysis":
                 stats_ip_key = "Math." + section + ".socket"
-                
-                collection.update({'uid':uid},{"$set": {stats_phase_key: 2, stats_ip_key: socket.gethostbyname(socket.gethostname())}})
+                redis_conn.setEntityProfile(uid, {stats_phase_key: 2, stats_ip_key: socket.gethostbyname(socket.gethostname())})
 
             else:
-                collection.update({'uid':uid},{"$set": {stats_phase_key: 1}})
+                redis_conn.setEntityProfile(uid, {stats_phase_key: 1})
 
     logging.info("Event Processing Complete")     
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
@@ -569,7 +560,8 @@ def callback(ch, method, properties, body):
     if int(redis_conn.numMessagesPending(uid)) == 0:
         #The length function in the if statement is a count of the mending messages
         timest = int(time.time() * 1000)
-        collection.update({'uid':uid},{'$set': { "Phase2MessageProcessed":timest}}, upsert=True)
+        redis_conn.setEntityProfile(uid, {"Phase2MessageProcessed":timest})
+        write_upload_stats.run_workflow(tenant, {})
 
     """
      Progress Bar update
@@ -577,21 +569,22 @@ def callback(ch, method, properties, body):
     notif_queue = "node-update-queue"
     logging.info("Going to check progress bar")     
     try:
-        stats_dict = collection.find_one({'uid':uid})
+        stats_dict = redis_conn.getEntityProfile(uid)
         if stats_dict is not None and\
             "total_queries" in stats_dict and\
             "processed_queries" in stats_dict and\
             ("query_message_id" in msg_dict or opcode == "PhaseTwoAnalysis"):
             if opcode != "PhaseTwoAnalysis":
-                collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
+                redis_conn.incrEntityCounter(uid, 'processed_queries', incrBy = 1)
             
-            #if received_msgID is not None and\
-            #    (int(received_msgID.split("-")[1])%40) == 0:
-            if stats_dict["processed_queries"]%10 == 0 or\
-               stats_dict['total_queries'] <= (stats_dict['processed_queries'] + 1):
+            processed_queries = int(stats_dict["processed_queries"])
+            total_queries = int(stats_dict["total_queries"])
+            if (processed_queries%10 == 0 or\
+               (total_queries) <= (processed_queries + 1)) and \
+               int(redis_conn.numMessagesPending(uid)) != 0:
                 #logging.info("Procesing progress bar event")     
                 out_dict = {"messageType" : "uploadProgress", "tenantId": tenant, 
-                            "completed": stats_dict["processed_queries"] + 1, "total":stats_dict["total_queries"]}
+                            "completed": processed_queries + 1, "total":total_queries}
                 connection1.publish(ch,'', notif_queue, dumps(out_dict))
     except:
         logging.exception("While making update to progress bar")
@@ -603,8 +596,8 @@ def callback(ch, method, properties, body):
 
     endTime = time.time()
     if msg_dict.has_key('uid'):
-	#if uid has been set, the variable will be set already
-        collection.update({'uid':uid},{"$inc": {"Math.time":(endTime-startTime)}})
+        #if uid has been set, the variable will be set already
+        redis_conn.incrEntityCounter(uid, "Math.time", incrBy = endTime-startTime)
 
 connection1 = RabbitConnection(callback, ['advanalytics'], [], {}, XPLAIN_LOG_FILE, 1)
 

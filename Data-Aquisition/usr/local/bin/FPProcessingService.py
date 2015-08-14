@@ -198,7 +198,7 @@ class callback_context():
             queries_left = int(Self.uploadLimit) - int( overall_stats['query_processed'])
 
         Self.redis_conn.setScaleModeTotalQueryCount( min(queries_left, int(total_queries_found)), Self.uid )
-        Self.collection.update({'uid':Self.uid},{'$set':{"total_queries": min(queries_left, total_queries_found), "processed_queries":0}})
+        Self.redis_conn.setEntityProfile(Self.uid, {"total_queries": min(queries_left, total_queries_found), "processed_queries":0})
         if total_queries_found > Self.queryNumThreshold and Self.__getScaleMode():
             Self.scale_mode = True
 
@@ -257,7 +257,7 @@ class callback_context():
 
     def stats_callback(Self, stats):
         #mark upload stats with stats file
-        Self.collection.update({'uid':Self.uid},{'$set': { "StatsFileProcessed":1}}, upsert=True)
+        Self.redis_conn.setEntityProfile(Self.uid, { "StatsFileProcessed":1})
         #check if this are table or column stats
         if 'column_name' in stats:
             column_entry = {}
@@ -273,11 +273,11 @@ class callback_context():
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 Self.redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
                 #updated the upload stats for table
-                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.%s.newTables"%(Self.compiler_to_use): 1}}, upsert = True)
+                Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.newTables"%(Self.compiler_to_use), incrBy=1)
             else:
                 if table_name not in Self.col_stat_table_name_list:
                     #updated the upload stats for table
-                    Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.%s.totalTables"%(Self.compiler_to_use): 1}}, upsert = True)
+                    Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.totalTables"%(Self.compiler_to_use), incrBy=1)
                     Self.col_stat_table_name_list.append(table_name)
 
             #check if column is already present or not
@@ -294,7 +294,7 @@ class callback_context():
                 column_entity = Self.mongoconn.addEn(eid, column_entity_name, Self.tenant,\
                                                 EntityType.SQL_TABLE_COLUMN, column_entry, None)
                 #updated the upload stats for column
-                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.%s.newColumns"%(Self.compiler_to_use): 1}}, upsert = True)
+                Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.newColumns"%(Self.compiler_to_use), incrBy=1)
                 '''
                 Table --> Column relationship.
                 '''
@@ -308,7 +308,7 @@ class callback_context():
                 #update table entity with stats info in it
                 Self.mongoconn.db.entities.update({"eid": column_entity.eid},{'$set':{'stats': stats}})
                 #updated the upload stats for column
-                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.%s.totalColumns"%(Self.compiler_to_use): 1}}, upsert = True)
+                Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.totalColumns"%(Self.compiler_to_use), incrBy=1)
         else:
             #Query mongo based to table name in order to update table stats
             table_name = stats['TABLE_NAME'].lower()
@@ -325,13 +325,13 @@ class callback_context():
                 if table_entity.eid != eid:
                     Self.mongoconn.db.entitieys.update({"eid": table_entity.eid},{'$set':{'stats': stats}})
                 #updated the upload stats for table
-                Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.%s.newTables"%(Self.compiler_to_use): 1}}, upsert = True)
+                Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.newTables"%(Self.compiler_to_use), incrBy=1)
             else:
                 #update table entity with stats info in it
                 Self.mongoconn.db.entities.update({"eid": table_entity.eid},{'$set':{'stats': stats}})
                 if table_name not in Self.table_stat_table_name_list:
                     #updated the upload stats for table
-                    Self.mongoconn.db.uploadStats.update({'uid':Self.uid},{"$inc": {"Compiler.%s.totalTables"%(Self.compiler_to_use): 1}}, upsert = True)
+                    Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.totalTables"%(Self.compiler_to_use), incrBy=1)
                     Self.table_stat_table_name_list.append(table_name)
 
     def callback(Self, eid, update=False, name=None, etype=None, data=None):
@@ -436,6 +436,7 @@ class callback_context():
 
 def callback(ch, method, properties, body):
     starttime = time.time()
+    curr_socket = socket.gethostbyname(socket.gethostname())
 
     try:
         msg_dict = loads(body)
@@ -456,6 +457,7 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict["tenent"]
     mongo_url = getMongoServer(tenant)
+    redis_conn = RedisConnector(tenant)
 
     uid = None
     try:
@@ -511,8 +513,9 @@ def callback(ch, method, properties, body):
             uid = msg_dict['uid']
 
             collection = MongoClient(mongo_url)[tenant].uploadStats
-            collection.update({'uid':uid},{'$inc':{"FPProcessing.count":1}, '$set':{"FPProcessing.socket":socket.gethostbyname(socket.gethostname())}})
-            startProcessingPhase(collection, uid)
+            startProcessingPhase(collection, redis_conn, uid)
+            redis_conn.incrEntityCounter(uid, "FPProcessing.count", sort = False, incrBy= 1)
+            redis_conn.setEntityProfile(uid, {"FPProcessing.socket":curr_socket})
             if metrics_url is not None:
                 try:
                     r_collection = MongoClient(metrics_url)["remote_"+tenant].uploadStats
@@ -605,8 +608,6 @@ def callback(ch, method, properties, body):
             mongoconn = MongoConnector({'host':mongo_url, 'context':context, \
                                     'create_db_if_not_exist':True})
 
-        redis_conn = RedisConnector(tenant)
-
         if redis_conn.getEntityProfile("dashboard_data") == {}:
             redis_conn.createEntityProfile("dashboard_data", "dashboard_data")
         '''
@@ -694,7 +695,7 @@ def callback(ch, method, properties, body):
         mongoconn.close()
         if msg_dict.has_key('uid'):
             #if uid has been set, the variable will be set already
-            collection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.time()-starttime)}})
+            redis_conn.setEntityProfile(uid, {"FPProcessing.time":(time.time()-starttime)})
             if r_collection is not None:
                 r_collection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.time()-starttime)}})
     except:

@@ -863,7 +863,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if 'OperatorList' in compile_doc[compiler] and \
                 'METAQUERY' in compile_doc[compiler]['OperatorList']:
                 meta_key = "Compiler."+compiler+".metaQueryCount"
-                collection.update({'uid':uid}, {'$inc' : {meta_key:1}}, upsert = True)
+                redis_conn.incrEntityCounter(uid, meta_key, incrBy = 1)
                 etype = EntityType.SQL_METAQUERY
                 #return None, None
 
@@ -1091,29 +1091,41 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     and len(compile_doc[key]["ErrorSignature"]) > 0:
                     if etype == "SQL_QUERY":
                         #No need to add HAQR call here since this is executed only when there is a repetition of hash
-                        collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
+                        redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 0)
+                        redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy = 1)
+                        redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 1)
                     elif etype == "SQL_SUBQUERY":
-                        collection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
+                        redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy = 0)
+                        redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy = 1)
+
                     elif etype == "SQL_STORED_PROCEDURE":
-                        collection.update({'uid':uid},{"$inc": {stats_proc_success_key:0, stats_proc_failure_key: 1}})
+                        redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy = 0)
+                        redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 1)
                 else:
                     if etype == "SQL_QUERY":
-                        collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
+                        redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy = 0)
+                        redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 1)
+                        redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 1)
                     elif etype == "SQL_SUBQUERY":
-                        collection.update({'uid':uid},{"$inc": {stats_sub_success_key:1, stats_sub_failure_key: 0}})
+                        redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy = 0)
+                        redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy = 1)
                     elif etype == "SQL_STORED_PROCEDURE":
-                        collection.update({'uid':uid},{"$inc": {stats_proc_success_key:1, stats_proc_failure_key: 0}})
+                        redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 0)
+                        redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy = 1)
 
             return entity, "UpdateQueryProfile"
         except:
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))
             if uid is not None:
                 if etype == "SQL_QUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
+                    redis_conn.incrEntityCounter(uid, stats_runfailure_key, incrBy = 1)
                 elif etype == "SQL_SUBQUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_sub_failure_key: 1, stats_runsuccess_key: 0}})
+                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
+                    redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy = 1)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    collection.update({'uid':uid},{"$inc": {stats_proc_failure_key: 1, stats_runsuccess_key: 0}})
+                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
+                    redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 1)
             return None, None
 
     '''
@@ -1185,8 +1197,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                                mongoconn, redis_conn, tenant, uid, entity, True,
                                                context, tableEidList)
                 if uid is not None:
-                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0],
-                                      stats_newtables_key: tmpAdditions[1]}})
+                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
+                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
 
             if compile_doc[key].has_key("OutputTableList"):
@@ -1194,15 +1206,16 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                                 mongoconn, redis_conn, tenant, uid, entity, False,
                                                 context, tableEidList)
                 if uid is not None:
-                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0], stats_newtables_key: tmpAdditions[1]}})
+                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
+                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
 
             if compile_doc[key].has_key("ddlColumns"):
                 tmpAdditions = processColumns(compile_doc[key]["ddlColumns"],
                                               mongoconn, redis_conn, tenant, uid, entity)
                 if uid is not None:
-                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0],
-                                      stats_newtables_key: tmpAdditions[1]}})
+                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
+                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
 
 
@@ -1210,22 +1223,24 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 tmpAdditions = processCreateTable(compile_doc[key]["createTableName"],
                                               mongoconn, redis_conn, tenant, uid, entity, False, context ,tableEidList)
                 if uid is not None:
-                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0],
-                                      stats_newtables_key: tmpAdditions[1]}})
+                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
+                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
 
             if compile_doc[key].has_key("viewName"):
                 tmpAdditions = processCreateView(compile_doc[key]["viewName"], mongoconn, redis_conn, mongoconn.db.entities,
                                                  tenant, uid, entity,context , inputTableList, tableEidList)
                 if uid is not None:
-                    collection.update({'uid':uid},{"$inc": {stats_newdbs_key: tmpAdditions[0],
-                                      stats_newtables_key: tmpAdditions[1]}})
+                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
+                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"ViewCount":tmpAdditions[1]}}, upsert = True)
 
             if compile_doc[key].has_key("ErrorSignature") \
                 and len(compile_doc[key]["ErrorSignature"]) > 0:
                 if etype == "SQL_QUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_success_key:0, stats_failure_key: 1, stats_runsuccess_key:1}})
+                    redis_conn.incrEntityCounter(uid, stats_success_key, incrBy=0)
+                    redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy=1)
+                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=1)
                     #if its 'gsp' and it failed we do not send it to HAQR...
                     #if is_failed_in_gsp == True:
                     #    continue
@@ -1268,26 +1283,35 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         except:
                             logging.exception('analyzeHAQR has failed.')
                 elif etype == "SQL_SUBQUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_sub_success_key:0, stats_sub_failure_key: 1}})
+                    redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy=0)
+                    redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    collection.update({'uid':uid},{"$inc": {stats_proc_success_key:0, stats_proc_failure_key: 1}})
+                    redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy=0)
+                    redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy=1)
             else:
                 if etype == "SQL_QUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_success_key:1, stats_failure_key: 0, stats_runsuccess_key:1}})
+                    redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy=0)
+                    redis_conn.incrEntityCounter(uid, stats_success_key, incrBy=1)
+                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=1)
                 elif etype == "SQL_SUBQUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_sub_success_key:1, stats_sub_failure_key: 0}})
+                    redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=0)
+                    redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy=1)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    collection.update({'uid':uid},{"$inc": {stats_proc_success_key:1, stats_proc_failure_key: 0}})
+                    redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy=0)
+                    redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy=1)
 
         except:
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))
             if uid is not None:
                 if etype == "SQL_QUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=0)
+                    redis_conn.incrEntityCounter(uid, stats_runfailure_key, incrBy=1)
                 elif etype == "SQL_SUBQUERY":
-                    collection.update({'uid':uid},{"$inc": {stats_sub_failure_key: 1, stats_runsuccess_key: 0}})
+                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=0)
+                    redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    collection.update({'uid':uid},{"$inc": {stats_proc_failure_key: 1, stats_runsuccess_key: 0}})
+                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=0)
+                    redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy=1)
             return None, None
 
     if update == True and etype != "SQL_QUERY":
@@ -1547,7 +1571,7 @@ def callback(ch, method, properties, body):
 
         collection = MongoClient(mongo_url)[tenant].uploadStats
         dashboard_data = MongoClient(mongo_url)[tenant].dashboard_data
-        collection.update({'uid':uid},{'$inc':{"Compiler.count":1}})
+        redis_conn.incrEntityCounter(uid, 'Compiler.count', incrBy = 1)
     else:
         """
         We do not expect anything without UID. Discard message if not present.
@@ -1721,7 +1745,8 @@ def callback(ch, method, properties, body):
             except:
                 logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))
                 if msg_dict.has_key('uid'):
-                    collection.update({'uid':uid},{"$inc": {stats_runfailure_key: 1, stats_runsuccess_key: 0}})
+                    redis_conn.incrEntityCounter(uid, stats_runfailure_key, incrBy = 1)
+                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
                 #mongoconn.updateProfile(entity, "Compiler", section, {"Error":traceback.format_exc()})
 
         try:
@@ -1739,9 +1764,9 @@ def callback(ch, method, properties, body):
             if entity is not None and opcode is not None:
                 sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg)
             else:
-                collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
+                redis_conn.incrEntityCounter(uid, 'processed_queries', incrBy = 1)
         except:
-            collection.update({'uid':uid},{"$inc": {"processed_queries": 1}})
+            redis_conn.incrEntityCounter(uid, 'processed_queries', incrBy = 1)
             logging.exception("Failure in processing compiler output for Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))
 
         if not usingAWS:
@@ -1762,7 +1787,7 @@ def callback(ch, method, properties, body):
 
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already
-        collection.update({'uid':uid},{"$inc": {"Compiler.time":(endTime-startTime)}})
+        redis_conn.incrEntityCounter(uid, 'Compiler.time', incrBy = endTime-startTime)
 
     mongoconn.close()
     connection1.basicAck(ch,method)
