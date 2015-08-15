@@ -136,7 +136,7 @@ def analytics_callback(params):
     msg_dict['entityid'] = params["entityid"]
     collection = params["collection"]
     redis_conn = params["redis_conn"]
-    message_id = genMessageID("Math", collection, msg_dict['entityid'])
+    message_id = genMessageID("Math", redis_conn, msg_dict['entityid'])
     msg_dict['message_id'] = message_id
     incrementPendingMessage(collection, redis_conn, msg_dict['uid'], message_id)
 

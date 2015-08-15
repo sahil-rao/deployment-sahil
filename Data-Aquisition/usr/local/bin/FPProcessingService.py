@@ -359,7 +359,7 @@ class callback_context():
 
                 if Self.uid is not None:
                     compiler_msg['uid'] = Self.uid
-                message_id = genMessageID("FP", Self.collection)
+                message_id = genMessageID("FP", Self.redis_conn)
                 compiler_msg['message_id'] = message_id
                 """
                 Send scale_mode opcode to compiler if scale_mode is set to true by either SQLScriptConnector trigger
@@ -427,7 +427,7 @@ class callback_context():
                     compiler_msg['data'] = data
                 if Self.uid is not None:
                     compiler_msg['uid'] = Self.uid
-                message_id = genMessageID("FP", Self.collection)
+                message_id = genMessageID("FP", Self.redis_conn)
                 compiler_msg['message_id'] = message_id
                 message = dumps(compiler_msg)
                 connection1.publish(Self.ch,'','compilerqueue',message)
@@ -613,7 +613,7 @@ def callback(ch, method, properties, body):
         '''
         Incremements a Pre-Processing count, sends to compiler, then decrements the count
         '''
-        message_id = genMessageID("Pre", collection)
+        message_id = genMessageID("Pre", redis_conn)
         incrementPendingMessage(collection, redis_conn, uid, message_id)
         logging.info("Incremementing message count: " + message_id)
 
