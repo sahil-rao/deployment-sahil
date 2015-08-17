@@ -28,6 +28,7 @@ import flightpath.services.app_get_columns_by_operator as columns_by_operator
 import flightpath.services.app_get_simple_queries as simple_queries
 import flightpath.services.app_get_table_stats as table_stats
 import flightpath.services.app_get_table_transform_stats as table_transform_stats
+import flightpath.services.app_get_query_transform_stats as query_transform_stats
 import flightpath.services.app_get_column_stats as column_stats
 import flightpath.services.app_get_query_stats as query_stats
 import flightpath.services.app_get_workload_assessment as workload_assessment
@@ -426,7 +427,6 @@ def callback(ch, method, properties, body):
             os.makedirs(logpath)
 
             shutil.copy(dest_file, logpath)
-            logging.info("### COPIED FILED ###")
             resp_dict = get_impala_import.execute(tenant, {'file':dest_file})
         elif msg_dict["opcode"] == "MongoTransform":
     
@@ -437,6 +437,10 @@ def callback(ch, method, properties, body):
             #get list of patterns that are being transformed
             instances = msg_dict["job_instances"]
             resp_dict = table_transform_stats.execute(tenant, instances)
+        elif msg_dict['opcode'] == "QueryTransformStats":
+            #get list of patterns that are being transformed
+            instances = msg_dict["job_instances"]
+            resp_dict = query_transform_stats.execute(tenant, instances)
         elif msg_dict["opcode"] == "TableDetails":
             entity_id = msg_dict["entity_id"]
             resp_dict = table_details.execute(tenant, entity_id)
