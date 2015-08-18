@@ -539,9 +539,9 @@ def callback(ch, method, properties, body):
                 connection1.publish(ch,'', notif_queue, dumps(message))
         except:
             logging.exception("Section :"+section)
-        if 'uid' in msg_dict:
-            redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 0)
-            redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy = 1)
+            if 'uid' in msg_dict:
+                redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 0)
+                redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy = 1)
         if 'uid' in msg_dict:
             sectionEndTime = time.time()
             redis_conn.incrEntityCounter(uid, stats_time_key, incrBy = sectionEndTime-sectionStartTime)
