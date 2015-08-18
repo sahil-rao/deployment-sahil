@@ -129,8 +129,14 @@
 - name: install libgraphviz-dev
   apt: name=libgraphviz-dev update_cache=yes
   sudo: yes
+- name: install pkg-config
+  apt: name=pkg-config update_cache=yes
+  sudo: yes
 - name: Install pygraphviz
   pip: name=pygraphviz
+  sudo: yes
+- name: Install redis
+  pip: name=redis
   sudo: yes
 #REDIS SENTINEL DEPLOYMENT
 #- name: Install Redis APT Package
