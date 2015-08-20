@@ -787,34 +787,6 @@ def check_query_type(query_character_list):
         else:
             return False
 
-def check_query_and_update_count(tenant, mongoconn, redis_conn, eid, operatorList, is_update_dashboard):
-    for operator in operatorList:
-        if operator == 'SELECT':
-            if is_update_dashboard:
-                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"selectCount":1}}, upsert = True)
-            else:
-                redis_conn.incrEntityCounter(eid, "selectCount", sort = True,incrBy=1)
-        if operator == 'CREATE_TABLE' or operator == 'VIEW':
-            if is_update_dashboard:
-                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"createCount":1}}, upsert = True)
-            else:
-                redis_conn.incrEntityCounter(eid, "createCount", sort = True,incrBy=1)
-        if operator == 'INSERT':
-            if is_update_dashboard:
-                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"insertCount":1}}, upsert = True)
-            else:
-                redis_conn.incrEntityCounter(eid, "insertCount", sort = True,incrBy=1)
-        if operator == 'UPDATE':
-            if is_update_dashboard:
-                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"updateCount":1}}, upsert = True)
-            else:
-                redis_conn.incrEntityCounter(eid, "updateCount", sort = True,incrBy=1)
-        if operator == 'DELETE':
-            if is_update_dashboard:
-                mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"deleteCount":1}}, upsert = True)
-            else:
-                redis_conn.incrEntityCounter(eid, "deleteCount", sort = True,incrBy=1)
-
 def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context):
 
     """
@@ -896,12 +868,11 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     sem_unique_count = int(smc_json["unique_queries"])
     total_query_count = int(smc_json["parsed"])
     logging.info("Updating query counts " + str(unique_count))
-    mongoconn.db.dashboard_data.update(
-        {'tenant':tenant}, {'$set': {
-            "TotalQueries": total_query_count,
-            "semantically_unique_count": sem_unique_count,
-            "unique_count": unique_count
-        }}, upsert = True)
+    dash_update_dict = {
+                        "TotalQueries": total_query_count,
+                        "semantically_unique_count": sem_unique_count,
+                        "unique_count": unique_count}
+    redis_conn.setEntityProfile('dashboard_data', dash_update_dict)
 
     for key in compile_doc:
         comp_profile[key] = compile_doc[key]
@@ -939,19 +910,19 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         is_simple = check_query_type(temp_keywords)
                         if is_simple:
                             #mark the query as complex query
-                            mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"simple_query_count":1}}, upsert = True)
+                            redis_conn.incrEntityCounter('dashboard_data', 'simple_query_count', incrBy=1)
                         else:
                             #mark the query as simple query
-                            mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"complex_query_count":1}}, upsert = True)
+                            redis_conn.incrEntityCounter('dashboard_data', 'complex_query_count', incrBy=1)
             if "combinedQueryList" in compile_doc[key]:
                 for entry in compile_doc[key]['combinedQueryList']:
                     if "combinerClause" in entry:
                         if entry["combinerClause"] == "UNION":
                             #mark the query as simple query
-                            mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"union_count":1}}, upsert = True)
+                            redis_conn.incrEntityCounter('dashboard_data', 'union_count', incrBy=1)
                         if entry["combinerClause"] == "UNION_ALL":
                             #mark the query as simple query
-                            mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"union_all_count":1}}, upsert = True)
+                            redis_conn.incrEntityCounter('dashboard_data', 'union_all_count', incrBy=1)
             if 'ErrorSignature' in compile_doc[key] and len(compile_doc[key]["ErrorSignature"]) > 0:
                 is_failed_in_gsp = True
                 profile_dict['parse_success'] = False
@@ -1031,13 +1002,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                 redis_conn.r.sadd(tenant+':simple_query', set_key)
                             #mark the query as complex query
                             mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"unique_simple_query_count":1}}, upsert = True)
+                            redis_conn.incrEntityCounter('dashboard_data', 'unique_simple_query_count', incrBy=1)
                         else:
                             for entry in temp_keywords:
                                 set_key = tenant + ':eid:complex_query:set:' + entry
                                 redis_conn.addToSet('complex_query', entry, entity.eid)
                                 redis_conn.r.sadd(tenant+':complex_query', set_key)
                             #mark the query as simple query
-                            mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"unique_complex_query_count":1}}, upsert = True)
+                            redis_conn.incrEntityCounter('dashboard_data', 'unique_complex_query_count', incrBy=1)
             else:
                 update = True
 
@@ -1202,7 +1174,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
-                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
+                    redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("OutputTableList"):
                 tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"],
@@ -1211,7 +1183,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
-                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
+                    redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("ddlColumns"):
                 tmpAdditions = processColumns(compile_doc[key]["ddlColumns"],
@@ -1219,7 +1191,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
-                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
+                    redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
 
             if compile_doc[key].has_key("createTableName"):
@@ -1228,7 +1200,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
-                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"TableCount":tmpAdditions[1]}}, upsert = True)
+                    redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("viewName"):
                 tmpAdditions = processCreateView(compile_doc[key]["viewName"], mongoconn, redis_conn, mongoconn.db.entities,
@@ -1236,7 +1208,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
-                    mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"ViewCount":tmpAdditions[1]}}, upsert = True)
+                    redis_conn.incrEntityCounter('dashboard_data', 'ViewCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("ErrorSignature") \
                 and len(compile_doc[key]["ErrorSignature"]) > 0:
@@ -1573,7 +1545,6 @@ def callback(ch, method, properties, body):
             return
 
         collection = MongoClient(mongo_url)[tenant].uploadStats
-        dashboard_data = MongoClient(mongo_url)[tenant].dashboard_data
         redis_conn.incrEntityCounter(uid, 'Compiler.count', incrBy = 1)
     else:
         """

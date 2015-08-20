@@ -344,7 +344,6 @@ class callback_context():
                 return
 
             Self.redis_conn.incrEntityCounter("dashboard_data", "TotalQueries", sort=False, incrBy=1)
-            logging.info(Self.redis_conn.getEntityProfile('dashboard_data'))
             if update == False:
                 jinst_dict = {}
                 jinst_dict['program_type'] = "SQL"
@@ -394,8 +393,8 @@ class callback_context():
                         "$where":'this.profile.Compiler.%s.OperatorList.length > 1'%(Self.compiler_to_use)},{"eid":1,"_id":0})
                     uniqueEids = [x['eid'] for x in unique_queries]
                     unique_count = Self.mongoconn.db.entity_instances.find({"eid":{'$in':uniqueEids}}).count()
-                    Self.mongoconn.db.dashboard_data.update({'tenant':Self.tenant},\
-                            {'$inc' : {"TotalQueries": 1}, '$set': { "unique_count": unique_count}})
+                    Self.redis_conn.setEntityProfile('dashboard_data', { "unique_count": unique_count})
+                    Self.redis_conn.incrEntityCounter('dashboard_data', 'TotalQueries', incrBy=1)
 
                 """
                 Get relationships for the given entity.
