@@ -11,7 +11,7 @@ def execute(email_address):
     #get cluster root ip
     config = ConfigParser.RawConfigParser()
     config.read("/var/Baaz/hosts.cfg")
-    cluster_root_ip = config.get("ApplicationConfig", "clusterRootIP")
+    nodejs_url = 'http://' + config.get("NodeJS", "server")
     
     #create random password for new user
     word1 = random.choice(open('/usr/share/dict/fourletterwords').readlines())
@@ -22,11 +22,11 @@ def execute(email_address):
 
     #Register user
     headers = {'content-type': 'application/json'}
-    response = requests.post(cluster_root_ip + '/register', json={'email': email_address}, headers=headers)
+    response = requests.post(nodejs_url + '/register', json={'email': email_address}, headers=headers)
     if 'successRedirect' not in response.json():
         print response.json()
         return 'fail'
-    response = requests.post(cluster_root_ip + '/uploadUpgrade', json={'email': email_address, 'password': random_password}, headers=headers)
+    response = requests.post(nodejs_url + '/uploadUpgrade', json={'email': email_address, 'password': random_password}, headers=headers)
     if 'upgradeComplete' not in response.json() or not response.json()['upgradeComplete']:
         print response.json()
         return 'fail'
