@@ -427,7 +427,7 @@ def callback(ch, method, properties, body):
             os.makedirs(logpath)
 
             shutil.copy(dest_file, logpath)
-            resp_dict = get_impala_import.execute(tenant, {'file':dest_file})
+            resp_dict = get_impala_import.execute(tenant, {'file':dest_file, 'stats':msg_dict['stats']})
         elif msg_dict["opcode"] == "MongoTransform":
     
             logging.info("Got the opcode For Mongo Translation")
