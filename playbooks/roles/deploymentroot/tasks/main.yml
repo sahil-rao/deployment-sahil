@@ -53,6 +53,9 @@
 - name: Install S3 CMD
   apt: name=s3cmd state=present
   sudo: yes
+- name: Install requests python library
+  pip: name=requests state=latest
+  sudo: yes
 ########SET UP ENVIRONMENT########
 - name: Stop nodejs
   service: name=nodejs state=stopped
@@ -66,6 +69,7 @@
   sudo: yes
 - name: Save configuration file
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
+  sudo: yes
 - name: Copy password four letter words file
   copy: src=fourletterwords dest=/usr/share/dict/fourletterwords
   sudo: yes
