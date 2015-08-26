@@ -1001,7 +1001,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                 redis_conn.addToSet('simple_query', simple_type_list[1], entity.eid)
                                 redis_conn.r.sadd(tenant+':simple_query', set_key)
                             #mark the query as complex query
-                            mongoconn.db.dashboard_data.update({'tenant':tenant}, {'$inc' : {"unique_simple_query_count":1}}, upsert = True)
                             redis_conn.incrEntityCounter('dashboard_data', 'unique_simple_query_count', incrBy=1)
                         else:
                             for entry in temp_keywords:
