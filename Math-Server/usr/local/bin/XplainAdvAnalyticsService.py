@@ -233,8 +233,7 @@ def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
 
     logging.info(dumps(data))
 
-    db.entities.update({'eid':eid},{"$set":{'profile.Compiler.HAQR':data}})
-    updateRedisforHAQR(redis_conn,data,tenant,eid)
+    updateMongoRedisforHAQR(db,redis_conn,data,tenant,eid)
 
     return
 
@@ -384,7 +383,7 @@ def updateRedisforhive(redis_conn, data, tenant, eid):
             redis_conn.incrEntityCounter(eid, "HAQRhiveQueryByClauseOtherFailure", sort=False, incrBy=1)
     return
 
-def updateRedisforHAQR(redis_conn,data,tenant,eid):
+def updateMongoRedisforHAQR(db,redis_conn,data,tenant,eid):
     redis_conn.createEntityProfile("HAQR", "HAQR")
 
     redis_conn.incrEntityCounter("HAQR", "numInvocation", sort=False, incrBy=1)
@@ -393,10 +392,13 @@ def updateRedisforHAQR(redis_conn,data,tenant,eid):
     else:
         redis_conn.incrEntityCounter("HAQR", "sourceFailure", sort=False, incrBy=1)
 
-    if 'Impala' in data['platformCompilationStatus']:
-        updateRedisforimpala(redis_conn, data, tenant, eid)
-    if 'Hive' in data['platformCompilationStatus']:
-        updateRedisforhive(redis_conn, data, tenant, eid)
+    if 'platformCompilationStatus' in data and data['platformCompilationStatus']:
+        if 'Impala' in data['platformCompilationStatus']:
+            db.entities.update({'eid':eid},{"$set":{'profile.Compiler.HAQR.platformCompilationStatus.Impala':data['platformCompilationStatus']['Impala']}})
+            updateRedisforimpala(redis_conn, data, tenant, eid)
+        if 'Hive' in data['platformCompilationStatus']:
+            db.entities.update({'eid':eid},{"$set":{'profile.Compiler.HAQR.platformCompilationStatus.Hive':data['platformCompilationStatus']['Hive']}})
+            updateRedisforhive(redis_conn, data, tenant, eid)
 
     return
 
