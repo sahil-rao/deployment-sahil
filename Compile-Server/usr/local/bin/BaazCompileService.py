@@ -997,8 +997,11 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         if is_simple:
                             for entry in temp_keywords:
                                 simple_type_list = entry.split(':')
-                                set_key = tenant + ':eid:simple_query:set:' + simple_type_list[1]
-                                redis_conn.addToSet('simple_query', simple_type_list[1], entity.eid)
+                                keyword_to_use = simple_type_list[0]
+                                if len(simple_type_list) > 1:
+                                    type_to_use = simple_type_list[1]
+                                set_key = tenant + ':eid:simple_query:set:' + keyword_to_use
+                                redis_conn.addToSet('simple_query', keyword_to_use, entity.eid)
                                 redis_conn.r.sadd(tenant+':simple_query', set_key)
                             #mark the query as complex query
                             redis_conn.incrEntityCounter('dashboard_data', 'unique_simple_query_count', incrBy=1)
