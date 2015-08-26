@@ -319,7 +319,7 @@ def callback(ch, method, properties, body):
                 #logging.info("Procesing progress bar event")     
                 out_dict = {"messageType" : "uploadProgress", "tenantId": tenant, 
                             "completed": processed_queries + 1, "total":total_queries}
-                connection1.publish(ch,'', notif_queue, dumps(out_dict))
+                connection1.publish(ch, 'node-update', '', dumps(out_dict))
     except:
         logging.exception("While making update to progress bar")
 
@@ -332,6 +332,7 @@ def callback(ch, method, properties, body):
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already
         redis_conn.incrEntityCounter(uid, "Math.time", incrBy = endTime-startTime)
+
 
 connection1 = RabbitConnection(callback, ['mathqueue'],[], {},BAAZ_MATH_LOG_FILE)
 
