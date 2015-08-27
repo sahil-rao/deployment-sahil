@@ -1663,7 +1663,8 @@ def callback(ch, method, properties, body):
                         logging.error("Unable to connect to JVM socket on try #%s." %retry_count)
                         time.sleep(1)
                 if socket_connected == False:
-                    raise Exception("Unable to connect to JVM socket.")
+                    logging.error("Unable to connect to JVM socket.")
+                    continue
 
                 data_dict = { "InputFile": dest_file_name, "OutputFile": output_file_name,
                               "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
