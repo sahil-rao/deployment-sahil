@@ -11,7 +11,7 @@ def execute(email_address):
     #get cluster root ip
     config = ConfigParser.RawConfigParser()
     config.read("/var/Baaz/hosts.cfg")
-    nodejs_url = 'http://' + config.get("NodeJS", "server")
+    nodejs_url = config.get("NodeJS", "domain")
     
     #create random password for new user
     word1 = random.choice(open('/usr/share/dict/fourletterwords').readlines())
