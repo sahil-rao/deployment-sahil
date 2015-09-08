@@ -12,6 +12,7 @@ from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
+from flightpath.clustering.querygroup import QueryGroup
 import baazmath.workflows.write_upload_stats as write_upload_stats
 from json import *
 #from baazmath.interface.BaazCSV import *
@@ -435,6 +436,7 @@ def callback(ch, method, properties, body):
             process_HAQR_request(msg_dict)
         except:
             logging.exception('HAQR failed for tenant: %s.'%(tenant))
+    
 
     try:
         received_msgID = msg_dict['message_id']
@@ -457,6 +459,21 @@ def callback(ch, method, properties, body):
             """
             connection1.basicAck(ch,method)
             return
+        
+        if opcode == 'Cluster':
+            try:
+                logging.info("Clustering...")
+                clause_combo = msg_dict['clause_combo']
+                cluster_clause = msg_dict['cluster_clause']
+                qgroup = QueryGroup(tenant, clause_combo)
+                qgroup.cluster(cluster_clause)
+                redis_conn.delMessagePending(uid, received_msgID)
+                connection1.basicAck(ch, method)
+                return
+            except:
+                logging.exception('Cluster failed for tenant: %s.' % tenant)
+
+        
       
         collection = MongoClient(mongo_url)[tenant].uploadStats
         redis_conn.incrEntityCounter(uid, 'Math.count', incrBy = 1)
