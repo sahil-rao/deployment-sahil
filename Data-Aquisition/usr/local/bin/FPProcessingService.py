@@ -679,7 +679,7 @@ def callback(ch, method, properties, body):
 
             #This query finds the latest upload and stores that timestamp in the timestamp variable
             if lastUploadTime is not None:
-                timestamp = int(lastUploadTime)
+                timestamp = int(float(lastUploadTime))
             else:
                 timestamp = 0
 

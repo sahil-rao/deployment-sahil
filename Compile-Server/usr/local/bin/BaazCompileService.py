@@ -1045,14 +1045,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         else:
             eid = IdentityService.getNewIdentity(tenant, True)
             mongoconn.updateInstance(entity, eid, None, inst_dict)
-            if 'elapsed_time' in data:
-                elapsed_time = data['elapsed_time']
-            if elapsed_time is not None:
-                try:
-                    redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
-                    redis_conn.incrEntityCounter("dashboard_data", "total_elapsed_time", sort=False, incrBy=float(elapsed_time))
-                except:
-                    logging.info("No or junk elapsed time found:%s", elapsed_time)
+        if 'ELAPSED_TIME' in data:
+            elapsed_time = data['ELAPSED_TIME']
+        if elapsed_time is not None:
+            try:
+                redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
+                redis_conn.incrEntityCounter("dashboard_data", "total_elapsed_time", sort=False, incrBy=float(elapsed_time))
+            except:
+                logging.info("No or junk elapsed time found:%s", elapsed_time)
         try:
             for key in compile_doc:
                 stats_runsuccess_key = "Compiler." + key + ".run_success"
@@ -1663,7 +1663,8 @@ def callback(ch, method, properties, body):
                         logging.error("Unable to connect to JVM socket on try #%s." %retry_count)
                         time.sleep(1)
                 if socket_connected == False:
-                    raise Exception("Unable to connect to JVM socket.")
+                    logging.error("Unable to connect to JVM socket.")
+                    continue
 
                 data_dict = { "InputFile": dest_file_name, "OutputFile": output_file_name,
                               "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
