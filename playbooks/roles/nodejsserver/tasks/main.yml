@@ -42,11 +42,17 @@
 - name: Create node upstart script
   template: src=nodejs.conf dest=/etc/init/nodejs.conf
   sudo: yes
+- name: Create node api upstart script
+  template: src=api_nodejs.conf dest=/etc/init/api_nodejs.conf
+  sudo: yes
 - name: Save configuration file
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
   sudo: yes
 - name: Start nodejs
   service: name=nodejs state=started
+  sudo: yes
+- name: Start api nodejs
+  service: name=api_nodejs state=started
   sudo: yes
 - name: copy monitrc file
   template: src=roles/nodejsserver/files/monitrc dest=/etc/monit/monitrc
