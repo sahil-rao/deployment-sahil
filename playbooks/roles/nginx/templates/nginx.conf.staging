@@ -8,20 +8,11 @@ upstream lb-xplain {
 
 server {
   listen 80;
-  server_name {{ domain }}
-  return 301 https://$server_name$request_uri;
-}
-
-server {
-  listen       443 ssl;
-  server_name  {{ domain }};
+  server_name localhost;
   client_max_body_size 500M;
 
   access_log   /var/log/nginx/ngnix.access.log;
   error_log    /var/log/nginx/nginx.error.log;
-
-  ssl_certificate /etc/nginx/ssl/xplain_san_cert.crt;
-  ssl_certificate_key /etc/nginx/ssl/san_cloudera_com.key; 
 
   location / {
     proxy_pass http://lb-xplain; # Load balance the URL location "/" to the upstream lb-xplain

@@ -14,6 +14,10 @@
 - name: Template and copy nginx conf file
   template: src=nginx.conf dest=/etc/nginx/sites-enabled/default
   sudo: yes
+- name: Template and copy different nginx conf file if staging (No SSL)
+  template: src=nginx.conf.staging dest=/etc/nginx/sites-enabled/default
+  when: clusterName == 'xplain-staging'
+  sudo: yes
 - name: Start nginx
   command: /usr/sbin/nginx
   sudo: yes
