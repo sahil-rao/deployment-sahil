@@ -607,7 +607,7 @@ def process_scale_mode(tenant, uid, instances, smc):
         client_socket.send(data)
         rx_data = client_socket.recv(512)
 
-        if rx_data == "Done":
+        if rx_data.strip() == "Done":
             logging.info("Got Done")
 
         client_socket.close()
@@ -1371,7 +1371,7 @@ def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_con
     client_socket.send(data)
     rx_data = client_socket.recv(512)
 
-    if rx_data == "Done":
+    if rx_data.strip() == "Done":
         logging.info("HAQR Got Done")
 
     client_socket.close()
@@ -1681,9 +1681,6 @@ def callback(ch, method, properties, body):
                 client_socket.send(data)
                 rx_data = client_socket.recv(512)
 
-                if rx_data == "Done":
-                    logging.info("Got Done")
-
                 client_socket.close()
 
                 """
@@ -1698,6 +1695,12 @@ def callback(ch, method, properties, body):
                     ch.basic_ack(delivery_tag=method.delivery_tag)
                     return
 
+                if rx_data.strip() == "Done":
+                    logging.info("Got Done")
+                else:
+                    logging.info("Got "+rx_data)
+                    continue
+                   
                 compile_doc = None
                 logging.info("Loading file : "+ output_file_name)
                 if not os.path.isfile(output_file_name):
