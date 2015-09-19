@@ -220,7 +220,7 @@ def callback(ch, method, properties, body):
     for section in mathconfig.sections():
         sectionStartTime = time.time()
         
-        if not admin_pref_dict[section]:
+        if section not in admin_pref_dict:
             admin_pref_dict[section] = True
             update_mongo = True
         
