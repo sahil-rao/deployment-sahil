@@ -227,6 +227,7 @@ def callback(ch, method, properties, body):
         if not mathconfig.has_option(section, "Opcode") or\
            not mathconfig.has_option(section, "Import") or\
            not mathconfig.has_option(section, "Function") or\
+           section not in admin_pref_dict or\
            not admin_pref_dict[section]:
             logging.info("Section "+ section + " Does not have all params")
             if mathconfig.has_option(section, "BatchMode") and\
