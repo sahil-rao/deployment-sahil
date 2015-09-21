@@ -206,15 +206,15 @@ def callback(ch, method, properties, body):
     mathconfig.read("/etc/xplain/analytics.cfg")
     
     """
-    If no admin settings exist, create an empty doc so it can be filled in later
+    Pull and update admin settings at upload to ensure user has prefs if admin didn't set anything
     """
     admin_pref_dict = process_pref_col.find_one({'type':'workflows'})
-    if admin_pref_dict == None:
-        settings = {}
+    if admin_pref_dict is None:
+        admin_pref_dict = {}
         for section in mathconfig.sections():
-            settings[section] = True
-        settings["type"] = "workflows"
-        process_pref_col.insert(settings)
+            admin_pref_dict[section] = True
+        admin_pref_dict["type"] = "workflows"
+        process_pref_col.insert(admin_pref_dict)
     else:
         for section in mathconfig.sections():
             if section not in admin_pref_dict:
