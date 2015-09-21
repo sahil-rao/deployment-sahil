@@ -215,20 +215,18 @@ def callback(ch, method, properties, body):
             settings[section] = True
         settings["type"] = "workflows"
         process_pref_col.insert(settings)
-    update_mongo = False
-    
-    for section in mathconfig.sections():
-        if section not in admin_pref_dict:
-            admin_pref_dict[section] = True
-            update_mongo = True
-    if update_mongo:
+    else:
+        for section in mathconfig.sections():
+            if section not in admin_pref_dict:
+                admin_pref_dict[section] = True
         process_pref_col.update({'type': 'workflows'}, admin_pref_dict, upsert = True)
     
     for section in mathconfig.sections():
         sectionStartTime = time.time()
         
         if not admin_pref_dict[section]:
-               logging.info("Section :"+ section + " Has been disabled for this workload")
+            logging.info("Section :"+ section + " Has been disabled for this workload")
+            continue
                
         if not mathconfig.has_option(section, "Opcode") or\
            not mathconfig.has_option(section, "Import") or\
