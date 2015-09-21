@@ -218,17 +218,21 @@ def callback(ch, method, properties, body):
     update_mongo = False
     
     for section in mathconfig.sections():
-        sectionStartTime = time.time()
-        
         if section not in admin_pref_dict:
             admin_pref_dict[section] = True
             update_mongo = True
+    if update_mongo:
+        process_pref_col.update({'type': 'workflows'}, admin_pref_dict, upsert = True)
+    
+    for section in mathconfig.sections():
+        sectionStartTime = time.time()
         
+        if not admin_pref_dict[section]:
+               logging.info("Section :"+ section + " Has been disabled for this workload")
+               
         if not mathconfig.has_option(section, "Opcode") or\
            not mathconfig.has_option(section, "Import") or\
-           not mathconfig.has_option(section, "Function") or\
-           section not in admin_pref_dict or\
-           not admin_pref_dict[section]:
+           not mathconfig.has_option(section, "Function"):
             logging.info("Section "+ section + " Does not have all params")
             if mathconfig.has_option(section, "BatchMode") and\
                 mathconfig.get(section, "BatchMode") == "True" and\
@@ -315,8 +319,6 @@ def callback(ch, method, properties, body):
 
             else:
                 redis_conn.setEntityProfile(uid, {stats_phase_key: 1})
-    if update_mongo:
-        process_pref_col.update({'type': 'workflows'}, admin_pref_dict, upsert = True)
         
     logging.info("Event Processing Complete")     
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
