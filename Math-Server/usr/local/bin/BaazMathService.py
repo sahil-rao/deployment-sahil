@@ -188,7 +188,10 @@ def callback(ch, method, properties, body):
             connection1.basicAck(ch,method)
             return
       
-        collection = MongoClient(mongo_url)[tenant].uploadStats
+        collection = db.uploadStats
+        process_pref_col = db.adminSettings
+
+            
         redis_conn.incrEntityCounter(uid, 'Math.count', incrBy = 1)
     else:
         """
@@ -201,12 +204,31 @@ def callback(ch, method, properties, body):
 
     mathconfig = ConfigParser.RawConfigParser()
     mathconfig.read("/etc/xplain/analytics.cfg")
-
+    
+    """
+    If no admin settings exist, create an empty doc so it can be filled in later
+    """
+    admin_pref_dict = process_pref_col.find_one({'type':'workflows'})
+    if admin_pref_dict == None:
+        settings = {}
+        for section in mathconfig.sections():
+            settings[section] = True
+        settings["type"] = "workflows"
+        process_pref_col.insert(settings)
+    update_mongo = False
+    
     for section in mathconfig.sections():
         sectionStartTime = time.time()
+        
+        if section not in admin_pref_dict:
+            admin_pref_dict[section] = True
+            update_mongo = True
+        
         if not mathconfig.has_option(section, "Opcode") or\
            not mathconfig.has_option(section, "Import") or\
-           not mathconfig.has_option(section, "Function"):
+           not mathconfig.has_option(section, "Function") or\
+           section not in admin_pref_dict or\
+           not admin_pref_dict[section]:
             logging.info("Section "+ section + " Does not have all params")
             if mathconfig.has_option(section, "BatchMode") and\
                 mathconfig.get(section, "BatchMode") == "True" and\
@@ -224,7 +246,7 @@ def callback(ch, method, properties, body):
  
         if not opcode == mathconfig.get(section, "Opcode"):
             continue
-
+        
         stats_success_key = "Math." + section + ".success"
         stats_failure_key = "Math." + section + ".failure"
         stats_time_key = "Math." + section + ".time"
@@ -293,7 +315,9 @@ def callback(ch, method, properties, body):
 
             else:
                 redis_conn.setEntityProfile(uid, {stats_phase_key: 1})
-
+    if update_mongo:
+        process_pref_col.update({'type': 'workflows'}, admin_pref_dict, upsert = True)
+        
     logging.info("Event Processing Complete")     
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
