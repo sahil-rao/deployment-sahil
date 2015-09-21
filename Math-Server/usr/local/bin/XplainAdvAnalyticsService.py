@@ -467,7 +467,7 @@ def callback(ch, method, properties, body):
                 cluster_clause = msg_dict['cluster_clause']
                 qgroup = QueryGroup(tenant, clause_combo)
                 qgroup.cluster(cluster_clause)
-                redis_conn.delMessagePending(uid, received_msgID)
+                redis_conn.delMessagePending(uid, received_msgID, message_type='cluster')
                 connection1.basicAck(ch, method)
                 return
             except:
