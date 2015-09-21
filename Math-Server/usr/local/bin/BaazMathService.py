@@ -206,29 +206,31 @@ def callback(ch, method, properties, body):
     mathconfig.read("/etc/xplain/analytics.cfg")
     
     """
-    If no admin settings exist, create an empty doc so it can be filled in later
+    Pull and update admin settings at upload to ensure user has prefs if admin didn't set anything
     """
     admin_pref_dict = process_pref_col.find_one({'type':'workflows'})
-    if admin_pref_dict == None:
-        settings = {}
+    if admin_pref_dict is None:
+        admin_pref_dict = {}
         for section in mathconfig.sections():
-            settings[section] = True
-        settings["type"] = "workflows"
-        process_pref_col.insert(settings)
-    update_mongo = False
+            admin_pref_dict[section] = True
+        admin_pref_dict["type"] = "workflows"
+        process_pref_col.insert(admin_pref_dict)
+    else:
+        for section in mathconfig.sections():
+            if section not in admin_pref_dict:
+                admin_pref_dict[section] = True
+        process_pref_col.update({'type': 'workflows'}, admin_pref_dict, upsert = True)
     
     for section in mathconfig.sections():
         sectionStartTime = time.time()
         
-        if section not in admin_pref_dict:
-            admin_pref_dict[section] = True
-            update_mongo = True
-        
+        if not admin_pref_dict[section]:
+            logging.info("Section :"+ section + " Has been disabled for this workload")
+            continue
+               
         if not mathconfig.has_option(section, "Opcode") or\
            not mathconfig.has_option(section, "Import") or\
-           not mathconfig.has_option(section, "Function") or\
-           section not in admin_pref_dict or\
-           not admin_pref_dict[section]:
+           not mathconfig.has_option(section, "Function"):
             logging.info("Section "+ section + " Does not have all params")
             if mathconfig.has_option(section, "BatchMode") and\
                 mathconfig.get(section, "BatchMode") == "True" and\
@@ -315,8 +317,6 @@ def callback(ch, method, properties, body):
 
             else:
                 redis_conn.setEntityProfile(uid, {stats_phase_key: 1})
-    if update_mongo:
-        process_pref_col.update({'type': 'workflows'}, admin_pref_dict, upsert = True)
         
     logging.info("Event Processing Complete")     
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
