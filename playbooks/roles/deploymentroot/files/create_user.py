@@ -22,11 +22,11 @@ def execute(email_address):
 
     #Register user
     headers = {'content-type': 'application/json'}
-    response = requests.post(nodejs_url + '/register', json={'email': email_address}, headers=headers)
+    response = requests.post(nodejs_url + 'register', json={'email': email_address}, headers=headers, verify=False)
     if 'successRedirect' not in response.json():
         print response.json()
         return 'fail'
-    response = requests.post(nodejs_url + '/uploadUpgrade', json={'email': email_address, 'password': random_password}, headers=headers)
+    response = requests.post(nodejs_url + 'uploadUpgrade', json={'email': email_address, 'password': random_password}, headers=headers, verify=False)
     if 'upgradeComplete' not in response.json() or not response.json()['upgradeComplete']:
         print response.json()
         return 'fail'
