@@ -1699,6 +1699,8 @@ def callback(ch, method, properties, body):
                     logging.info("Got Done")
                 else:
                     logging.info("Got "+rx_data)
+                    redis_conn.incrEntityCounter(uid, stats_runfailure_key, incrBy = 1)
+                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
                     continue
                    
                 compile_doc = None
