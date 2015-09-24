@@ -624,7 +624,7 @@ def process_scale_mode(tenant, uid, instances, smc):
                 file_found = os.path.isfile(output_file_name)
 
             if file_found is False and file_wait_count == 3:
-                logging.info("Output file not found : "+ output_file_name)
+                logging.error("Output file not found : "+ output_file_name)
                 continue
 
         with open(output_file_name) as data_file:
@@ -808,7 +808,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     elapsed_time = None
     tableEidList = set()
     if compile_doc is None:
-        logging.info("No compile_doc found")
+        logging.error("No compile_doc found")
         return None, None
 
     compiler_to_use = get_compiler(source_platform)
@@ -955,7 +955,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             entity = mongoconn.addEn(eid, query, tenant,\
                        etype, profile_dict, None)
             if entity is None:
-                logging.info("No Entity found")
+                logging.error("No Entity found")
                 return None, None
             if eid == entity.eid:
 
@@ -966,7 +966,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
                         redis_conn.incrEntityCounter("dashboard_data", "total_elapsed_time", sort=False, incrBy=float(elapsed_time))
                     except:
-                        logging.info("No or junk elapsed time found:%s", elapsed_time)
+                        logging.exception("No or junk elapsed time found:%s", elapsed_time)
 
                 inst_dict = {"query": query}
                 if data is not None:
@@ -984,7 +984,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter(entity.eid, "ComplexityScore", sort = True,
                         incrBy= entityProfile["Compiler"][compiler]["ComplexityScore"])
                 else:
-                    logging.info("No ComplexityScore found.")
+                    logging.error("No ComplexityScore found.")
                 temp_keywords = None
                 if "Compiler" in entityProfile\
                  and compiler in entityProfile['Compiler']\
@@ -1022,7 +1022,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 inst_dict = {'custom_id':custom_id}
             entity = mongoconn.searchEntity({"md5":q_hash})
             if entity is None:
-                logging.info("Entity not found for hash - {0}".format(q_hash))
+                logging.exception("Entity not found for hash - {0}".format(q_hash))
                 return None, None
     else:
         update = True
@@ -1052,7 +1052,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
                 redis_conn.incrEntityCounter("dashboard_data", "total_elapsed_time", sort=False, incrBy=float(elapsed_time))
             except:
-                logging.info("No or junk elapsed time found:%s", elapsed_time)
+                logging.exception("No or junk elapsed time found:%s", elapsed_time)
         try:
             for key in compile_doc:
                 stats_runsuccess_key = "Compiler." + key + ".run_success"
@@ -1148,7 +1148,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 for sub_q_dict in compile_doc[key]["subQueries"]:
 
                     if "origQuery" not in sub_q_dict:
-                        logging.info("Original query not found in sub query dictionary")
+                        logging.error("Original query not found in sub query dictionary")
                         continue
                     sub_q = sub_q_dict["origQuery"]
                     logging.info("Processing Sub queries " + sub_q)

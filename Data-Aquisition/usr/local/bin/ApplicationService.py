@@ -222,7 +222,7 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
         transformType = 'SingleTable'
 
     if prog_id is None:
-        logging.info("No program ID found for ddl_request")
+        logging.error("No program ID found for ddl_request")
         return
 
     if transformType == "SingleTable":
@@ -357,7 +357,7 @@ def callback(ch, method, properties, body):
     logging.info("ApplicationService: Got message : "+ str(msg_dict))
     logging.info("Correlation ID : "+ properties.correlation_id)
     if "opcode" not in msg_dict or 'tenant' not in msg_dict:
-        logging.info('ApplicationService there was no opcode or tenant in msg_dict.')
+        logging.error('ApplicationService there was no opcode or tenant in msg_dict.')
         connection1.basicAck(ch,method)
         return
 

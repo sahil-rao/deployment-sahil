@@ -113,7 +113,7 @@ def storeResourceProfile(tenant):
 
 def end_of_phase_callback(params, current_phase):
     if current_phase > 1:
-        logging.info("Attempted end of phase callback, but current phase > 1")
+        logging.error("Attempted end of phase callback, but current phase > 1")
         return
 
     logging.info("Changing processing Phase")
@@ -225,13 +225,13 @@ def callback(ch, method, properties, body):
         sectionStartTime = time.time()
         
         if not admin_pref_dict[section]:
-            logging.info("Section :"+ section + " Has been disabled for this workload")
+            logging.error("Section :"+ section + " Has been disabled for this workload")
             continue
                
         if not mathconfig.has_option(section, "Opcode") or\
            not mathconfig.has_option(section, "Import") or\
            not mathconfig.has_option(section, "Function"):
-            logging.info("Section "+ section + " Does not have all params")
+            logging.error("Section "+ section + " Does not have all params")
             if mathconfig.has_option(section, "BatchMode") and\
                 mathconfig.get(section, "BatchMode") == "True" and\
                 received_msgID is not None:

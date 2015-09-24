@@ -76,7 +76,7 @@ if usingAWS:
 
 def end_of_phase_callback(params, current_phase):
     if current_phase > 1:
-        logging.info("Attempted end of phase callback, but current phase > 1")
+        logging.error("Attempted end of phase callback, but current phase > 1")
         return
 
     logging.info("Changing processing Phase")
@@ -380,13 +380,13 @@ class callback_context():
                 queryEntity = Self.mongoconn.db.entities.find_one({eid:"eid"},{'profile.Compiler.%s.ErrorSignature'%(Self.compiler_to_use):1})
 
                 if "profile" not in queryEntity:
-                    logging.info("Failed in FP sendToCompiler 1")
+                    logging.error("Failed in FP sendToCompiler 1")
                 elif "Compiler" not in queryEntity["profile"]:
-                    logging.info("Failed in FP sendToCompiler 2")
+                    logging.error("Failed in FP sendToCompiler 2")
                 elif Self.compiler_to_use not in queryEntity["profile"]["Compiler"]:
-                    logging.info("Failed in FP sendToCompiler 3")
+                    logging.error("Failed in FP sendToCompiler 3")
                 elif "OperatorList" not in queryEntity["profile"]["Compiler"][Self.compiler_to_use]:
-                    logging.info("Failed in FP sendToCompiler 4")
+                    logging.error("Failed in FP sendToCompiler 4")
 
                 elif len(queryEntity["profile"]["Compiler"][Self.compiler_to_use]["OperatorList"]) > 1:
                     unique_queries = Self.mongoconn.db.entities.find({'profile.Compiler.%s.OperatorList'%(Self.compiler_to_use):{"$exists":1},
