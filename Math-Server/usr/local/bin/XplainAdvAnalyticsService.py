@@ -27,7 +27,6 @@ import datetime
 import ConfigParser
 import traceback
 import logging
-import logstash
 import importlib
 import socket
 
@@ -62,14 +61,6 @@ if usingAWS:
     boto_conn = boto.connect_s3()
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(XPLAIN_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-    logging.getLogger().addHandler(logstash.AMQPLogstashHandler(
-        host=rabbitserverIP.split(',')[0],
-        username='xplain',
-        password='xplain',
-        virtual_host='xplain',
-        tags=['advanalyticsservice', 'backoffice'],
-        version=1,
-    ))
 
 def generateBaseStats(tenant):
     """

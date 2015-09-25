@@ -25,7 +25,6 @@ import traceback
 import re
 import ConfigParser
 import logging
-import logstash
 import socket
 import pprint
 
@@ -66,14 +65,6 @@ if usingAWS:
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     file_bucket = boto_conn.get_bucket('xplain-compile')
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_COMPILER_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-    logging.getLogger().addHandler(logstash.AMQPLogstashHandler(
-        host=rabbitserverIP.split(',')[0],
-        username='xplain',
-        password='xplain',
-        virtual_host='xplain',
-        tags=['compileservice', 'backoffice'],
-        version=1,
-    ))
 
 COMPILER_MODULES='/usr/lib/baaz_compiler'
 

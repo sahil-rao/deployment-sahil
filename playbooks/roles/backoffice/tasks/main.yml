@@ -138,9 +138,6 @@
 - name: Install redis
   pip: name=redis
   sudo: yes
-- name: Install python-logstash
-  pip: name=python-logstash
-  sudo: yes
 #REDIS SENTINEL DEPLOYMENT
 #- name: Install Redis APT Package
 #  apt: name=redis-server update_cache=yes

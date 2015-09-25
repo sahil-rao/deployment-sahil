@@ -54,15 +54,3 @@
   roles:
   - role: redis_sentinel
     sudo: true
-
-- hosts: tag_Name_KibanaAndElasticsearch
-  roles:
-  - role: elasticlog
-    sudo: true
-  - role: kibana
-    sudo: true
-
-- hosts: tag_Name_LogstashServer
-  roles:
-  - role: logstash
-    sudo: true

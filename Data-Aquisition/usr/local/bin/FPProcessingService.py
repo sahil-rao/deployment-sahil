@@ -22,7 +22,6 @@ import ConfigParser
 import datetime
 import time
 import logging
-import logstash
 import socket
 import urllib
 
@@ -74,14 +73,6 @@ if usingAWS:
     bucket = boto_conn.get_bucket(bucket_location)
     log_bucket = boto_conn.get_bucket(log_bucket_location)
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_FP_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-    logging.getLogger().addHandler(logstash.AMQPLogstashHandler(
-        host=rabbitserverIP.split(',')[0],
-        username='xplain',
-        password='xplain',
-        virtual_host='xplain',
-        tags=['dataacquisitionservice', 'backoffice'],
-        version=1,
-    ))
 
 def end_of_phase_callback(params, current_phase):
     if current_phase > 1:
