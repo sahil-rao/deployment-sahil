@@ -324,7 +324,7 @@ def getTableName(tableentry):
             database_name = tableentry["databaseName"].lower()
     return tablename
 
-def processCreateInlineView(viewName, viewAlias, mongoconn, redis_conn, entity_col, tenant, uid, entity, context, inputTableList, tableEidList=None, hive_success=0):
+def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, entity, context, inputTableList, tableEidList=None, hive_success=0, viewAlias=None):
     dbCount = 0
     tableCount = 0
     table_alias = None
@@ -340,7 +340,10 @@ def processCreateInlineView(viewName, viewAlias, mongoconn, redis_conn, entity_c
         elif context.queue[0]['etype'] == EntityType.SQL_QUERY:
             outmost_query = context.queue[0]['eid']
 
-    endict = {"uid" : uid, "table_alias": [viewAlias], "profile" : { "is_inline_view" : True}}
+    if viewAlias is not None:
+        endict = {"uid" : uid, "table_alias": [viewAlias], "profile" : { "is_inline_view" : True}}
+    else:
+        endict = {"uid" : uid, "profile" : { "is_view" : True}}
     database_name = None
     entryname = viewName.lower()
     entryname = entryname.replace('"', '')
@@ -370,8 +373,8 @@ def processCreateInlineView(viewName, viewAlias, mongoconn, redis_conn, entity_c
         """
         Append new alias to existing array
         """
-        if table_alias is not None:
-            entity_col.update({"eid": view_entity.eid}, {'$push': {'table_alias': table_alias}})
+        if viewAlias is not None:
+            entity_col.update({"eid": view_entity.eid}, {'$push': {'table_alias': viewAlias}})
 
     tableEidList.add(view_entity.eid)
 
@@ -422,109 +425,11 @@ def processCreateInlineView(viewName, viewAlias, mongoconn, redis_conn, entity_c
         since inputable list can include view table eid also
         '''
         if view_entity.eid != table_entity.eid:
-            redis_conn.createRelationship(view_entity.eid, table_entity.eid, "IVIEW_TABLE")
+            if viewAlias is not None:
+                redis_conn.createRelationship(view_entity.eid, table_entity.eid, "IVIEW_TABLE")
+            else:
+                redis_conn.createRelationship(view_entity.eid, table_entity.eid, "VIEW_TABLE")
         logging.info("Relation IVIEW_TABLE between {0} {1}\n".format(view_entity.eid, table_entity.eid))
-
-    return [dbCount, tableCount]
-
-def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, entity, context, inputTableList, tableEidList=None, hive_success=0):
-    dbCount = 0
-    tableCount = 0
-    if viewName is None:
-        return [dbCount, tableCount]
-
-    outmost_query = None
-    queue_len = len(context.queue)
-    if queue_len > 0:
-        if context.queue[0]['etype'] == EntityType.SQL_STORED_PROCEDURE:
-            if queue_len > 1:
-                outmost_query = context.queue[1]['eid']
-        elif context.queue[0]['etype'] == EntityType.SQL_QUERY:
-            outmost_query = context.queue[0]['eid']
-
-    endict = {"uid" : uid, "profile" : { "is_view" : True}}
-    database_name = None
-    entryname = viewName.lower()
-    entryname = entryname.replace('"', '')
-    matches = table_regex.search(entryname)
-
-    if matches is not None:
-        database_name = matches.group(1)
-        viewname = matches.group(2)
-    else:
-        viewname = entryname
-
-    """
-    Create the Table Entity first if it does not already exist.
-    """
-    view_entity = mongoconn.getEntityByName(viewname)
-    if view_entity is None:
-        logging.info("Creating table entity for view {0}\n".format(viewname))
-        eid = IdentityService.getNewIdentity(tenant, True)
-        view_entity = mongoconn.addEn(eid, viewname, tenant,\
-                  EntityType.SQL_TABLE, endict, None)
-
-        if eid == view_entity.eid:
-            redis_conn.createEntityProfile(view_entity.eid, "SQL_TABLE")
-            redis_conn.incrEntityCounter(view_entity.eid, "instance_count", sort=True, incrBy=0)
-            tableCount = tableCount + 1
-    else:
-        """
-        Mark this table as view
-        """
-        entity_col.update({"eid": view_entity.eid}, {'$set': {'profile.is_view': True}})
-
-    tableEidList.add(view_entity.eid)
-
-    """
-    If the database is found then create database Entity if it does not already exist.
-    """
-    database_entity = None
-    if database_name is not None:
-        database_entity = mongoconn.getEntityByName(database_name)
-        if database_entity is None:
-            logging.info("Creating database entity for {0}\n".format(database_name))
-            eid = IdentityService.getNewIdentity(tenant, True)
-            mongoconn.addEn(eid, database_name, tenant,\
-                      EntityType.SQL_DATABASE, endict, None)
-            database_entity = mongoconn.getEntityByName(database_name)
-            dbCount = dbCount + 1
-
-    """
-    Create relations, first between table(View) and query
-        Then between query and database, table and database
-    """
-    if entity is not None and view_entity is not None:
-        redis_conn.createRelationship(entity.eid, view_entity.eid, "WRITE")
-        redis_conn.setRelationship(entity.eid, view_entity.eid, "WRITE", {"hive_success":hive_success})
-        logging.info("WRITE Relation between {0} {1} position 2\n".format(entity.eid, view_entity.eid))
-
-
-    if database_entity is not None:
-        if view_entity is not None:
-            redis_conn.createRelationship(database_entity.eid, view_entity.eid, "CONTAINS")
-            logging.info("Relation between {0} {1} position 5\n".format(database_entity.eid, view_entity.eid))
-
-        """ Note this assumes that formRelations is idempotent
-        """
-        if entity is not None:
-            redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
-            logging.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))
-
-    for tableentry in inputTableList:
-        tablename = getTableName(tableentry)
-        table_entity = mongoconn.getEntityByName(tablename)
-        if table_entity is None:
-            logging.info("No table with name {0} found\n".format(tablename))
-            continue
-
-        '''
-        create relationship only if view eid and table eid are different,
-        since inputable list can include view table eid also
-        '''
-        if view_entity.eid != table_entity.eid:
-            redis_conn.createRelationship(view_entity.eid, table_entity.eid, "VIEW_TABLE")
-        logging.info("Relation VIEW_TABLE between {0} {1}\n".format(view_entity.eid, table_entity.eid))
 
     return [dbCount, tableCount]
 
@@ -1175,32 +1080,24 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     and len(compile_doc[key]["ErrorSignature"]) > 0:
                     if etype == "SQL_QUERY":
                         #No need to add HAQR call here since this is executed only when there is a repetition of hash
-                        redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 0)
                         redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy = 1)
                         redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 1)
                     elif etype == "SQL_SUBQUERY":
-                        redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy = 0)
                         redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy = 1)
 
                     elif etype == "SQL_STORED_PROCEDURE":
-                        redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy = 0)
                         redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 1)
                     elif etype == "SQL_INLINE_VIEW":
-                        redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy = 0)
                         redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 1)
                 else:
                     if etype == "SQL_QUERY":
-                        redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy = 0)
                         redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 1)
                         redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 1)
                     elif etype == "SQL_SUBQUERY":
-                        redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy = 0)
                         redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy = 1)
                     elif etype == "SQL_STORED_PROCEDURE":
-                        redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 0)
                         redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy = 1)
                     elif etype == "SQL_INLINE_VIEW":
-                        redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 0)
                         redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy = 1)
 
             return entity, "UpdateQueryProfile"
@@ -1208,16 +1105,12 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))
             if uid is not None:
                 if etype == "SQL_QUERY":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
                     redis_conn.incrEntityCounter(uid, stats_runfailure_key, incrBy = 1)
                 elif etype == "SQL_SUBQUERY":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
                     redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy = 1)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
                     redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 1)
                 elif etype == "SQL_INLINE_VIEW":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
                     redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 1)
             return None, None
 
@@ -1326,7 +1219,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("viewName") and compile_doc[key].has_key("view") and compile_doc[key]["view"] == True:
-                tmpAdditions = processCreateView(compile_doc[key]["viewName"], mongoconn, redis_conn, mongoconn.db.entities,
+                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["viewName"], mongoconn, redis_conn, mongoconn.db.entities,
                                                  tenant, uid, entity,context , inputTableList, tableEidList)
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
@@ -1334,12 +1227,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter('dashboard_data', 'ViewCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("isInlineView") and compile_doc[key]["isInlineView"] == True:
-                renameMap = None
-                if compile_doc[key].has_key("renameMap"):
-                    renameMap = compile_doc[key]["renameMap"]
-                tmpAdditions = processCreateInlineView(compile_doc[key]["inlineViewName"], compile_doc[key]["inlineViewAlias"], mongoconn,
+                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["inlineViewName"], mongoconn,
                                                  redis_conn, mongoconn.db.entities,
-                                                 tenant, uid, entity,context , inputTableList, tableEidList)
+                                                 tenant, uid, entity,context , inputTableList, tableEidList, 0, compile_doc[key]["inlineViewAlias"])
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
@@ -1348,7 +1238,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if compile_doc[key].has_key("ErrorSignature") \
                 and len(compile_doc[key]["ErrorSignature"]) > 0:
                 if etype == "SQL_QUERY":
-                    redis_conn.incrEntityCounter(uid, stats_success_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy=1)
                     redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=1)
                     #if its 'gsp' and it failed we do not send it to HAQR...
@@ -1393,46 +1282,34 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         except:
                             logging.exception('analyzeHAQR has failed.')
                 elif etype == "SQL_SUBQUERY":
-                    redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
                 elif etype == "SQL_INLINE_VIEW":
-                    redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy=1)
                 elif etype == "SQL_SUBQUERY":
-                    redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
             else:
                 if etype == "SQL_QUERY":
-                    redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_success_key, incrBy=1)
                     redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=1)
                 elif etype == "SQL_SUBQUERY":
-                    redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy=1)
                 elif etype == "SQL_INLINE_VIEW":
-                    redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy=1)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy=1)
 
         except:
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))
             if uid is not None:
                 if etype == "SQL_QUERY":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_runfailure_key, incrBy=1)
                 elif etype == "SQL_SUBQUERY":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
                 elif etype == "SQL_INLINE_VIEW":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy=1)
             return None, None
 
