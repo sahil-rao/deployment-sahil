@@ -36,6 +36,7 @@ import flightpath.services.app_get_access_patterns as access_patterns
 import flightpath.services.app_cleanup_user as cleanup_user
 import flightpath.services.app_add_table_volume as add_table_volume
 import flightpath.services.app_get_impala_import as get_impala_import
+from flightpath.services.xplain_log_handler import XplainLogstashHandler
 from flightpath import FPConnector
 from json import *
 import elasticsearch
@@ -99,7 +100,8 @@ if usingAWS:
     bucket = boto_conn.get_bucket(bucket_location) 
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(APPSRV_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-
+    logging.getLogger().addHandler(XplainLogstashHandler(tags=['applicationservice', 'backoffice']))
+    
 def process_mongo_rewrite_request(ch, properties, tenant, instances):
 
     """
@@ -522,7 +524,7 @@ def callback(ch, method, properties, body):
 
     connection1.basicAck(ch,method)
 
-connection1 = RabbitConnection(callback, ['appservicequeue'], [], {}, APPSRV_LOG_FILE, 1)
+connection1 = RabbitConnection(callback, ['appservicequeue'], [], {}, prefetch_count=1)
 
 
 logging.info("ApplicationService going to start consuming")

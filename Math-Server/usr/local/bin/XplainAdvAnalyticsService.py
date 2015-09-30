@@ -13,6 +13,7 @@ from flightpath.RedisConnector import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from flightpath.clustering.querygroup import QueryGroup
+from flightpath.services.xplain_log_handler import XplainLogstashHandler
 import baazmath.workflows.write_upload_stats as write_upload_stats
 from json import *
 #from baazmath.interface.BaazCSV import *
@@ -61,6 +62,7 @@ if usingAWS:
     boto_conn = boto.connect_s3()
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(XPLAIN_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
+    logging.getLogger().addHandler(XplainLogstashHandler(tags=['advanalyticsservice', 'backoffice']))
 
 def generateBaseStats(tenant):
     """
@@ -620,7 +622,7 @@ def callback(ch, method, properties, body):
         #if uid has been set, the variable will be set already
         redis_conn.incrEntityCounter(uid, "Math.time", incrBy = endTime-startTime)
 
-connection1 = RabbitConnection(callback, ['advanalytics'], [], {}, XPLAIN_LOG_FILE, 1)
+connection1 = RabbitConnection(callback, ['advanalytics'], [], {}, prefetch_count=1)
 
 logging.info("XplainAdvAnalytics going to start consuming")
 

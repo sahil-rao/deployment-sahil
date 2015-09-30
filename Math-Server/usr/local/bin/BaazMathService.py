@@ -12,6 +12,7 @@ from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
+from flightpath.services.xplain_log_handler import XplainLogstashHandler
 from json import *
 from baazmath.interface.BaazCSV import *
 from subprocess import Popen, PIPE
@@ -60,6 +61,7 @@ if usingAWS:
     boto_conn = boto.connect_s3()
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_MATH_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
+    logging.getLogger().addHandler(XplainLogstashHandler(tags=['mathservice', 'backoffice'])
 
 def generateBaseStats(tenant):
     """
@@ -358,7 +360,7 @@ def callback(ch, method, properties, body):
         redis_conn.incrEntityCounter(uid, "Math.time", incrBy = endTime-startTime)
 
 
-connection1 = RabbitConnection(callback, ['mathqueue'],[], {},BAAZ_MATH_LOG_FILE)
+connection1 = RabbitConnection(callback, ['mathqueue'], [], {})
 
 logging.info("BaazMath going to start consuming")
 

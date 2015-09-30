@@ -13,6 +13,7 @@ from baazmath.workflows.hbase_analytics import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from flightpath.services.mq_template import *
+from flightpath.services.xplain_log_handler import XplainLogstashHandler
 from subprocess import Popen, PIPE
 from json import *
 import sys
@@ -65,7 +66,8 @@ if usingAWS:
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     file_bucket = boto_conn.get_bucket('xplain-compile')
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_COMPILER_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-
+    logging.getLogger().addHandler(XplainLogstashHandler(tags=['compileservice', 'backoffice']))
+    
 COMPILER_MODULES='/usr/lib/baaz_compiler'
 
 dirList=os.listdir(COMPILER_MODULES)
@@ -1776,7 +1778,7 @@ def callback(ch, method, properties, body):
     callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
-connection1 = RabbitConnection(callback, ['compilerqueue'],['mathqueue'], {},BAAZ_COMPILER_LOG_FILE)
+connection1 = RabbitConnection(callback, ['compilerqueue'], ['mathqueue'], {})
 
 logging.info("BaazCompiler going to start Consuming")
 
