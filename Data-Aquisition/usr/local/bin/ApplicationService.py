@@ -490,7 +490,7 @@ def callback(ch, method, properties, body):
         elif msg_dict['opcode'] == "ElasticNodesForTenant":
             resp_dict = {'elastic_nodes': FPConnector.get_elastic_nodes(tenant)}
         elif msg_dict['opcode'] == "CleanupUser":
-            resp_dict = cleanup_user.execute(tenant)
+            resp_dict = cleanup_user.execute(tenant, msg_dict)
         else:
             api_config= ConfigParser.RawConfigParser()
             api_config.read("/etc/xplain/application-api.cfg")
