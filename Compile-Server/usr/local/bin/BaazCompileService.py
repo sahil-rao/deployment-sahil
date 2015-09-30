@@ -326,9 +326,10 @@ def getTableName(tableentry):
             database_name = tableentry["databaseName"].lower()
     return tablename
 
-def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, entity, context, inputTableList, tableEidList=None, hive_success=0):
+def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, entity, context, inputTableList, tableEidList=None, hive_success=0, viewAlias=None):
     dbCount = 0
     tableCount = 0
+    table_alias = None
     if viewName is None:
         return [dbCount, tableCount]
 
@@ -341,7 +342,10 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
         elif context.queue[0]['etype'] == EntityType.SQL_QUERY:
             outmost_query = context.queue[0]['eid']
 
-    endict = {"uid" : uid, "profile" : { "is_view" : True}}
+    if viewAlias is not None:
+        endict = {"uid" : uid, "table_alias": [viewAlias], "profile" : { "is_inline_view" : True}}
+    else:
+        endict = {"uid" : uid, "profile" : { "is_view" : True}}
     database_name = None
     entryname = viewName.lower()
     entryname = entryname.replace('"', '')
@@ -369,9 +373,10 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
             tableCount = tableCount + 1
     else:
         """
-        Mark this table as view
+        Append new alias to existing array
         """
-        entity_col.update({"eid": view_entity.eid}, {'$set': {'profile.is_view': True}})
+        if viewAlias is not None:
+            entity_col.update({"eid": view_entity.eid}, {'$push': {'table_alias': viewAlias}})
 
     tableEidList.add(view_entity.eid)
 
@@ -422,8 +427,11 @@ def processCreateView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, 
         since inputable list can include view table eid also
         '''
         if view_entity.eid != table_entity.eid:
-            redis_conn.createRelationship(view_entity.eid, table_entity.eid, "VIEW_TABLE")
-        logging.info("Relation VIEW_TABLE between {0} {1}\n".format(view_entity.eid, table_entity.eid))
+            if viewAlias is not None:
+                redis_conn.createRelationship(view_entity.eid, table_entity.eid, "IVIEW_TABLE")
+            else:
+                redis_conn.createRelationship(view_entity.eid, table_entity.eid, "VIEW_TABLE")
+        logging.info("Relation IVIEW_TABLE between {0} {1}\n".format(view_entity.eid, table_entity.eid))
 
     return [dbCount, tableCount]
 
@@ -831,7 +839,11 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         etype = EntityType.SQL_SUBQUERY
 
     compiler = compiler_to_use
+
     if compiler in compile_doc:
+        if compile_doc[compiler].has_key("isInlineView") and compile_doc[compiler]["isInlineView"] == True:
+            etype = EntityType.SQL_INLINE_VIEW
+
         #check for meta query and drop it
         if etype == EntityType.SQL_QUERY:
             if 'OperatorList' in compile_doc[compiler] and \
@@ -1070,26 +1082,24 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     and len(compile_doc[key]["ErrorSignature"]) > 0:
                     if etype == "SQL_QUERY":
                         #No need to add HAQR call here since this is executed only when there is a repetition of hash
-                        redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 0)
                         redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy = 1)
                         redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 1)
                     elif etype == "SQL_SUBQUERY":
-                        redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy = 0)
                         redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy = 1)
 
                     elif etype == "SQL_STORED_PROCEDURE":
-                        redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy = 0)
+                        redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 1)
+                    elif etype == "SQL_INLINE_VIEW":
                         redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 1)
                 else:
                     if etype == "SQL_QUERY":
-                        redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy = 0)
                         redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 1)
                         redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 1)
                     elif etype == "SQL_SUBQUERY":
-                        redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy = 0)
                         redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy = 1)
                     elif etype == "SQL_STORED_PROCEDURE":
-                        redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 0)
+                        redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy = 1)
+                    elif etype == "SQL_INLINE_VIEW":
                         redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy = 1)
 
             return entity, "UpdateQueryProfile"
@@ -1097,13 +1107,12 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))
             if uid is not None:
                 if etype == "SQL_QUERY":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
                     redis_conn.incrEntityCounter(uid, stats_runfailure_key, incrBy = 1)
                 elif etype == "SQL_SUBQUERY":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
                     redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy = 1)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
+                    redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 1)
+                elif etype == "SQL_INLINE_VIEW":
                     redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy = 1)
             return None, None
 
@@ -1129,6 +1138,11 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             Query -> Subquery relationship
             '''
             redis_conn.incrRelationshipCounter(current_query, entity.eid, "SQL_SUBQUERY", "count")
+        elif etype == EntityType.SQL_INLINE_VIEW:
+            '''
+            Query -> Subquery relationship
+            '''
+            redis_conn.incrRelationshipCounter(current_query, entity.eid, "SQL_INLINE_VIEW", "count")
 
     for i, key in enumerate(compile_doc):
         try:
@@ -1206,18 +1220,26 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
-            if compile_doc[key].has_key("viewName"):
-                tmpAdditions = processCreateView(compile_doc[key]["viewName"], mongoconn, redis_conn, mongoconn.db.entities,
+            if compile_doc[key].has_key("viewName") and compile_doc[key].has_key("view") and compile_doc[key]["view"] == True:
+                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["viewName"], mongoconn, redis_conn, mongoconn.db.entities,
                                                  tenant, uid, entity,context , inputTableList, tableEidList)
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     redis_conn.incrEntityCounter('dashboard_data', 'ViewCount', incrBy=tmpAdditions[1])
 
+            if compile_doc[key].has_key("isInlineView") and compile_doc[key]["isInlineView"] == True:
+                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["inlineViewName"], mongoconn,
+                                                 redis_conn, mongoconn.db.entities,
+                                                 tenant, uid, entity,context , inputTableList, tableEidList, 0, compile_doc[key]["inlineViewAlias"])
+                if uid is not None:
+                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
+                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
+                    redis_conn.incrEntityCounter('dashboard_data', 'inlineViewCount', incrBy=tmpAdditions[1])
+
             if compile_doc[key].has_key("ErrorSignature") \
                 and len(compile_doc[key]["ErrorSignature"]) > 0:
                 if etype == "SQL_QUERY":
-                    redis_conn.incrEntityCounter(uid, stats_success_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy=1)
                     redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=1)
                     #if its 'gsp' and it failed we do not send it to HAQR...
@@ -1262,34 +1284,34 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         except:
                             logging.exception('analyzeHAQR has failed.')
                 elif etype == "SQL_SUBQUERY":
-                    redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy=0)
+                    redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
+                elif etype == "SQL_INLINE_VIEW":
                     redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy=1)
+                elif etype == "SQL_SUBQUERY":
+                    redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
             else:
                 if etype == "SQL_QUERY":
-                    redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_success_key, incrBy=1)
                     redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=1)
                 elif etype == "SQL_SUBQUERY":
-                    redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=0)
+                    redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy=1)
+                elif etype == "SQL_INLINE_VIEW":
                     redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy=1)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy=1)
 
         except:
             logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))
             if uid is not None:
                 if etype == "SQL_QUERY":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_runfailure_key, incrBy=1)
                 elif etype == "SQL_SUBQUERY":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=0)
+                    redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
+                elif etype == "SQL_INLINE_VIEW":
                     redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
                 elif etype == "SQL_STORED_PROCEDURE":
-                    redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=0)
                     redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy=1)
             return None, None
 
