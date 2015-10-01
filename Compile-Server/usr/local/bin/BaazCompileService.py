@@ -411,7 +411,7 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, t
         redis_conn.setRelationship(entity.eid, view_entity.eid, "WRITE", {"hive_success":hive_success})
         logging.info("WRITE Relation between {0} {1} position 2\n".format(entity.eid, view_entity.eid))
         redis_conn.createRelationship(view_entity.eid, entity.eid, "TABLE_ACCESS_PATTERN")
-        redis_conn.setRelationship(view_entity.eid, entity.eid, "WRITE", {"hive_success":hive_success})
+        redis_conn.setRelationship(view_entity.eid, entity.eid, "TABLE_ACCESS_PATTERN", {"hive_success":hive_success})
         logging.info("Pattern Relation between {0} {1} position 2\n".format(view_entity.eid, entity.eid))
 
     if database_entity is not None:
