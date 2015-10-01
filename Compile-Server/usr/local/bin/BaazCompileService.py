@@ -341,7 +341,10 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, t
             outmost_query = context.queue[0]['eid']
 
     if viewAlias is not None:
-        endict = {"uid" : uid, "table_alias": [viewAlias], "profile" : { "is_inline_view" : True}}
+        if viewAlias == 'no_alias':
+            endict = {"uid" : uid, "profile" : { "is_inline_view" : True}}
+        else:
+            endict = {"uid" : uid, "table_alias": [viewAlias], "profile" : { "is_inline_view" : True}}
     else:
         endict = {"uid" : uid, "profile" : { "is_view" : True}}
     database_name = None
@@ -1234,9 +1237,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter('dashboard_data', 'ViewCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("isInlineView") and compile_doc[key]["isInlineView"] == True:
+                inlineViewAlias = None
+                if compile_doc[key].has_key("inlineViewAlias"):
+                    inlineViewAlias = compile_doc[key]["inlineViewAlias"]
+                else:
+                    inlineViewAlias = 'no_alias'
                 tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["inlineViewName"], mongoconn,
                                                  redis_conn, mongoconn.db.entities,
-                                                 tenant, uid, entity,context , inputTableList, tableEidList, 0, compile_doc[key]["inlineViewAlias"])
+                                                 tenant, uid, entity,context , inputTableList, tableEidList, 0, inlineViewAlias)
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
