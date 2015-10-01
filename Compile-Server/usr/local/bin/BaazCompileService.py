@@ -393,6 +393,13 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, t
             dbCount = dbCount + 1
 
     """
+    Create realtion between Outmost Query and Inline view table entity
+    """
+    if viewAlias and outmost_query is not None and outmost_query != entity.eid:
+        redis_conn.createRelationship(outmost_query, view_entity.eid, "OQ_IVIEW")
+        redis_conn.setRelationship(outmost_query, view_entity.eid, "OQ_IVIEW", {"hive_success":hive_success})
+
+    """
     Create relations, first between table(View) and query
         Then between query and database, table and database
     """
