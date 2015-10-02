@@ -343,7 +343,10 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, t
             outmost_query = context.queue[0]['eid']
 
     if viewAlias is not None:
-        endict = {"uid" : uid, "table_alias": [viewAlias], "profile" : { "is_inline_view" : True}}
+        if viewAlias == 'no_alias':
+            endict = {"uid" : uid, "profile" : { "is_inline_view" : True}}
+        else:
+            endict = {"uid" : uid, "table_alias": [viewAlias], "profile" : { "is_inline_view" : True}}
     else:
         endict = {"uid" : uid, "profile" : { "is_view" : True}}
     database_name = None
@@ -395,6 +398,13 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, t
             dbCount = dbCount + 1
 
     """
+    Create realtion between Outmost Query and Inline view table entity
+    """
+    if viewAlias and outmost_query is not None and outmost_query != entity.eid:
+        redis_conn.createRelationship(outmost_query, view_entity.eid, "OQ_IVIEW")
+        redis_conn.setRelationship(outmost_query, view_entity.eid, "OQ_IVIEW", {"hive_success":hive_success})
+
+    """
     Create relations, first between table(View) and query
         Then between query and database, table and database
     """
@@ -402,7 +412,9 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, t
         redis_conn.createRelationship(entity.eid, view_entity.eid, "WRITE")
         redis_conn.setRelationship(entity.eid, view_entity.eid, "WRITE", {"hive_success":hive_success})
         logging.info("WRITE Relation between {0} {1} position 2\n".format(entity.eid, view_entity.eid))
-
+        redis_conn.createRelationship(view_entity.eid, entity.eid, "TABLE_ACCESS_PATTERN")
+        redis_conn.setRelationship(view_entity.eid, entity.eid, "TABLE_ACCESS_PATTERN", {"hive_success":hive_success})
+        logging.info("Pattern Relation between {0} {1} position 2\n".format(view_entity.eid, entity.eid))
 
     if database_entity is not None:
         if view_entity is not None:
@@ -1229,9 +1241,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter('dashboard_data', 'ViewCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("isInlineView") and compile_doc[key]["isInlineView"] == True:
+                inlineViewAlias = None
+                if compile_doc[key].has_key("inlineViewAlias"):
+                    inlineViewAlias = compile_doc[key]["inlineViewAlias"]
+                else:
+                    inlineViewAlias = 'no_alias'
                 tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["inlineViewName"], mongoconn,
                                                  redis_conn, mongoconn.db.entities,
-                                                 tenant, uid, entity,context , inputTableList, tableEidList, 0, compile_doc[key]["inlineViewAlias"])
+                                                 tenant, uid, entity,context , inputTableList, tableEidList, 0, inlineViewAlias)
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
