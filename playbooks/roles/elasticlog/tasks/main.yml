@@ -5,5 +5,9 @@
   apt_repository: repo='deb http://packages.elasticsearch.org/elasticsearch/1.4/debian stable main' state=present
 - name: Install elasticsearch 1.4.4
   apt: name=elasticsearch=1.4.4 state=present update_cache=yes
+- name: Copy elasticsearch config
+  copy: src=elasticsearch.yml dest=/etc/elasticsearch/elasticsearch.yml
 - name: Start elasticsearch as a service
   service: name=elasticsearch state=started
+- name: Restart elasticsearch
+  service: name=elasticsearch state=restarted
