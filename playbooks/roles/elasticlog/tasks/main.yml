@@ -7,6 +7,8 @@
   apt: name=elasticsearch=1.4.4 state=present update_cache=yes
 - name: Copy elasticsearch config
   copy: src=elasticsearch.yml dest=/etc/elasticsearch/elasticsearch.yml
+- name: Cronjob every day to delete elasticsearch indices older than five days
+  cron: name='delete old es indices' minute="00" hour="00" job="curl -XDELETE localhost:9200/logstash-`date --date='4 days ago' +%Y.%m.%d`"
 - name: Start elasticsearch as a service
   service: name=elasticsearch state=started
 - name: Restart elasticsearch
