@@ -61,7 +61,7 @@ if usingAWS:
     boto_conn = boto.connect_s3()
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_MATH_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-    logging.getLogger().addHandler(XplainLogstashHandler(tags=['mathservice', 'backoffice'])
+    logging.getLogger().addHandler(XplainLogstashHandler(tags=['mathservice', 'backoffice']))
 
 def generateBaseStats(tenant):
     """
