@@ -158,14 +158,14 @@ def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
     if not os.path.exists(destination):
         os.makedirs(destination)
 
-    dest_file_name = destination + "/input.query"
+    dest_file_name = destination + "/input%s.query"%(platform)
     dest_file = open(dest_file_name, "w+")
     query = query.encode('ascii', 'ignore')
     dest_file.write(query)
     dest_file.flush()
     dest_file.close()
 
-    output_file_name = destination + "/haqr.out"
+    output_file_name = destination + "/haqr%s.out"%(platform)
 
     queryFsmFile = "/etc/xplain/QueryFSM.csv";
     selectFsmFile = "/etc/xplain/SelectFSM.csv";
