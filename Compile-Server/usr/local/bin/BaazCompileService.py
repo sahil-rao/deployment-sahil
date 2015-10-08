@@ -377,8 +377,14 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, t
         Append new alias to existing array
         """
         if viewAlias is not None:
-            redis_conn.addToList(view_entity.eid, "iview_alias", viewAlias)
-
+            #add alias to the list
+            if viewAlias != 'no_alias':
+                redis_conn.addToList(view_entity.eid, "iview_alias", viewAlias)
+        else:
+            """
+            Mark this table as view
+            """
+            entity_col.update({"eid": view_entity.eid}, {'$set': {'profile.is_view': True}})
     tableEidList.add(view_entity.eid)
 
     """
