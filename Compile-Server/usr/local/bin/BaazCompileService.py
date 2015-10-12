@@ -1159,6 +1159,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             Query -> Subquery relationship
             '''
             redis_conn.incrRelationshipCounter(current_query, entity.eid, "SQL_INLINE_VIEW", "count")
+        if update is True:
+            redis_conn.incrEntityCounter(entity.eid, "instance_count", sort=True, incrBy=1)
+            return entity, "UpdateQueryProfile"
 
     for i, key in enumerate(compile_doc):
         try:
@@ -1335,10 +1338,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 elif etype == "SQL_STORED_PROCEDURE":
                     redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy=1)
             return None, None
-
-    if update == True and etype != "SQL_QUERY":
-        redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True, incrBy=1)
-        return entity, "UpdateQueryProfile"
 
     return entity, "GenerateQueryProfile"
 
