@@ -15,6 +15,10 @@ server {
   error_log    /var/log/nginx/nginx.error.log;
 
   location / {
+    if (-f /var/www/maintenance_on.html) {
+        return 503;
+    }
+
     proxy_pass http://lb-xplain; # Load balance the URL location "/" to the upstream lb-xplain
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
@@ -22,6 +26,11 @@ server {
     proxy_set_header Host $host;
     proxy_cache_bypass $http_upgrade;
   }
+
+    error_page 503 /maintenance_on.html;
+    location = /maintenance_on.html {
+        root /var/www/;
+    }
 
   #location /public {
   #  root /var/xplain/public;
