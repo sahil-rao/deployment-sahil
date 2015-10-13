@@ -343,10 +343,7 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, t
             outmost_query = context.queue[0]['eid']
 
     if viewAlias is not None:
-        if viewAlias == 'no_alias':
             endict = {"uid" : uid, "profile" : { "is_inline_view" : True}}
-        else:
-            endict = {"uid" : uid, "table_alias": [viewAlias], "profile" : { "is_inline_view" : True}}
     else:
         endict = {"uid" : uid, "profile" : { "is_view" : True}}
     database_name = None
@@ -374,13 +371,22 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, t
             redis_conn.createEntityProfile(view_entity.eid, "SQL_TABLE")
             redis_conn.incrEntityCounter(view_entity.eid, "instance_count", sort=True, incrBy=0)
             tableCount = tableCount + 1
+            #add alias to the list
+            if viewAlias != 'no_alias':
+                redis_conn.addToList(view_entity.eid, "iview_alias", viewAlias)
     else:
         """
         Append new alias to existing array
         """
         if viewAlias is not None:
-            entity_col.update({"eid": view_entity.eid}, {'$push': {'table_alias': viewAlias}})
-
+            #add alias to the list
+            if viewAlias != 'no_alias':
+                redis_conn.addToList(view_entity.eid, "iview_alias", viewAlias)
+        else:
+            """
+            Mark this table as view
+            """
+            entity_col.update({"eid": view_entity.eid}, {'$set': {'profile.is_view': True}})
     tableEidList.add(view_entity.eid)
 
     """
@@ -1155,6 +1161,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             Query -> Subquery relationship
             '''
             redis_conn.incrRelationshipCounter(current_query, entity.eid, "SQL_INLINE_VIEW", "count")
+        if update is True:
+            redis_conn.incrEntityCounter(entity.eid, "instance_count", sort=True, incrBy=1)
+            return entity, "UpdateQueryProfile"
 
     for i, key in enumerate(compile_doc):
         try:
@@ -1331,10 +1340,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 elif etype == "SQL_STORED_PROCEDURE":
                     redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy=1)
             return None, None
-
-    if update == True and etype != "SQL_QUERY":
-        redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True, incrBy=1)
-        return entity, "UpdateQueryProfile"
 
     return entity, "GenerateQueryProfile"
 
