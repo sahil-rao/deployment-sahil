@@ -98,6 +98,8 @@
     sudo: yes
   - name: Install elasticsearch py
     pip: name=elasticsearch version=1.1.1
+  - name: Install python-logstash
+    pip: name=python-logstash
 
   #Redis deployments
   - name: Add APT repository with latest version of redis
