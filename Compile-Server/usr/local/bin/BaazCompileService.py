@@ -280,6 +280,10 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                         elif query['etype'] == EntityType.SQL_STORED_PROCEDURE:
                             redis_conn.createRelationship(table_entity.eid, query['eid'], "STOREDPROCEDUREREAD")
                             redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "STOREDPROCEDUREREAD", "instance_count", incrBy=1)
+                        elif query['etype'] == EntityType.SQL_INLINE_VIEW:
+                            if 'view_entity_id' in query:
+                                redis_conn.createRelationship(query['view_entity_id'], 
+                                                              table_entity.eid, "IVIEW_TABLE")
                 else:
                     for query in context.queue:
                         if query['etype'] == EntityType.SQL_QUERY:
@@ -291,7 +295,10 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                         elif query['etype'] == EntityType.SQL_STORED_PROCEDURE:
                             redis_conn.createRelationship(query['eid'], table_entity.eid, "STOREDPROCEDUREWRITE")
                             redis_conn.incrRelationshipCounter(query['eid'], table_entity.eid, "STOREDPROCEDUREWRITE", "instance_count", incrBy=1)
-
+                        elif query['etype'] == EntityType.SQL_INLINE_VIEW:
+                            if 'view_entity_id' in query:
+                                redis_conn.createRelationship(query['view_entity_id'], 
+                                                              table_entity.eid, "IVIEW_TABLE")
 
                 context.tables.append(table_entity.eid)
 
@@ -326,7 +333,10 @@ def getTableName(tableentry):
             database_name = tableentry["databaseName"].lower()
     return tablename
 
-def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, entity, context, inputTableList, tableEidList=None, hive_success=0, viewAlias=None):
+def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, 
+                    tenant, uid, entity, context, inputTableList, 
+                    tableEidList=None, hive_success=0, viewAlias=None, 
+                    current_queue_entry=None):
     dbCount = 0
     tableCount = 0
     table_alias = None
@@ -374,6 +384,13 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, t
             #add alias to the list
             if viewAlias != 'no_alias':
                 redis_conn.addToList(view_entity.eid, "iview_alias", viewAlias)
+            """
+            If the current queue entry from the context is given,
+            set the view entity id.
+            """
+            logging.info("PARNA: Current queue " + str(current_queue_entry))
+            if current_queue_entry is not None:
+                current_queue_entry["view_entity_id"] = view_entity.eid
     else:
         """
         Append new alias to existing array
@@ -1065,8 +1082,17 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             elif not hasattr(entity, 'custom_id') and custom_id is None:
                 mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': data}})
 
+    """
+    Context Queue entry. 
+    It contains, the entity id of the query/suquery/inline view and type.
+    It can also contain additional information required to process the
+    entity and form the relationships.
+    For Eg. In case on Inline view, it can contain information about the 
+    inline view table object.
+    """
+    current_queue_entry = {'eid': entity.eid, 'etype': etype}
+    context.queue.append(current_queue_entry)
 
-    context.queue.append({'eid': entity.eid, 'etype': etype})
     if update == True and etype == "SQL_QUERY":
 
         inst_dict = {"query": query}
@@ -1178,6 +1204,22 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             stats_sub_success_key = "Compiler." + key + ".subquery_success"
             stats_sub_failure_key = "Compiler." + key + ".subquery_failure"
 
+            inputTableList = []
+            if compile_doc[key].has_key("isInlineView") and compile_doc[key]["isInlineView"] == True:
+                inlineViewAlias = None
+                if compile_doc[key].has_key("inlineViewAlias"):
+                    inlineViewAlias = compile_doc[key]["inlineViewAlias"]
+                else:
+                    inlineViewAlias = 'no_alias'
+                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["inlineViewName"], mongoconn,
+                                                 redis_conn, mongoconn.db.entities,
+                                                 tenant, uid, entity,context , inputTableList, tableEidList, 
+                                                 0, inlineViewAlias, current_queue_entry)
+                if uid is not None:
+                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
+                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
+                    redis_conn.incrEntityCounter('dashboard_data', 'inlineViewCount', incrBy=tmpAdditions[1])
+
             if key == compiler_to_use and compile_doc[key].has_key("subQueries") and\
                 len(compile_doc[key]["subQueries"]) > 0:
                 logging.info("Processing Sub queries")
@@ -1204,7 +1246,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
             mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
 
-            inputTableList = []
             if compile_doc[key].has_key("InputTableList"):
                 inputTableList = compile_doc[key]["InputTableList"]
                 tmpAdditions = processTableSet(compile_doc[key]["InputTableList"],
@@ -1242,26 +1283,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("viewName") and compile_doc[key].has_key("view") and compile_doc[key]["view"] == True:
-                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["viewName"], mongoconn, redis_conn, mongoconn.db.entities,
-                                                 tenant, uid, entity,context , inputTableList, tableEidList)
+                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["viewName"], 
+                                         mongoconn, redis_conn, mongoconn.db.entities,
+                                         tenant, uid, entity,context, inputTableList, tableEidList, 
+                                         0, None, current_queue_entry)
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     redis_conn.incrEntityCounter('dashboard_data', 'ViewCount', incrBy=tmpAdditions[1])
-
-            if compile_doc[key].has_key("isInlineView") and compile_doc[key]["isInlineView"] == True:
-                inlineViewAlias = None
-                if compile_doc[key].has_key("inlineViewAlias"):
-                    inlineViewAlias = compile_doc[key]["inlineViewAlias"]
-                else:
-                    inlineViewAlias = 'no_alias'
-                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["inlineViewName"], mongoconn,
-                                                 redis_conn, mongoconn.db.entities,
-                                                 tenant, uid, entity,context , inputTableList, tableEidList, 0, inlineViewAlias)
-                if uid is not None:
-                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
-                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
-                    redis_conn.incrEntityCounter('dashboard_data', 'inlineViewCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("ErrorSignature") \
                 and len(compile_doc[key]["ErrorSignature"]) > 0:
