@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import sys
 import random
+import warnings
 import smtplib
 import ConfigParser
 import requests
@@ -24,20 +25,21 @@ def execute(email_address):
 
     #Register user
     headers = {'content-type': 'application/json'}
-    response = requests.post(nodejs_url + 'register', json={'email': email_address}, headers=headers, verify=False)
-    if 'successRedirect' not in response.json():
-        print response.json()
-        return 'fail'
-    response = requests.post(nodejs_url + 'uploadUpgrade', json={'email': email_address, 'password': random_password}, headers=headers, verify=False)
-    if 'upgradeComplete' not in response.json() or not response.json()['upgradeComplete']:
-        print response.json()
-        return 'fail'
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        response = requests.post(nodejs_url + 'register', json={'email': email_address}, headers=headers, verify=False)
+        if 'successRedirect' not in response.json():
+            print response.json()
+            return 'fail'
+        response = requests.post(nodejs_url + 'uploadUpgrade', json={'email': email_address, 'password': random_password}, headers=headers, verify=False)
+        if 'upgradeComplete' not in response.json() or not response.json()['upgradeComplete']:
+            print response.json()
+            return 'fail'
 
     #create email HTML message
     env = Environment(loader=FileSystemLoader('/var/www/templates'))
     template = env.get_template('account_creation.html')
-    html_string = template.render(password=random_password)
-    print html_string
+    html_string = template.render(password=random_password).encode('utf-8')
 
     #Send email to user
     from_address = 'no-reply-data@cloudera.com'
