@@ -74,7 +74,8 @@
   copy: src=fourletterwords dest=/usr/share/dict/fourletterwords
   sudo: yes
 - name: Copy create_user python script
-  copy: src=create_user.py dest=~/create_user.py
+  copy: src=create_user.py dest=/usr/local/bin/create_user.py
+  sudo: yes
 
 ########UNPACK S3 TARBALLS########
 - name: Get xplain_admin
