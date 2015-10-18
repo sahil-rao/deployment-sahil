@@ -65,7 +65,7 @@ def doUpload(inp_file):
     timestamp = long(time.time()*1000)
     upload_record = {'tenant': org, 'filename': filename,
                 'uid': uid, 'timestamp': timestamp, "active": True}
-    org_client = MongoClient(host=getMongoServer(org))
+    org_client = getMongoServer(org)
     org_client[org].uploadStats.insert(upload_record)
     
     #Inject event to rabbit.
