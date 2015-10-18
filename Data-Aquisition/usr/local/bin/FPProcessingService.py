@@ -116,9 +116,6 @@ def elasticConnect(tenantID):
     elastichost = getElasticServer(tenantID)
     if elastichost is None:
         return
-    mongoserver = getMongoServer(tenantID)
-    mongoserver = mongoserver.replace('/', '')
-    mongoserver = mongoserver.replace('mongodb:', '')
 
     es = elasticsearch.Elasticsearch(hosts=[{'host' : elastichost, 'port' : 9200}])
     if es is None:
@@ -207,7 +204,7 @@ class callback_context():
         if Self.CLUSTER_MODE == "development":
             return 0
 
-        userdb = MongoClient(getMongoServer(Self.tenant))["xplainIO"]
+        userdb = getMongoServer(Self.tenant)["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
 
         if "upLimit" not in org:
@@ -222,7 +219,7 @@ class callback_context():
         #if Self.CLUSTER_MODE == "development":
         #    return True
 
-        userdb = MongoClient(getMongoServer(Self.tenant))["xplainIO"]
+        userdb = getMongoServer(Self.tenant)["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"scaleMode":1})
 
         if "scaleMode" in org:
