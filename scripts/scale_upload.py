@@ -60,7 +60,7 @@ def setup_tenant(workload, test_tenant = TEST_TENANT):
     file_key.set_contents_from_filename(workload_file)
 
     #Save upload record
-    mconn = MongoClient(host=getMongoServer(test_tenant))
+    mconn = getMongoServer(test_tenant)
     redis_conn = RedisConnector(test_tenant)
     uid = str(uuid.uuid4())
     upload_record = {
