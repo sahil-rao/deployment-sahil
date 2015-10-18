@@ -180,8 +180,8 @@ def callback(ch, method, properties, body):
         Check if this is a valid UID. If it so happens that this flow has been deleted,
         then drop the message.
         """
-        mongo_url = getMongoServer(tenant)
-        db = MongoClient(mongo_url)[tenant]
+        client = getMongoServer(tenant)
+        db = client[tenant]
         redis_conn = RedisConnector(tenant)
         if not checkUID(redis_conn, uid):
             """
