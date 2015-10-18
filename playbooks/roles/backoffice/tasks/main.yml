@@ -24,9 +24,9 @@
 - name: Kill Monit so it won't interfere with installation
   shell: monit quit
   sudo: yes
-- name: Remove old monit ID
-  shell: rm -f /var/lib/monit/id
-  sudo: yes
+# - name: Remove old monit ID
+#   shell: rm -f /var/lib/monit/id
+#   sudo: yes
 - name: Remove any previous service that may be installed.
   shell: update-rc.d -f baazdataacquisition remove
   sudo: yes
@@ -175,9 +175,9 @@
 - name: Start monit service
   shell: monit 
   sudo: yes
-# - name: Reload monit
-#   shell: monit reload
-#   sudo: yes
+- name: Reload monit
+  shell: monit reload
+  sudo: yes
 # - name: Use monit to start all services
 #   shell: monit start all
 #   sudo: yes
