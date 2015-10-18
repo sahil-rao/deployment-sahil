@@ -526,4 +526,3 @@ for i in range(0, num_users):
     print "User : ", uname, " created."
 
 pconn.close()
-client.close()

@@ -75,4 +75,3 @@ def doUpload(inp_file):
     
     #Close rabbitmq and mongo clients
     pconn.close()
-    org_client.close()

@@ -95,4 +95,3 @@ for key in user_dict:
     print "User : ", key, " Dropped."
 
 pconn.close()
-client.close()
