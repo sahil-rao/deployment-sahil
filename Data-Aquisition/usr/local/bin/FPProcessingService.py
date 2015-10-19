@@ -116,9 +116,6 @@ def elasticConnect(tenantID):
     elastichost = getElasticServer(tenantID)
     if elastichost is None:
         return
-    mongoserver = getMongoServer(tenantID)
-    mongoserver = mongoserver.replace('/', '')
-    mongoserver = mongoserver.replace('mongodb:', '')
 
     es = elasticsearch.Elasticsearch(hosts=[{'host' : elastichost, 'port' : 9200}])
     if es is None:
@@ -207,7 +204,7 @@ class callback_context():
         if Self.CLUSTER_MODE == "development":
             return 0
 
-        userdb = MongoClient(getMongoServer(Self.tenant))["xplainIO"]
+        userdb = getMongoServer(Self.tenant)["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
 
         if "upLimit" not in org:
@@ -222,7 +219,7 @@ class callback_context():
         #if Self.CLUSTER_MODE == "development":
         #    return True
 
-        userdb = MongoClient(getMongoServer(Self.tenant))["xplainIO"]
+        userdb = getMongoServer(Self.tenant)["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"scaleMode":1})
 
         if "scaleMode" in org:
@@ -456,7 +453,7 @@ def callback(ch, method, properties, body):
         return
 
     tenant = msg_dict["tenent"]
-    mongo_url = getMongoServer(tenant)
+    client = getMongoServer(tenant)
     redis_conn = RedisConnector(tenant)
 
     uid = None
@@ -467,7 +464,7 @@ def callback(ch, method, properties, body):
         if msg_dict.has_key("opcode") and msg_dict["opcode"] == "DeleteTenant":
             performTenantCleanup(tenant)
 
-            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},\
+            client["xplainIO"].organizations.update({"guid":tenant},\
             {"$set":{"uploads":0, "queries":0, "lastTimeStamp": 0}})
             return
     except:
@@ -512,7 +509,7 @@ def callback(ch, method, properties, body):
         if msg_dict.has_key('uid'):
             uid = msg_dict['uid']
 
-            collection = MongoClient(mongo_url)[tenant].uploadStats
+            collection = client[tenant].uploadStats
             startProcessingPhase(collection, redis_conn, uid)
             redis_conn.incrEntityCounter(uid, "FPProcessing.count", sort = False, incrBy= 1)
             redis_conn.setEntityProfile(uid, {"FPProcessing.socket":curr_socket})
@@ -605,7 +602,7 @@ def callback(ch, method, properties, body):
         context = tenant
         mongoconn = Connector.getConnector(context)
         if mongoconn is None:
-            mongoconn = MongoConnector({'host':mongo_url, 'context':context, \
+            mongoconn = MongoConnector({'client':client, 'context':context, \
                                     'create_db_if_not_exist':True})
 
         if redis_conn.getEntityProfile("dashboard_data") == {}:
@@ -684,7 +681,7 @@ def callback(ch, method, properties, body):
             else:
                 timestamp = 0
 
-            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads": (collection.count() -1) , \
+            client["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads": (collection.count() -1) , \
                 "queries":queries, "lastTimeStamp": timestamp}})
 
             logging.info("Updated the overall stats values.")

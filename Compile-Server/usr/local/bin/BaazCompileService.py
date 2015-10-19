@@ -1558,12 +1558,12 @@ def callback(ch, method, properties, body):
     uid = None
     db = None
 
-    mongo_url = getMongoServer(tenant)
+    client = getMongoServer(tenant)
 
 
     if "opcode" in msg_dict and msg_dict["opcode"] == "HbaseDDL":
         logging.info("Got the opcode of Hbase")
-        db = MongoClient(mongo_url)[tenant]
+        db = client[tenant]
         redis_conn = RedisConnector(tenant)
         process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn)
         """
@@ -1586,7 +1586,7 @@ def callback(ch, method, properties, body):
         logging.info("Got the opcode for scale mode analysis")
         if 'uid' in msg_dict:
             uid = msg_dict['uid']
-            db = MongoClient(mongo_url)[tenant]
+            db = client[tenant]
             redis_conn = RedisConnector(tenant)
             if not checkUID(redis_conn, uid):
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -1598,7 +1598,7 @@ def callback(ch, method, properties, body):
             return
 
         redis_conn = RedisConnector(tenant)
-        collection = MongoClient(mongo_url)[tenant].uploadStats
+        collection = client[tenant].uploadStats
         smc = ScaleModeConnector(tenant)
         process_scale_mode(tenant, uid, instances, smc)
         decrementPendingMessage(collection, redis_conn, uid, received_msgID)
@@ -1612,7 +1612,7 @@ def callback(ch, method, properties, body):
         Check if this is a valid UID. If it so happens that this flow has been deleted,
         then drop the message.
         """
-        db = MongoClient(mongo_url)[tenant]
+        db = client[tenant]
         redis_conn = RedisConnector(tenant)
         if not checkUID(redis_conn, uid):
             """
@@ -1622,7 +1622,7 @@ def callback(ch, method, properties, body):
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
-        collection = MongoClient(mongo_url)[tenant].uploadStats
+        collection = client[tenant].uploadStats
         redis_conn.incrEntityCounter(uid, 'Compiler.count', incrBy = 1)
     else:
         """
@@ -1635,7 +1635,7 @@ def callback(ch, method, properties, body):
 
     mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
-        mongoconn = MongoConnector({'host':mongo_url, 'context':tenant, \
+        mongoconn = MongoConnector({'client':client, 'context':tenant, \
                                     'create_db_if_not_exist':True})
 
     redis_conn = RedisConnector(tenant)

@@ -406,8 +406,8 @@ def updateMongoRedisforHAQR(db,redis_conn,data,tenant,eid):
     return
 
 def process_HAQR_request(msg_dict):
-    mongo_url = getMongoServer(msg_dict['tenant'])
-    db = MongoClient(mongo_url)[msg_dict['tenant']]
+    client = getMongoServer(msg_dict['tenant'])
+    db = client[msg_dict['tenant']]
     redis_conn = RedisConnector(msg_dict['tenant'])
     
     analyzeHAQR(msg_dict['query'], msg_dict['key'], msg_dict['tenant'], \
@@ -452,8 +452,8 @@ def callback(ch, method, properties, body):
         Check if this is a valid UID. If it so happens that this flow has been deleted,
         then drop the message.
         """
-        mongo_url = getMongoServer(tenant)
-        db = MongoClient(mongo_url)[tenant]
+        client = getMongoServer(tenant)
+        db = client[tenant]
         redis_conn = RedisConnector(tenant)
         if not checkUID(redis_conn, uid):
             """
@@ -477,7 +477,7 @@ def callback(ch, method, properties, body):
 
         
       
-        collection = MongoClient(mongo_url)[tenant].uploadStats
+        collection = client[tenant].uploadStats
         redis_conn.incrEntityCounter(uid, 'Math.count', incrBy = 1)
     else:
         """

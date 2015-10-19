@@ -114,18 +114,12 @@ def formatDataforEmail(uploadErrors):
 
 def run():
 
-	try:
-		mongo_host = getMongoServer('xplainDb')
-	except:
-		mongo_host = getMongoServer()
-
-	client = MongoClient(host=mongo_host)
+	client = getMongoServer('xplainDb')
 	tenantCursor = client['xplainIO'].organizations.find({},{"_id":0, "guid":1, "users":1})
 	uploadInfo = dict()
 	for tenantID in tenantCursor:
 		tenant = tenantID['guid']
-		mongo_host = getMongoServer(tenant)
-		client = MongoClient(host=mongo_host)
+		client = getMongoServer(tenant)
 		db = client[tenant]
 		uploadStatsDocs = db.uploadStats
 		uploadsOfInterest = findUploadsWithErrors(uploadStatsDocs)

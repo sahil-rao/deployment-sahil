@@ -9,7 +9,7 @@ def run_workflow(tenants, params):
     '''
     tenants_dict = {}
     for tenantid in tenants:
-        entities = MongoClient(host=getMongoServer(tenantid))[tenantid].entities
+        entities = getMongoServer(tenantid)[tenantid].entities
         #rconn = RedisConnector(tenantid)
 
         md5_set = set()
