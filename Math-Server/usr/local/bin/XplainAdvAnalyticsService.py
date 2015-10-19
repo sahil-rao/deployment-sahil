@@ -586,41 +586,12 @@ def callback(ch, method, properties, body):
         redis_conn.setEntityProfile(uid, {"Phase2MessageProcessed":timest})
         write_upload_stats.run_workflow(tenant, {})
 
-    """
-     Progress Bar update
-    """
-    notif_queue = "node-update-queue"
-    logging.info("Going to check progress bar")     
-    try:
-        stats_dict = redis_conn.getEntityProfile(uid)
-        if stats_dict is not None and\
-            "total_queries" in stats_dict and\
-            "processed_queries" in stats_dict and\
-            ("query_message_id" in msg_dict or opcode == "PhaseTwoAnalysis"):
-            if opcode != "PhaseTwoAnalysis":
-                redis_conn.incrEntityCounter(uid, 'processed_queries', incrBy = 1)
-            
-            processed_queries = int(stats_dict["processed_queries"])
-            total_queries = int(stats_dict["total_queries"])
-            if (processed_queries%10 == 0 or\
-               (total_queries) <= (processed_queries + 1)) and \
-               int(redis_conn.numMessagesPending(uid)) != 0:
-                #logging.info("Procesing progress bar event")     
-                out_dict = {"messageType" : "uploadProgress", "tenantId": tenant, 
-                            "completed": processed_queries + 1, "total":total_queries}
-                connection1.publish(ch,'', notif_queue, dumps(out_dict))
-    except:
-        logging.exception("While making update to progress bar")
-
-    """
-     Progress Bar Update end
-    """
-    connection1.basicAck(ch,method)
+    connection1.basicAck(ch, method)
 
     endTime = time.time()
-    if msg_dict.has_key('uid'):
+    if 'uid' in msg_dict:
         #if uid has been set, the variable will be set already
-        redis_conn.incrEntityCounter(uid, "Math.time", incrBy = endTime-startTime)
+        redis_conn.incrEntityCounter(uid, "Math.time", incrBy=(endTime - startTime))
 
 connection1 = RabbitConnection(callback, ['advanalytics'], [], {}, prefetch_count=1)
 
