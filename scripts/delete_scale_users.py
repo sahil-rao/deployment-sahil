@@ -31,8 +31,7 @@ import redis
 account_name = sys.argv[1]
 
 mongo_servers = ["server"]
-mongoHost = getMongoServer('xplainIO')
-client = MongoClient(host=mongoHost)
+client = getMongoServer('xplainIO')
 r = redis.StrictRedis(host='10.0.0.211', port=6379, db=0)
 
 import boto
@@ -96,4 +95,3 @@ for key in user_dict:
     print "User : ", key, " Dropped."
 
 pconn.close()
-client.close()

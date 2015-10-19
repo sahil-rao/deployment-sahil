@@ -366,7 +366,7 @@ def callback(ch, method, properties, body):
     tenant = msg_dict["tenant"]
     msg_dict["connection"] = connection1
     msg_dict["ch"] = ch
-    mongo_url = getMongoServer(tenant)
+    client = getMongoServer(tenant)
     resp_dict = None
 
     try:
@@ -377,7 +377,7 @@ def callback(ch, method, properties, body):
 
             logging.info("Got the opcode of Hbase")
             instances = msg_dict["job_instances"]
-            db = MongoClient(mongo_url)[tenant]
+            db = client[tenant]
             redis_conn = RedisConnector(tenant)
             add_table_volume.execute(tenant, msg_dict)
             resp_dict = process_ddl_request(ch, properties, tenant, "hbase", instances, db, redis_conn)
@@ -385,7 +385,7 @@ def callback(ch, method, properties, body):
 
             logging.info("Got the opcode of Hbase")
             instances = msg_dict["job_instances"]
-            db = MongoClient(mongo_url)[tenant]
+            db = client[tenant]
             redis_conn = RedisConnector(tenant)
             add_table_volume.execute(tenant, msg_dict)
             if 'target' in msg_dict:

@@ -447,8 +447,7 @@ if not os.path.isfile(inp_file):
 inp_splits = inp_file.split()
 filename = inp_splits[len(inp_splits)-1]
 
-mongoHost = getMongoServer('xplainIO')
-client = MongoClient(host=mongoHost)
+client = getMongoServer('xplainIO')
 
 credentials = pika.PlainCredentials('xplain', 'xplain')
 vhost = 'xplain'
@@ -527,4 +526,3 @@ for i in range(0, num_users):
     print "User : ", uname, " created."
 
 pconn.close()
-client.close()
