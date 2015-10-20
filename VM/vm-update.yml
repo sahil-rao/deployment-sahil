@@ -100,6 +100,8 @@
     pip: name=elasticsearch version=1.1.1
   - name: Install python-logstash
     pip: name=python-logstash
+  - name: Upgrade pymongo to 3.0
+    pip: name=pymongo state=latest
 
   #Redis deployments
   - name: Add APT repository with latest version of redis
