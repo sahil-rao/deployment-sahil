@@ -23,7 +23,7 @@ def execute(email_address):
     num2 = random.randint(100, 999)
     random_password = (word1 + str(num1) + word2 + str(num2)).replace('\n', '')
 
-    #Register user
+    #Register user and generate token
     headers = {'content-type': 'application/json'}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -33,6 +33,10 @@ def execute(email_address):
             return 'fail'
         response = requests.post(nodejs_url + 'uploadUpgrade', json={'email': email_address, 'password': random_password}, headers=headers, verify=False)
         if 'upgradeComplete' not in response.json() or not response.json()['upgradeComplete']:
+            print response.json()
+            return 'fail'
+        response = requests.post(nodejs_url + 'generateVerificationCodeForNewUser', json={'email': email_address}, headers=headers, verify=False)
+        if 'success' not in response.json():
             print response.json()
             return 'fail'
 
