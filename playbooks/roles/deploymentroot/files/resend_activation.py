@@ -20,7 +20,7 @@ def execute(email_address):
     headers = {'content-type': 'application/json'}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        response = requests.post(nodejs_url + 'generateVerificationCodeForNewUser', json={'email': email_address}, headers=headers, verify=False)
+        response = requests.post(nodejs_url + 'app/generateVerificationCodeForNewUser/', json={'email': email_address}, headers=headers, verify=False)
         if 'success' not in response.json():
             print response.json()
             return 'fail'
