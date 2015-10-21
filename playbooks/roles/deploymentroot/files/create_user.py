@@ -40,30 +40,6 @@ def execute(email_address):
             print response.json()
             return 'fail'
 
-    #create email HTML message
-    env = Environment(loader=FileSystemLoader('/var/www/templates'))
-    template = env.get_template('account_creation.html')
-    html_string = template.render(password=random_password).encode('utf-8')
-
-    #Send email to user
-    from_address = 'no-reply-data@cloudera.com'
-    from_password = 'D8eH5C8T'
-
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = 'Welcome to Cloudera Optimizer Beta!'
-    msg['From'] = from_address
-    msg['To'] = email_address
-    email_text = 'Congratulations! You have been accepted into Cloudera Optimizer Beta. Your password is: ' + random_password + '. \nPlease change your password as soon as you log in. Thanks!'
-    msg.attach(MIMEText(email_text, 'plain'))
-    msg.attach(MIMEText(html_string, 'html'))
-
-    server = smtplib.SMTP('smtp.gmail.com:587')
-    server.starttls()
-    server.login(from_address, from_password)
-    server.helo()
-    server.sendmail(from_address, email_address, msg.as_string())
-    server.quit()
-
     return 'success'
 
 if __name__ == '__main__':
