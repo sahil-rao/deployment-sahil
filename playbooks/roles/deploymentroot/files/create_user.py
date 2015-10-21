@@ -33,7 +33,7 @@ def execute(email_address):
             return 'fail'
         response = requests.post(nodejs_url + 'uploadUpgrade', json={'email': email_address, 'password': random_password}, headers=headers, verify=False)
         if 'upgradeComplete' not in response.json() or not response.json()['upgradeComplete']:
-            print response.json(
+            print response.json()
             return 'fail'
         response = requests.post(nodejs_url + 'app/generateVerificationCodeForNewUser/', json={'email': email_address}, headers=headers, verify=False)
         if 'success' not in response.json():
