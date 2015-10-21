@@ -76,6 +76,9 @@
 - name: Copy create_user python script
   copy: src=create_user.py dest=/usr/local/bin/create_user.py
   sudo: yes
+- name: Copy resend_activation python script
+  copy: src=resend_activation.py dest=/usr/local/bin/resend_activation.py
+  sudo: yes
 
 ########UNPACK S3 TARBALLS########
 - name: Get xplain_admin
