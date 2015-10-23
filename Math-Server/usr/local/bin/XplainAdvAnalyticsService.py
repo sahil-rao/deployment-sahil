@@ -13,6 +13,7 @@ from flightpath.RedisConnector import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from flightpath.clustering.querygroup import QueryGroup
+from flightpath.services.xplain_log_handler import XplainLogstashHandler
 import baazmath.workflows.write_upload_stats as write_upload_stats
 from json import *
 #from baazmath.interface.BaazCSV import *
@@ -61,6 +62,7 @@ if usingAWS:
     boto_conn = boto.connect_s3()
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(XPLAIN_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
+    logging.getLogger().addHandler(XplainLogstashHandler(tags=['advanalyticsservice', 'backoffice']))
 
 def generateBaseStats(tenant):
     """
@@ -158,14 +160,14 @@ def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
     if not os.path.exists(destination):
         os.makedirs(destination)
 
-    dest_file_name = destination + "/input.query"
+    dest_file_name = destination + "/input%s.query"%(platform)
     dest_file = open(dest_file_name, "w+")
     query = query.encode('ascii', 'ignore')
     dest_file.write(query)
     dest_file.flush()
     dest_file.close()
 
-    output_file_name = destination + "/haqr.out"
+    output_file_name = destination + "/haqr%s.out"%(platform)
 
     queryFsmFile = "/etc/xplain/QueryFSM.csv";
     selectFsmFile = "/etc/xplain/SelectFSM.csv";
@@ -404,8 +406,8 @@ def updateMongoRedisforHAQR(db,redis_conn,data,tenant,eid):
     return
 
 def process_HAQR_request(msg_dict):
-    mongo_url = getMongoServer(msg_dict['tenant'])
-    db = MongoClient(mongo_url)[msg_dict['tenant']]
+    client = getMongoServer(msg_dict['tenant'])
+    db = client[msg_dict['tenant']]
     redis_conn = RedisConnector(msg_dict['tenant'])
     
     analyzeHAQR(msg_dict['query'], msg_dict['key'], msg_dict['tenant'], \
@@ -450,8 +452,8 @@ def callback(ch, method, properties, body):
         Check if this is a valid UID. If it so happens that this flow has been deleted,
         then drop the message.
         """
-        mongo_url = getMongoServer(tenant)
-        db = MongoClient(mongo_url)[tenant]
+        client = getMongoServer(tenant)
+        db = client[tenant]
         redis_conn = RedisConnector(tenant)
         if not checkUID(redis_conn, uid):
             """
@@ -475,7 +477,7 @@ def callback(ch, method, properties, body):
 
         
       
-        collection = MongoClient(mongo_url)[tenant].uploadStats
+        collection = client[tenant].uploadStats
         redis_conn.incrEntityCounter(uid, 'Math.count', incrBy = 1)
     else:
         """
@@ -584,43 +586,14 @@ def callback(ch, method, properties, body):
         redis_conn.setEntityProfile(uid, {"Phase2MessageProcessed":timest})
         write_upload_stats.run_workflow(tenant, {})
 
-    """
-     Progress Bar update
-    """
-    notif_queue = "node-update-queue"
-    logging.info("Going to check progress bar")     
-    try:
-        stats_dict = redis_conn.getEntityProfile(uid)
-        if stats_dict is not None and\
-            "total_queries" in stats_dict and\
-            "processed_queries" in stats_dict and\
-            ("query_message_id" in msg_dict or opcode == "PhaseTwoAnalysis"):
-            if opcode != "PhaseTwoAnalysis":
-                redis_conn.incrEntityCounter(uid, 'processed_queries', incrBy = 1)
-            
-            processed_queries = int(stats_dict["processed_queries"])
-            total_queries = int(stats_dict["total_queries"])
-            if (processed_queries%10 == 0 or\
-               (total_queries) <= (processed_queries + 1)) and \
-               int(redis_conn.numMessagesPending(uid)) != 0:
-                #logging.info("Procesing progress bar event")     
-                out_dict = {"messageType" : "uploadProgress", "tenantId": tenant, 
-                            "completed": processed_queries + 1, "total":total_queries}
-                connection1.publish(ch,'', notif_queue, dumps(out_dict))
-    except:
-        logging.exception("While making update to progress bar")
-
-    """
-     Progress Bar Update end
-    """
-    connection1.basicAck(ch,method)
+    connection1.basicAck(ch, method)
 
     endTime = time.time()
-    if msg_dict.has_key('uid'):
+    if 'uid' in msg_dict:
         #if uid has been set, the variable will be set already
-        redis_conn.incrEntityCounter(uid, "Math.time", incrBy = endTime-startTime)
+        redis_conn.incrEntityCounter(uid, "Math.time", incrBy=(endTime - startTime))
 
-connection1 = RabbitConnection(callback, ['advanalytics'], [], {}, XPLAIN_LOG_FILE, 1)
+connection1 = RabbitConnection(callback, ['advanalytics'], [], {}, prefetch_count=1)
 
 logging.info("XplainAdvAnalytics going to start consuming")
 

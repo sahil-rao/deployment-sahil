@@ -18,11 +18,9 @@ from flightpath.Provenance import getMongoServer
 import json
 
 def run_workflow(tenantid, msg_dict):
-    mongo_host = getMongoServer(tenantid)
+    client = getMongoServer(tenantid)
 
     redis_conn = RedisConnector(tenantid)
-
-    client = MongoClient(host=mongo_host)
 
     # Create alias for the tenant we are interested in
     db = client[tenantid]

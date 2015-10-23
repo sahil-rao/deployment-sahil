@@ -13,6 +13,7 @@ from baazmath.workflows.hbase_analytics import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from flightpath.services.mq_template import *
+from flightpath.services.xplain_log_handler import XplainLogstashHandler
 from subprocess import Popen, PIPE
 from json import *
 import sys
@@ -65,6 +66,7 @@ if usingAWS:
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     file_bucket = boto_conn.get_bucket('xplain-compile')
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_COMPILER_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
+    logging.getLogger().addHandler(XplainLogstashHandler(tags=['compileservice', 'backoffice']))
     
 COMPILER_MODULES='/usr/lib/baaz_compiler'
 
@@ -278,6 +280,10 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                         elif query['etype'] == EntityType.SQL_STORED_PROCEDURE:
                             redis_conn.createRelationship(table_entity.eid, query['eid'], "STOREDPROCEDUREREAD")
                             redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "STOREDPROCEDUREREAD", "instance_count", incrBy=1)
+                        elif query['etype'] == EntityType.SQL_INLINE_VIEW:
+                            if 'view_entity_id' in query:
+                                redis_conn.createRelationship(query['view_entity_id'], 
+                                                              table_entity.eid, "IVIEW_TABLE")
                 else:
                     for query in context.queue:
                         if query['etype'] == EntityType.SQL_QUERY:
@@ -289,7 +295,10 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                         elif query['etype'] == EntityType.SQL_STORED_PROCEDURE:
                             redis_conn.createRelationship(query['eid'], table_entity.eid, "STOREDPROCEDUREWRITE")
                             redis_conn.incrRelationshipCounter(query['eid'], table_entity.eid, "STOREDPROCEDUREWRITE", "instance_count", incrBy=1)
-
+                        elif query['etype'] == EntityType.SQL_INLINE_VIEW:
+                            if 'view_entity_id' in query:
+                                redis_conn.createRelationship(query['view_entity_id'], 
+                                                              table_entity.eid, "IVIEW_TABLE")
 
                 context.tables.append(table_entity.eid)
 
@@ -324,7 +333,10 @@ def getTableName(tableentry):
             database_name = tableentry["databaseName"].lower()
     return tablename
 
-def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, tenant, uid, entity, context, inputTableList, tableEidList=None, hive_success=0, viewAlias=None):
+def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, 
+                    tenant, uid, entity, context, inputTableList, 
+                    tableEidList=None, hive_success=0, viewAlias=None, 
+                    current_queue_entry=None):
     dbCount = 0
     tableCount = 0
     table_alias = None
@@ -372,13 +384,26 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, t
             #add alias to the list
             if viewAlias != 'no_alias':
                 redis_conn.addToList(view_entity.eid, "iview_alias", viewAlias)
+            """
+            If the current queue entry from the context is given,
+            set the view entity id.
+            """
+            logging.info("PARNA: Current queue " + str(current_queue_entry))
+            if current_queue_entry is not None:
+                current_queue_entry["view_entity_id"] = view_entity.eid
     else:
         """
         Append new alias to existing array
         """
         if viewAlias is not None:
-            redis_conn.addToList(view_entity.eid, "iview_alias", viewAlias)
-
+            #add alias to the list
+            if viewAlias != 'no_alias':
+                redis_conn.addToList(view_entity.eid, "iview_alias", viewAlias)
+        else:
+            """
+            Mark this table as view
+            """
+            entity_col.update({"eid": view_entity.eid}, {'$set': {'profile.is_view': True}})
     tableEidList.add(view_entity.eid)
 
     """
@@ -1057,8 +1082,17 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             elif not hasattr(entity, 'custom_id') and custom_id is None:
                 mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': data}})
 
+    """
+    Context Queue entry. 
+    It contains, the entity id of the query/suquery/inline view and type.
+    It can also contain additional information required to process the
+    entity and form the relationships.
+    For Eg. In case on Inline view, it can contain information about the 
+    inline view table object.
+    """
+    current_queue_entry = {'eid': entity.eid, 'etype': etype}
+    context.queue.append(current_queue_entry)
 
-    context.queue.append({'eid': entity.eid, 'etype': etype})
     if update == True and etype == "SQL_QUERY":
 
         inst_dict = {"query": query}
@@ -1167,6 +1201,22 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             stats_sub_success_key = "Compiler." + key + ".subquery_success"
             stats_sub_failure_key = "Compiler." + key + ".subquery_failure"
 
+            inputTableList = []
+            if compile_doc[key].has_key("isInlineView") and compile_doc[key]["isInlineView"] == True:
+                inlineViewAlias = None
+                if compile_doc[key].has_key("inlineViewAlias"):
+                    inlineViewAlias = compile_doc[key]["inlineViewAlias"]
+                else:
+                    inlineViewAlias = 'no_alias'
+                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["inlineViewName"], mongoconn,
+                                                 redis_conn, mongoconn.db.entities,
+                                                 tenant, uid, entity,context , inputTableList, tableEidList, 
+                                                 0, inlineViewAlias, current_queue_entry)
+                if uid is not None:
+                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
+                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
+                    redis_conn.incrEntityCounter('dashboard_data', 'inlineViewCount', incrBy=tmpAdditions[1])
+
             if key == compiler_to_use and compile_doc[key].has_key("subQueries") and\
                 len(compile_doc[key]["subQueries"]) > 0:
                 logging.info("Processing Sub queries")
@@ -1193,7 +1243,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
             mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
 
-            inputTableList = []
             if compile_doc[key].has_key("InputTableList"):
                 inputTableList = compile_doc[key]["InputTableList"]
                 tmpAdditions = processTableSet(compile_doc[key]["InputTableList"],
@@ -1231,26 +1280,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("viewName") and compile_doc[key].has_key("view") and compile_doc[key]["view"] == True:
-                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["viewName"], mongoconn, redis_conn, mongoconn.db.entities,
-                                                 tenant, uid, entity,context , inputTableList, tableEidList)
+                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["viewName"], 
+                                         mongoconn, redis_conn, mongoconn.db.entities,
+                                         tenant, uid, entity,context, inputTableList, tableEidList, 
+                                         0, None, current_queue_entry)
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     redis_conn.incrEntityCounter('dashboard_data', 'ViewCount', incrBy=tmpAdditions[1])
-
-            if compile_doc[key].has_key("isInlineView") and compile_doc[key]["isInlineView"] == True:
-                inlineViewAlias = None
-                if compile_doc[key].has_key("inlineViewAlias"):
-                    inlineViewAlias = compile_doc[key]["inlineViewAlias"]
-                else:
-                    inlineViewAlias = 'no_alias'
-                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["inlineViewName"], mongoconn,
-                                                 redis_conn, mongoconn.db.entities,
-                                                 tenant, uid, entity,context , inputTableList, tableEidList, 0, inlineViewAlias)
-                if uid is not None:
-                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
-                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
-                    redis_conn.incrEntityCounter('dashboard_data', 'inlineViewCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("ErrorSignature") \
                 and len(compile_doc[key]["ErrorSignature"]) > 0:
@@ -1521,12 +1558,12 @@ def callback(ch, method, properties, body):
     uid = None
     db = None
 
-    mongo_url = getMongoServer(tenant)
+    client = getMongoServer(tenant)
 
 
     if "opcode" in msg_dict and msg_dict["opcode"] == "HbaseDDL":
         logging.info("Got the opcode of Hbase")
-        db = MongoClient(mongo_url)[tenant]
+        db = client[tenant]
         redis_conn = RedisConnector(tenant)
         process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn)
         """
@@ -1549,7 +1586,7 @@ def callback(ch, method, properties, body):
         logging.info("Got the opcode for scale mode analysis")
         if 'uid' in msg_dict:
             uid = msg_dict['uid']
-            db = MongoClient(mongo_url)[tenant]
+            db = client[tenant]
             redis_conn = RedisConnector(tenant)
             if not checkUID(redis_conn, uid):
                 ch.basic_ack(delivery_tag=method.delivery_tag)
@@ -1561,7 +1598,7 @@ def callback(ch, method, properties, body):
             return
 
         redis_conn = RedisConnector(tenant)
-        collection = MongoClient(mongo_url)[tenant].uploadStats
+        collection = client[tenant].uploadStats
         smc = ScaleModeConnector(tenant)
         process_scale_mode(tenant, uid, instances, smc)
         decrementPendingMessage(collection, redis_conn, uid, received_msgID)
@@ -1575,7 +1612,7 @@ def callback(ch, method, properties, body):
         Check if this is a valid UID. If it so happens that this flow has been deleted,
         then drop the message.
         """
-        db = MongoClient(mongo_url)[tenant]
+        db = client[tenant]
         redis_conn = RedisConnector(tenant)
         if not checkUID(redis_conn, uid):
             """
@@ -1585,7 +1622,7 @@ def callback(ch, method, properties, body):
             ch.basic_ack(delivery_tag=method.delivery_tag)
             return
 
-        collection = MongoClient(mongo_url)[tenant].uploadStats
+        collection = client[tenant].uploadStats
         redis_conn.incrEntityCounter(uid, 'Compiler.count', incrBy = 1)
     else:
         """
@@ -1598,7 +1635,7 @@ def callback(ch, method, properties, body):
 
     mongoconn = Connector.getConnector(tenant)
     if mongoconn is None:
-        mongoconn = MongoConnector({'host':mongo_url, 'context':tenant, \
+        mongoconn = MongoConnector({'client':client, 'context':tenant, \
                                     'create_db_if_not_exist':True})
 
     redis_conn = RedisConnector(tenant)
@@ -1815,7 +1852,7 @@ def callback(ch, method, properties, body):
     callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
-connection1 = RabbitConnection(callback, ['compilerqueue'],['mathqueue'], {},BAAZ_COMPILER_LOG_FILE)
+connection1 = RabbitConnection(callback, ['compilerqueue'], ['mathqueue'], {})
 
 logging.info("BaazCompiler going to start Consuming")
 

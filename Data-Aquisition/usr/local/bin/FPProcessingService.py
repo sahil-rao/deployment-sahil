@@ -4,19 +4,19 @@
 Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenant> <log Directory>
 """
-#from flightpath.parsing.hadoop.HadoopConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
+from flightpath.services.xplain_log_handler import XplainLogstashHandler
 from flightpath.utils import *
 from flightpath.parsing.ParseDemux import *
 from flightpath.Provenance import getMongoServer
-import sys
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from json import *
 import elasticsearch
 import shutil
 import os
+import sys
 import tarfile
 import ConfigParser
 import datetime
@@ -73,6 +73,7 @@ if usingAWS:
     bucket = boto_conn.get_bucket(bucket_location)
     log_bucket = boto_conn.get_bucket(log_bucket_location)
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_FP_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
+    logging.getLogger().addHandler(XplainLogstashHandler(tags=['dataacquisitionservice', 'backoffice']))
 
 def end_of_phase_callback(params, current_phase):
     if current_phase > 1:
@@ -115,9 +116,6 @@ def elasticConnect(tenantID):
     elastichost = getElasticServer(tenantID)
     if elastichost is None:
         return
-    mongoserver = getMongoServer(tenantID)
-    mongoserver = mongoserver.replace('/', '')
-    mongoserver = mongoserver.replace('mongodb:', '')
 
     es = elasticsearch.Elasticsearch(hosts=[{'host' : elastichost, 'port' : 9200}])
     if es is None:
@@ -206,7 +204,7 @@ class callback_context():
         if Self.CLUSTER_MODE == "development":
             return 0
 
-        userdb = MongoClient(getMongoServer(Self.tenant))["xplainIO"]
+        userdb = getMongoServer(Self.tenant)["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
 
         if "upLimit" not in org:
@@ -221,7 +219,7 @@ class callback_context():
         #if Self.CLUSTER_MODE == "development":
         #    return True
 
-        userdb = MongoClient(getMongoServer(Self.tenant))["xplainIO"]
+        userdb = getMongoServer(Self.tenant)["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"scaleMode":1})
 
         if "scaleMode" in org:
@@ -455,7 +453,7 @@ def callback(ch, method, properties, body):
         return
 
     tenant = msg_dict["tenent"]
-    mongo_url = getMongoServer(tenant)
+    client = getMongoServer(tenant)
     redis_conn = RedisConnector(tenant)
 
     uid = None
@@ -466,7 +464,7 @@ def callback(ch, method, properties, body):
         if msg_dict.has_key("opcode") and msg_dict["opcode"] == "DeleteTenant":
             performTenantCleanup(tenant)
 
-            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},\
+            client["xplainIO"].organizations.update({"guid":tenant},\
             {"$set":{"uploads":0, "queries":0, "lastTimeStamp": 0}})
             return
     except:
@@ -511,7 +509,7 @@ def callback(ch, method, properties, body):
         if msg_dict.has_key('uid'):
             uid = msg_dict['uid']
 
-            collection = MongoClient(mongo_url)[tenant].uploadStats
+            collection = client[tenant].uploadStats
             startProcessingPhase(collection, redis_conn, uid)
             redis_conn.incrEntityCounter(uid, "FPProcessing.count", sort = False, incrBy= 1)
             redis_conn.setEntityProfile(uid, {"FPProcessing.socket":curr_socket})
@@ -604,7 +602,7 @@ def callback(ch, method, properties, body):
         context = tenant
         mongoconn = Connector.getConnector(context)
         if mongoconn is None:
-            mongoconn = MongoConnector({'host':mongo_url, 'context':context, \
+            mongoconn = MongoConnector({'client':client, 'context':context, \
                                     'create_db_if_not_exist':True})
 
         if redis_conn.getEntityProfile("dashboard_data") == {}:
@@ -683,7 +681,7 @@ def callback(ch, method, properties, body):
             else:
                 timestamp = 0
 
-            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads": (collection.count() -1) , \
+            client["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads": (collection.count() -1) , \
                 "queries":queries, "lastTimeStamp": timestamp}})
 
             logging.info("Updated the overall stats values.")
@@ -702,7 +700,7 @@ def callback(ch, method, properties, body):
 
     connection1.basicAck(ch,method)
 
-connection1 = RabbitConnection(callback, ['ftpupload'],['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}},BAAZ_FP_LOG_FILE, 1)
+connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)
 
 
 logging.info("FPProcessingService going to start consuming")

@@ -24,9 +24,9 @@
 - name: Kill Monit so it won't interfere with installation
   shell: monit quit
   sudo: yes
-- name: Remove old monit ID
-  shell: rm -f /var/lib/monit/id
-  sudo: yes
+# - name: Remove old monit ID
+#   shell: rm -f /var/lib/monit/id
+#   sudo: yes
 - name: Remove any previous service that may be installed.
   shell: update-rc.d -f baazdataacquisition remove
   sudo: yes
@@ -138,6 +138,12 @@
 - name: Install redis
   pip: name=redis
   sudo: yes
+- name: Install python-logstash
+  pip: name=python-logstash
+  sudo: yes
+- name: Upgrade pymongo to 3.0
+  pip: name=pymongo state=latest
+  sudo: yes
 #REDIS SENTINEL DEPLOYMENT
 #- name: Install Redis APT Package
 #  apt: name=redis-server update_cache=yes
@@ -168,13 +174,18 @@
 #- name: Start sentinel
 #  service: name=redis-sentinel state=started
 #  sudo: yes
-
+- name: Update version number for dashboard page
+  local_action: template src=/var/www/index_template.j2 dest=/var/www/index.html
+  sudo: yes
+- name: Restart nginx
+  local_action: command nginx -s reload
+  sudo: yes
 - name: Start monit service
   shell: monit 
   sudo: yes
-# - name: Reload monit
-#   shell: monit reload
-#   sudo: yes
+- name: Reload monit
+  shell: monit reload
+  sudo: yes
 # - name: Use monit to start all services
 #   shell: monit start all
 #   sudo: yes

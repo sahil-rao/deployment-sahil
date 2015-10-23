@@ -73,16 +73,12 @@ class XplainRPC(object):
 
 def run():
 
-    try:
-        mongo_host = getMongoServer('xplainDb')
-    except:
-        mongo_host = getMongoServer()
+    client = getMongoServer('xplainDb')
 
     config = ConfigParser.RawConfigParser ()
     config.read("/var/Baaz/hosts.cfg")
 
     rpc = XplainRPC()
-    client = MongoClient(host=mongo_host)
     timelimit = twentyFourHoursAgo()
     tenantCursor = client['xplainIO'].organizations.find({"isDemo":True, "lastTimeStamp": { "$lt": timelimit}},{"_id":0, "guid":1, "lastTimeStamp":1, "users":1})
     for tenantID in tenantCursor:

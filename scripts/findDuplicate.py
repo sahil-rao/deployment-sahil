@@ -6,8 +6,8 @@ from flightpath.RedisConnector import *
 from flightpath.Provenance import getMongoServer
 
 def findDuplicatePattern(tenant):
-	mongoHost = getMongoServer(tenant)
-	client = MongoClient(host=mongoHost)
+	client = getMongoServer(tenant)
+
 	db = client[tenant]
 	patternsCollection = db.accessPatterns
 	patternCursor = patternsCollection.find({}, {'jg':1})

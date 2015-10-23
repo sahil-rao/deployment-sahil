@@ -1,11 +1,14 @@
 #!/usr/bin/env python
 import sys
-import requests
 import random
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
+import warnings
 import smtplib
 import ConfigParser
+import requests
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEText import MIMEText
+from jinja2 import Environment, FileSystemLoader
+
 
 def execute(email_address):
     #get cluster root ip
@@ -22,18 +25,25 @@ def execute(email_address):
 
     #Register user
     headers = {'content-type': 'application/json'}
-    response = requests.post(nodejs_url + 'register', json={'email': email_address}, headers=headers, verify=False)
-    if 'successRedirect' not in response.json():
-        print response.json()
-        return 'fail'
-    response = requests.post(nodejs_url + 'uploadUpgrade', json={'email': email_address, 'password': random_password}, headers=headers, verify=False)
-    if 'upgradeComplete' not in response.json() or not response.json()['upgradeComplete']:
-        print response.json()
-        return 'fail'
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        response = requests.post(nodejs_url + 'register', json={'email': email_address}, headers=headers, verify=False)
+        if 'successRedirect' not in response.json():
+            print response.json()
+            return 'fail'
+        response = requests.post(nodejs_url + 'uploadUpgrade', json={'email': email_address, 'password': random_password}, headers=headers, verify=False)
+        if 'upgradeComplete' not in response.json() or not response.json()['upgradeComplete']:
+            print response.json()
+            return 'fail'
+
+    #create email HTML message
+    env = Environment(loader=FileSystemLoader('/var/www/templates'))
+    template = env.get_template('account_creation.html')
+    html_string = template.render(password=random_password).encode('utf-8')
 
     #Send email to user
-    from_address = 'noreply@baazdata.com'
-    from_password = 'Xplainio123'
+    from_address = 'no-reply-data@cloudera.com'
+    from_password = 'D8eH5C8T'
 
     msg = MIMEMultipart('alternative')
     msg['Subject'] = 'Welcome to Cloudera Optimizer Beta!'
@@ -41,6 +51,7 @@ def execute(email_address):
     msg['To'] = email_address
     email_text = 'Congratulations! You have been accepted into Cloudera Optimizer Beta. Your password is: ' + random_password + '. \nPlease change your password as soon as you log in. Thanks!'
     msg.attach(MIMEText(email_text, 'plain'))
+    msg.attach(MIMEText(html_string, 'html'))
 
     server = smtplib.SMTP('smtp.gmail.com:587')
     server.starttls()
