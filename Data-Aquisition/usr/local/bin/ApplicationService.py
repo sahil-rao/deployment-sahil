@@ -19,7 +19,6 @@ import baazmath.workflows.impala_analytics as Impala
 import flightpath.services.app_get_table_detail as table_details
 import flightpath.services.app_get_query_detail as query_details
 import flightpath.services.app_get_upload_detail as upload_details
-import flightpath.services.app_get_top_fact as top_fact
 import flightpath.services.app_get_top_dim as top_dim
 import flightpath.services.app_get_top_table_by_patterns as top_tables_by_pattern
 import flightpath.services.app_get_top_tables as top_tables
@@ -458,10 +457,7 @@ def callback(ch, method, properties, body):
             if "uid" in msg_dict:
                 uid = msg_dict["uid"]
                 resp_dict["totalQueries"] = rc.getScaleModeTotalQueryCount(uid)
-                resp_dict["progress"] = rc.getProgress(uid) 
-        elif msg_dict['opcode'] == "TopFact":
-            operator = msg_dict['operator'] if 'operator' in msg_dict else None
-            resp_dict = top_fact.execute(tenant, operator)
+                resp_dict["progress"] = rc.getProgress(uid)
         elif msg_dict['opcode'] == "TopDim":
             resp_dict = top_dim.execute(tenant)
         elif msg_dict['opcode'] == "TopTablesByPattern":
