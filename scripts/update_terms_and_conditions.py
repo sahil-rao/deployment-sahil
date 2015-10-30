@@ -13,4 +13,5 @@ mongo_host = getMongoServer(tenant)
 client = MongoClient(host=mongo_host)
 '''
 db = client['xplainIO']
+db.terms_and_conditions.remove()
 db.terms_and_conditions.insert({"text": t_and_c_text})
