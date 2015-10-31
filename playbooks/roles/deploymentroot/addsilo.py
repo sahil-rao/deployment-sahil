@@ -8,7 +8,7 @@ def add_silo():
     config = ConfigParser.RawConfigParser()
     config.read("/var/Baaz/hosts.cfg")
     redis_ip = config.get("Redis", "server")
-    with open("/home/ubuntu/parna/workspace/newsiloinfo.json") as json_data:
+    with open("/home/ubuntu/newsiloinfo.json") as json_data:
         new_silo_info = json.load(json_data)
     
     r = redis.StrictRedis(host=redis_ip, port=6379, db=0)

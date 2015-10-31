@@ -257,7 +257,7 @@
   gather_facts: False 
   tasks:
     - name: Create intermediate json for python script to read
-      template: src=templates/newsiloinfo.json.j2 dest=/home/ubuntu/parna/workspace/newsiloinfo.json
+      template: src=templates/newsiloinfo.json.j2 dest=/home/ubuntu/newsiloinfo.json
     - name: Update routing redis with new info
       local_action: command /usr/bin/python addsilo.py
       
