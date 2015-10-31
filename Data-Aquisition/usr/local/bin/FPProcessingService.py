@@ -207,7 +207,7 @@ class callback_context():
         if Self.CLUSTER_MODE == "development":
             return 0
 
-        userdb = MongoClient(getMongoServer(Self.tenant))["xplainIO"]
+        userdb = MongoClient(getMongoServer("xplainIO"))["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
 
         if "upLimit" not in org:
@@ -222,7 +222,7 @@ class callback_context():
         #if Self.CLUSTER_MODE == "development":
         #    return True
 
-        userdb = MongoClient(getMongoServer(Self.tenant))["xplainIO"]
+        userdb = MongoClient(getMongoServer("xplainIO"))["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"scaleMode":1})
 
         if "scaleMode" in org:
@@ -467,7 +467,7 @@ def callback(ch, method, properties, body):
         if msg_dict.has_key("opcode") and msg_dict["opcode"] == "DeleteTenant":
             performTenantCleanup(tenant)
 
-            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},\
+            MongoClient(getMongoServer("xplainIO"))["xplainIO"].organizations.update({"guid":tenant},\
             {"$set":{"uploads":0, "queries":0, "lastTimeStamp": 0}})
             return
     except:
