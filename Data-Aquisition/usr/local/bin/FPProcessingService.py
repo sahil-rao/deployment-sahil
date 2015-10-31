@@ -204,7 +204,7 @@ class callback_context():
         if Self.CLUSTER_MODE == "development":
             return 0
 
-        userdb = getMongoServer(Self.tenant)["xplainIO"]
+        userdb = getMongoServer("xplainIO")["xplainIO")
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
 
         if "upLimit" not in org:
@@ -219,7 +219,7 @@ class callback_context():
         #if Self.CLUSTER_MODE == "development":
         #    return True
 
-        userdb = getMongoServer(Self.tenant)["xplainIO"]
+        userdb = getMongoServer("xplainIO")["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"scaleMode":1})
 
         if "scaleMode" in org:
@@ -464,7 +464,7 @@ def callback(ch, method, properties, body):
         if msg_dict.has_key("opcode") and msg_dict["opcode"] == "DeleteTenant":
             performTenantCleanup(tenant)
 
-            client["xplainIO"].organizations.update({"guid":tenant},\
+            getMongoServer("xplainIO")["xplainIO"].organizations.update({"guid":tenant},\
             {"$set":{"uploads":0, "queries":0, "lastTimeStamp": 0}})
             return
     except:
@@ -681,7 +681,7 @@ def callback(ch, method, properties, body):
             else:
                 timestamp = 0
 
-            client["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads": (collection.count() -1) , \
+            getMongoServer("xplainIO")["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads": (collection.count() -1) , \
                 "queries":queries, "lastTimeStamp": timestamp}})
 
             logging.info("Updated the overall stats values.")
