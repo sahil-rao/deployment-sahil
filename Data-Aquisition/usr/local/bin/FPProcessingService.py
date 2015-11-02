@@ -204,7 +204,7 @@ class callback_context():
         if Self.CLUSTER_MODE == "development":
             return 0
 
-        userdb = getMongoServer("xplainIO")["xplainIO")
+        userdb = getMongoServer("xplainIO")["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
 
         if "upLimit" not in org:
