@@ -114,18 +114,6 @@ def storeResourceProfile(tenant):
             mongoconn.updateProfile(entity, "Resource", resource_doc)
     mongoconn.close()
 
-def end_of_phase_callback(params, current_phase):
-    if current_phase > 1:
-        logging.error("Attempted end of phase callback, but current phase > 1")
-        return
-
-    logging.info("Changing processing Phase")
-    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"} 
-    msg_dict['uid'] = params['uid']
-    message = dumps(msg_dict)
-    params['connection'].publish(params['channel'],'',params['queuename'],message) 
-    return
-
 def analytics_callback(params):
     '''
     Callback method that is used to initiate the processing of a passed in opcode.
@@ -486,8 +474,6 @@ def callback(ch, method, properties, body):
     	connection1.basicAck(ch,method)
         return
 
-    callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
-
     mathconfig = ConfigParser.RawConfigParser()
     mathconfig.read("/etc/xplain/adv_analytics.cfg")
 
@@ -576,7 +562,6 @@ def callback(ch, method, properties, body):
                 redis_conn.setEntityProfile(uid, {stats_phase_key: 1})
 
     logging.info("Event Processing Complete")     
-    decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
     if opcode == "PhaseTwoAnalysis":
         collection.update({'uid':"0"},{'$set': { "done":True}})        
 
