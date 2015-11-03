@@ -743,9 +743,21 @@ def create_query_character(signature_keywords, operator_list):
     '''
     character = []
 
-    operators = ['INSERT']
+    '''
+    Check for ddl character in operator list
+    '''
+    ddl_char = ['CREATE_TABLE', 'ALTER_TABLE', 'DROP_TABLE']
+    for entry in ddl_char:
+        if entry in operator_list:
+           character.append('DDL')
+           return character
+
+    operators = ['INSERT', 'UPDATE', 'DELETE']
     for operator in operators:
         if '%s_VALUES'%(operator) in operator_list:
+            character.append('%s: singleton'%(operator))
+            return character
+        elif '%s_SIMPLE'%(operator) in operator_list:
             character.append('%s: singleton'%(operator))
             return character
 
@@ -791,6 +803,10 @@ def create_query_character(signature_keywords, operator_list):
         prefix = []
         if 'Insert' in signature_keywords:
             prefix.append('INSERT: ')
+        if 'UPDATE' in operator_list:
+            prefix.append('UPDATE: ')
+        if 'DELETE' in operator_list:
+            prefix.append('DELETE: ')
 
         if 'Join' in signature_keywords:
             character.append('Join')
