@@ -406,7 +406,7 @@ def callback(ch, method, properties, body):
     startTime = time.time()
     msg_dict = loads(body)
 
-    logging.info("Analytics: Got message "+ str(msg_dict))
+    #logging.info("Analytics: Got message "+ str(msg_dict))
 
     """
     Validate the message.
@@ -452,7 +452,7 @@ def callback(ch, method, properties, body):
         
         if opcode == 'Cluster':
             try:
-                logging.info("Clustering...")
+                #logging.info("Clustering...")
                 clause_combo = msg_dict['clause_combo']
                 cluster_clause = msg_dict['cluster_clause']
                 qgroup = QueryGroup(tenant, clause_combo)
@@ -569,7 +569,7 @@ def callback(ch, method, properties, body):
         #The length function in the if statement is a count of the mending messages
         timest = int(time.time() * 1000)
         redis_conn.setEntityProfile(uid, {"Phase2MessageProcessed":timest})
-        write_upload_stats.run_workflow(tenant, {})
+        write_upload_stats.run_workflow(tenant, {'uid':uid})
 
     """
      Progress Bar update

@@ -116,9 +116,6 @@ def elasticConnect(tenantID):
     elastichost = getElasticServer(tenantID)
     if elastichost is None:
         return
-    mongoserver = getMongoServer(tenantID)
-    mongoserver = mongoserver.replace('/', '')
-    mongoserver = mongoserver.replace('mongodb:', '')
 
     es = elasticsearch.Elasticsearch(hosts=[{'host' : elastichost, 'port' : 9200}])
     if es is None:
@@ -457,6 +454,7 @@ def callback(ch, method, properties, body):
 
     tenant = msg_dict["tenent"]
     mongo_url = getMongoServer(tenant)
+    xplain_client = MongoClient(host=getMongoServer("xplainIO"))
     redis_conn = RedisConnector(tenant)
 
     uid = None
@@ -467,8 +465,10 @@ def callback(ch, method, properties, body):
         if msg_dict.has_key("opcode") and msg_dict["opcode"] == "DeleteTenant":
             performTenantCleanup(tenant)
 
-            MongoClient(getMongoServer("xplainIO"))["xplainIO"].organizations.update({"guid":tenant},\
-            {"$set":{"uploads":0, "queries":0, "lastTimeStamp": 0}})
+            xplain_client["xplainIO"].organizations.update({"guid": tenant},
+                                                           {"$set": {"uploads": 0,
+                                                                     "queries": 0,
+                                                                     "lastTimeStamp": 0}})
             return
     except:
         logging.exception("Testing Cleanup")
@@ -649,19 +649,10 @@ def callback(ch, method, properties, body):
 
     try:
         if uid is not None:
-            queryNo = redis_conn.getEntityProfile("dashboard_data", "TotalQueries")
-            if queryNo is not None:
-                if "TotalQueries" in queryNo:
-                    if queryNo["TotalQueries"] is not None:
-                        queries = int(queryNo["TotalQueries"])
-                    else:
-                        queries = 0
-                else:
-                    queries = 0
-            else:
-                queries = 0
 
-            lastUploadTime = collection.find({},{"_id":0, "timestamp":1}).sort([("timestamp",-1)]).limit(1)
+            #gets most recent upload timestamp.
+            lastUploadTime = collection.find({'active': True},
+                                             {'_id': 0, "timestamp": 1}).sort([("timestamp", -1)]).limit(1)
             if lastUploadTime is not None:
                 lastUploadTime = list(lastUploadTime)
                 if len(lastUploadTime) > 0:
@@ -684,8 +675,9 @@ def callback(ch, method, properties, body):
             else:
                 timestamp = 0
 
-            MongoClient(mongo_url)["xplainIO"].organizations.update({"guid":tenant},{"$set":{"uploads": (collection.count() -1) , \
-                "queries":queries, "lastTimeStamp": timestamp}})
+            xplain_client["xplainIO"].organizations.update({"guid": tenant},
+                                                           {"$set": {"uploads": (collection.count()-1),
+                                                            "lastTimeStamp": timestamp}})
 
             logging.info("Updated the overall stats values.")
     except:
