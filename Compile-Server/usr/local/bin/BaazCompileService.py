@@ -1025,7 +1025,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if eid == entity.eid:
 
                 redis_conn.createEntityProfile(entity.eid, etype)
-                redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
+                if custom_id is not None:
+                    redis_conn.incrEntityCounterWithSecKey(entity.eid, "instance_count", custom_id, sort = True,incrBy=1)
+                else:
+                    redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
                 if elapsed_time is not None:
                     try:
                         redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
