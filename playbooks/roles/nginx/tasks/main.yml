@@ -14,9 +14,15 @@
 - name: copy Maintenance file
   template: src=roles/nginx/files/maintenance_off.html dest=/var/www/maintenance_off.html
   sudo: yes
-#- name: Template and copy nginx conf file
-#  template: src=nginx.conf dest=/etc/nginx/sites-enabled/default
-#  sudo: yes
+- name: copy 404 page
+  copy: src=roles/nginx/files/404.html dest=/var/www/404.html
+  sudo: yes
+- name: copy 502 page
+  copy: src=roles/nginx/files/502.html dest=/var/www/502.html
+  sudo: yes
+- name: Template and copy nginx conf file
+  template: src=nginx.conf dest=/etc/nginx/sites-enabled/default
+  sudo: yes
 - name: Template and copy different nginx conf file if staging (No SSL)
   template: src=nginx.conf.staging dest=/etc/nginx/sites-enabled/default
   when: clusterName == 'xplain-staging'
