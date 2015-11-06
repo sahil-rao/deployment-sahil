@@ -743,9 +743,21 @@ def create_query_character(signature_keywords, operator_list):
     '''
     character = []
 
-    operators = ['INSERT']
+    '''
+    Check for ddl character in operator list
+    '''
+    ddl_char = ['CREATE_TABLE', 'ALTER_TABLE', 'DROP_TABLE']
+    for entry in ddl_char:
+        if entry in operator_list:
+           character.append('DDL')
+           return character
+
+    operators = ['INSERT', 'UPDATE', 'DELETE']
     for operator in operators:
         if '%s_VALUES'%(operator) in operator_list:
+            character.append('%s: singleton'%(operator))
+            return character
+        elif '%s_SIMPLE'%(operator) in operator_list:
             character.append('%s: singleton'%(operator))
             return character
 
@@ -791,6 +803,10 @@ def create_query_character(signature_keywords, operator_list):
         prefix = []
         if 'Insert' in signature_keywords:
             prefix.append('INSERT: ')
+        if 'UPDATE' in operator_list:
+            prefix.append('UPDATE: ')
+        if 'DELETE' in operator_list:
+            prefix.append('DELETE: ')
 
         if 'Join' in signature_keywords:
             character.append('Join')
@@ -1009,7 +1025,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if eid == entity.eid:
 
                 redis_conn.createEntityProfile(entity.eid, etype)
-                redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
+                if custom_id is not None:
+                    redis_conn.incrEntityCounterWithSecKey(entity.eid, "instance_count", custom_id, sort = True,incrBy=1)
+                else:
+                    redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
                 if elapsed_time is not None:
                     try:
                         redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))

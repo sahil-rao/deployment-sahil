@@ -19,7 +19,6 @@ import baazmath.workflows.impala_analytics as Impala
 import flightpath.services.app_get_table_detail as table_details
 import flightpath.services.app_get_query_detail as query_details
 import flightpath.services.app_get_upload_detail as upload_details
-import flightpath.services.app_get_top_fact as top_fact
 import flightpath.services.app_get_top_dim as top_dim
 import flightpath.services.app_get_top_table_by_patterns as top_tables_by_pattern
 import flightpath.services.app_get_top_tables as top_tables
@@ -30,7 +29,6 @@ import flightpath.services.app_get_table_stats as table_stats
 import flightpath.services.app_get_table_transform_stats as table_transform_stats
 import flightpath.services.app_get_query_transform_stats as query_transform_stats
 import flightpath.services.app_get_column_stats as column_stats
-import flightpath.services.app_get_query_stats as query_stats
 import flightpath.services.app_get_workload_assessment as workload_assessment
 import flightpath.services.app_get_access_patterns as access_patterns
 import flightpath.services.app_cleanup_user as cleanup_user
@@ -458,10 +456,7 @@ def callback(ch, method, properties, body):
             if "uid" in msg_dict:
                 uid = msg_dict["uid"]
                 resp_dict["totalQueries"] = rc.getScaleModeTotalQueryCount(uid)
-                resp_dict["progress"] = rc.getProgress(uid) 
-        elif msg_dict['opcode'] == "TopFact":
-            operator = msg_dict['operator'] if 'operator' in msg_dict else None
-            resp_dict = top_fact.execute(tenant, operator)
+                resp_dict["progress"] = rc.getProgress(uid)
         elif msg_dict['opcode'] == "TopDim":
             resp_dict = top_dim.execute(tenant)
         elif msg_dict['opcode'] == "TopTablesByPattern":
@@ -477,8 +472,6 @@ def callback(ch, method, properties, body):
             resp_dict = table_stats.execute(tenant)
         elif msg_dict['opcode'] == "ColumnStats":
             resp_dict = column_stats.execute(tenant)
-        elif msg_dict['opcode'] == "QueryStats":
-            resp_dict = query_stats.execute(tenant)
         elif msg_dict['opcode'] == "SimpleQueries":
             resp_dict = simple_queries.execute(tenant)
         elif msg_dict['opcode'] == "WorkloadAssessment":
