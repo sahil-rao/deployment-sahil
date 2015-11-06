@@ -1,254 +1,254 @@
-# ---
-# - name: Create primary MongoDB instance
-#   hosts: localhost
-#   vars_files:
-#     - xplain_config.yml
-#   vars:
-#     - silo_name : "DBSilo{{ silo_id }}"
-#     - mongodb_tag_name : "tag_Name_MongoDBServer{{ silo_id }}"
-#     - arbiter_tag_name : "tag_Name_Arbiter{{ silo_id }}"
-#     - mongdb_instance_tag : "MongoDBServer{{ silo_id }}"
-#     - arbiter_instance_tag : "Arbiter{{ silo_id }}"
-#   gather_facts: False
-#   tasks:
-#     - name: Print Silo Name
-#       debug: msg="Launching Silo{{ silo_name }}, {{ mongodb_tag_name }}"
-#     - name: Launch MongoDB instance
-#       local_action: 
-#           module: ec2 
-#           key_name: "{{ keypair }}"
-#           vpc_subnet_id: "{{ vpc_subnet }}"
-#           group_id: "{{ mongodb_security_group }}" 
-#           instance_type: "{{ mongodb_instance_type }}"
-#           image: "{{ mongodb_image }}" 
-#           count : 2
-#           wait: true 
-#           wait_timeout: 600
-#           region: "{{ region }}" 
-#           instance_tags:
-#             Name: "MongoDBServer{{ silo_id }}"
-#       register: mongodb_primary
-#     - name: Launch MongoDB Arbiter instance
-#       local_action: 
-#           module: ec2 
-#           key_name: "{{ keypair }}"
-#           vpc_subnet_id: "{{ vpc_subnet }}"
-#           group_id: "{{ arbiter_security_group }}" 
-#           instance_type: "{{ arbiter_instance_type }}"
-#           image: "{{ arbiter_image }}" 
-#           wait: true 
-#           wait_timeout: 600
-#           region: "{{ region }}" 
-#           instance_tags:
-#             Name: "Arbiter{{ silo_id }}"
-#       register: arbiter
-#     - name: Get the parameters
-#       debug: arbiter.instances
-#       with_items: arbiter.instances
-#     - name: Add Mongodb hosts to in memory
-#       add_host: name={{ item.private_ip }} groups=just_created_mongodb
-#       with_items: mongodb_primary.instances
-#     - name: Add Mongodb hosts to in memory
-#       add_host: name={{ mongodb_primary.instances[0].private_ip }} groups=just_created_mongodb_master
-#     - name: update inventory file
-#       local_action : inventory group={{ mongodb_tag_name }} hosts={{ item.private_ip }}
-#       with_items: mongodb_primary.instances
-#       sudo: true
-#     - name: Add Arbiter host in memory
-#       add_host: name={{ arbiter.instances[0].private_ip }} groups=just_created_arbiter
-#     - name: update inventory file with Arbiter
-#       local_action : inventory group={{ arbiter_tag_name }} hosts={{ arbiter.instances[0].private_ip }}
-#       sudo: true
+---
+- name: Create primary MongoDB instance
+  hosts: localhost
+  vars_files:
+    - xplain_config.yml
+  vars:
+    - silo_name : "DBSilo{{ silo_id }}"
+    - mongodb_tag_name : "tag_Name_MongoDBServer{{ silo_id }}"
+    - arbiter_tag_name : "tag_Name_Arbiter{{ silo_id }}"
+    - mongdb_instance_tag : "MongoDBServer{{ silo_id }}"
+    - arbiter_instance_tag : "Arbiter{{ silo_id }}"
+  gather_facts: False
+  tasks:
+    - name: Print Silo Name
+      debug: msg="Launching Silo {{ silo_name }}, {{ mongodb_tag_name }}"
+    - name: Launch MongoDB instance
+      local_action: 
+          module: ec2 
+          key_name: "{{ keypair }}"
+          vpc_subnet_id: "{{ vpc_subnet }}"
+          group_id: "{{ mongodb_security_group }}" 
+          instance_type: "{{ mongodb_instance_type }}"
+          image: "{{ mongodb_image }}" 
+          count : 2
+          wait: true 
+          wait_timeout: 600
+          region: "{{ region }}" 
+          instance_tags:
+            Name: "MongoDBServer{{ silo_id }}"
+      register: mongodb_primary
+    - name: Launch MongoDB Arbiter instance
+      local_action: 
+          module: ec2 
+          key_name: "{{ keypair }}"
+          vpc_subnet_id: "{{ vpc_subnet }}"
+          group_id: "{{ arbiter_security_group }}" 
+          instance_type: "{{ arbiter_instance_type }}"
+          image: "{{ arbiter_image }}" 
+          wait: true 
+          wait_timeout: 600
+          region: "{{ region }}" 
+          instance_tags:
+            Name: "Arbiter{{ silo_id }}"
+      register: arbiter
+    - name: Get the parameters
+      debug: arbiter.instances
+      with_items: arbiter.instances
+    - name: Add Mongodb hosts to in memory
+      add_host: name={{ item.private_ip }} groups=just_created_mongodb
+      with_items: mongodb_primary.instances
+    - name: Add Mongodb hosts to in memory
+      add_host: name={{ mongodb_primary.instances[0].private_ip }} groups=just_created_mongodb_master
+    - name: update inventory file
+      local_action : inventory group={{ mongodb_tag_name }} hosts={{ item.private_ip }}
+      with_items: mongodb_primary.instances
+      sudo: true
+    - name: Add Arbiter host in memory
+      add_host: name={{ arbiter.instances[0].private_ip }} groups=just_created_arbiter
+    - name: update inventory file with Arbiter
+      local_action : inventory group={{ arbiter_tag_name }} hosts={{ arbiter.instances[0].private_ip }}
+      sudo: true
 
-# # Now copy the configuration files for mongodb and arbiterator and restart services.
-# - name: Configure MongoDB
-#   hosts: just_created_mongodb
-#   vars_files:
-#     - xplain_config.yml
-#   vars:
-#     - silo_name : "DBSilo{{ silo_id }}"
-#     - mongodb_tag_name : "tag_Name_MongoDBServer{{ silo_id }}"
-#     - arbiter_tag_name : "tag_Name_Arbiter{{ silo_id }}"
-#     - mongdb_instance_tag : "MongoDBServer{{ silo_id }}"
-#     - arbiter_instance_tag : "Arbiter{{ silo_id }}"
-#   tasks:
-#     - name: Copy the configuration files.
-#       template: src=templates/mongodb.conf dest=/etc/mongod.conf
-#       sudo: yes
-#     - name: Stop any mongodb 
-#       service: name=mongod state=stopped
-#       sudo: yes
-#       ignore_errors: true
-#     - name: Restart mongodb 
-#       service: name=mongod state=started
-#       sudo: yes
+# Now copy the configuration files for mongodb and arbiterator and restart services.
+- name: Configure MongoDB
+  hosts: just_created_mongodb
+  vars_files:
+    - xplain_config.yml
+  vars:
+    - silo_name : "DBSilo{{ silo_id }}"
+    - mongodb_tag_name : "tag_Name_MongoDBServer{{ silo_id }}"
+    - arbiter_tag_name : "tag_Name_Arbiter{{ silo_id }}"
+    - mongdb_instance_tag : "MongoDBServer{{ silo_id }}"
+    - arbiter_instance_tag : "Arbiter{{ silo_id }}"
+  tasks:
+    - name: Copy the configuration files.
+      template: src=templates/mongodb.conf dest=/etc/mongod.conf
+      sudo: yes
+    - name: Stop any mongodb 
+      service: name=mongod state=stopped
+      sudo: yes
+      ignore_errors: true
+    - name: Restart mongodb 
+      service: name=mongod state=started
+      sudo: yes
 
-# #Do the same as above for arbiter
-# - name: Configure Arbiter
-#   hosts: just_created_arbiter
-#   vars_files:
-#     - xplain_config.yml
-#   vars:
-#     - silo_name : "DBSilo{{ silo_id }}"
-#     - mongodb_tag_name : "tag_Name_MongoDBServer{{ silo_id }}"
-#     - arbiter_tag_name : "tag_Name_Arbiter{{ silo_id }}"
-#     - mongdb_instance_tag : "MongoDBServer{{ silo_id }}"
-#     - arbiter_instance_tag : "Arbiter{{ silo_id }}"
-#   tasks:
-#     - name: Copy the configuration files.
-#       template: src=templates/mongodb.conf dest=/etc/mongod.conf
-#       sudo: yes
-#     - name: Stop any mongodb 
-#       service: name=mongod state=stopped
-#       sudo: yes
-#       ignore_errors: true
-#     - name: Restart mongodb 
-#       service: name=mongod state=started
-#       sudo: yes
+#Do the same as above for arbiter
+- name: Configure Arbiter
+  hosts: just_created_arbiter
+  vars_files:
+    - xplain_config.yml
+  vars:
+    - silo_name : "DBSilo{{ silo_id }}"
+    - mongodb_tag_name : "tag_Name_MongoDBServer{{ silo_id }}"
+    - arbiter_tag_name : "tag_Name_Arbiter{{ silo_id }}"
+    - mongdb_instance_tag : "MongoDBServer{{ silo_id }}"
+    - arbiter_instance_tag : "Arbiter{{ silo_id }}"
+  tasks:
+    - name: Copy the configuration files.
+      template: src=templates/mongodb.conf dest=/etc/mongod.conf
+      sudo: yes
+    - name: Stop any mongodb 
+      service: name=mongod state=stopped
+      sudo: yes
+      ignore_errors: true
+    - name: Restart mongodb 
+      service: name=mongod state=started
+      sudo: yes
 
-# #Copy the replicaset initiator to primary mongodb_server.
-# #Initialize the replica-set.
-# - name: Initiate Replicaset
-#   hosts: just_created_mongodb_master
-#   vars_files:
-#     - xplain_config.yml
-#   vars:
-#     - silo_name : "DBSilo{{ silo_id }}"
-#     - mongodb_tag_name : "tag_Name_MongoDBServer{{ silo_id }}"
-#     - arbiter_tag_name : "tag_Name_Arbiter{{ silo_id }}"
-#     - mongdb_instance_tag : "MongoDBServer{{ silo_id }}"
-#     - arbiter_instance_tag : "Arbiter{{ silo_id }}"
-#   tasks:
-#     - name: Copy the configuration files
-#       template: src=templates/rs.js dest=/tmp/rs.js
-#     - name: initialize the replica set
-#       shell: /usr/bin/mongo /tmp/rs.js
-#       ignore_errors: true
+#Copy the replicaset initiator to primary mongodb_server.
+#Initialize the replica-set.
+- name: Initiate Replicaset
+  hosts: just_created_mongodb_master
+  vars_files:
+    - xplain_config.yml
+  vars:
+    - silo_name : "DBSilo{{ silo_id }}"
+    - mongodb_tag_name : "tag_Name_MongoDBServer{{ silo_id }}"
+    - arbiter_tag_name : "tag_Name_Arbiter{{ silo_id }}"
+    - mongdb_instance_tag : "MongoDBServer{{ silo_id }}"
+    - arbiter_instance_tag : "Arbiter{{ silo_id }}"
+  tasks:
+    - name: Copy the configuration files
+      template: src=templates/rs.js dest=/tmp/rs.js
+    - name: initialize the replica set
+      shell: /usr/bin/mongo /tmp/rs.js
+      ignore_errors: true
 
-# - name: Launch new Redis instances
-#   hosts: localhost
-#   vars_files:
-#     - xplain_config.yml
-#   vars:
-#     - silo_name : "DBSilo{{ silo_id }}"
-#     - redis_tag_name : "tag_Name_Redis{{ silo_id }}"
-#     - redis_instance_tag : "RedisServer{{ silo_id }}"
-#   gather_facts: False
-#   tasks:
-#     - name: Print Silo Name
-#       debug: msg="Launching Silo{{ silo_name }}, {{ redis_tag_name }}"
-#     - name: Launch Redis instance
-#       local_action: 
-#           module: ec2 
-#           key_name: "{{ keypair }}"
-#           vpc_subnet_id: "{{ vpc_subnet }}"
-#           group_id: "{{ redis_security_group }}" 
-#           instance_type: "{{ redis_instance_type }}"
-#           image: "{{ redis_image }}" 
-#           count : 2
-#           wait: true 
-#           wait_timeout: 600
-#           region: "{{ region }}" 
-#           instance_tags:
-#             Name: "RedisServer{{ silo_id }}"
-#       register: redis
-#     - name: Set second Redis instance as slave and add to memory
-#       add_host: name={{ redis.instances[1].private_ip }} groups=just_created_redis_slave
-#     - name: Set first Redis instance as master and add to memory
-#       add_host: name={{ redis.instances[0].private_ip }} groups=just_created_redis_master
-#     - name: update inventory file with All Redis instances (including slaves)
-#       local_action : inventory group={{ redis_tag_name }} hosts={{ item.private_ip }}
-#       with_items: redis.instances
-#       sudo: true
-#     - name: Wait for SSH to come up
-#       local_action: wait_for host={{ item.private_ip }} port=22 delay=10 timeout=320 state=started
-#       with_items: redis.instances
+- name: Launch new Redis instances
+  hosts: localhost
+  vars_files:
+    - xplain_config.yml
+  vars:
+    - silo_name : "DBSilo{{ silo_id }}"
+    - redis_tag_name : "tag_Name_Redis{{ silo_id }}"
+    - redis_instance_tag : "RedisServer{{ silo_id }}"
+  gather_facts: False
+  tasks:
+    - name: Print Silo Name
+      debug: msg="Launching Silo {{ silo_name }}, {{ redis_tag_name }}"
+    - name: Launch Redis instance
+      local_action: 
+          module: ec2 
+          key_name: "{{ keypair }}"
+          vpc_subnet_id: "{{ vpc_subnet }}"
+          group_id: "{{ redis_security_group }}" 
+          instance_type: "{{ redis_instance_type }}"
+          image: "{{ redis_image }}" 
+          count : 2
+          wait: true 
+          wait_timeout: 600
+          region: "{{ region }}" 
+          instance_tags:
+            Name: "RedisServer{{ silo_id }}"
+      register: redis
+    - name: Set second Redis instance as slave and add to memory
+      add_host: name={{ redis.instances[1].private_ip }} groups=just_created_redis_slave
+    - name: Set first Redis instance as master and add to memory
+      add_host: name={{ redis.instances[0].private_ip }} groups=just_created_redis_master
+    - name: update inventory file with All Redis instances (including slaves)
+      local_action : inventory group={{ redis_tag_name }} hosts={{ item.private_ip }}
+      with_items: redis.instances
+      sudo: true
+    - name: Wait for SSH to come up
+      local_action: wait_for host={{ item.private_ip }} port=22 delay=10 timeout=320 state=started
+      with_items: redis.instances
 
-# - name: Set one of the Redis instances as slave of the other
-#   hosts: just_created_redis_slave
-#   tasks:
+- name: Set one of the Redis instances as slave of the other
+  hosts: just_created_redis_slave
+  tasks:
 
-#   - name: Kill monit so it doesn't interfere
-#     service: name=monit state=stopped
-#     sudo: true
-#   - name: Stop redis-server
-#     service: name=redis-server state=stopped
-#     sudo: true
-#   - name: Reconfigure conf file to transform into slave of first ip in tag_Name_Redis
-#     template: src=templates/redisslave.conf dest=/etc/redis/local/redis.conf owner=redis group=redis mode=0644
-#     sudo: true
-#   - name: Restart redis-server
-#     service: name=redis-server state=started
-#     sudo: true
-#   - name: Start monit again
-#     service: name=monit state=started
-#     sudo: true
+  - name: Kill monit so it doesn't interfere
+    service: name=monit state=stopped
+    sudo: true
+  - name: Stop redis-server
+    service: name=redis-server state=stopped
+    sudo: true
+  - name: Reconfigure conf file to transform into slave of first ip in tag_Name_Redis
+    template: src=templates/redisslave.conf dest=/etc/redis/local/redis.conf owner=redis group=redis mode=0644
+    sudo: true
+  - name: Restart redis-server
+    service: name=redis-server state=started
+    sudo: true
+  - name: Start monit again
+    service: name=monit state=started
+    sudo: true
 
-# - name: Tell sentinels to track new redis master
-#   hosts: tag_Name_Backoffice
-#   vars_files:
-#     - xplain_config.yml
-#   vars: 
-#     - redis_master_name : "redismasterSilo{{ silo_id }}"
-#     - redis_master_ip : "{{ groups['just_created_redis_master'][0] }}"
-#   tasks:
-#     - name: monitor new master
-#       command: redis-cli -p 26379 sentinel monitor {{ redis_master_name }} {{ redis_master_ip }} 6379 2
+- name: Tell sentinels to track new redis master
+  hosts: tag_Name_RedisSentinel
+  vars_files:
+    - xplain_config.yml
+  vars: 
+    - redis_master_name : "redismasterSilo{{ silo_id }}"
+    - redis_master_ip : "{{ groups['just_created_redis_master'][0] }}"
+  tasks:
+    - name: monitor new master
+      command: redis-cli -p 26379 sentinel monitor {{ redis_master_name }} {{ redis_master_ip }} 6379 2
 
-# - name: Launch new ES instances
-#   hosts: localhost
-#   vars_files:
-#     - xplain_config.yml
-#   vars:
-#     - silo_name : "DBSilo{{ silo_id }}"
-#     - elastic_tag_name : "tag_Name_ElasticSearch{{ silo_id }}"
-#     - elastic_instance_tag : "ElasticSearch{{ silo_id }}"
-#   gather_facts: False
-#   tasks:
-#     - name: Print Silo Name
-#       debug: msg="Launching Silo{{ silo_name }}, {{ elastic_tag_name }}"
-#     - name: Launch elastic instance
-#       local_action: 
-#           module: ec2 
-#           key_name: "{{ keypair }}"
-#           vpc_subnet_id: "{{ vpc_subnet }}"
-#           group_id: "{{ elastic_search_security_group }}" 
-#           instance_type: "{{ elastic_search_instance_type }}"
-#           image: "{{ elastic_search_image }}" 
-#           count : 2
-#           wait: true 
-#           wait_timeout: 600
-#           region: "{{ region }}" 
-#           instance_tags:
-#             Name: "ElasticSearch{{ silo_id }}"
-#       register: elastic_search
-#     - name: Add ES to memory
-#       add_host: name={{ item.private_ip }} groups=just_created_es
-#       with_items: elastic_search.instances
-#     - name: Update inventory with ES ips
-#       local_action : inventory group={{ elastic_tag_name }} hosts={{ item.private_ip }}
-#       with_items: elastic_search.instances
-#       sudo: true
-#     - name: Wait for SSH to come up
-#       local_action: wait_for host={{ item.private_ip }} port=22 delay=10 timeout=320 state=started
-#       with_items: elastic_search.instances
+- name: Launch new ES instances
+  hosts: localhost
+  vars_files:
+    - xplain_config.yml
+  vars:
+    - silo_name : "DBSilo{{ silo_id }}"
+    - elastic_tag_name : "tag_Name_ElasticSearch{{ silo_id }}"
+    - elastic_instance_tag : "ElasticSearch{{ silo_id }}"
+  gather_facts: False
+  tasks:
+    - name: Print Silo Name
+      debug: msg="Launching Silo{{ silo_name }}, {{ elastic_tag_name }}"
+    - name: Launch elastic instance
+      local_action: 
+          module: ec2 
+          key_name: "{{ keypair }}"
+          vpc_subnet_id: "{{ vpc_subnet }}"
+          group_id: "{{ elastic_search_security_group }}" 
+          instance_type: "{{ elastic_search_instance_type }}"
+          image: "{{ elastic_search_image }}" 
+          count : 2
+          wait: true 
+          wait_timeout: 600
+          region: "{{ region }}" 
+          instance_tags:
+            Name: "ElasticSearch{{ silo_id }}"
+      register: elastic_search
+    - name: Add ES to memory
+      add_host: name={{ item.private_ip }} groups=just_created_es
+      with_items: elastic_search.instances
+    - name: Update inventory with ES ips
+      local_action : inventory group={{ elastic_tag_name }} hosts={{ item.private_ip }}
+      with_items: elastic_search.instances
+      sudo: true
+    - name: Wait for SSH to come up
+      local_action: wait_for host={{ item.private_ip }} port=22 delay=10 timeout=320 state=started
+      with_items: elastic_search.instances
 
-# - name: Mount SSD and Change ES data dir to it
-#   hosts: just_created_es
-#   tasks:
+- name: Mount SSD and Change ES data dir to it
+  hosts: just_created_es
+  tasks:
 
-#   - name: Stop ES
-#     service: name=elasticsearch state=stopped
-#     sudo: true
-#   - name: Mount SSD
-#     mount: name=/mnt/esdata src=/dev/xvdf fstype=ext3 state=mounted
-#     sudo: true
-#   - name: Template out new elasticsearch.yml file
-#     template: src=templates/elasticsearch.yml dest=/etc/elasticsearch/elasticsearch.yml owner=elasticsearch group=elasticsearch mode=0644
-#     sudo: true
-#   - name: Start ES
-#     service: name=elasticsearch state=started
-#     sudo: true
+  - name: Stop ES
+    service: name=elasticsearch state=stopped
+    sudo: true
+  - name: Mount SSD
+    mount: name=/mnt/esdata src=/dev/xvdf fstype=ext3 state=mounted
+    sudo: true
+  - name: Template out new elasticsearch.yml file
+    template: src=templates/elasticsearch.yml dest=/etc/elasticsearch/elasticsearch.yml owner=elasticsearch group=elasticsearch mode=0644
+    sudo: true
+  - name: Start ES
+    service: name=elasticsearch state=started
+    sudo: true
 
 - name: Configure default routing redis with all the new information
   hosts: localhost
@@ -257,7 +257,7 @@
   gather_facts: False 
   tasks:
     - name: Create intermediate json for python script to read
-      template: src=templates/newsiloinfotest.json.j2 dest=/home/ubuntu/parna/workspace/newsiloinfo.json
+      template: src=templates/newsiloinfo.json.j2 dest=/home/ubuntu/newsiloinfo.json
     - name: Update routing redis with new info
       local_action: command /usr/bin/python addsilo.py
       
