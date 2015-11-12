@@ -114,18 +114,6 @@ def storeResourceProfile(tenant):
             mongoconn.updateProfile(entity, "Resource", resource_doc)
     mongoconn.close()
 
-def end_of_phase_callback(params, current_phase):
-    if current_phase > 1:
-        logging.error("Attempted end of phase callback, but current phase > 1")
-        return
-
-    logging.info("Changing processing Phase")
-    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"} 
-    msg_dict['uid'] = params['uid']
-    message = dumps(msg_dict)
-    params['connection'].publish(params['channel'],'',params['queuename'],message) 
-    return
-
 def analytics_callback(params):
     '''
     Callback method that is used to initiate the processing of a passed in opcode.
@@ -418,7 +406,7 @@ def callback(ch, method, properties, body):
     startTime = time.time()
     msg_dict = loads(body)
 
-    logging.info("Analytics: Got message "+ str(msg_dict))
+    #logging.info("Analytics: Got message "+ str(msg_dict))
 
     """
     Validate the message.
@@ -464,7 +452,7 @@ def callback(ch, method, properties, body):
         
         if opcode == 'Cluster':
             try:
-                logging.info("Clustering...")
+                #logging.info("Clustering...")
                 clause_combo = msg_dict['clause_combo']
                 cluster_clause = msg_dict['cluster_clause']
                 qgroup = QueryGroup(tenant, clause_combo)
@@ -485,8 +473,6 @@ def callback(ch, method, properties, body):
         """
     	connection1.basicAck(ch,method)
         return
-
-    callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'mathqueue'}
 
     mathconfig = ConfigParser.RawConfigParser()
     mathconfig.read("/etc/xplain/adv_analytics.cfg")
@@ -576,7 +562,6 @@ def callback(ch, method, properties, body):
                 redis_conn.setEntityProfile(uid, {stats_phase_key: 1})
 
     logging.info("Event Processing Complete")     
-    decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
     if opcode == "PhaseTwoAnalysis":
         collection.update({'uid':"0"},{'$set': { "done":True}})        
 
@@ -584,43 +569,14 @@ def callback(ch, method, properties, body):
         #The length function in the if statement is a count of the mending messages
         timest = int(time.time() * 1000)
         redis_conn.setEntityProfile(uid, {"Phase2MessageProcessed":timest})
-        write_upload_stats.run_workflow(tenant, {})
+        write_upload_stats.run_workflow(tenant, {'uid':uid})
 
-    """
-     Progress Bar update
-    """
-    notif_queue = "node-update-queue"
-    logging.info("Going to check progress bar")     
-    try:
-        stats_dict = redis_conn.getEntityProfile(uid)
-        if stats_dict is not None and\
-            "total_queries" in stats_dict and\
-            "processed_queries" in stats_dict and\
-            ("query_message_id" in msg_dict or opcode == "PhaseTwoAnalysis"):
-            if opcode != "PhaseTwoAnalysis":
-                redis_conn.incrEntityCounter(uid, 'processed_queries', incrBy = 1)
-            
-            processed_queries = int(stats_dict["processed_queries"])
-            total_queries = int(stats_dict["total_queries"])
-            if (processed_queries%10 == 0 or\
-               (total_queries) <= (processed_queries + 1)) and \
-               int(redis_conn.numMessagesPending(uid)) != 0:
-                #logging.info("Procesing progress bar event")     
-                out_dict = {"messageType" : "uploadProgress", "tenantId": tenant, 
-                            "completed": processed_queries + 1, "total":total_queries}
-                connection1.publish(ch,'', notif_queue, dumps(out_dict))
-    except:
-        logging.exception("While making update to progress bar")
-
-    """
-     Progress Bar Update end
-    """
-    connection1.basicAck(ch,method)
+    connection1.basicAck(ch, method)
 
     endTime = time.time()
-    if msg_dict.has_key('uid'):
+    if 'uid' in msg_dict:
         #if uid has been set, the variable will be set already
-        redis_conn.incrEntityCounter(uid, "Math.time", incrBy = endTime-startTime)
+        redis_conn.incrEntityCounter(uid, "Math.time", incrBy=(endTime - startTime))
 
 connection1 = RabbitConnection(callback, ['advanalytics'], [], {}, prefetch_count=1)
 

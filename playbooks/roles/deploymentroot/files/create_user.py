@@ -23,7 +23,7 @@ def execute(email_address):
     num2 = random.randint(100, 999)
     random_password = (word1 + str(num1) + word2 + str(num2)).replace('\n', '')
 
-    #Register user
+    #Register user and generate token
     headers = {'content-type': 'application/json'}
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
@@ -35,30 +35,10 @@ def execute(email_address):
         if 'upgradeComplete' not in response.json() or not response.json()['upgradeComplete']:
             print response.json()
             return 'fail'
-
-    #create email HTML message
-    env = Environment(loader=FileSystemLoader('/var/www/templates'))
-    template = env.get_template('account_creation.html')
-    html_string = template.render(password=random_password).encode('utf-8')
-
-    #Send email to user
-    from_address = 'no-reply-data@cloudera.com'
-    from_password = 'D8eH5C8T'
-
-    msg = MIMEMultipart('alternative')
-    msg['Subject'] = 'Welcome to Cloudera Optimizer Beta!'
-    msg['From'] = from_address
-    msg['To'] = email_address
-    email_text = 'Congratulations! You have been accepted into Cloudera Optimizer Beta. Your password is: ' + random_password + '. \nPlease change your password as soon as you log in. Thanks!'
-    msg.attach(MIMEText(email_text, 'plain'))
-    msg.attach(MIMEText(html_string, 'html'))
-
-    server = smtplib.SMTP('smtp.gmail.com:587')
-    server.starttls()
-    server.login(from_address, from_password)
-    server.helo()
-    server.sendmail(from_address, email_address, msg.as_string())
-    server.quit()
+        response = requests.post(nodejs_url + 'app/generateVerificationCodeForNewUser/', json={'email': email_address}, headers=headers, verify=False)
+        if 'success' not in response.json():
+            print response.json()
+            return 'fail'
 
     return 'success'
 

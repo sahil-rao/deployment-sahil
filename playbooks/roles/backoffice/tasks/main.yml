@@ -141,6 +141,9 @@
 - name: Install python-logstash
   pip: name=python-logstash
   sudo: yes
+- name: Upgrade pymongo to 3.0
+  pip: name=pymongo state=latest
+  sudo: yes
 #REDIS SENTINEL DEPLOYMENT
 #- name: Install Redis APT Package
 #  apt: name=redis-server update_cache=yes
@@ -171,7 +174,12 @@
 #- name: Start sentinel
 #  service: name=redis-sentinel state=started
 #  sudo: yes
-
+- name: Update version number for dashboard page
+  local_action: template src=/var/www/index_template.j2 dest=/var/www/index.html
+  sudo: yes
+- name: Restart nginx
+  local_action: command nginx -s reload
+  sudo: yes
 - name: Start monit service
   shell: monit 
   sudo: yes
