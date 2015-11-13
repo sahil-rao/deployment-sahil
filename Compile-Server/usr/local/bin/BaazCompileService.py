@@ -916,7 +916,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                       "ComplexityScore",
                       "createTableName",
                       "ddlColumns",
-                      "viewName"]
+                      "viewName",
+                      "unqualifiedColumn"]
         if etype == EntityType.SQL_QUERY:
             compile_doc_fields = ["ErrorSignature", "queryHash", "queryNameHash"] + compile_doc_fields
 
