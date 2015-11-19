@@ -269,7 +269,10 @@ class callback_context():
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
-                Self.redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
+                Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
+                                                            "instance_count",
+                                                            sec_key=table_entity.name,
+                                                            sort=True, incrBy=0)
                 #updated the upload stats for table
                 Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.newTables"%(Self.compiler_to_use), incrBy=1)
             else:
@@ -319,7 +322,10 @@ class callback_context():
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
-                Self.redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
+                Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
+                                                            "instance_count",
+                                                            sec_key=table_entity.name,
+                                                            sort=True, incrBy=0)
                 if table_entity.eid != eid:
                     Self.mongoconn.db.entitieys.update({"eid": table_entity.eid},{'$set':{'stats': stats}})
                 #updated the upload stats for table

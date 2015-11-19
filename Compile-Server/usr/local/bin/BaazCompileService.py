@@ -147,7 +147,6 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity):
                     EntityType.SQL_TABLE, {"uid" : uid}, None)
             if eid == table_entity.eid:
                 redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
-                redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
                 tableCount = tableCount + 1
 
         if column_entity is None:
@@ -176,7 +175,10 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity):
     if entity is not None and table_entity is not None:
         redis_conn.createRelationship(entity.eid, table_entity.eid, "CREATE")
         logging.info(" CREATE Relation between {0} {1}\n".format(entity.eid, table_entity.eid))
-        redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=1)
+        redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
+                                               "instance_count",
+                                               sec_key=table_entity.name,
+                                               sort=True, incrBy=1)
     return [0, tableCount]
 
 def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinput, context, tableEidList=None, hive_success=0):
@@ -219,7 +221,14 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
 
             if eid == table_entity.eid:
                 redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
-                redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
+                '''
+                Incrementing by 0 to set the secondary sort key.
+                This way it does not need to be passed in later.
+                '''
+                redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
+                                                       "instance_count",
+                                                       sec_key=table_entity.name,
+                                                       sort=True, incrBy=0)
                 tableCount = tableCount + 1
 
         tableEidList.add(table_entity.eid)
@@ -313,8 +322,6 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                 redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
                 logging.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))
 
-    #mongoconn.finishBatchUpdate()
-
     return [dbCount, tableCount]
 
 def getTableName(tableentry):
@@ -379,7 +386,11 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
 
         if eid == view_entity.eid:
             redis_conn.createEntityProfile(view_entity.eid, "SQL_TABLE")
-            redis_conn.incrEntityCounter(view_entity.eid, "instance_count", sort=True, incrBy=0)
+            #incrementing by 0 so secondary sort_key is set.
+            redis_conn.incrEntityCounterWithSecKey(view_entity.eid,
+                                                   "instance_count",
+                                                   sec_key=view_entity.name,
+                                                   sort=True, incrBy=0)
             tableCount = tableCount + 1
             #add alias to the list
             if viewAlias != 'no_alias':
@@ -1026,10 +1037,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if eid == entity.eid:
 
                 redis_conn.createEntityProfile(entity.eid, etype)
-                if custom_id is not None:
-                    redis_conn.incrEntityCounterWithSecKey(entity.eid, "instance_count", custom_id, sort = True,incrBy=1)
-                else:
-                    redis_conn.incrEntityCounter(entity.eid, "instance_count", sort = True,incrBy=1)
+                redis_conn.incrEntityCounterWithSecKey(entity.eid,
+                                                       "instance_count",
+                                                       sec_key=custom_id,
+                                                       sort=True, incrBy=1)
                 if elapsed_time is not None:
                     try:
                         redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
