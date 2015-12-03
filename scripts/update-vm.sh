@@ -1,5 +1,14 @@
 #!/bin/bash
 
+if [ `command -v mvn` ]
+then
+  echo "Maven is installed"
+else
+  echo "Installing maven..."
+  sudo apt-get install maven
+fi
+
+
 cd  /home/xplain/build
 
 #Checkout deployment
@@ -14,28 +23,28 @@ cd /home/xplain/build/analytics
 git pull
 git checkout $1
 git reset --hard
-git pull 
+git pull
 
 #Checkout compiler
 cd /home/xplain/build/compiler
 git pull
 git checkout $1
 git reset --hard
-git pull 
+git pull
 
 #Checkout graph
 cd /home/xplain/build/graph
 git pull
 git checkout $1
 git reset --hard
-git pull 
+git pull
 
 #Checkout UI
 cd /home/xplain/build/UI
 git pull
 git checkout $1
 git reset --hard
-git pull 
+git pull
 
 cd /home/xplain/build/graph
 python setup.py bdist 
@@ -53,13 +62,12 @@ tar -cvf  xplain_dashboard.tar xplain_dashboard
 gzip -f  xplain_dashboard.tar
 
 
-cd /home/xplain/build/compiler/BAAZ_COMPILER
-ant main
+cd /home/xplain/build/compiler
+mvn assembly:assembly
 echo "Compiler is built"
 mkdir baaz_compiler
 #mv bin/com Baaz-Hive-Compiler/.
-cp bin/baaz_compiler.jar baaz_compiler/
-cp lib/*.jar baaz_compiler/
+cp target/Baaz-Compiler/*.jar baaz_compiler/
 tar -cvf  Baaz-Compiler.tar baaz_compiler
 gzip -f  Baaz-Compiler.tar
 
@@ -123,7 +131,7 @@ cp /home/xplain/build/deployment/VM/redis-sentinel.conf .
 
 cp /home/xplain/build/graph/dist/flightpath-*.tar.gz ./flightpath-deployment.tar.gz
 cp /home/xplain/build/UI/xplain.io.tar.gz .
-cp /home/xplain/build/compiler/BAAZ_COMPILER/Baaz-Compiler.tar.gz .
+cp /home/xplain/build/compiler/Baaz-Compiler.tar.gz .
 cp /home/xplain/build/analytics/dist/baazmath-*.tar.gz Baaz-Analytics.tar.gz
 cp /home/xplain/build/deployment/Data-Aquisition/Baaz-DataAcquisition-Service.tar.gz .
 cp /home/xplain/build/deployment/Compile-Server/Baaz-Compile-Service.tar.gz .

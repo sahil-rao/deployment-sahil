@@ -4,8 +4,8 @@ CLASSPATH="/usr/lib/baaz_compiler"
 XPLAIN_HOME="/usr/lib/baaz_compiler"
 
 # needed for execution
-if [ ! -f ${XPLAIN_HOME}/baaz_compiler.jar ]; then
-  echo "Missing Hive Execution Jar: ${XPLAIN_HOME}/baaz_compiler.jar"
+if [ ! -f ${XPLAIN_HOME}/navopt*.jar ]; then
+  echo "Missing Compiler Execution Jar: ${XPLAIN_HOME}/navopt*.jar"
   exit 1;
 fi
 

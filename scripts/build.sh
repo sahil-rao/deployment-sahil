@@ -78,13 +78,13 @@ tar -cvf xplain_dashboard.tar xplain_dashboard
 gzip xplain_dashboard.tar
 s3cmd sync xplain_dashboard.tar.gz s3://$S3Bucket/
 
-cd /home/ubuntu/build/compiler/BAAZ_COMPILER
-ant main
+cd /home/ubuntu/build/compiler
+mvn package -DskipTests
+mvn assembly:assembly
 echo "Compiler is built"
 mkdir baaz_compiler
 #mv bin/com Baaz-Hive-Compiler/.
-cp bin/baaz_compiler.jar baaz_compiler/
-cp lib/*.jar baaz_compiler/
+cp target/Baaz-Compiler/*.jar baaz_compiler/
 tar -cvf Baaz-Compiler.tar baaz_compiler
 gzip Baaz-Compiler.tar
 s3cmd sync Baaz-Compiler.tar.gz s3://$S3Bucket/
