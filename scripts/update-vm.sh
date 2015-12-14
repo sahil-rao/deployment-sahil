@@ -8,6 +8,32 @@ else
   sudo apt-get install maven
 fi
 
+if [ `command -v thrift` ]
+then
+  echo "thrift is installed"
+else
+  sudo apt-get -y install ant
+  sudo apt-get -y install libboost-dev libboost-test-dev libboost-program-options-dev libevent-dev automake libtool flex bison pkg-config g++ libssl-dev
+  sudo apt-get install make
+  wget http://mirror.nexcess.net/apache/thrift/0.9.3/thrift-0.9.3.tar.gz
+  rm -rf thrift-0.9.3
+  tar -xvf thrift-0.9.3.tar.gz
+  cd thrift-0.9.3
+  ./bootstrap.sh
+  ./configure
+  sudo make
+  sudo make install
+  #sudo pip install thrift
+  cd ..
+fi
+if [ `command -v thrift` ]
+then
+ echo ""
+else
+ echo "ERROR: thrift could not be installed.."
+ exit
+fi
+
 
 cd  /home/xplain/build
 
