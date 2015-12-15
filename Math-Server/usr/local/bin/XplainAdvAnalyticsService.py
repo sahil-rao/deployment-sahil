@@ -569,7 +569,10 @@ def callback(ch, method, properties, body):
         #The length function in the if statement is a count of the mending messages
         timest = int(time.time() * 1000)
         redis_conn.setEntityProfile(uid, {"Phase2MessageProcessed":timest})
-        write_upload_stats.run_workflow(tenant, {'uid':uid})
+        try:
+            write_upload_stats.run_workflow(tenant, {'uid':uid})
+        except:
+            logging.exception("Could not write upload stats dict to MongoDB: ")
 
     connection1.basicAck(ch, method)
 
