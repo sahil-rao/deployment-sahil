@@ -10,6 +10,8 @@ from flightpath.services.RotatingS3FileHandler import *
 from flightpath.utils import *
 from flightpath.parsing.ParseDemux import *
 from flightpath.Provenance import getMongoServer
+import flightpath.thriftclient.compilerthriftclient as tclient
+
 import sys
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
@@ -142,27 +144,17 @@ def process_mongo_rewrite_request(ch, properties, tenant, instances):
         """
         try:
             output_file_name = "/tmp/hbase_ddl.out"
-
-            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client_socket.connect(("localhost", 12121))
-
-            data = dumps(data_dict)
-            client_socket.send("1\n");
-
             """
                 For Mongo rewrite the opcode is 3.
             """
-            client_socket.send("3\n");
-            data = data + "\n"
-            client_socket.send(data)
-            rx_data = client_socket.recv(512)
+            opcode = 3
+            retries = 3
+            response = tclient.send_compiler_request(opcode, data_dict, retries)
 
-            if rx_data == "Done":
+            if response.isSuccess == True:
                 status = "SUCCESS"
             else:
                 status = "FAILED"
-
-            client_socket.close()
 
             compile_doc = None
             """
@@ -278,42 +270,23 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
         if os.path.isfile(output_file_name):
             os.remove(output_file_name)
 
-        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        retry_count = 0
-        socket_connected = False
-        while (socket_connected == False) and (retry_count < 2):
-            retry_count += 1
-            try:
-                client_socket.connect(("localhost", 12121))
-                socket_connected = True
-            except:
-                logging.error("Unable to connect to JVM socket on try #%s." %retry_count)
-                time.sleep(1)
-        if socket_connected == False:
-            raise Exception("Unable to connect to JVM socket.")
-
         EntityId = '0'
         if len(prog_id) == 0:
             EntityId = prog_id[0]
         data_dict = {"InputFile": oFile_path, "OutputFile": output_file_name, 
                      "EntityId": EntityId, "TenantId": "100", "Version": "1"}
-        data = dumps(data_dict)
-        client_socket.send("1\n");
 
         """
             For DDL generation the opcode is 2.
         """
-        client_socket.send("2\n");
-        data = data + "\n"
-        client_socket.send(data)
-        rx_data = client_socket.recv(512)
-
-        if rx_data == "Done":
+        opcode = 2
+        retries = 3
+        response = tclient.send_compiler_request(opcode, data_dict, retries)
+        
+        if response.isSuccess == True:
             status = "SUCCESS"
         else:
             status = "FAILED"
-
-        client_socket.close()
 
         """
             Upon response, check the output file.

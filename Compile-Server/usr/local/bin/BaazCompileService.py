@@ -14,6 +14,8 @@ from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from flightpath.services.mq_template import *
 from flightpath.services.xplain_log_handler import XplainLogstashHandler
+import flightpath.thriftclient.compilerthriftclient as tclient
+
 from subprocess import Popen, PIPE
 from json import *
 import sys
@@ -647,26 +649,11 @@ def process_scale_mode(tenant, uid, instances, smc):
                       "Compiler": "gsp",
                       "EntityId": "",
                       "TenantId": "100" }
-
-
-        data = dumps(data_dict)
-        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        client_socket.settimeout(60)
-        client_socket.connect(("localhost", 12121))
-        client_socket.send("1\n");
-
-        """
-        For regular compilation the opcode is 1.
-        """
-        client_socket.send("1\n");
-        data = data + "\n"
-        client_socket.send(data)
-        rx_data = client_socket.recv(512)
-
-        if rx_data.strip() == "Done":
-            logging.info("Got Done")
-
-        client_socket.close()
+        opcode = 1
+        retries = 3
+        response = tclient.send_compiler_request(opcode, data_dict, retries)
+        if response.isSuccess == True:
+          logging.info("Got Done")
 
         compile_doc = None
         logging.info("Loading file : "+ output_file_name)
@@ -1448,40 +1435,9 @@ def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_con
         "fromSubClauseFsmFile": fromSubClauseFsmFile,
         "source_platform": source_platform
     }
-
-    data = dumps(data_dict)
-
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.settimeout(60)
-
-    retry_count = 0
-    socket_connected = False
-
-    while (socket_connected == False) and (retry_count < 2):
-
-        retry_count += 1
-        try:
-            client_socket.connect(("localhost", 12121))
-            socket_connected = True
-        except:
-            logging.error("Unable to connect to JVM socket on try #%s." %retry_count)
-            time.sleep(1)
-        if socket_connected == False:
-            raise Exception("Unable to connect to JVM socket.")
-
-    client_socket.send("1\n");
-    """
-    For HAQR processing the opcode is 4.
-    """
-    client_socket.send("4\n");
-    data = data + "\n"
-    client_socket.send(data)
-    rx_data = client_socket.recv(512)
-
-    if rx_data.strip() == "Done":
-        logging.info("HAQR Got Done")
-
-    client_socket.close()
+    opcdode_HAQR = 4 
+    retries = 3
+    response = tclient.send_compiler_request(opcdode_HAQR, data_dict, retries)
 
     data = None
     logging.info("Loading file : "+ output_file_name)
@@ -1756,40 +1712,13 @@ def callback(ch, method, properties, body):
                 stats_success_key = "Compiler." + compilername + ".success"
                 stats_failure_key = "Compiler." + compilername + ".failure"
 
-                client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                client_socket.settimeout(60)
-
-                retry_count = 0
-                socket_connected = False
-                while (socket_connected == False) and (retry_count < 2):
-                    retry_count += 1
-                    try:
-                        client_socket.connect(("localhost", 12121))
-                        socket_connected = True
-                    except:
-                        logging.error("Unable to connect to JVM socket on try #%s." %retry_count)
-                        time.sleep(1)
-                if socket_connected == False:
-                    logging.error("Unable to connect to JVM socket.")
-                    continue
-
                 data_dict = { "InputFile": dest_file_name, "OutputFile": output_file_name,
                               "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
                 if source_platform is not None:
                     data_dict["source_platform"] = source_platform
-                data = dumps(data_dict)
-                client_socket.send("1\n");
-
-                """
-                For regular compilation the opcode is 1.
-                """
-                client_socket.send("1\n");
-                data = data + "\n"
-                client_socket.send(data)
-                rx_data = client_socket.recv(512)
-
-                client_socket.close()
-
+                opcode = 1
+                retries = 3
+                response = tclient.send_compiler_request(opcode, data_dict, retries)
                 """
                 It is possible the tenant has been cleared. If this is the case then do not add an new entities.
                 """
@@ -1802,7 +1731,7 @@ def callback(ch, method, properties, body):
                     ch.basic_ack(delivery_tag=method.delivery_tag)
                     return
 
-                if rx_data.strip() == "Done":
+                if response.isSuccess == True:
                     logging.info("Got Done")
                 else:
                     logging.info("Got "+rx_data)

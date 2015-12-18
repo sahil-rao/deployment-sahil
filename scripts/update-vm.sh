@@ -73,6 +73,7 @@ git reset --hard
 git pull
 
 cd /home/xplain/build/graph
+rm -rf build dist
 python setup.py bdist 
 cd dist
 echo "Graph is built!"

@@ -14,6 +14,8 @@ from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from flightpath.clustering.querygroup import QueryGroup
 from flightpath.services.xplain_log_handler import XplainLogstashHandler
+import flightpath.thriftclient.compilerthriftclient as tclient
+
 import baazmath.workflows.write_upload_stats as write_upload_stats
 from json import *
 #from baazmath.interface.BaazCSV import *
@@ -185,38 +187,15 @@ def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
         "source_platform": source_platform
     }
 
-    data = dumps(data_dict)
-
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    retry_count = 0
-    socket_connected = False
-
-    while (socket_connected == False) and (retry_count < 2):
-
-        retry_count += 1
-        try:
-            client_socket.connect(("localhost", 12121))
-            socket_connected = True
-        except:
-            logging.error("Unable to connect to JVM socket on try #%s." %retry_count)
-            time.sleep(1)
-        if socket_connected == False:
-            raise Exception("Unable to connect to JVM socket.")
-
-    client_socket.send("1\n");
     """
     For HAQR processing the opcode is 4.
     """
-    client_socket.send("4\n");
-    data = data + "\n"
-    client_socket.send(data)
-    rx_data = client_socket.recv(512)
-
-    if rx_data == "Done":
+    opcode = 4
+    retries = 3
+    response = tclient.send_compiler_request(opcode, data_dict, retries)
+    if response.isSuccess == True:
         logging.info("HAQR Got Done")
 
-    client_socket.close()
     data = None
     logging.info("Loading file : "+ output_file_name)
     with open(output_file_name) as data_file:
