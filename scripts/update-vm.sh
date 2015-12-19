@@ -34,6 +34,14 @@ else
  exit
 fi
 
+ispip=`pip show thrift`
+if [ $ispip -ne 0 ]
+then
+        sudo pip install thrift
+else
+        echo "thrift python library present.."
+fi
+
 
 cd  /home/xplain/build
 
