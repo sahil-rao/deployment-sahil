@@ -23,7 +23,7 @@ else
   ./configure
   sudo make
   sudo make install
-  #sudo pip install thrift
+  sudo pip install thrift
   cd ..
 fi
 if [ `command -v thrift` ]
