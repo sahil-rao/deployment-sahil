@@ -1,5 +1,8 @@
 #!/bin/bash
 
+sudo echo "Strating build vm proces..."
+
+#check mvn dependency
 if [ `command -v mvn` ]
 then
   echo "Maven is installed"
@@ -8,6 +11,7 @@ else
   sudo apt-get install maven
 fi
 
+#check thrift dependency
 if [ `command -v thrift` ]
 then
   echo "thrift is installed"
@@ -23,26 +27,35 @@ else
   ./configure
   sudo make
   sudo make install
-  sudo pip install thrift
+  sudo pip install 'thrift==0.9.3'
   cd ..
 fi
-if [ `command -v thrift` ]
-then
- echo ""
-else
- echo "ERROR: thrift could not be installed.."
- exit
-fi
 
-ispip=`pip show thrift`
+#check for python thrift libraries
+pip show thrift|grep 0.9.3 
+ispip=`echo $?`
 if [ $ispip -ne 0 ]
 then
-        sudo pip install thrift
+  sudo pip install 'thrift==0.9.3'
 else
-        echo "thrift python library present.."
+  echo "thrift python library present.."
 fi
 
+thrift -version |grep 0.9.3
+is_thrift_ver=`echo $?`
+pip show thrift|grep 0.9.3 
+is_thrift_py_lib_ver=`echo $?`
 
+#check if thrift went through and has correct versions
+if [ $is_thrift_ver -ne 0 -o $is_thrift_py_lib_ver -ne 0 ]
+then
+ echo "ERROR: Thrift/thrift python libraries are either missing or not of correct version"
+ exit 1
+else
+ echo "All thrift dependencies met..."
+fi
+
+#start building process
 cd  /home/xplain/build
 
 #Checkout deployment
@@ -98,8 +111,14 @@ gzip -f  xplain_dashboard.tar
 
 
 cd /home/xplain/build/compiler
-mvn assembly:assembly
-echo "Compiler is built"
+mvn package -DskipTests
+if [ $? -eq 0 ]
+then
+  echo "Compiler is built"
+else 
+  echo "ERROR with compiler build process"
+  exit 1
+fi
 mkdir baaz_compiler
 #mv bin/com Baaz-Hive-Compiler/.
 cp target/Baaz-Compiler/*.jar baaz_compiler/

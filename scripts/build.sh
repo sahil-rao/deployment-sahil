@@ -23,15 +23,32 @@ else
   ./configure
   sudo make
   sudo make install
-  #sudo pip install thrift
+  sudo pip install 'thrift==0.9.3'
   cd ..
 fi
-if [ `command -v thrift` ]
+
+#check for python thrift libraries
+pip show thrift|grep 0.9.3 
+ispip=`echo $?`
+if [ $ispip -ne 0 ]
 then
- echo ""
+  sudo pip install 'thrift==0.9.3'
 else
- echo "ERROR: thrift could not be installed.."
- exit
+  echo "thrift python library present.."
+fi
+
+thrift -version |grep 0.9.3
+is_thrift_ver=`echo $?`
+pip show thrift|grep 0.9.3 
+is_thrift_py_lib_ver=`echo $?`
+
+#check if thrift went through
+if [ $is_thrift_ver -ne 0 -o $is_thrift_py_lib_ver -ne 0 ]
+then
+ echo "ERROR: Thrift/thrift python libraries are either missing or not of correct version"
+ exit 1
+else
+ echo "All thrift dependencies met..."
 fi
 
 
@@ -115,8 +132,13 @@ s3cmd sync xplain_dashboard.tar.gz s3://$S3Bucket/
 
 cd /home/ubuntu/build/compiler
 mvn package -DskipTests
-mvn assembly:assembly
-echo "Compiler is built"
+if [ $? -eq 0 ]
+then
+  echo "Compiler is built"
+else 
+  echo "ERROR with compiler build process"
+  exit 1
+fi
 mkdir baaz_compiler
 #mv bin/com Baaz-Hive-Compiler/.
 cp target/Baaz-Compiler/*.jar baaz_compiler/
