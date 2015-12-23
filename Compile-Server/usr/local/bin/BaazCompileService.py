@@ -636,16 +636,9 @@ def process_scale_mode(tenant, uid, instances, smc):
         destination = '/mnt/volume1/compile-' + tenant + "/" + timestr
         if not os.path.exists(destination):
             os.makedirs(destination)
-        dest_file_name = destination + "/input.query"
-        dest_file = open(dest_file_name, "w+")
-        dest_file.write(query.encode('utf8'))
-        dest_file.flush()
-        dest_file.close()
-        output_file_name = destination + "/gsp.out"
 
 
-        data_dict = { "InputFile": dest_file_name,
-                      "OutputFile": output_file_name,
+        data_dict = { "input_query": query,
                       "Compiler": "gsp",
                       "EntityId": "",
                       "TenantId": "100" }
@@ -657,21 +650,11 @@ def process_scale_mode(tenant, uid, instances, smc):
 
         compile_doc = None
         logging.info("Loading file : "+ output_file_name)
-        if not os.path.isfile(output_file_name):
-            file_found = False
-            file_wait_count = 0
-            while file_found is False and file_wait_count < 3:
-                logging.info("Waiting for output file : "+ output_file_name)
-                file_wait_count = file_wait_count + 1
-                time.sleep(0.1)
-                file_found = os.path.isfile(output_file_name)
-
-            if file_found is False and file_wait_count == 3:
-                logging.error("Output file not found : "+ output_file_name)
-                continue
-
-        with open(output_file_name) as data_file:
-            compile_doc = load(data_file)
+        if not response.isSuccess:
+          logging.error("compiler request failed")
+          return None
+        else:
+          compile_doc = loads(response.result)
 
         compile_doc_fields = ["ErrorSignature",
                               "SignatureKeywords",
@@ -1395,20 +1378,6 @@ def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_con
     if platform != "impala":
         return #currently HAQR supported only for impala
 
-    timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-    destination = BAAZ_DATA_ROOT+'compile-' + tenant + "/" + timestr
-
-    if not os.path.exists(destination):
-        os.makedirs(destination)
-
-    dest_file_name = destination + "/input.query"
-    dest_file = open(dest_file_name, "w+")
-    dest_file.write(query)
-    dest_file.flush()
-    dest_file.close()
-
-    output_file_name = destination + "/haqr.out"
-
     queryFsmFile = "/etc/xplain/QueryFSM.csv";
     selectFsmFile = "/etc/xplain/SelectFSM.csv";
     whereFsmFile = "/etc/xplain/WhereFSM.csv";
@@ -1420,8 +1389,7 @@ def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_con
     fromSubClauseFsmFile = "/etc/xplain/FromSubclauseFSM.csv";
 
     data_dict = {
-        "InputFile": dest_file_name,
-        "OutputFile": output_file_name,
+        "input_query": query, 
         "EntityId": eid,
         "TenantId": tenant,
         "queryFsmFile": queryFsmFile,
@@ -1440,9 +1408,7 @@ def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_con
     response = tclient.send_compiler_request(opcdode_HAQR, data_dict, retries)
 
     data = None
-    logging.info("Loading file : "+ output_file_name)
-    with open(output_file_name) as data_file:
-        data = load(data_file)
+    data = loads(response.result)
 
     logging.info(dumps(data))
 
@@ -1660,27 +1626,8 @@ def callback(ch, method, properties, body):
 
         query = inst["query"].encode('utf-8').strip()
         logging.info("Program Entity : {0}, eid {1}\n".format(query, prog_id))
-        """
-        Create a destination/processing folder.
-        """
-        timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-        destination = '/mnt/volume1/compile-' + tenant + "/" + timestr
-        if not os.path.exists(destination):
-            os.makedirs(destination)
 
-        dest_file_name = destination + "/input.query"
-
-        #inst_id = inst["inst_id"]
-        #if prog_collector.has_key(prog_id):
-        #    prog_collector[prog_id].append(inst_id)
-        #else:
-        #    prog_collector[prog_id] = [inst_id]
-        #counter = counter + 1
         logging.info("Event received for {0}, entity {1}\n".format(tenant, prog_id))
-        dest_file = open(dest_file_name, "w+")
-        dest_file.write(query)
-        dest_file.flush()
-        dest_file.close()
 
         """
           Parameters required to create a query entity in the system.
@@ -1704,7 +1651,6 @@ def callback(ch, method, properties, body):
                 additonalparmas = compconfig.get(section, "AdditionalParameter")
 
             try:
-                output_file_name = destination + "/" + compilername + ".out"
                 stats_newdbs_key = "Compiler." + compilername + ".newDBs"
                 stats_newtables_key = "Compiler." + compilername + ".newTables"
                 stats_runsuccess_key = "Compiler." + compilername + ".run_success"
@@ -1712,7 +1658,7 @@ def callback(ch, method, properties, body):
                 stats_success_key = "Compiler." + compilername + ".success"
                 stats_failure_key = "Compiler." + compilername + ".failure"
 
-                data_dict = { "InputFile": dest_file_name, "OutputFile": output_file_name,
+                data_dict = { "input_query": query, 
                               "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
                 if source_platform is not None:
                     data_dict["source_platform"] = source_platform
@@ -1734,27 +1680,15 @@ def callback(ch, method, properties, body):
                 if response.isSuccess == True:
                     logging.info("Got Done")
                 else:
-                    logging.info("Got "+rx_data)
                     redis_conn.incrEntityCounter(uid, stats_runfailure_key, incrBy = 1)
                     redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
                     continue
                    
                 compile_doc = None
-                logging.info("Loading file : "+ output_file_name)
-                if not os.path.isfile(output_file_name):
-                    file_found = False
-                    file_wait_count = 0
-                    while file_found is False and file_wait_count < 3:
-                        logging.info("Waiting for output file : "+ output_file_name)
-                        file_wait_count = file_wait_count + 1
-                        time.sleep(0.1)
-                        file_found = os.path.isfile(output_file_name)
-
-                    if file_found is False and file_wait_count == 3:
-                        raise Exception("Output file not found.")
-
-                with open(output_file_name) as data_file:
-                    compile_doc = load(data_file)
+                if not response.isSuccess:
+                  logging.error("compiler request failed")
+                else:
+                  compile_doc = loads(response.result)
 
                 if compile_doc is not None:
                     for key in compile_doc:
