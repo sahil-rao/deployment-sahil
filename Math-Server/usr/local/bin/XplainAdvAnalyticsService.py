@@ -14,6 +14,8 @@ from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from flightpath.clustering.querygroup import QueryGroup
 from flightpath.services.xplain_log_handler import XplainLogstashHandler
+import flightpath.thriftclient.compilerthriftclient as tclient
+
 import baazmath.workflows.write_upload_stats as write_upload_stats
 from json import *
 #from baazmath.interface.BaazCSV import *
@@ -142,21 +144,7 @@ def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
     if platform not in ["impala", "hive"]:
         return #currently HAQR supported only for impala
 
-    timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
-    destination = BAAZ_DATA_ROOT+'haqr-' + tenant + "/" + timestr
-
-    if not os.path.exists(destination):
-        os.makedirs(destination)
-
-    dest_file_name = destination + "/input%s.query"%(platform)
-    dest_file = open(dest_file_name, "w+")
     query = query.encode('ascii', 'ignore')
-    dest_file.write(query)
-    dest_file.flush()
-    dest_file.close()
-
-    output_file_name = destination + "/haqr%s.out"%(platform)
-
     queryFsmFile = "/etc/xplain/QueryFSM.csv";
     selectFsmFile = "/etc/xplain/SelectFSM.csv";
     whereFsmFile = "/etc/xplain/WhereFSM.csv";
@@ -168,8 +156,7 @@ def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
     fromSubClauseFsmFile = "/etc/xplain/FromSubclauseFSM.csv";
 
     data_dict = {
-        "InputFile": dest_file_name,
-        "OutputFile": output_file_name,
+        "input_query": query,
         "EntityId": eid,
         "TenantId": tenant,
         "queryFsmFile": queryFsmFile,
@@ -185,42 +172,20 @@ def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
         "source_platform": source_platform
     }
 
-    data = dumps(data_dict)
-
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    retry_count = 0
-    socket_connected = False
-
-    while (socket_connected == False) and (retry_count < 2):
-
-        retry_count += 1
-        try:
-            client_socket.connect(("localhost", 12121))
-            socket_connected = True
-        except:
-            logging.error("Unable to connect to JVM socket on try #%s." %retry_count)
-            time.sleep(1)
-        if socket_connected == False:
-            raise Exception("Unable to connect to JVM socket.")
-
-    client_socket.send("1\n");
     """
     For HAQR processing the opcode is 4.
     """
-    client_socket.send("4\n");
-    data = data + "\n"
-    client_socket.send(data)
-    rx_data = client_socket.recv(512)
-
-    if rx_data == "Done":
+    opcode = 4
+    retries = 3
+    response = tclient.send_compiler_request(opcode, data_dict, retries)
+    if response.isSuccess == True:
         logging.info("HAQR Got Done")
+    else:
+        logging.error("compiler request failed")
+        return None
 
-    client_socket.close()
     data = None
-    logging.info("Loading file : "+ output_file_name)
-    with open(output_file_name) as data_file:
-        data = load(data_file)
+    data = loads(response.result)
 
     logging.info(dumps(data))
 
@@ -569,7 +534,10 @@ def callback(ch, method, properties, body):
         #The length function in the if statement is a count of the mending messages
         timest = int(time.time() * 1000)
         redis_conn.setEntityProfile(uid, {"Phase2MessageProcessed":timest})
-        write_upload_stats.run_workflow(tenant, {'uid':uid})
+        try:
+            write_upload_stats.run_workflow(tenant, {'uid':uid})
+        except:
+            logging.exception("Could not write upload stats dict to MongoDB: ")
 
     connection1.basicAck(ch, method)
 

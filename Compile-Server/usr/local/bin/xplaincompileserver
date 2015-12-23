@@ -18,5 +18,5 @@ for f in ${HIVE_MODULES}/*.jar; do
   CLASSPATH=${CLASSPATH}:$f;
 done
 
-java -classpath $CLASSPATH com.baaz.query.BaazQueryServer
+java -classpath $CLASSPATH com.cloudera.navopt.compiler.QueryCompilerServer
 

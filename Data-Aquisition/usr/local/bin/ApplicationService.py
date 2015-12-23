@@ -10,6 +10,8 @@ from flightpath.services.RotatingS3FileHandler import *
 from flightpath.utils import *
 from flightpath.parsing.ParseDemux import *
 from flightpath.Provenance import getMongoServer
+import flightpath.thriftclient.compilerthriftclient as tclient
+
 import sys
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
@@ -117,66 +119,40 @@ def process_mongo_rewrite_request(ch, properties, tenant, instances):
 
     for inst in instances:
 
-        if os.path.isfile(in_file):
-            os.remove(in_file)
-
-        if os.path.isfile(out_file):
-            os.remove(out_file)
-
         sql_query = inst["query"]
         if len(sql_query.strip()) == 0:
             continue
-
-        data_dict = { "InputFile": in_file, "OutputFile": out_file}
-
-        """
-            2. Save the query to a local file.
-        """
-        infile = open(in_file, "w")
-        infile.write(sql_query)
-        infile.flush()
-        infile.close()
+        data_dict = { "input_query": sql_query}
 
         """
             3. Invoke compiler to generate Xplain RA.
         """
         try:
-            output_file_name = "/tmp/hbase_ddl.out"
-
-            client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            client_socket.connect(("localhost", 12121))
-
-            data = dumps(data_dict)
-            client_socket.send("1\n");
-
             """
                 For Mongo rewrite the opcode is 3.
             """
-            client_socket.send("3\n");
-            data = data + "\n"
-            client_socket.send(data)
-            rx_data = client_socket.recv(512)
+            opcode = 3
+            retries = 3
+            response = tclient.send_compiler_request(opcode, data_dict, retries)
 
-            if rx_data == "Done":
+            if response.isSuccess == True:
                 status = "SUCCESS"
             else:
                 status = "FAILED"
 
-            client_socket.close()
-
             compile_doc = None
             """
-                4. Read the output file as a JSON.
+                4. Read the output as a JSON.
             """
-            if not os.path.isfile(out_file):
+            if not result.isSuccess:
                 resp_dict["status"] = "Failed"
+                logging.error("compiler request failed")
             else:
                 """ 
-                    Read the output file and send the RPC response.
+                    Read the output and send the RPC response.
                 """
                 compile_doc = None
-                with open(out_file) as data_file:    
-                    compile_doc = load(data_file)
+                compile_doc = loads(response.result)
 
                 """
                     5. Invoke mongo converter template engine to convert.
@@ -261,11 +237,6 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
     """
         Save the analytics results to a local file.
     """
-    oFile_path = "/tmp/" + target + "_analytics.out"
-    oFile = open(oFile_path, "w")
-    oFile.write(dumps(result))
-    oFile.flush()
-    oFile.close()
 
     resp_dict = {}
     status = "FAILED"
@@ -273,60 +244,37 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
         Send request to DDL generator.
     """
     try:
-        output_file_name = "/tmp/" + target + "_ddl.out"
-
-        if os.path.isfile(output_file_name):
-            os.remove(output_file_name)
-
-        client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        retry_count = 0
-        socket_connected = False
-        while (socket_connected == False) and (retry_count < 2):
-            retry_count += 1
-            try:
-                client_socket.connect(("localhost", 12121))
-                socket_connected = True
-            except:
-                logging.error("Unable to connect to JVM socket on try #%s." %retry_count)
-                time.sleep(1)
-        if socket_connected == False:
-            raise Exception("Unable to connect to JVM socket.")
 
         EntityId = '0'
         if len(prog_id) == 0:
             EntityId = prog_id[0]
-        data_dict = {"InputFile": oFile_path, "OutputFile": output_file_name, 
+        data_dict = {"input_query": dumps(result), 
                      "EntityId": EntityId, "TenantId": "100", "Version": "1"}
-        data = dumps(data_dict)
-        client_socket.send("1\n");
 
         """
             For DDL generation the opcode is 2.
         """
-        client_socket.send("2\n");
-        data = data + "\n"
-        client_socket.send(data)
-        rx_data = client_socket.recv(512)
-
-        if rx_data == "Done":
+        opcode = 2
+        retries = 3
+        response = tclient.send_compiler_request(opcode, data_dict, retries)
+        
+        if response.isSuccess == True:
             status = "SUCCESS"
         else:
             status = "FAILED"
-
-        client_socket.close()
 
         """
             Upon response, check the output file.
         """
         if not os.path.isfile(output_file_name):
             resp_dict["status"] = "Failed"
+            loogging.error("compiler request failed")
         else:
             """ 
-                Read the output file and send the RPC response.
+                Read the output and send the RPC response.
             """
             compile_coc = None
-            with open(output_file_name) as data_file:    
-                compile_doc = load(data_file)
+            compile_doc = loads(response.result)
             resp_dict = compile_doc
             resp_dict["status"] = "Success"
     except:
