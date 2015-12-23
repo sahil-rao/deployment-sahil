@@ -381,6 +381,7 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
     if view_entity is None:
         logging.info("Creating table entity for view {0}\n".format(viewname))
         eid = IdentityService.getNewIdentity(tenant, True)
+        endict['display_name'] = "InlineView" + eid
         view_entity = mongoconn.addEn(eid, viewname, tenant,\
                   EntityType.SQL_TABLE, endict, None)
 
