@@ -1725,14 +1725,6 @@ def callback(ch, method, properties, body):
         if not usingAWS:
             continue
 
-        """
-        Copy over any intermediate file to S3 and remove the directory.
-        """
-        try:
-            shutil.rmtree(destination)
-        except:
-            logging.exception("Tenent {0} removing intermediate file failed.\n".format(tenant))
-
 
     logging.info("Event Processing Complete")
 
