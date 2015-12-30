@@ -11,6 +11,9 @@
 - name: Install Monit service
   apt: pkg=monit state=present
   sudo: yes
+- name: Stop monit
+  shell: monit quit
+  sudo: yes
 ### SET UP ENVIRONMENT ###
 - name: Stop nodejs
   service: name=nodejs state=stopped
