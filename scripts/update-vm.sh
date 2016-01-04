@@ -131,7 +131,7 @@ cd dist
 echo "anaytics is built"
 
 
-cp /home/xplain/build/deployment/scripts/vm-update-new.sh ~
+cp /home/xplain/build/deployment/scripts/vm-update-new.sh ~/.
 
 cd /home/xplain/build/deployment/Data-Aquisition
 tar -cf  Baaz-DataAcquisition-Service.tar etc usr
