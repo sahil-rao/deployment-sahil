@@ -415,21 +415,6 @@ def callback(ch, method, properties, body):
             connection1.basicAck(ch,method)
             return
         
-        if opcode == 'Cluster':
-            try:
-                #logging.info("Clustering...")
-                clause_combo = msg_dict['clause_combo']
-                cluster_clause = msg_dict['cluster_clause']
-                qgroup = QueryGroup(tenant, clause_combo)
-                qgroup.cluster(cluster_clause)
-                redis_conn.delMessagePending(uid, received_msgID, message_type='cluster')
-                connection1.basicAck(ch, method)
-                return
-            except:
-                logging.exception('Cluster failed for tenant: %s.' % tenant)
-
-        
-      
         collection = client[tenant].uploadStats
         redis_conn.incrEntityCounter(uid, 'Math.count', incrBy = 1)
     else:
