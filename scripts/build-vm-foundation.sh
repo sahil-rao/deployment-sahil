@@ -12,6 +12,7 @@ cp /home/ubuntu/build/deployment/VM/hosts.cfg .
 cp /home/ubuntu/build/deployment/VM/ga.cfg . 
 cp /home/ubuntu/build/deployment/VM/setup-foundation.sh .
 cp /home/ubuntu/build/deployment/VM/vm-foundation.yml .
+cp /home/ubuntu/build/deployment/VM/api_nodejs.conf .
 cp /home/ubuntu/build/deployment/VM/nodejs.conf .
 cp /home/ubuntu/build/deployment/VM/xplain_admin.conf .
 cp /home/ubuntu/build/deployment/VM/Splash.png .

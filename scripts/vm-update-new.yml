@@ -1,6 +1,6 @@
 ---
 # This Playbook would deploy the whole Baazdata cluster with replication and sharding.
-
+# Test
 
 - hosts: localhost
   tasks:
@@ -98,10 +98,6 @@
     sudo: yes
   - name: Install elasticsearch py
     pip: name=elasticsearch version=1.1.1
-  - name: Install python-logstash
-    pip: name=python-logstash
-  - name: Upgrade pymongo to 3.0
-    pip: name=pymongo state=latest
 
   #Redis deployments
   - name: Add APT repository with latest version of redis
@@ -152,13 +148,10 @@
     #Start of Analytics module deployment.
   - name: Untar Analytics
     shell: tar -zxf /home/xplain/Baaz-Analytics.tar.gz chdir=/
-  - name: Install Basestats scripts
-    shell: tar -zxf /home/xplain/Baaz-Basestats-Report.tar.gz chdir=/usr/lib
   - name: Install Analytics Service
     shell: tar -zxf /home/xplain/Baaz-Analytics-Service.tar.gz chdir=/
-  - name: Remove any previous service that may be installed.
-    shell: update-rc.d -f baazmath remove
-    ignore_errors: True
+  - name: Install Basestats scripts
+    shell: tar -zxf /home/xplain/Baaz-Basestats-Report.tar.gz chdir=/usr/lib
   - name: Stop mathservice
     service: name=mathservice state=stopped
     ignore_errors: True
@@ -172,12 +165,7 @@
     shell: tar -zxf /home/xplain/Baaz-Compiler.tar.gz chdir=/usr/lib
   - name: Install Compiler Service
     shell: tar -zxf /home/xplain/Baaz-Compile-Service.tar.gz chdir=/
-  - name: Remove any previous service that may be installed.
-    shell: update-rc.d -f baazcompile remove
-    ignore_errors: True
-  - name: Stop xplain compile server server
-    action: service name=xplaincompile state=stopped
-    ignore_errors: True
+
   - name: Stop compileserver
     action: service name=compileserver state=stopped
     ignore_errors: True
@@ -193,17 +181,17 @@
     shell: tar -zxf /home/xplain/flightpath-deployment.tar.gz chdir=/
   - name: Copy node upstart configuration file
     template: src=/home/xplain/nodejs.conf dest=/etc/init/nodejs.conf
-  - name: Create node api upstart script
+  - name: Copy api upstart configuration file
     template: src=/home/xplain/api_nodejs.conf dest=/etc/init/api_nodejs.conf
   - name: Copy xplain_admin upstart configuration file
     copy: src=/home/xplain/xplain_admin.conf dest=/etc/init/xplain_admin.conf
   - name: Untar Baazdata App
     shell: tar -zxf /home/xplain/xplain.io.tar.gz
   - name: Remove the existing deployed code
-    file: path=/var/xplain3000 state=absent
+    file: path=/var/xplain{{ port }} state=absent
   - name: Move the new code
-    shell: mv /home/xplain/xplain.io /var/xplain3000
+    shell: mv /home/xplain/xplain.io /var/xplain{{ port }}
   - name: Install npm modules.
-    npm: path=/var/xplain3000
+    npm: path=/var/xplain{{ port }}
   - name: copy monitrc file
     copy: src=/home/xplain/monitrc dest=/etc/monit/monitrc

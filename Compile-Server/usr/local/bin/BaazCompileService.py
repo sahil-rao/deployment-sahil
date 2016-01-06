@@ -66,7 +66,6 @@ In AWS use S3 log rotate to save the log files.
 if usingAWS:
     boto_conn = boto.connect_s3()
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
-    file_bucket = boto_conn.get_bucket('xplain-compile')
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_COMPILER_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
     logging.getLogger().addHandler(XplainLogstashHandler(tags=['compileservice', 'backoffice']))
     

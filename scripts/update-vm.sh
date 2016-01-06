@@ -131,6 +131,8 @@ cd dist
 echo "anaytics is built"
 
 
+cp /home/xplain/build/deployment/scripts/vm-update-new.yml ~/.
+
 cd /home/xplain/build/deployment/Data-Aquisition
 tar -cf  Baaz-DataAcquisition-Service.tar etc usr
 gzip -f   Baaz-DataAcquisition-Service.tar 
@@ -162,6 +164,7 @@ cd  /home/xplain/build/VM-Deploy
 
 cp /home/xplain/build/deployment/VM/clear_tenant.sh .
 cp /home/xplain/build/deployment/VM/monitrc .
+cp /home/xplain/build/deployment/VM/api_nodejs.conf .
 cp /home/xplain/build/deployment/VM/nodejs.conf .
 cp /home/xplain/build/deployment/VM/xplain_admin.conf .
 cp /home/xplain/build/deployment/VM/README .
