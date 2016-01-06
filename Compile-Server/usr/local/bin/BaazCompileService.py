@@ -1014,7 +1014,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                                        sort=True, incrBy=1)
                 if elapsed_time is not None:
                     try:
-                        redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
+                        redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort=True, incrBy=float(elapsed_time))
                         redis_conn.incrEntityCounter("dashboard_data", "total_elapsed_time", sort=False, incrBy=float(elapsed_time))
                     except:
                         logging.exception("No or junk elapsed time found:%s", elapsed_time)
