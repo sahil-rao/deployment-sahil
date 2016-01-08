@@ -13,6 +13,8 @@ sudo stop advanalytics
 sudo start advanalytics
 sudo stop nodejs                                 
 sudo start nodejs  
+sudo stop api_nodejs
+sudo start api_nodejs
 sudo stop applicationservice
 sudo start applicationservice
 
