@@ -119,7 +119,9 @@
 - name: Install Elasticsearch
   pip: name=elasticsearch
   sudo: yes
-
+- name: Install thrift
+  pip: name=thrift version=0.9.3
+  sudo: yes
 - name: Install httplib2
   pip: name=httplib2
   sudo: yes
