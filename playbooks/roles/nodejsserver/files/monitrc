@@ -265,7 +265,7 @@ check process node with pidfile /var/run/nodejs{{ port }}.pid
     alert sean@xplain.io only on { nonexist }
     alert samir@xplain.io only on { nonexist }
 
-check process node with pidfile /var/run/nodejs4000.pid
+check process api_noded with pidfile /var/run/nodejs4000.pid
     start program = "/sbin/start api_nodejs"
     stop program = "/sbin/stop api_nodejs"
     if failed port 4000 protocol http then restart 
