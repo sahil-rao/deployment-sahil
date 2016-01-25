@@ -1,0 +1,67 @@
+---
+### DEPENDENCIES ###
+- name: Install S3 CMD
+  apt: name=s3cmd state=present
+  sudo: yes
+- name: Copy s3cmd config file
+  copy: src=/home/ubuntu/.s3cfg dest=/home/bitnami/.s3cfg
+- name: NTP installed
+  apt: name=ntp state=present
+  sudo: yes
+- name: Install Monit service
+  apt: pkg=monit state=present
+  sudo: yes
+- name: Stop monit
+  shell: monit quit
+  sudo: yes
+### SET UP ENVIRONMENT ###
+- name: Stop api_nodejs
+  service: name=api_nodejs state=stopped
+  sudo: yes
+  ignore_errors: true
+- name: Create the Baaz config directory
+  file: path=/var/Baaz state=directory mode=777
+  sudo: yes
+- name: Create /var/api
+  file: path=/var/api state=directory owner=root mode=0644
+  sudo: yes
+### UNPACK S3 TARBALLS ###
+- name: Get Baazdata App
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}xplain.io.tar.gz .
+- name: Remove everything from under the /tmp directory
+  shell: rm -rf /tmp/*
+  sudo: yes
+- name: Untar Baazdata App
+  shell: tar -zxf /home/bitnami/xplain.io.tar.gz
+- name: Remove the existing deployed code
+  file: path=/var/api state=absent
+  sudo: yes
+- name: Move the new api code
+  shell: mv /home/bitnami/optimizer_api /var/api
+  sudo: yes
+- name: Move the new node code
+  shell: mv /home/bitnami/xplain.io/app/* /var/api/
+  sudo: yes
+- name: Install the s3 configuration file
+  template: src=s3.json dest=/var/api/config/s3.json
+  sudo: yes
+- name: Get the npm modules.
+  npm: path=/var/api
+### DEPLOY AND CONFIGURE ###
+- name: Create node api upstart script
+  template: src=api_nodejs.conf dest=/etc/init/api_nodejs.conf
+  sudo: yes
+- name: Save configuration file
+  template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
+  sudo: yes
+- name: Start api nodejs
+  service: name=api_nodejs state=started
+  sudo: yes
+- name: copy monitrc file
+  template: src=roles/nodejsserver/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+- name: Start monit service
+  shell: monit
+  sudo: yes
+
+
