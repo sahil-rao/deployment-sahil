@@ -46,8 +46,14 @@
 - name: Move the new node code
   shell: mv /home/bitnami/xplain.io/app/* /var/api/
   sudo: yes
+- name: Create /var/api/config
+  file: path=/var/api/config state=directory owner=root mode=0644
+  sudo: yes
 - name: Install the s3 configuration file
   template: src=s3.json dest=/var/api/config/s3.json
+  sudo: yes
+- name: Install the package json
+  file: src=package.json dest=/var/api/
   sudo: yes
 - name: Get the npm modules.
   npm: path=/var/api
