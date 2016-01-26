@@ -54,7 +54,7 @@
   sudo: yes
 - name: Create log folders
   file: path=/var/api/{{ item }} state=directory owner=bitnami mode=755
-  with_nested:
+  with_items:
     - log
     - log/serverlog
     - log/accesslog
