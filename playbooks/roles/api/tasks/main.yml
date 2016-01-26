@@ -22,6 +22,9 @@
 - name: Create the Baaz config directory
   file: path=/var/Baaz state=directory mode=777
   sudo: yes
+- name: Create the app directory
+  file: path=/var/api/app state=directory mode=777
+  sudo: yes
 - name: Create /var/api
   file: path=/var/api state=directory owner=root mode=0644
   sudo: yes
@@ -44,7 +47,7 @@
   shell: mv /home/bitnami/optimizer_api/* /var/api/
   sudo: yes
 - name: Move the new node code
-  shell: mv /home/bitnami/xplain.io/app/* /var/api/
+  shell: mv /home/bitnami/xplain.io/app/* /var/api/app
   sudo: yes
 - name: Create /var/api/config
   file: path=/var/api/config state=directory owner=root mode=0644
@@ -54,6 +57,9 @@
   sudo: yes
 - name: Install the package json
   copy: src=roles/api/files/package.json dest=/var/api/
+  sudo: yes
+- name: Install NPM if not installed
+  apt: name=npm state=present
   sudo: yes
 - name: Get the npm modules.
   npm: path=/var/api
