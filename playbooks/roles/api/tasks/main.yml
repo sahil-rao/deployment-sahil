@@ -26,7 +26,7 @@
   file: path=/var/api state=absent
   sudo: yes
 - name: Create /var/api
-  file: path=/var/api state=directory owner=root mode=755
+  file: path=/var/api state=directory owner=bitnami mode=755
   sudo: yes
 - name: Create the app directory
   file: path=/var/api/app state=directory
@@ -50,7 +50,14 @@
   shell: mv /home/bitnami/xplain.io/app/* /var/api/app/
   sudo: yes
 - name: Create /var/api/config
-  file: path=/var/api/config state=directory owner=root mode=755
+  file: path=/var/api/config state=directory owner=bitnami mode=755
+  sudo: yes
+- name: Create log folders
+  file: path=/var/api/{{ item }} state=directory owner=bitnami mode=755
+  with_nested:
+    - log
+    - log/serverlog
+    - log/accesslog
   sudo: yes
 - name: Move the new node code
   shell: mv /home/bitnami/xplain.io/config/* /var/api/config/
