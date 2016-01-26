@@ -41,7 +41,7 @@
   file: path=/var/api state=absent
   sudo: yes
 - name: Move the new api code
-  shell: mv /home/bitnami/optimizer_api /var/api
+  shell: mv /home/bitnami/optimizer_api/* /var/api/
   sudo: yes
 - name: Move the new node code
   shell: mv /home/bitnami/xplain.io/app/* /var/api/
@@ -53,7 +53,7 @@
   template: src=s3.json dest=/var/api/config/s3.json
   sudo: yes
 - name: Install the package json
-  file: src=package.json dest=/var/api/
+  copy: src=roles/api/files/package.json dest=/var/api/
   sudo: yes
 - name: Get the npm modules.
   npm: path=/var/api
