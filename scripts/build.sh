@@ -123,6 +123,9 @@ cd /home/ubuntu/build/UI
 tar -cvf xplain.io.tar xplain.io
 gzip xplain.io.tar
 s3cmd sync xplain.io.tar.gz s3://$S3Bucket/
+tar -cvf optimizer_api.io.tar optimizer_api
+gzip optimizer_api.io.tar
+s3cmd sync optimizer_api.io.tar.gz s3://$S3Bucket/
 tar -cvf xplain_admin.tar xplain_admin
 gzip xplain_admin.tar
 s3cmd sync xplain_admin.tar.gz s3://$S3Bucket/

@@ -22,6 +22,10 @@
 - hosts: tag_Name_NodeJS
   roles:
   - role: nodejsserver
+  
+- hosts: tag_Name_APIServer
+  roles:
+  - role: api
 
 - hosts: tag_Name_Nginx
   roles:
