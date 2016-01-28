@@ -26,6 +26,10 @@
 - hosts: tag_Name_APIServer
   roles:
   - role: api
+  
+- hosts: tag_Name_AdminServer
+  roles:
+  - role: admin
 
 - hosts: tag_Name_Nginx
   roles:

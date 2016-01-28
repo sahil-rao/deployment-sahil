@@ -1,0 +1,67 @@
+---
+### DEPENDENCIES ###
+- name: Install S3 CMD
+  apt: name=s3cmd state=present
+  sudo: yes
+- name: Copy s3cmd config file
+  copy: src=/home/ubuntu/.s3cfg dest=/home/bitnami/.s3cfg
+- name: NTP installed
+  apt: name=ntp state=present
+  sudo: yes
+### SET UP ENVIRONMENT ###
+- name: Stop admin_nodejs
+  service: name=admin_nodejs state=stopped
+  sudo: yes
+  ignore_errors: true
+- name: Create the Baaz config directory
+  file: path=/var/Baaz state=directory mode=777
+  sudo: yes
+- name: Remove the existing deployed code
+  file: path=/var/admin state=absent
+  sudo: yes
+- name: Create /var/admin
+  file: path=/var/admin state=directory owner=bitnami mode=755
+  sudo: yes
+### UNPACK S3 TARBALLS ###
+- name: Get Optimizer Admin
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}optimizer_admin.io.tar.gz .
+- name: Remove everything from under the /tmp directory
+  shell: rm -rf /tmp/*
+  sudo: yes
+- name: Untar Optimizer Admin App
+  shell: tar -zxf /home/bitnami/optimizer_admin.io.tar.gz
+- name: Move the new admin code
+  shell: cp -a /home/bitnami/optimizer_admin/. /var/admin/
+  sudo: yes
+- name: Create /var/admin/config
+  file: path=/var/admin/config state=directory owner=bitnami mode=755
+  sudo: yes
+- name: Create log folders
+  file: path=/var/admin/log state=directory owner=bitnami mode=755
+  sudo: yes
+- name: Move the new node code
+  shell: mv /home/bitnami/optimizer_admin/config/* /var/admin/config/
+  sudo: yes
+- name: Install the package json
+  copy: src=roles/optimizer_admin/files/package.json dest=/var/admin/
+  sudo: yes
+- name: Get the npm modules.
+  npm: path=/var/admin
+### DEPLOY AND CONFIGURE ###
+- name: Create node admin upstart script
+  template: src=admin_nodejs.conf dest=/etc/init/admin_nodejs.conf
+  sudo: yes
+- name: Save configuration file
+  template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
+  sudo: yes
+- name: Start admin nodejs
+  service: name=admin_nodejs state=started
+  sudo: yes
+- name: copy monitrc file
+  template: src=roles/nodejsserver/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+- name: Start monit service
+  shell: monit
+  sudo: yes
+
+
