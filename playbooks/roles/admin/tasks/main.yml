@@ -8,9 +8,6 @@
 - name: NTP installed
   apt: name=ntp state=present
   sudo: yes
-- name: Claiming ownership of NPM
-  shell: chown -R $(whoami) $HOME/.npm
-  sudo: yes 
 ### SET UP ENVIRONMENT ###
 - name: Stop admin_nodejs
   service: name=admin_nodejs state=stopped

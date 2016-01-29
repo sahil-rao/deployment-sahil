@@ -17,10 +17,10 @@ touch $LOCKFILE
 
 S3Bucket='baaz-deployment'
 #Make sure the build directory does not yet exist
-rm -rf /home/ubuntu/build 
+rm -rf /home/ubuntu/build/UI 
 
 #Make sure the build directory does not yet exist
-mkdir /home/ubuntu/build 
+mkdir /home/ubuntu/build/UI
 
 cd  /home/ubuntu/build
 
