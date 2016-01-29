@@ -8,6 +8,9 @@
 - name: NTP installed
   apt: name=ntp state=present
   sudo: yes
+- name: Claiming ownership of NPM
+  shell: chown -R $(whoami) $HOME/.npm
+  sudo: yes 
 ### SET UP ENVIRONMENT ###
 - name: Stop admin_nodejs
   service: name=admin_nodejs state=stopped
@@ -33,9 +36,6 @@
 - name: Move the new admin code
   shell: cp -a /home/bitnami/optimizer_admin/. /var/admin/
   sudo: yes
-- name: Create /var/admin/config
-  file: path=/var/admin/config state=directory owner=bitnami mode=755
-  sudo: yes
 - name: Create log folders
   file: path=/var/admin/log state=directory owner=bitnami mode=755
   sudo: yes
@@ -43,10 +43,7 @@
   shell: mv /home/bitnami/optimizer_admin/config/* /var/admin/config/
   sudo: yes
 - name: Install the s3 configuration file
-  template: src=s3.json dest=/var/api/config/s3.json
-  sudo: yes
-- name: Install the package json
-  copy: src=roles/optimizer_admin/files/package.json dest=/var/admin/
+  template: src=s3.json dest=/var/admin/config/s3.json
   sudo: yes
 - name: Get the npm modules.
   npm: path=/var/admin
