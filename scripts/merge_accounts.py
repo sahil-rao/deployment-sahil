@@ -10,7 +10,7 @@ import pprint
 from flightpath.Provenance import getMongoServer
 
 
-def execute(params):
+def execute(msg_dict):
     '''
     Returns information about all users in the system.
     '''
