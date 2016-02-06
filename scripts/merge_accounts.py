@@ -17,6 +17,8 @@ def execute(msg_dict):
     client = getMongoServer('xplainIO')
 
     db = client['xplainIO']
+    if msg_dict['old_tenantid'] == msg_dict['merge_into_email']:
+        return
     user = db.users.find_one({'email': msg_dict['merge_into_email']})
     if user:
         db.organizations.update({'guid': msg_dict['old_tenantid']},
