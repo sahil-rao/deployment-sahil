@@ -58,7 +58,7 @@
   template: src=roles/nodejsserver/files/monitrc dest=/etc/monit/monitrc
   sudo: yes
 - name: Start monit service
-  shell: monit reload
+  service: name=monit state=started
   sudo: yes
 
 
