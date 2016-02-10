@@ -46,10 +46,16 @@
   npm: path=/var/admin
 ### Ansibleception
 - name: Copy ansible folders
-  copy: src=/etc/ansible dest=/etc/ owner=bitnami mode=0644
+  copy: src=/etc/ansible dest=/etc/ owner=bitnami mode=755
+  sudo: yes
+- name: Create create deployement dir
+  file: path=/boot/build state=directory owner=bitnami mode=755
+  sudo: yes
+- name: Create create deployement dir2
+  file: path=/boot/build/deployement state=directory owner=bitnami mode=755
   sudo: yes
 - name: Copy deployment scripts 
-  copy: src= ~/build dest=~/ owner=bitnami mode=0644
+  copy: src=/mnt/build/deployment/playbooks dest=/boot/build/deployement/ owner=bitnami mode=755
   sudo: yes
 ### DEPLOY AND CONFIGURE ###
 - name: Create node admin upstart script
