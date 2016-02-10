@@ -49,10 +49,10 @@
   copy: src=/etc/ansible dest=/etc/ owner=bitnami mode=755
   sudo: yes
 - name: Create create deployement dir
-  file: path=/boot/buildstate=directory owner=bitnami mode=755
+  file: path=/boot/buildstate =directory owner=bitnami mode=755
   sudo: yes
 - name: Copy deployment scripts 
-  copy: src=/boot/build/deployment dest=/boot/build/ owner=bitnami mode=755
+  copy: src=~/build/deployment dest=/boot/build/ owner=bitnami mode=755
   sudo: yes
 ### DEPLOY AND CONFIGURE ###
 - name: Create node admin upstart script
