@@ -5,8 +5,8 @@ Script to extract fields Optimizer needs from Navigator all queries api output.
 
 README
 
-This script takes in a file with in_file_name.
-The expected format of in_file_name is [{},{},...].
+This script takes in a url, login, and password for a navigator instance.
+
 Optimizer only wants the identity and the queryText fields.
 If there are additional fields, we delete them.
 
@@ -28,16 +28,34 @@ queryText   |   SQL FULLTEXT
 import sys
 import csv
 import json
+import requests
+import argparse
+
+DEFAULT_OUTPUT_FILENAME = 'navigator_optimizer_queries.csv'
+DEFAULT_PLATFORM = 'hive'
 
 
-def execute(in_file_name, out_file_name):
+def execute(params):
     try:
         '''
-        Open the in_file_name.
+        Extract the variables from the params.
         '''
-        data = []
-        with open(in_file_name) as data_file:
-            data = json.load(data_file)
+        navigator_url = params['navigator_url']
+        out_file_name = params['out_file_name']
+        login = params['login']
+        password = params['password']
+        platform = params['platform']
+
+        '''
+        Make an api get request for the data.
+        '''
+        api_params = "/api/v9/entities/?query=%2BsourceType%3A"+platform+"%20%2Btype%3Aoperation&limit=1000&offset=0"
+        full_url = navigator_url + api_params
+        r = requests.get(full_url, auth=(login, password))
+        if r.status_code == 200:
+            data = r.json()
+        else:
+            return 'fail: got error code %s' % (r.status_code)
 
         '''
         Write to the out_file_name.
@@ -60,9 +78,43 @@ def execute(in_file_name, out_file_name):
 
         return 'success'
     except:
-        return 'fail'
+        return 'fail: %s'%(sys.exc_info())
 
 if __name__ == '__main__':
-    in_file_name = sys.argv[1]
-    out_file_name = sys.argv[2]
-    print execute(in_file_name, out_file_name)
+    params = {}
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--login', nargs=1, help='Navigator Username.')
+    parser.add_argument('--password', nargs=1, help='Navigator Password.')
+    parser.add_argument('--url', nargs=1, help='Url for Navigator instance.')
+    parser.add_argument('--out_file_name', nargs=1, help='Output file name.')
+    parser.add_argument('--platform', nargs=1,
+                        help='Platform to retrieve queries of, defaults to hive. [hive, impala]')
+    args = parser.parse_args()
+
+    if not args.login:
+        raise Exception('fail: No login provided.')
+    else:
+        params['login'] = args.login[0]
+
+    if not args.password:
+        raise Exception('fail: No password provided.')
+    else:
+        params['password'] = args.password[0]
+
+    if not args.url:
+        raise Exception('fail: No url provided.')
+    else:
+        params['navigator_url'] = args.url[0]
+
+    if not args.out_file_name:
+        params['out_file_name'] = DEFAULT_OUTPUT_FILENAME
+    else:
+        params['out_file_name'] = args.out_file_name[0]
+
+    if not args.platform:
+        params['platform'] = DEFAULT_PLATFORM
+    else:
+        params['platform'] = args.platform[0]
+
+    print execute(params)
