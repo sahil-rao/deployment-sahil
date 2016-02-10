@@ -6,6 +6,8 @@ Script to extract fields Optimizer needs from Navigator all queries api output.
 README
 
 This script takes in a url, login, and password for a navigator instance.
+The url, login, and platform are passed in.
+The password is requested securely after the params are passed in.
 
 Optimizer only wants the identity and the queryText fields.
 If there are additional fields, we delete them.
@@ -30,6 +32,7 @@ import csv
 import json
 import requests
 import argparse
+import getpass
 
 DEFAULT_OUTPUT_FILENAME = 'navigator_optimizer_queries.csv'
 DEFAULT_PLATFORM = 'hive'
@@ -85,7 +88,6 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--login', nargs=1, help='Navigator Username.')
-    parser.add_argument('--password', nargs=1, help='Navigator Password.')
     parser.add_argument('--url', nargs=1, help='Url for Navigator instance.')
     parser.add_argument('--out_file_name', nargs=1, help='Output file name.')
     parser.add_argument('--platform', nargs=1,
@@ -97,10 +99,7 @@ if __name__ == '__main__':
     else:
         params['login'] = args.login[0]
 
-    if not args.password:
-        raise Exception('fail: No password provided.')
-    else:
-        params['password'] = args.password[0]
+    params['password'] = getpass.getpass('Password:')
 
     if not args.url:
         raise Exception('fail: No url provided.')
