@@ -55,7 +55,7 @@
   file: path=/boot/build/deployement state=directory owner=bitnami mode=755
   sudo: yes
 - name: Copy deployment scripts 
-  copy: src=~/build/deployment/playbooks dest=/boot/build/deployement/ owner=bitnami mode=755
+  copy: src=/mnt/build/deployment/playbooks dest=/boot/build/deployement/ owner=bitnami mode=755
   sudo: yes
 ### DEPLOY AND CONFIGURE ###
 - name: Create node admin upstart script
