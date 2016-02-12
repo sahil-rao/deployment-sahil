@@ -116,7 +116,7 @@
   when: clusterName == 'xplain-staging'
   sudo: yes
 - name: Copy node upstart script
-  copy: src=/home/ubuntu/build/deployment/playbooks/roles/deploymentroot/files/nodejs.conf dest=/etc/init/nodejs.conf
+  template: src=nodejs.conf dest=/etc/init/nodejs.conf
   sudo: yes
 - name: Start nodejs
   service: name=nodejs state=started
