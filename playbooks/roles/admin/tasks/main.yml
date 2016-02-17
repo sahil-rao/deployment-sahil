@@ -67,11 +67,3 @@
 - name: Start admin nodejs
   service: name=admin_nodejs state=started
   sudo: yes
-- name: copy monitrc file
-  template: src=roles/nodejsserver/files/monitrc dest=/etc/monit/monitrc
-  sudo: yes
-- name: Start monit service
-  shell: monit
-  sudo: yes
-
-
