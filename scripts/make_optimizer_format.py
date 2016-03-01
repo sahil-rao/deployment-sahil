@@ -50,15 +50,24 @@ def execute(params):
         platform = params['platform']
 
         '''
-        Make an api get request for the data.
+        Identify the version.
+        Make an api get request for the data using the version.
         '''
-        api_params = "/api/v9/entities/?query=%2BsourceType%3A"+platform+"%20%2Btype%3Aoperation&limit=1000&offset=0"
+
+        version_url = navigator_url + '/api/version'
+        r = requests.get(version_url, auth=(login, password))
+        if r.status_code == 200:
+            version = r.text
+        else:
+            return 'failed in version api: got error code %s' % (r.status_code)
+
+        api_params = "/api/"+version+"/entities/?query=%2BsourceType%3A"+platform+"%20%2Btype%3Aoperation&limit=1000&offset=0"
         full_url = navigator_url + api_params
         r = requests.get(full_url, auth=(login, password))
         if r.status_code == 200:
             data = r.json()
         else:
-            return 'fail: got error code %s' % (r.status_code)
+            return 'fail in query api: got error code %s' % (r.status_code)
 
         '''
         Write to the out_file_name.
