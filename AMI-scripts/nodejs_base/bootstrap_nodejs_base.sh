@@ -11,6 +11,9 @@ if [ "$(id -u)" != "0" ]; then
    exit 1
 fi
 
+# Stop bitnami services
+/opt/bitnami/ctlscript.sh stop
+
 # Install dependencies
 apt-get update
 apt-get -y install emacs python-pip python-dev ntp monit git
@@ -31,6 +34,6 @@ cp ~/deployment/AMI-scripts/nodejs/etc/init/* /etc/init/
 cp ~/deployment/AMI-scripts/nodejs/etc/xplain/config_templates/* /etc/xplain/config_templates/
 
 # Clean up after we are done
-rm -r ~/deployment/ 
+rm -r ~/deployment/
 
 echo "NodeJS Base AMI is all set up!"
