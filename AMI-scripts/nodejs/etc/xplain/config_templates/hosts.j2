@@ -1,0 +1,42 @@
+# This configuration file is used by all baaz service scripts, and is separate                                                               
+# from the Ansible hosts file. This should live in /var/Baaz/hosts.cfg.                                                                      
+# author: Prithvi Pandian                                                                                                                    
+
+[MongoDB]
+server = {{ services.mongodb.servers | join (",") }}
+
+[RabbitMQ]
+server = {{ services.rabbitmq.server }}
+
+[Redis]
+server = {{ services.redis.server }}
+sentinels = {{ services.redis.sentinels | join(",") }}
+
+{% if services.redis_cache is defined %}
+[RedisCache]
+server = {{ services.redis_cache.server }}
+port = {{ services.redis_cache.port }}
+{% endif %}
+
+[Elasticsearch]
+server = {{ services.elasticsearch.servers | join(",") }}
+
+[GoogleAuth]
+returnURL={{ google_auth.return_url }}
+realm={{ google_auth.realm }}
+
+[ApplicationConfig]
+mode = {{ application.mode }}
+clusterName = {{ application.cluster_name }}
+alertEmail = {{ application.alert_email }}
+alertPassword = {{ application.alert_password }}
+domain = {{ application.domain }}
+
+[SamlAuth]
+entryPoint = {{  saml.entry_point }}
+issuer = {{ saml.issuer }}
+cert = {{ saml.certificate }}
+
+[mode]
+usingAWS = true
+
