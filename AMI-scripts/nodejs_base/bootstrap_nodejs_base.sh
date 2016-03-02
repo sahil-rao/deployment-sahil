@@ -16,7 +16,7 @@ apt-get update
 apt-get -y install emacs python-pip python-dev ntp monit git
 pip install awscli j2cli
 wget -qO /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64; chmod +x /usr/local/bin/jq
-export PATH; npm install -g n npm
+export PATH; npm install -g npm; npm install -g n 
 export N_PREFIX; n stable
 
 # Set up environment
