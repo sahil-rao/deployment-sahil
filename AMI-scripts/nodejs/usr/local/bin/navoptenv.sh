@@ -4,15 +4,10 @@
 # configpath: path to UI config json
 
 userdata=`curl --silent http://169.254.169.254/latest/user-data`
-grep="grep"
-regex='s/.*\:[ \t]*"\{0,1\}\([^,"]*\)"\{0,1\},\{0,1\}/\1/'
-sed="sed '${regex}'"
-
-
 
 if [ "${userdata}" != "" ]; then
-	export BUILD_S3PATH=`eval "echo '${userdata}' | ${grep} '\"buildpath\"' | ${sed}"`
-	export CONFIG_S3PATH=`eval "echo '${userdata}' | ${grep} '\"configpath\"' | ${sed}"`
+	export BUILD_S3PATH=`echo ${userdata} | jq -r '.buildpath'`
+	export CONFIG_S3PATH=`echo ${userdata} | jq -r '.configpath'`
 fi
 
 export EC2_AVAILABILITY_ZONE=`curl --silent http://169.254.169.254/latest/meta-data/placement/availability-zone`

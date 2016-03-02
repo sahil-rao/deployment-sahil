@@ -3,6 +3,7 @@
 CONF_DIR=/var/Baaz
 TEMPLATE_DIR=/etc/xplain
 N_PREFIX=/opt/bitnami/nodejs
+PATH=/opt/bitnami/nodejs/bin:$PATH
 
 # Make sure only root can run our script
 if [ "$(id -u)" != "0" ]; then
@@ -12,20 +13,24 @@ fi
 
 # Install dependencies
 apt-get update
-apt-get -y install emacs python-pip python-dev ntp monit npm
+apt-get -y install emacs python-pip python-dev ntp monit git
 pip install awscli j2cli
 wget -qO /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64; chmod +x /usr/local/bin/jq
-npm install -g n npm
+export PATH; npm install -g n npm
 export N_PREFIX; n stable
 
 # Set up environment
-mkdir -m 777 $CONF_DIR
-mkdir -m 777 $TEMPLATE_DIR
+mkdir -m 777 -p $CONF_DIR
+mkdir -m 777 -p $TEMPLATE_DIR
 mkdir -m 777 -p /etc/xplain/config_templates/
 
 # Pull scripts and templates from github
 git clone https://github.com/baazdata/deployment.git
-cp deployment/nodejs/usr/local/bin/* /usr/local/bin/
-cp deployment/nodejs/etc/init/* /etc/init/
-cp deployment/nodejs/etc/xplain/config_templates/* /etc/xplain/config_templates/
+cp ~/deployment/AMI-scripts/nodejs/usr/local/bin/* /usr/local/bin/
+cp ~/deployment/AMI-scripts/nodejs/etc/init/* /etc/init/
+cp ~/deployment/AMI-scripts/nodejs/etc/xplain/config_templates/* /etc/xplain/config_templates/
 
+# Clean up after we are done
+rm -r ~/deployment/ 
+
+echo "NodeJS Base AMI is all set up!"
