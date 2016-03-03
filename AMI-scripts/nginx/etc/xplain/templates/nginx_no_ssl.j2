@@ -1,9 +1,9 @@
 upstream lb-xplain {
   ip_hash;
-{% for NODEJS_IP in NODEJS_IP_ADDRESSES|split('\t')  %}
+{% set NODEJS_IP_LIST = NODEJS_IP_ADDRESSES.split('\t') %}
+{% for NODEJS_IP in NODEJS_IP_LIST -%}
   server {{ NODEJS_IP }}:{{ NODEJS_PORT }} weight=10 max_fails=3 fail_timeout=30s; # Reverse proxy
 {% endfor %}
-
 }
 
 server {
