@@ -24,6 +24,7 @@ mkdir -m 777 -p /etc/xplain/files/
 # Pull scripts and templates from github
 git clone https://github.com/baazdata/deployment.git
 cp ~/deployment/AMI-scripts/nginx/usr/local/bin/* /usr/local/bin/
+chmod +x /usr/local/bin/navoptenv.sh /usr/local/bin/reload_nginx.sh /usr/local/bin/setup_nginx.sh 
 cp ~/deployment/AMI-scripts/nginx/etc/xplain/templates/* /etc/xplain/templates/
 cp ~/deployment/AMI-scripts/nginx/etc/xplain/files/* /etc/xplain/files/
 
