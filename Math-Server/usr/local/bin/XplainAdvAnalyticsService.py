@@ -476,6 +476,8 @@ def callback(ch, method, properties, body):
             ctx.callback = analytics_callback
             ctx.rabbit_conn = connection1
             ctx.rabbit_ch = ch
+            ctx.msg_dict = msg_dict
+
             if 'uid' in msg_dict:
                 ctx.uid = uid
             else:
