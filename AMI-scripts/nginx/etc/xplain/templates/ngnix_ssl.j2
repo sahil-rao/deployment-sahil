@@ -1,0 +1,76 @@
+upstream lb-xplain {
+  ip_hash;
+{% for NODEJS_IP in NODEJS_IP_ADDRESSES|split('\t')  %}
+  server {{ NODEJS_IP }}:{{ NODEJS_PORT }} weight=10 max_fails=3 fail_timeout=30s; # Reverse proxy
+{% endfor %}
+
+}
+
+server {
+  listen 80;
+  server_name {{ OLD_DOMAIN }};
+  return 301 https://{{ DOMAIN }}$request_uri;
+}
+
+server {
+  listen 80;
+  server_name {{ DOMAIN }};
+  return 301 https://{{ DOMAIN }}$request_uri;
+}
+
+server {
+  listen       443 ssl;
+  server_name  {{ DOMAIN }};
+  client_max_body_size 500M;
+
+  access_log   /var/log/nginx/ngnix.access.log;
+  error_log    /var/log/nginx/nginx.error.log;
+
+  ssl_certificate /etc/nginx/ssl/xplain_san_cert.crt;
+  ssl_certificate_key /etc/nginx/ssl/san_cloudera_com.key;
+
+  recursive_error_pages on;
+  error_page 404  = @error;
+  error_page 502  = @maintenance;
+  error_page 503 /maintenance_on.html;
+  location = /maintenance_on.html {
+      root /var/www/;
+  }
+
+  location @maintenance {
+    root /var/www;
+    try_files $uri /502.html =502;
+  }
+
+  location @error {
+    root /var/www;
+    try_files $uri /404.html =404;
+  } 
+    
+  location /api/ {
+    proxy_pass http://172.31.13.115:4000/;
+  }
+  
+  location /admin/ {
+    proxy_pass http://172.31.2.120:3000/;
+  }
+  
+  location / {
+    if (-f /var/www/maintenance_on.html) {
+        return 503;
+    }
+
+    proxy_pass http://lb-xplain; # Load balance the URL location "/" to the upstream lb-xplain
+    proxy_http_version 1.1;
+    proxy_set_header Upgrade $http_upgrade;
+    proxy_set_header Connection 'upgrade';
+    proxy_set_header Host $host;
+    proxy_cache_bypass $http_upgrade;
+    proxy_intercept_errors on;
+  }
+
+  #location /public {
+  #  root /var/xplain/public;
+  #}
+
+}
