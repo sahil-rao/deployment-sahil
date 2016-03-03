@@ -24,6 +24,6 @@ export EC2_INSTANCE_ID=`curl --silent http://169.254.169.254/latest/meta-data/in
 
 NODEJS_INSTANCE_IDS=$(aws autoscaling describe-auto-scaling-groups --auto-scaling-group-name $AUTOSCALE_GROUP --query AutoScalingGroups[].Instances[].InstanceId --output text)
 # String of tab-separated IP addresses
-export NODEJS_IP_ADDRESSES=$(aws ec2 describe-instances --instance-ids $INSTANCE_IDS --query Reservations[].Instances[].PrivateIpAddress --output text) 
+export NODEJS_IP_ADDRESSES=$(aws ec2 describe-instances --instance-ids $NODEJS_INSTANCE_IDS --query Reservations[].Instances[].PrivateIpAddress --output text) 
 
 
