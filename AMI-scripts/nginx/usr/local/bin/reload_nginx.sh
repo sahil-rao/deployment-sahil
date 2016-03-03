@@ -10,9 +10,9 @@ fi
 
 # Template config files; j2 pulls from environment variables sourced in navoptenv.sh; pulls latest autoscale configuration
 if [ "x$SSL_MODE" = "xenabled" ]; then
-    j2 /etc/xplain/templates/nginx_ssl.j2 > /etc/nginx/sites-enabled/default
+    j2 /etc/xplain/templates/nginx_ssl.j2 > /etc/nginx/sites-available/${DOMAIN}
 else
-    j2 /etc/xplain/templates/nginx_no_ssl.j2 > /etc/nginx/sites-enabled/default
+    j2 /etc/xplain/templates/nginx_no_ssl.j2 > /etc/nginx/sites-available/${DOMAIN}
 fi
 
 # Reload nginx 
