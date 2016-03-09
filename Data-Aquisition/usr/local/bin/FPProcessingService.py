@@ -75,6 +75,12 @@ if usingAWS:
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_FP_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
     logging.getLogger().addHandler(XplainLogstashHandler(tags=['dataacquisitionservice', 'backoffice']))
 
+def generateArregateArray(header_info):
+    aggregateArray = []
+    for header in header_info:
+        if('aggregate' in header and header['aggregate'] is True) aggregateArray.append(header['name'])
+    return aggregateArray
+
 def end_of_phase_callback(params, current_phase):
     if current_phase > 1:
         logging.error("Attempted end of phase callback, but current phase > 1")
@@ -338,7 +344,7 @@ class callback_context():
                     Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.totalTables"%(Self.compiler_to_use), incrBy=1)
                     Self.table_stat_table_name_list.append(table_name)
 
-    def callback(Self, eid, update=False, name=None, etype=None, data=None):
+    def callback(Self, eid, update=False, name=None, etype=None, data=None, header_info=None):
 
         if eid is None:
             if not etype == 'SQL_QUERY':
@@ -354,6 +360,8 @@ class callback_context():
                 jinst_dict['query'] = name
                 if data is not None:
                     jinst_dict['data'] = data
+                if header_info is not None:
+                    jinst_dict['aggregateArray'] = generateArregateArray(header_info)
                 compiler_msg = {'tenant':Self.tenant, 'job_instances':[jinst_dict]}
                 if Self.sourcePlatform is not None:
                     compiler_msg['source_platform'] = Self.sourcePlatform

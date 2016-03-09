@@ -987,7 +987,17 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         entity = mongoconn.searchEntity({"md5":q_hash})
 
     update = False
-
+    """
+    For every kvp in array
+    try{
+        redis_conn.incrEntityCounter(entity.eid, key, sort=True, incrBy=float(value))
+    }
+    except {
+        logging.exception("badstuff")
+    }
+    """
+    logging.info(data)
+    logging.info(compile_doc)
     if entity is None:
         logging.info("Going to create the entity")
         profile_dict["instance_count"] = 1
@@ -1095,7 +1105,15 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     context.queue.append(current_queue_entry)
 
     if update == True and etype == "SQL_QUERY":
-
+        """
+        For every kvp in array
+            try{
+                redis_conn.incrEntityCounter(entity.eid, key, sort=True, incrBy=float(value))
+            }
+            except {
+                logging.exception("badstuff")
+            }
+        """
         inst_dict = {"query": query}
         if data is not None:
             inst_dict.update(data)
