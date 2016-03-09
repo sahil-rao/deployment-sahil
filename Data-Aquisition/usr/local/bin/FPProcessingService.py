@@ -361,6 +361,7 @@ class callback_context():
                 jinst_dict['query'] = name
                 if data is not None:
                     jinst_dict['data'] = data
+                jinst_dict['aggregateArray'] = []
                 if header_info is not None:
                     jinst_dict['aggregateArray'] = generateArregateArray(header_info)
                 compiler_msg = {'tenant':Self.tenant, 'job_instances':[jinst_dict]}

@@ -829,7 +829,7 @@ def check_query_type(query_character_list):
         else:
             return False
 
-def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context):
+def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context, aggregateArray=None):
 
     """
         Takes a list of compiler output files and performs following:
@@ -844,7 +844,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             4. If the query is a stored procedure, creates the entity with an etype of SQL_STORED_PROCEDURE.
             5. If the query is a subquery, creates the entity with an etype of SQL_SUBQUERY.
     """
-    logging.info(compile_doc)
+    logging.info(aggregateArray)
     entity = None
     is_failed_in_gsp = False
     elapsed_time = None
@@ -1730,7 +1730,7 @@ def callback(ch, method, properties, body):
 
             temp_msg = {'test_mode':1} if context.test_mode else {'message_id': received_msgID}
 
-            entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform, smc, context)
+            entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform, smc, context, inst["aggregateArray"])
             if entity is not None and opcode is not None:
                 sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg)
             else:
