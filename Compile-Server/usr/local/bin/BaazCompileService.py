@@ -68,7 +68,7 @@ if usingAWS:
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_COMPILER_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
     logging.getLogger().addHandler(XplainLogstashHandler(tags=['compileservice', 'backoffice']))
-
+    
 COMPILER_MODULES='/usr/lib/baaz_compiler'
 
 dirList=os.listdir(COMPILER_MODULES)
@@ -292,7 +292,7 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                             redis_conn.incrRelationshipCounter(table_entity.eid, query['eid'], "STOREDPROCEDUREREAD", "instance_count", incrBy=1)
                         elif query['etype'] == EntityType.SQL_INLINE_VIEW:
                             if 'view_entity_id' in query:
-                                redis_conn.createRelationship(query['view_entity_id'],
+                                redis_conn.createRelationship(query['view_entity_id'], 
                                                               table_entity.eid, "IVIEW_TABLE")
                 else:
                     for query in context.queue:
@@ -307,7 +307,7 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                             redis_conn.incrRelationshipCounter(query['eid'], table_entity.eid, "STOREDPROCEDUREWRITE", "instance_count", incrBy=1)
                         elif query['etype'] == EntityType.SQL_INLINE_VIEW:
                             if 'view_entity_id' in query:
-                                redis_conn.createRelationship(query['view_entity_id'],
+                                redis_conn.createRelationship(query['view_entity_id'], 
                                                               table_entity.eid, "IVIEW_TABLE")
 
                 context.tables.append(table_entity.eid)
@@ -341,9 +341,9 @@ def getTableName(tableentry):
             database_name = tableentry["databaseName"].lower()
     return tablename
 
-def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
-                    tenant, uid, entity, context, inputTableList,
-                    tableEidList=None, hive_success=0, viewAlias=None,
+def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col, 
+                    tenant, uid, entity, context, inputTableList, 
+                    tableEidList=None, hive_success=0, viewAlias=None, 
                     current_queue_entry=None):
     dbCount = 0
     tableCount = 0
@@ -987,17 +987,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         entity = mongoconn.searchEntity({"md5":q_hash})
 
     update = False
-    """
-    For every kvp in array
-    try{
-        redis_conn.incrEntityCounter(entity.eid, key, sort=True, incrBy=float(value))
-    }
-    except {
-        logging.exception("badstuff")
-    }
-    """
-    logging.info(data)
-    logging.info(compile_doc)
+
     if entity is None:
         logging.info("Going to create the entity")
         profile_dict["instance_count"] = 1
@@ -1094,26 +1084,18 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': data}})
 
     """
-    Context Queue entry.
+    Context Queue entry. 
     It contains, the entity id of the query/suquery/inline view and type.
     It can also contain additional information required to process the
     entity and form the relationships.
-    For Eg. In case on Inline view, it can contain information about the
+    For Eg. In case on Inline view, it can contain information about the 
     inline view table object.
     """
     current_queue_entry = {'eid': entity.eid, 'etype': etype}
     context.queue.append(current_queue_entry)
 
     if update == True and etype == "SQL_QUERY":
-        """
-        For every kvp in array
-            try{
-                redis_conn.incrEntityCounter(entity.eid, key, sort=True, incrBy=float(value))
-            }
-            except {
-                logging.exception("badstuff")
-            }
-        """
+
         inst_dict = {"query": query}
         if data is not None:
             inst_dict.update(data)
@@ -1229,7 +1211,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     inlineViewAlias = 'no_alias'
                 tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["inlineViewName"], mongoconn,
                                                  redis_conn, mongoconn.db.entities,
-                                                 tenant, uid, entity,context , inputTableList, tableEidList,
+                                                 tenant, uid, entity,context , inputTableList, tableEidList, 
                                                  0, inlineViewAlias, current_queue_entry)
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
@@ -1299,9 +1281,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("viewName") and compile_doc[key].has_key("view") and compile_doc[key]["view"] == True:
-                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["viewName"],
+                tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["viewName"], 
                                          mongoconn, redis_conn, mongoconn.db.entities,
-                                         tenant, uid, entity,context, inputTableList, tableEidList,
+                                         tenant, uid, entity,context, inputTableList, tableEidList, 
                                          0, None, current_queue_entry)
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
@@ -1407,7 +1389,7 @@ def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_con
     fromSubClauseFsmFile = "/etc/xplain/FromSubclauseFSM.csv";
 
     data_dict = {
-        "input_query": query,
+        "input_query": query, 
         "EntityId": eid,
         "TenantId": tenant,
         "queryFsmFile": queryFsmFile,
@@ -1421,7 +1403,7 @@ def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_con
         "fromSubClauseFsmFile": fromSubClauseFsmFile,
         "source_platform": source_platform
     }
-    opcdode_HAQR = 4
+    opcdode_HAQR = 4 
     retries = 3
     response = tclient.send_compiler_request(opcdode_HAQR, data_dict, retries)
 
@@ -1676,7 +1658,7 @@ def callback(ch, method, properties, body):
                 stats_success_key = "Compiler." + compilername + ".success"
                 stats_failure_key = "Compiler." + compilername + ".failure"
 
-                data_dict = { "input_query": query,
+                data_dict = { "input_query": query, 
                               "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
                 if source_platform is not None:
                     data_dict["source_platform"] = source_platform
@@ -1701,7 +1683,7 @@ def callback(ch, method, properties, body):
                     redis_conn.incrEntityCounter(uid, stats_runfailure_key, incrBy = 1)
                     redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
                     continue
-
+                   
                 compile_doc = None
                 if not response.isSuccess:
                   logging.error("compiler request failed")
