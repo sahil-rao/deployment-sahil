@@ -30,9 +30,9 @@ wget -qO /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1
 
 # Set up environment
 mkdir -m 777 -p $CONF_DIR
-mkdir -m 777 -p $TEMPLATE_DIR
 mkdir -m 777 -p $MOUNT_POINT
 mkdir -m 777 -p $TEMPLATE_DIR/config_templates/
+mkdir -m 777 -p $TEMPLATE_DIR/monit/
 
 # Set up timezone
 echo "America/Los_Angeles" | sudo tee /etc/timezone
@@ -47,7 +47,8 @@ cp ~/deployment/AMI-scripts/backoffice/etc/xplain/requirements.txt /etc/xplain/r
 cp ~/deployment/AMI-scripts/backoffice/etc/xplain/monit/* /etc/xplain/monit/
 
 # Install python packages
-pip install -r /etc/xplain/requirements.txt
+pip install -r $HOME/requirements.txt
+rm $HOME/requirements.txt
 
 # Clean up after we are done
 rm -r ~/deployment/
