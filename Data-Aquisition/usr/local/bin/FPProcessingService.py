@@ -79,7 +79,7 @@ def generateArregateArray(header_info):
     aggregateArray = []
     for header in header_info:
         if('aggregate' in header and header['aggregate'] is True):
-            aggregateArray.append(header['name'])
+            aggregateArray.append(header['type'].upper())
     return aggregateArray
 
 def end_of_phase_callback(params, current_phase):
