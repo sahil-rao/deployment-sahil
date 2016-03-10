@@ -996,8 +996,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         logging.exception("badstuff")
     }
     """
-    logging.info(data)
-    logging.info(compile_doc)
     if entity is None:
         logging.info("Going to create the entity")
         profile_dict["instance_count"] = 1
@@ -1031,6 +1029,15 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 inst_dict = {"query": query}
                 if data is not None:
                     inst_dict.update(data)
+                    if aggregateArray is not None:
+                        for aggKey in aggregateArray:
+                            if(aggKey in data):
+                                try:
+                                    val = float(data[aggKey])
+                                    redis_conn.incrEntityCounter(entity.eid, aggKey, sort=True, incrBy=val)
+                                except:
+                                    redis_conn.incrEntityCounter(entity.eid, aggKey, sort=True, incrBy=1)
+
                 if custom_id is not None:
                     mongoconn.updateInstance(entity, custom_id, None, inst_dict)
                 else:
@@ -1117,6 +1124,15 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         inst_dict = {"query": query}
         if data is not None:
             inst_dict.update(data)
+            if aggregateArray is not None:
+                for aggKey in aggregateArray:
+                    if(aggKey in data):
+                        try:
+                            val = float(data[aggKey])
+                            redis_conn.incrEntityCounter(entity.eid, aggKey, sort=True, incrBy=val)
+                        except:
+                            redis_conn.incrEntityCounter(entity.eid, aggKey, sort=True, incrBy=1)
+
         if custom_id is not None:
             mongoconn.updateInstance(entity, custom_id, None, inst_dict)
         else:
