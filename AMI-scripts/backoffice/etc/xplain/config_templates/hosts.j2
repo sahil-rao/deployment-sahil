@@ -4,26 +4,22 @@
 #Redis server refers to the redis MASTER, slaves will be auto-discovered/configured 
 
 [MongoDB]
-{% for group in groups %}
-{% if group | match('tag_Name_MongoDBServer*') %}
-{{ group | replace ('tag_Name_MongoDB','') | lower }} = {{ groups[group] | join(",") }}
-{% endif %}
-{% endfor %}
+server = {{ services.mongodb.servers | join (",") }}
 
 [RabbitMQ]
-server = {{ groups['tag_Name_QueueServer'] | join(",") }}
+server = {{ services.rabbitmq.server }}
 
 [Redis]
-server = {{ groups['tag_Name_Redis'][0] }}
-sentinels = {{ groups['tag_Name_RedisSentinel'] | join(",") }}
-mastername = {{ redisMasterName }}
+server = {{ services.redis.server }}
+sentinels = {{ services.redis.sentinels | join(",") }}
+mastername = {{ services.redis.mastername }}
 
 [Elasticsearch]
-server = {{ groups['tag_Name_ElasticSearch'][0] }}
+server = {{ services.elasticsearch.servers | join(",") }}
 
 [mode]
 usingAWS = true
 
 [ApplicationConfig]
-mode = {{mode}}
-clusterName = {{clusterName}}
+mode = {{ application.mode }}
+clusterName = {{ application.cluster_name }}
