@@ -364,6 +364,7 @@ class callback_context():
                 jinst_dict['aggregateArray'] = []
                 if header_info is not None:
                     jinst_dict['aggregateArray'] = generateArregateArray(header_info)
+                    Self.mongoconn.db.userPrefs.update_one({"userPrefs":"userPrefs"}, {'$set':{'aggregateArray': jinst_dict['aggregateArray']}}, upsert=True)
                 compiler_msg = {'tenant':Self.tenant, 'job_instances':[jinst_dict]}
                 if Self.sourcePlatform is not None:
                     compiler_msg['source_platform'] = Self.sourcePlatform
