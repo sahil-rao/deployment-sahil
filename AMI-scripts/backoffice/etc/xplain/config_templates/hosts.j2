@@ -15,7 +15,7 @@ sentinels = {{ services.redis.sentinels | join(",") }}
 mastername = {{ services.redis.mastername }}
 
 [Elasticsearch]
-server = {{ services.elasticsearch.servers | join(",") }}
+server = {{ services.elasticsearch.servers[0] }}
 
 [mode]
 usingAWS = true
