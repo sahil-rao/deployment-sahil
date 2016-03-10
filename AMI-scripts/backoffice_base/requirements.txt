@@ -1,0 +1,12 @@
+boto
+elasticsearch
+httplib2
+networkx
+numpy
+pika==0.9.8
+pygraphviz
+pymongo
+python-logstash
+redis
+sqlparse
+thrift==0.9.3
