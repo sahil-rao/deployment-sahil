@@ -1026,8 +1026,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                 try:
                                     val = float(data[aggKey])
                                     redis_conn.incrEntityCounter(entity.eid, aggKey, sort=True, incrBy=val)
+                                    redis_conn.incrEntityCounter("dashboard_data", aggKey+"_total", sort=False, incrBy=val)
                                 except:
-                                    redis_conn.incrEntityCounter(entity.eid, aggKey, sort=True, incrBy=1)
+                                    redis_conn.incrEntityCounter(entity.eid, aggKey+, sort=True, incrBy=1)
+                                    redis_conn.incrEntityCounter("dashboard_data", aggKey+"_total", sort=False, incrBy=1)
 
                 if custom_id is not None:
                     mongoconn.updateInstance(entity, custom_id, None, inst_dict)
@@ -1087,7 +1089,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         #update the stats since they were provided
         if data is not None:
             if hasattr(entity, 'custom_id') and entity.custom_id == custom_id:
-                mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': data}})
+                mongoconn.db.entities.findOne({'md5':q_hash})
+                mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': data}}, upsert=True)
             elif not hasattr(entity, 'custom_id') and custom_id is None:
                 mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': data}})
 
