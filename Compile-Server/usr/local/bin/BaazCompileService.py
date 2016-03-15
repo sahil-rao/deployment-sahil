@@ -1089,12 +1089,19 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         #update the stats since they were provided
 
         if data is not None:
-            entity = mongoconn.db.entities.findOne({'md5':q_hash})
-            stats = entity["profile"]["stats"]
+            entity_instance = mongoconn.db.entities.find_one({'md5':q_hash})
+            stats = entity_instance["profile"]["stats"]
             setDict = stats.copy()
             for field in data:
                 if field == "custom_id":
                     setDict["custom_id"] = data["custom_id"]
+                    continue
+                if field in setDict:
+                    if setDict[field] and not isinstance(setDict[field], list):
+                        if setDict[field] is not None:
+                            setDict[field] = [setDict[field]]
+                else:
+                    setDict[field] = []
                 setDict[field].append(data[field])
             mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': setDict}})
 
