@@ -179,6 +179,9 @@ cp /home/xplain/build/deployment/Data-Aquisition/etc/xplain/application-api.cfg 
 cp /home/xplain/build/deployment/Data-Aquisition/etc/xplain/target_platforms.cfg .
 cp /home/xplain/build/deployment/Math-Server/etc/xplain/adv_analytics.cfg .
 cp /home/xplain/build/deployment/Math-Server/etc/xplain/analytics.cfg .
+cp /home/xplain/build/deployment/Math-Server/etc/xplain/rules.cfg .
+cp /home/xplain/build/deployment/Math-Server/etc/xplain/rule_workflows.cfg .
+cp /home/xplain/build/deployment/Math-Server/etc/init/ruleengineservice.conf .
 
 cp /home/xplain/build/deployment/VM/erlang.cookie.j2 .
 cp /home/xplain/build/deployment/VM/installrabbit.sh .

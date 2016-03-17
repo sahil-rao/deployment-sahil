@@ -15,6 +15,10 @@
     copy: src=/home/xplain/adv_analytics.cfg dest=/etc/xplain/adv_analytics.cfg
   - name: Copy analytics.cfg
     copy: src=/home/xplain/analytics.cfg dest=/etc/xplain/analytics.cfg
+  - name: Copy rules.cfg
+    copy: src=/home/xplain/rules.cfg dest=/etc/xplain/rules.cfg
+  - name: Copy rule_workflows.cfg
+    copy: src=/home/xplain/rule_workflows.cfg dest=/etc/xplain/rule_workflows.cfg
   #Should eventually replace this script with package manager
   - name: Copy rabbit install script
     copy: src=installrabbit.sh dest=/home/xplain/installrabbit.sh owner=root group=root mode=0744
@@ -185,6 +189,8 @@
     template: src=/home/xplain/api_nodejs.conf dest=/etc/init/api_nodejs.conf
   - name: Copy xplain_admin upstart configuration file
     copy: src=/home/xplain/xplain_admin.conf dest=/etc/init/xplain_admin.conf
+  - name: Copy ruleengine upstart configuration file
+    copy: src=/home/xplain/ruleengineservice.conf dest=/etc/init/ruleengineservice.conf
   - name: Untar Baazdata App
     shell: tar -zxf /home/xplain/xplain.io.tar.gz
   - name: Remove the existing deployed code
