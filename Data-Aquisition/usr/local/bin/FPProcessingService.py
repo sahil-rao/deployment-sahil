@@ -75,12 +75,19 @@ if usingAWS:
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_FP_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
     logging.getLogger().addHandler(XplainLogstashHandler(tags=['dataacquisitionservice', 'backoffice']))
 
-def generateArregateArray(header_info):
-    aggregateArray = []
+def generateTagArray(header_info):
+    tagArray = []
     for header in header_info:
-        if('aggregate' in header and header['aggregate'] is True):
-            aggregateArray.append(header['type'].upper())
-    return aggregateArray
+        if('tag' in header and header['tag'] is True):
+            tagArray.append(header['type'].upper())
+    return tagArray
+
+def generateCountArray(header_info):
+    countArray = []
+    for header in header_info:
+        if('count' in header and header['count'] is True):
+            countArray.append(header['type'].upper())
+    return countArray
 
 def end_of_phase_callback(params, current_phase):
     if current_phase > 1:
@@ -361,10 +368,13 @@ class callback_context():
                 jinst_dict['query'] = name
                 if data is not None:
                     jinst_dict['data'] = data
-                jinst_dict['aggregateArray'] = []
+
+                jinst_dict['tagArray'] = []
+                jinst_dict['countArray'] = []
                 if header_info is not None:
-                    jinst_dict['aggregateArray'] = generateArregateArray(header_info)
-                    Self.mongoconn.db.userPrefs.update_one({"userPrefs":"userPrefs"}, {'$set':{'aggregateArray': jinst_dict['aggregateArray']}}, upsert=True)
+                    jinst_dict['tagArray'] = generateTagArray(header_info)
+                    jinst_dict['countArray'] = generateCountArray(header_info)
+                    Self.mongoconn.db.userPrefs.update_one({"userPrefs":"userPrefs"}, {'$set':{'tagArray': jinst_dict['tagArray']}, {'countArray': jinst_dict['countArray']}}, upsert=True)
                 compiler_msg = {'tenant':Self.tenant, 'job_instances':[jinst_dict]}
                 if Self.sourcePlatform is not None:
                     compiler_msg['source_platform'] = Self.sourcePlatform

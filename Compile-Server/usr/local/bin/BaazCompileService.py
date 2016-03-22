@@ -829,7 +829,7 @@ def check_query_type(query_character_list):
         else:
             return False
 
-def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context, aggregateArray=None):
+def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context, tagArray=None, countArray=None):
 
     """
         Takes a list of compiler output files and performs following:
@@ -844,7 +844,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             4. If the query is a stored procedure, creates the entity with an etype of SQL_STORED_PROCEDURE.
             5. If the query is a subquery, creates the entity with an etype of SQL_SUBQUERY.
     """
-    logging.info(aggregateArray)
     entity = None
     is_failed_in_gsp = False
     elapsed_time = None
@@ -1020,16 +1019,21 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 inst_dict = {"query": query}
                 if data is not None:
                     inst_dict.update(data)
-                    if aggregateArray is not None:
-                        for aggKey in aggregateArray:
+                    if tagArray is not None:
+                        for tagKey in tagArray:
                             if(aggKey in data):
+                                redis_conn.incrEntityCounter(aggKey, entity.eid, sort=True, incrBy=1)
+                                redis_conn.incrEntityCounter("dashboard_data", aggKey+"_total", sort=False, incrBy=1)
+                    if countArray is not None:
+                        for countKey in countArray:
+                            if(countKey in data):
                                 try:
-                                    val = float(data[aggKey])
-                                    redis_conn.incrEntityCounter(entity.eid, aggKey, sort=True, incrBy=val)
-                                    redis_conn.incrEntityCounter("dashboard_data", aggKey+"_total", sort=False, incrBy=val)
+                                    val = float(data[countKey])
+                                    redis_conn.incrEntityCounter(entity.eid, countKey, sort=True, incrBy=val)
+                                    redis_conn.incrEntityCounter("dashboard_data", countKey+"_total", sort=False, incrBy=val)
                                 except:
-                                    redis_conn.incrEntityCounter(entity.eid, aggKey, sort=True, incrBy=1)
-                                    redis_conn.incrEntityCounter("dashboard_data", aggKey+"_total", sort=False, incrBy=1)
+                                    logging.exception("Non numerical count value passed")
+
 
                 if custom_id is not None:
                     mongoconn.updateInstance(entity, custom_id, None, inst_dict)
@@ -1121,16 +1125,20 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         inst_dict = {"query": query}
         if data is not None:
             inst_dict.update(data)
-            if aggregateArray is not None:
-                for aggKey in aggregateArray:
+            if tagArray is not None:
+                for tagKey in tagArray:
                     if(aggKey in data):
+                        redis_conn.incrEntityCounter(aggKey, entity.eid, sort=True, incrBy=1)
+                        redis_conn.incrEntityCounter("dashboard_data", aggKey+"_total", sort=False, incrBy=1)
+            if countArray is not None:
+                for countKey in countArray:
+                    if(countKey in data):
                         try:
-                            val = float(data[aggKey])
-                            redis_conn.incrEntityCounter(entity.eid, aggKey, sort=True, incrBy=val)
-                            redis_conn.incrEntityCounter("dashboard_data", aggKey+"_total", sort=False, incrBy=val)
+                            val = float(data[countKey])
+                            redis_conn.incrEntityCounter(entity.eid, countKey, sort=True, incrBy=val)
+                            redis_conn.incrEntityCounter("dashboard_data", countKey+"_total", sort=False, incrBy=val)
                         except:
-                            redis_conn.incrEntityCounter(entity.eid, aggKey, sort=True, incrBy=1)
-                            redis_conn.incrEntityCounter("dashboard_data", aggKey+"_total", sort=False, incrBy=1)
+                            logging.exception("Non numerical count value passed")
 
         if custom_id is not None:
             mongoconn.updateInstance(entity, custom_id, None, inst_dict)
@@ -1745,7 +1753,7 @@ def callback(ch, method, properties, body):
 
             temp_msg = {'test_mode':1} if context.test_mode else {'message_id': received_msgID}
 
-            entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform, smc, context, inst["aggregateArray"])
+            entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform, smc, context, inst["tagArray"], inst["countArray"])
             if entity is not None and opcode is not None:
                 sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg)
             else:
