@@ -281,3 +281,7 @@ check process mathservice with pidfile /var/run/mathservice.pid
 check process advanalytics with pidfile /var/run/advanalyticsservice.pid
     start program = "/sbin/start advanalytics" with timeout 30 seconds
     stop program = "/sbin/stop advanalytics"
+
+check process ruleengineservice with pidfile /var/run/ruleengineservice.pid
+    start program = "/sbin/start ruleengineservice" with timeout 30 seconds
+    stop program = "/sbin/stop ruleengineservice"

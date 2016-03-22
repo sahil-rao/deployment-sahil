@@ -17,6 +17,8 @@ sudo stop api_nodejs
 sudo start api_nodejs
 sudo stop applicationservice
 sudo start applicationservice
+sudo stop ruleengineservice
+sudo start ruleengineservice
 
 #sudo monit                               
 exit 0
