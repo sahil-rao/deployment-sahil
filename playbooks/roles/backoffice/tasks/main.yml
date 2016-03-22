@@ -36,6 +36,9 @@
 - name: Stop running upstart script
   service: name=applicationservice state=stopped
   sudo: yes
+- name: Stop running rule engine
+  service: name=ruleengineservice state=stopped
+  sudo: yes
 # - name: Start dataacquisitionservice (upstart).
 #   service: name=dataacquisitionservice state=started
 #   sudo: yes
