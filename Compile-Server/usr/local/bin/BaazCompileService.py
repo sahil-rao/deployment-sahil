@@ -1127,9 +1127,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             inst_dict.update(data)
             if tagArray is not None:
                 for tagKey in tagArray:
-                    if(aggKey in data):
-                        redis_conn.incrEntityCounter(aggKey, entity.eid, sort=True, incrBy=1)
-                        redis_conn.incrEntityCounter("dashboard_data", aggKey+"_total", sort=False, incrBy=1)
+                    if(tagKey in data):
+                        redis_conn.incrEntityCounter(tagKey, entity.eid, sort=True, incrBy=1)
+                        redis_conn.incrEntityCounter("dashboard_data", tagKey+"_total", sort=False, incrBy=1)
             if countArray is not None:
                 for countKey in countArray:
                     if(countKey in data):
