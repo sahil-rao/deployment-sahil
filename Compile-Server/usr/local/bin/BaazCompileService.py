@@ -845,7 +845,6 @@ def process_tag_array(tenant, q_eid, mongoconn, redis_conn, tagArray, data):
             tag_etype = EntityType.FILE_TAG
             tag_profile = {'tagKey': tagKey, 'tagVal': data[tagKey]}
             tag_name = '%s:%s' % (tagKey, data[tagKey])
-            logging.info('SAMIR '+tag_name)
             tag_entity = mongoconn.addEn(tag_eid, tag_name, tenant, tag_etype,
                                          tag_profile, None)
             if tag_eid == tag_entity.eid:
