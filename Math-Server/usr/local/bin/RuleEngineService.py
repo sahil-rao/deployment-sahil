@@ -92,27 +92,31 @@ def callback(ch, method, properties, body):
     Run workflows that has the given opcode.
     '''
     section = msg_dict['opcode']
-    try:
-        if workflow_config.has_section(section):
-            if not workflow_config.has_option(section, "Import") or\
-              not workflow_config.has_option(section, "Function") or\
-              not workflow_config.has_option(section, "RuleIds"):
-                logging.error("rule_workflows.cfg section not defined properly for %s"%(section))
-            else:
-                '''
-                Run rules before running the workflow.
-                '''
-                rule_ids = workflow_config.get(section, "RuleIds").split(',')
-                for rule_id in rule_ids:
-                    rule_name = rule_config.get(rule_id, "RuleName")
-                    rule_mod = importlib.import_module(rule_config.get(rule_id, "Import"))
-                    rule_function = getattr(rule_mod, rule_config.get(rule_id, "Function"))
+    if workflow_config.has_section(section):
+        if not workflow_config.has_option(section, "Import") or\
+          not workflow_config.has_option(section, "Function") or\
+          not workflow_config.has_option(section, "RuleIds"):
+            logging.error("rule_workflows.cfg section not defined properly for %s"%(section))
+        else:
+            '''
+            Run rules before running the workflow.
+            '''
+            rule_ids = workflow_config.get(section, "RuleIds").split(',')
+            for rule_id in rule_ids:
+                rule_name = rule_config.get(rule_id, "RuleName")
+                rule_mod = importlib.import_module(rule_config.get(rule_id, "Import"))
+                rule_function = getattr(rule_mod, rule_config.get(rule_id, "Function"))
+                try:
                     msg_dict[rule_name] = rule_function(tenant, msg_dict)
-                mod = importlib.import_module(workflow_config.get(section, "Import"))
-                methodToCall = getattr(mod, workflow_config.get(section, "Function"))
+                except:
+                    msg_dict[rule_name] = None
+                    logging.exception("Rule Failed for " + rule_name)
+            mod = importlib.import_module(workflow_config.get(section, "Import"))
+            methodToCall = getattr(mod, workflow_config.get(section, "Function"))
+            try:
                 resp_dict = methodToCall(tenant, msg_dict)
-    except:
-        logging.exception("Proceesing request for " + msg_dict["opcode"])
+            except:
+                logging.exception("Proceesing request for " + msg_dict["opcode"])
 
     if resp_dict is None:
         resp_dict = {"status": "Failed"}

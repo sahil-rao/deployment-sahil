@@ -829,6 +829,52 @@ def check_query_type(query_character_list):
         else:
             return False
 
+
+def process_tag_array(tenant, q_eid, mongoconn, redis_conn, tagArray, data):
+    '''
+    Given a tagArray, creates entities for each tag in the array,
+        then creates relationships between the entities that were created.
+    '''
+    for tagKey in tagArray:
+        '''
+        Creates a FILE_TAG entity.
+        Creates a relationship between FILE_TAG and SQL_QUERY entity.
+        '''
+        if tagKey in data:
+            tag_eid = IdentityService.getNewIdentity(tenant, True)
+            tag_etype = EntityType.FILE_TAG
+            tag_profile = {'tagKey': tagKey, 'tagVal': data[tagKey]}
+            tag_name = '%s:%s' % (tagKey, data[tagKey])
+            logging.info('SAMIR '+tag_name)
+            tag_entity = mongoconn.addEn(tag_eid, tag_name, tenant, tag_etype,
+                                         tag_profile, None)
+            if tag_eid == tag_entity.eid:
+                redis_conn.createEntityProfile(tag_entity.eid, tag_etype)
+            """
+            Establish relationship between the Tag entity and the query.
+                Tag -> Query.
+            """
+            created = redis_conn.createRelationship(tag_entity.eid, q_eid, 'QUERY_TAG')
+            if created:
+                redis_conn.setRelationship(tag_entity.eid, q_eid, 'QUERY_TAG', tag_profile)
+            redis_conn.incrRelationshipCounter(tag_entity.eid, q_eid, 'QUERY_TAG', "count")
+
+
+def process_count_array(tenant, q_eid, mongoconn, redis_conn, countArray, data):
+    '''
+    Given a countArray, increments the count on q_eid for the tag
+        by an amount equal to the value passed in.
+    '''
+    for countKey in countArray:
+        if countKey in data:
+            try:
+                val = float(data[countKey])
+                redis_conn.incrEntityCounter(q_eid, countKey, sort=True, incrBy=val)
+                redis_conn.incrEntityCounter("dashboard_data", 'total_'+countKey, sort=False, incrBy=val)
+            except:
+                logging.exception("Non numerical count value passed")
+
+
 def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context, tagArray=None, countArray=None):
 
     """
@@ -1020,20 +1066,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if data is not None:
                     inst_dict.update(data)
                     if tagArray is not None:
-                        for tagKey in tagArray:
-                            if(tagKey in data):
-                                redis_conn.incrEntityCounter(tagKey, entity.eid, sort=True, incrBy=1)
-                                redis_conn.incrEntityCounter("dashboard_data", tagKey+"_total", sort=False, incrBy=1)
+                        process_tag_array(tenant, entity.eid, mongoconn, redis_conn, tagArray, data)
                     if countArray is not None:
-                        for countKey in countArray:
-                            if(countKey in data):
-                                try:
-                                    val = float(data[countKey])
-                                    redis_conn.incrEntityCounter(entity.eid, countKey, sort=True, incrBy=val)
-                                    redis_conn.incrEntityCounter("dashboard_data", countKey+"_total", sort=False, incrBy=val)
-                                except:
-                                    logging.exception("Non numerical count value passed")
-
+                        process_count_array(tenant, entity.eid, mongoconn, redis_conn, countArray, data)
 
                 if custom_id is not None:
                     mongoconn.updateInstance(entity, custom_id, None, inst_dict)
@@ -1126,19 +1161,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         if data is not None:
             inst_dict.update(data)
             if tagArray is not None:
-                for tagKey in tagArray:
-                    if(aggKey in data):
-                        redis_conn.incrEntityCounter(aggKey, entity.eid, sort=True, incrBy=1)
-                        redis_conn.incrEntityCounter("dashboard_data", aggKey+"_total", sort=False, incrBy=1)
+                process_tag_array(tenant, entity.eid, mongoconn, redis_conn, tagArray, data)
             if countArray is not None:
-                for countKey in countArray:
-                    if(countKey in data):
-                        try:
-                            val = float(data[countKey])
-                            redis_conn.incrEntityCounter(entity.eid, countKey, sort=True, incrBy=val)
-                            redis_conn.incrEntityCounter("dashboard_data", countKey+"_total", sort=False, incrBy=val)
-                        except:
-                            logging.exception("Non numerical count value passed")
+                process_count_array(tenant, entity.eid, mongoconn, redis_conn, countArray, data)
 
         if custom_id is not None:
             mongoconn.updateInstance(entity, custom_id, None, inst_dict)
