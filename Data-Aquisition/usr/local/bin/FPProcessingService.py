@@ -24,6 +24,7 @@ import time
 import logging
 import socket
 import urllib
+import re
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -88,6 +89,12 @@ def generateCountArray(header_info):
         if('count' in header and header['count'] is True):
             countArray.append(header['type'].upper())
     return countArray
+
+
+def clean_header(header_info):
+    for i, tag_info in enumerate(header_info):
+        header_info[i]['type'] = "".join(re.findall("[a-zA-Z-_]+", tag_info['type'].upper()))
+    return header_info
 
 def end_of_phase_callback(params, current_phase):
     if current_phase > 1:
@@ -182,7 +189,7 @@ class callback_context():
         Self.scale_mode = scale_mode
         Self.testMode = testMode
         Self.queryNumThreshold = 50000
-        Self.header_info = header_info
+        Self.header_info = clean_header(header_info)
         Self.delimiter = delimiter
         Self.col_stat_table_name_list = []
         Self.table_stat_table_name_list = []
