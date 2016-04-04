@@ -92,6 +92,8 @@ def generateCountArray(header_info):
 
 
 def clean_header(header_info):
+    if not header_info:
+        return header_info
     for i, tag_info in enumerate(header_info):
         header_info[i]['type'] = "".join(re.findall("[a-zA-Z-_]+", tag_info['type'].upper()))
     return header_info
