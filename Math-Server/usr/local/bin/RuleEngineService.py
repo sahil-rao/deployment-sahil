@@ -95,7 +95,8 @@ def callback(ch, method, properties, body):
     if workflow_config.has_section(section):
         if not workflow_config.has_option(section, "Import") or\
           not workflow_config.has_option(section, "Function") or\
-          not workflow_config.has_option(section, "RuleIds"):
+          not workflow_config.has_option(section, "RuleIds") or \
+          not workflow_config.has_option(section, "version"):
             logging.error("rule_workflows.cfg section not defined properly for %s"%(section))
         else:
             '''
@@ -113,6 +114,7 @@ def callback(ch, method, properties, body):
                     logging.exception("Rule Failed for " + rule_name)
             mod = importlib.import_module(workflow_config.get(section, "Import"))
             methodToCall = getattr(mod, workflow_config.get(section, "Function"))
+            msg_dict['version'] = workflow_config.get(section, "version")
             try:
                 resp_dict = methodToCall(tenant, msg_dict)
             except:
