@@ -55,6 +55,16 @@ else
  echo "All thrift dependencies met..."
 fi
 
+#check for python binaryornot
+pip show binaryornot
+ispip=`echo $?`
+if [ $ispip -ne 0 ]
+then
+  sudo pip install 'binaryornot'
+else
+  echo "binaryornot python library present.."
+fi
+
 #start building process
 cd  /home/xplain/build
 
