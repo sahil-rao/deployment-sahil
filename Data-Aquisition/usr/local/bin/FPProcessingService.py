@@ -103,7 +103,7 @@ def end_of_phase_callback(params, current_phase):
         logging.error("Attempted end of phase callback, but current phase > 1")
         return
 
-    logging.info("Changing processing Phase")
+    #logging.info("Changing processing Phase") UNLOGGED
     msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"}
     msg_dict['uid'] = params['uid']
     message = dumps(msg_dict)
@@ -408,7 +408,7 @@ class callback_context():
                 message = dumps(compiler_msg)
                 connection1.publish(Self.ch,'','compilerqueue',message)
                 incrementPendingMessage(Self.collection, Self.redis_conn, Self.uid, message_id)
-                logging.info("Published Compiler Message {0}\n".format(message))
+                #logging.info("Published Compiler Message {0}\n".format(message)) UNLOGGED
 
             else:
                 Self.redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
@@ -454,7 +454,7 @@ class callback_context():
                 jinst_dict['program_type'] = "Pig"
                 jinst_dict['pig_features'] = int(entity.instances[0].config_data['pig.script.features'])
             else:
-                logging.info("Progname found {0}\n".format(entity.name))
+                #logging.info("Progname found {0}\n".format(entity.name)) UNLOGGED
                 pub = False
             if pub == True:
                 compiler_msg = {'tenant':Self.tenant, 'job_instances':[jinst_dict]}
@@ -467,7 +467,7 @@ class callback_context():
                 message = dumps(compiler_msg)
                 connection1.publish(Self.ch,'','compilerqueue',message)
                 incrementPendingMessage(Self.collection, Self.redis_conn, Self.uid, message_id)
-                logging.info("Published Compiler Message {0}\n".format(message))
+                #logging.info("Published Compiler Message {0}\n".format(message)) UNLOGGED
 
 def callback(ch, method, properties, body):
     starttime = time.time()
@@ -478,7 +478,7 @@ def callback(ch, method, properties, body):
     except:
         logging.exception("Could not load the message JSON")
 
-    logging.info("FPPS Got message "+ str( msg_dict))
+    #logging.info("FPPS Got message "+ str( msg_dict)) UNLOGGED
     """
     Validate the message.
     """
@@ -585,14 +585,14 @@ def callback(ch, method, properties, body):
             #    errlog.flush()
             #    return
         else:
-            logging.info("Downloading and extracting file")
+            #logging.info("Downloading and extracting file") UNLOGGED
 
         """
         Download the file and extract:
         """
         dest_file = BAAZ_DATA_ROOT + tenant + "/" + filename
         destination = os.path.dirname(dest_file)
-        logging.info("Destination: "+str(destination))
+        #logging.info("Destination: "+str(destination)) UNLOGGED
         if not os.path.exists(destination):
             os.makedirs(destination)
 
@@ -619,9 +619,9 @@ def callback(ch, method, properties, body):
     except:
         logging.exception("Downloading file")
 
-    logging.info("Extracted file : {0} \n".format(dest_file))
+    #logging.info("Extracted file : {0} \n".format(dest_file)) UNLOGGED
     if not usingAWS:
-        logging.info("Extracted file to /mnt/volume1/[tenent]/processing")
+        #logging.info("Extracted file to /mnt/volume1/[tenent]/processing") UNLOGGED
 
     """
     Check if this upload has requested to skip the limit check.
@@ -651,7 +651,7 @@ def callback(ch, method, properties, body):
         '''
         message_id = genMessageID("Pre", redis_conn)
         incrementPendingMessage(collection, redis_conn, uid, message_id)
-        logging.info("Incremementing message count: " + message_id)
+        #logging.info("Incremementing message count: " + message_id) UNLOGGED
 
         cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection,
                                   scale_mode, skipLimit, testMode, source_platform, header_info, delimiter)
@@ -660,7 +660,7 @@ def callback(ch, method, properties, body):
 
         callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
         decrementPendingMessage(collection, redis_conn, uid, message_id, end_of_phase_callback, callback_params)
-        logging.info("Decrementing message count: " + message_id)
+        #logging.info("Decrementing message count: " + message_id) UNLOGGED
 
         if usingAWS:
             """
@@ -669,7 +669,7 @@ def callback(ch, method, properties, body):
             chkpoint_key = Key(bucket)
             chkpoint_key.key = checkpoint
             chkpoint_key.set_contents_from_string("Processed")
-            logging.info("Processed file : {0} \n".format(dest_file))
+            #logging.info("Processed file : {0} \n".format(dest_file)) UNLOGGED
 
         """
         If we are in scale mode, close mongo, ack, and exit.
@@ -715,7 +715,7 @@ def callback(ch, method, properties, body):
                                                            {"$set": {"uploads": (collection.count()-1),
                                                             "lastTimeStamp": timestamp}})
 
-            logging.info("Updated the overall stats values.")
+            #logging.info("Updated the overall stats values.") UNLOGGED
     except:
         logging.exception("Error while updating the overall stats values.")
 
