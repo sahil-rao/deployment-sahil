@@ -82,7 +82,7 @@ if CLUSTER_NAME is not None:
     bucket_location = CLUSTER_NAME
 
 """
-For VM there is not S3 connectivity. Save the logs with a timestamp. 
+For VM there is not S3 connectivity. Save the logs with a timestamp.
 At some point we should move to using a log rotate handler in the VM.
 """
 if not usingAWS:
@@ -97,11 +97,11 @@ In AWS use S3 log rotate to save the log files.
 """
 if usingAWS:
     boto_conn = boto.connect_s3()
-    bucket = boto_conn.get_bucket(bucket_location) 
+    bucket = boto_conn.get_bucket(bucket_location)
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(APPSRV_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
     logging.getLogger().addHandler(XplainLogstashHandler(tags=['applicationservice', 'backoffice']))
-    
+
 def process_mongo_rewrite_request(ch, properties, tenant, instances):
 
     """
@@ -111,7 +111,7 @@ def process_mongo_rewrite_request(ch, properties, tenant, instances):
             3. Invoke compiler to generate Xplain RA.
             4. Read the output file as a JSON.
             5. Invoke mongo converter template engine to convert.
-        6. Send the RPC response. 
+        6. Send the RPC response.
     """
     in_file = "/tmp/mongo-RA-input"
     out_file = "/tmp/mongo-RA-output"
@@ -148,7 +148,7 @@ def process_mongo_rewrite_request(ch, properties, tenant, instances):
                 resp_dict["status"] = "Failed"
                 logging.error("compiler request failed")
             else:
-                """ 
+                """
                     Read the output and send the RPC response.
                 """
                 compile_doc = None
@@ -162,11 +162,11 @@ def process_mongo_rewrite_request(ch, properties, tenant, instances):
 
             resp_dict["status"] = "Success"
         except:
-            logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))     
+            logging.exception("Tenent {0}, {1}\n".format(tenant, traceback.format_exc()))
             resp_dict["status"] = "Failed"
 
     """
-        6. Send the RPC response. 
+        6. Send the RPC response.
     """
     return resp_dict
     #logging.info("Sending compiler response")
@@ -180,13 +180,13 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
 
     """
         Steps to generate Hbase DDL are as following:
-        1. Gets the pattern ID of the pattern. Finds the tables and 
+        1. Gets the pattern ID of the pattern. Finds the tables and
            queries involved in the pattern.
         2. Invoke analytics workflow to generate Hbase analytics.
         3. Save the analytics results to a local file.
         4. Send request to DDL generator.
         5. Check the output file.
-        6. Read output file and send the RPC response. 
+        6. Read output file and send the RPC response.
     """
     compile_doc = None
     prog_id = None
@@ -202,10 +202,10 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
         return
 
     if transformType == "SingleTable":
-        logging.info('Received SingleTable {0} transformation request.'.format(target))
+        #logging.info('Received SingleTable {0} transformation request.'.format(target)) UNLOGGED
         tableList = [prog_id]
     elif transformType == "SinglePattern":
-        logging.info('Received SinglePattern {0} transformation request.'.format(target))
+        #logging.info('Received SinglePattern {0} transformation request.'.format(target)) UNLOGGED
         join_group = db.entities.find_one({'profile.PatternID':prog_id}, {'eid':1, 'profile.FullQueryList':1})
 
         if join_group is None:
@@ -248,7 +248,7 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
         EntityId = '0'
         if len(prog_id) == 0:
             EntityId = prog_id[0]
-        data_dict = {"input_query": dumps(result), 
+        data_dict = {"input_query": dumps(result),
                      "EntityId": EntityId, "TenantId": "100", "Version": "1"}
 
         """
@@ -257,7 +257,7 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
         opcode = 2
         retries = 3
         response = tclient.send_compiler_request(opcode, data_dict, retries)
-        
+
         if response.isSuccess == True:
             status = "SUCCESS"
         else:
@@ -270,7 +270,7 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
             resp_dict["status"] = "Failed"
             loogging.error("compiler request failed")
         else:
-            """ 
+            """
                 Read the output and send the RPC response.
             """
             compile_coc = None
@@ -278,7 +278,7 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
             resp_dict = compile_doc
             resp_dict["status"] = "Success"
     except:
-        logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))     
+        logging.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))
         resp_dict["status"] = "Failed"
 
     """
@@ -295,15 +295,15 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
 def callback(ch, method, properties, body):
 
     starttime = time.time()
-    
+
     try:
         msg_dict = loads(body)
     except:
         logging.exception("Could not load the message JSON")
         return
 
-    logging.info("ApplicationService: Got message : "+ str(msg_dict))
-    logging.info("Correlation ID : "+ properties.correlation_id)
+    #logging.info("ApplicationService: Got message : "+ str(msg_dict)) UNLOGGED
+    #logging.info("Correlation ID : "+ properties.correlation_id) UNLOGGED
     if "opcode" not in msg_dict or 'tenant' not in msg_dict:
         logging.error('ApplicationService there was no opcode or tenant in msg_dict.')
         connection1.basicAck(ch,method)
@@ -321,7 +321,7 @@ def callback(ch, method, properties, body):
         """
         if msg_dict["opcode"] == "HbaseDDL":
 
-            logging.info("Got the opcode of Hbase")
+            #logging.info("Got the opcode of Hbase") UNLOGGED
             instances = msg_dict["job_instances"]
             db = client[tenant]
             redis_conn = RedisConnector(tenant)
@@ -329,7 +329,7 @@ def callback(ch, method, properties, body):
             resp_dict = process_ddl_request(ch, properties, tenant, "hbase", instances, db, redis_conn)
         if msg_dict["opcode"] == "ImpalaDDL":
 
-            logging.info("Got the opcode of Hbase")
+            #logging.info("Got the opcode of Hbase") UNLOGGED
             instances = msg_dict["job_instances"]
             db = client[tenant]
             redis_conn = RedisConnector(tenant)
@@ -340,7 +340,7 @@ def callback(ch, method, properties, body):
                 resp_dict = process_ddl_request(ch, properties, tenant, "impala", instances, db, redis_conn)
         elif msg_dict["opcode"] == "ImpalaImport":
 
-            logging.info("Got the opcode of Impala import")
+            #logging.info("Got the opcode of Impala import") UNLOGGED
             filename = msg_dict["filename"]
             filename = urllib.unquote(filename)
             source = tenant + "/" + filename
@@ -360,7 +360,7 @@ def callback(ch, method, properties, body):
             """
             dest_file = BAAZ_DATA_ROOT + tenant + "/" + filename
             destination = os.path.dirname(dest_file)
-            logging.info("Destination: "+str(destination))
+            #logging.info("Destination: "+str(destination)) UNLOGGED
             if not os.path.exists(destination):
                 os.makedirs(destination)
 
@@ -377,8 +377,8 @@ def callback(ch, method, properties, body):
             shutil.copy(dest_file, logpath)
             resp_dict = get_impala_import.execute(tenant, {'file':dest_file, 'stats':msg_dict['stats']})
         elif msg_dict["opcode"] == "MongoTransform":
-    
-            logging.info("Got the opcode For Mongo Translation")
+
+            #logging.info("Got the opcode For Mongo Translation") UNLOGGED
             instances = msg_dict["job_instances"]
             resp_dict = process_mongo_rewrite_request(ch, properties, tenant, instances)
         elif msg_dict['opcode'] == "TableTransformStats":
@@ -452,7 +452,7 @@ def callback(ch, method, properties, body):
         resp_dict = {"status" : "Failed"}
 
     try:
-        logging.info("Responding to coorelation ID : "+ properties.correlation_id)
+        #logging.info("Responding to coorelation ID : "+ properties.correlation_id) UNLOGGED
         ch.basic_publish(exchange='',
                          routing_key=properties.reply_to,
                          properties=pika.BasicProperties(correlation_id = \
