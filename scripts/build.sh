@@ -131,6 +131,7 @@ else
   exit 1
 fi
 mkdir baaz_compiler
+rm -rf baaz_compiler/*
 #mv bin/com Baaz-Hive-Compiler/.
 cp target/Baaz-Compiler/*.jar baaz_compiler/
 cp target/classes/logback.xml baaz_compiler/
