@@ -169,7 +169,7 @@ def process_mongo_rewrite_request(ch, properties, tenant, instances):
         6. Send the RPC response.
     """
     return resp_dict
-    #logging.info("Sending compiler response")
+    logging.debug("Sending compiler response")
     #ch.basic_publish(exchange='',
     #                 routing_key=properties.reply_to,
     #                 properties=pika.BasicProperties(correlation_id = \
@@ -202,10 +202,10 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
         return
 
     if transformType == "SingleTable":
-        #logging.info('Received SingleTable {0} transformation request.'.format(target)) UNLOGGED
+        logging.debug('Received SingleTable {0} transformation request.'.format(target))
         tableList = [prog_id]
     elif transformType == "SinglePattern":
-        #logging.info('Received SinglePattern {0} transformation request.'.format(target)) UNLOGGED
+        logging.debug('Received SinglePattern {0} transformation request.'.format(target))
         join_group = db.entities.find_one({'profile.PatternID':prog_id}, {'eid':1, 'profile.FullQueryList':1})
 
         if join_group is None:
@@ -285,7 +285,7 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
         Publish the response to the requestor.
     """
     return resp_dict
-    #logging.info("Sending compiler response")
+    logging.debug("Sending compiler response")
     #ch.basic_publish(exchange='',
     #                 routing_key=properties.reply_to,
     #                 properties=pika.BasicProperties(correlation_id = \
@@ -302,8 +302,8 @@ def callback(ch, method, properties, body):
         logging.exception("Could not load the message JSON")
         return
 
-    #logging.info("ApplicationService: Got message : "+ str(msg_dict)) UNLOGGED
-    #logging.info("Correlation ID : "+ properties.correlation_id) UNLOGGED
+    logging.debug("ApplicationService: Got message : "+ str(msg_dict))
+    logging.debug("Correlation ID : "+ properties.correlation_id)
     if "opcode" not in msg_dict or 'tenant' not in msg_dict:
         logging.error('ApplicationService there was no opcode or tenant in msg_dict.')
         connection1.basicAck(ch,method)
@@ -321,7 +321,7 @@ def callback(ch, method, properties, body):
         """
         if msg_dict["opcode"] == "HbaseDDL":
 
-            #logging.info("Got the opcode of Hbase") UNLOGGED
+            logging.debug("Got the opcode of Hbase")
             instances = msg_dict["job_instances"]
             db = client[tenant]
             redis_conn = RedisConnector(tenant)
@@ -329,7 +329,7 @@ def callback(ch, method, properties, body):
             resp_dict = process_ddl_request(ch, properties, tenant, "hbase", instances, db, redis_conn)
         if msg_dict["opcode"] == "ImpalaDDL":
 
-            #logging.info("Got the opcode of Hbase") UNLOGGED
+            logging.debug("Got the opcode of Hbase")
             instances = msg_dict["job_instances"]
             db = client[tenant]
             redis_conn = RedisConnector(tenant)
@@ -340,7 +340,7 @@ def callback(ch, method, properties, body):
                 resp_dict = process_ddl_request(ch, properties, tenant, "impala", instances, db, redis_conn)
         elif msg_dict["opcode"] == "ImpalaImport":
 
-            #logging.info("Got the opcode of Impala import") UNLOGGED
+            logging.debug("Got the opcode of Impala import")
             filename = msg_dict["filename"]
             filename = urllib.unquote(filename)
             source = tenant + "/" + filename
@@ -360,7 +360,7 @@ def callback(ch, method, properties, body):
             """
             dest_file = BAAZ_DATA_ROOT + tenant + "/" + filename
             destination = os.path.dirname(dest_file)
-            #logging.info("Destination: "+str(destination)) UNLOGGED
+            logging.debug("Destination: "+str(destination))
             if not os.path.exists(destination):
                 os.makedirs(destination)
 
@@ -378,7 +378,7 @@ def callback(ch, method, properties, body):
             resp_dict = get_impala_import.execute(tenant, {'file':dest_file, 'stats':msg_dict['stats']})
         elif msg_dict["opcode"] == "MongoTransform":
 
-            #logging.info("Got the opcode For Mongo Translation") UNLOGGED
+            logging.debug("Got the opcode For Mongo Translation")
             instances = msg_dict["job_instances"]
             resp_dict = process_mongo_rewrite_request(ch, properties, tenant, instances)
         elif msg_dict['opcode'] == "TableTransformStats":
@@ -452,7 +452,7 @@ def callback(ch, method, properties, body):
         resp_dict = {"status" : "Failed"}
 
     try:
-        #logging.info("Responding to coorelation ID : "+ properties.correlation_id) UNLOGGED
+        logging.debug("Responding to coorelation ID : "+ properties.correlation_id)
         ch.basic_publish(exchange='',
                          routing_key=properties.reply_to,
                          properties=pika.BasicProperties(correlation_id = \

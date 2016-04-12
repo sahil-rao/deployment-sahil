@@ -142,7 +142,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity):
         column_entity = mongoconn.getEntityByName(column_entity_name)
 
         if table_entity is None:
-            #logging.info("Creating table entity for {0} position 6\n".format(tablename)) UNLOGGED
+            logging.debug("Creating table entity for {0} position 6\n".format(tablename))
             eid = IdentityService.getNewIdentity(tenant, True)
             table_entity = mongoconn.addEn(eid, tablename, tenant,\
                     EntityType.SQL_TABLE, {"uid" : uid}, None)
@@ -151,7 +151,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity):
                 tableCount = tableCount + 1
 
         if column_entity is None:
-            #logging.info("Creating Column entity for {0}\n".format(column_entity_name)) UNLOGGED
+            logging.debug("Creating Column entity for {0}\n".format(column_entity_name))
             eid = IdentityService.getNewIdentity(tenant, True)
             column_entry['tableEid'] = table_entity.eid
             column_entry["uid"] = uid
@@ -159,7 +159,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity):
                             EntityType.SQL_TABLE_COLUMN, column_entry, None)
 
             if column_entity.eid == eid:
-                #logging.info("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid)) UNLOGGED
+                logging.debug("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))
                 redis_conn.createEntityProfile(column_entity.eid, "SQL_TABLE_COLUMN")
                 redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
                 redis_conn.setRelationship(table_entity.eid, column_entity.eid,
@@ -175,7 +175,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity):
     """
     if entity is not None and table_entity is not None:
         redis_conn.createRelationship(entity.eid, table_entity.eid, "CREATE")
-        #logging.info(" CREATE Relation between {0} {1}\n".format(entity.eid, table_entity.eid)) UNLOGGED
+        logging.debug(" CREATE Relation between {0} {1}\n".format(entity.eid, table_entity.eid))
         redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
                                                "instance_count",
                                                sec_key=table_entity.name,
@@ -215,7 +215,7 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
         """
         table_entity = mongoconn.getEntityByName(tablename)
         if table_entity is None:
-            # logging.info("Creating table entity for {0} position 5\n".format(tablename)) UNLOGGED
+            logging.debug("Creating table entity for {0} position 5\n".format(tablename))
             eid = IdentityService.getNewIdentity(tenant, True)
             table_entity = mongoconn.addEn(eid, tablename, tenant,\
                       EntityType.SQL_TABLE, endict, None)
@@ -241,7 +241,7 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
         if database_name is not None:
             database_entity = mongoconn.getEntityByName(database_name)
             if database_entity is None:
-                # logging.info("Creating database entity for {0}\n".format(database_name)) UNLOGGED
+                logging.debug("Creating database entity for {0}\n".format(database_name))
                 eid = IdentityService.getNewIdentity(tenant, True)
                 mongoconn.addEn(eid, database_name, tenant,\
                           EntityType.SQL_DATABASE, endict, None)
@@ -258,22 +258,22 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                 if outmost_query is not None and outmost_query != entity.eid:
                     redis_conn.createRelationship(table_entity.eid, entity.eid, "SUBQUERYREAD")
                     redis_conn.setRelationship(table_entity.eid, entity.eid, "SUBQUERYREAD", {"hive_success":hive_success})
-                    #logging.info("SUBQUERYREAD Relation between {0} {1} position 1\n".format(table_entity.eid, entity.eid)) UNLOGGED
+                    logging.debug("SUBQUERYREAD Relation between {0} {1} position 1\n".format(table_entity.eid, entity.eid))
 
                 else:
                     redis_conn.createRelationship(table_entity.eid, entity.eid, "READ")
                     redis_conn.setRelationship(table_entity.eid, entity.eid, "READ", {"hive_success":hive_success})
-                    #logging.info("READ Relation between {0} {1} position 2\n".format(table_entity.eid, entity.eid)) UNLOGGED
+                    logging.debug("READ Relation between {0} {1} position 2\n".format(table_entity.eid, entity.eid))
             else:
                 if outmost_query is not None and outmost_query != entity.eid:
                     redis_conn.createRelationship(entity.eid, table_entity.eid, "SUBQUERYWRITE")
                     redis_conn.setRelationship(entity.eid, table_entity.eid, "SUBQUERYWRITE", {"hive_success":hive_success})
-                    #logging.info("SUBQUERYWRITE Relation between {0} {1} position 3\n".format(entity.eid, table_entity.eid)) UNLOGGED
+                    logging.debug("SUBQUERYWRITE Relation between {0} {1} position 3\n".format(entity.eid, table_entity.eid))
 
                 else:
                     redis_conn.createRelationship(entity.eid,table_entity.eid, "WRITE")
                     redis_conn.setRelationship(entity.eid,table_entity.eid, "WRITE", {"hive_success":hive_success})
-                    #logging.info("WRITE Relation between {0} {1} position 4\n".format(entity.eid,table_entity.eid)) UNLOGGED
+                    logging.debug("WRITE Relation between {0} {1} position 4\n".format(entity.eid,table_entity.eid))
 
             '''
             Makes sure to follow context for the table and outmost query.
@@ -315,13 +315,13 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
         if database_entity is not None:
             if table_entity is not None:
                 redis_conn.createRelationship(database_entity.eid, table_entity.eid, "CONTAINS")
-                #logging.info("Relation between {0} {1} position 5\n".format(database_entity.eid, table_entity.eid)) UNLOGGED
+                logging.debug("Relation between {0} {1} position 5\n".format(database_entity.eid, table_entity.eid))
 
             """ Note this assumes that formRelations is idempotent
             """
             if entity is not None:
                 redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
-                #logging.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid)) UNLOGGED
+                logging.debug("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))
 
     return [dbCount, tableCount]
 
@@ -380,7 +380,7 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
     """
     view_entity = mongoconn.getEntityByName(viewname)
     if view_entity is None:
-        #logging.info("Creating table entity for view {0}\n".format(viewname)) UNLOGGED
+        logging.debug("Creating table entity for view {0}\n".format(viewname))
         eid = IdentityService.getNewIdentity(tenant, True)
         endict['display_name'] = "InlineView" + eid
         view_entity = mongoconn.addEn(eid, viewname, tenant,\
@@ -401,7 +401,7 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
             If the current queue entry from the context is given,
             set the view entity id.
             """
-            #logging.info("PARNA: Current queue " + str(current_queue_entry)) UNLOGGED
+            logging.debug("PARNA: Current queue " + str(current_queue_entry))
             if current_queue_entry is not None:
                 current_queue_entry["view_entity_id"] = view_entity.eid
     else:
@@ -426,7 +426,7 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
     if database_name is not None:
         database_entity = mongoconn.getEntityByName(database_name)
         if database_entity is None:
-            #logging.info("Creating database entity for {0}\n".format(database_name)) UNLOGGED
+            logging.debug("Creating database entity for {0}\n".format(database_name))
             eid = IdentityService.getNewIdentity(tenant, True)
             mongoconn.addEn(eid, database_name, tenant,\
                       EntityType.SQL_DATABASE, endict, None)
@@ -447,27 +447,27 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
     if entity is not None and view_entity is not None:
         redis_conn.createRelationship(entity.eid, view_entity.eid, "WRITE")
         redis_conn.setRelationship(entity.eid, view_entity.eid, "WRITE", {"hive_success":hive_success})
-        #logging.info("WRITE Relation between {0} {1} position 2\n".format(entity.eid, view_entity.eid)) UNLOGGED
+        logging.debug("WRITE Relation between {0} {1} position 2\n".format(entity.eid, view_entity.eid))
         redis_conn.createRelationship(view_entity.eid, entity.eid, "TABLE_ACCESS_PATTERN")
         redis_conn.setRelationship(view_entity.eid, entity.eid, "TABLE_ACCESS_PATTERN", {"hive_success":hive_success})
-        #logging.info("Pattern Relation between {0} {1} position 2\n".format(view_entity.eid, entity.eid)) UNLOGGED
+        logging.debug("Pattern Relation between {0} {1} position 2\n".format(view_entity.eid, entity.eid))
 
     if database_entity is not None:
         if view_entity is not None:
             redis_conn.createRelationship(database_entity.eid, view_entity.eid, "CONTAINS")
-            #logging.info("Relation between {0} {1} position 5\n".format(database_entity.eid, view_entity.eid)) UNLOGGED
+            logging.debug("Relation between {0} {1} position 5\n".format(database_entity.eid, view_entity.eid))
 
         """ Note this assumes that formRelations is idempotent
         """
         if entity is not None:
             redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
-            #logging.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid)) UNLOGGED
+            logging.debug("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))
 
     for tableentry in inputTableList:
         tablename = getTableName(tableentry)
         table_entity = mongoconn.getEntityByName(tablename)
         if table_entity is None:
-            #logging.info("No table with name {0} found\n".format(tablename))  UNLOGGED
+            logging.debug("No table with name {0} found\n".format(tablename))
             continue
 
         '''
@@ -479,7 +479,7 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
                 redis_conn.createRelationship(view_entity.eid, table_entity.eid, "IVIEW_TABLE")
             else:
                 redis_conn.createRelationship(view_entity.eid, table_entity.eid, "VIEW_TABLE")
-        #logging.info("Relation IVIEW_TABLE between {0} {1}\n".format(view_entity.eid, table_entity.eid)) UNLOGGED
+        logging.debug("Relation IVIEW_TABLE between {0} {1}\n".format(view_entity.eid, table_entity.eid))
 
     return [dbCount, tableCount]
 
@@ -519,7 +519,7 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
     """
     table_entity = mongoconn.getEntityByName(tablename)
     if table_entity is None:
-        #logging.info("Creating table entity for {0} position 5\n".format(tablename)) UNLOGGED
+        logging.debug("Creating table entity for {0} position 5\n".format(tablename))
         eid = IdentityService.getNewIdentity(tenant, True)
         table_entity = mongoconn.addEn(eid, tablename, tenant,\
                   EntityType.SQL_TABLE, endict, None)
@@ -538,7 +538,7 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
     if database_name is not None:
         database_entity = mongoconn.getEntityByName(database_name)
         if database_entity is None:
-            #logging.info("Creating database entity for {0}\n".format(database_name)) UNLOGGED
+            logging.debug("Creating database entity for {0}\n".format(database_name))
             eid = IdentityService.getNewIdentity(tenant, True)
             mongoconn.addEn(eid, database_name, tenant,\
                       EntityType.SQL_DATABASE, endict, None)
@@ -555,22 +555,22 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
             if outmost_query is not None and outmost_query != entity.eid:
                 redis_conn.createRelationship(table_entity.eid, entity.eid, "SUBQUERYREAD")
                 redis_conn.setRelationship(table_entity.eid, entity.eid, "SUBQUERYREAD", {"hive_success":hive_success})
-                #logging.info("SUBQUERYREAD Relation between {0} {1} position 1\n".format(table_entity.eid, entity.eid)) UNLOGGED
+                logging.debug("SUBQUERYREAD Relation between {0} {1} position 1\n".format(table_entity.eid, entity.eid))
 
             else:
                 redis_conn.createRelationship(table_entity.eid, entity.eid, "READ")
                 redis_conn.setRelationship(table_entity.eid, entity.eid, "READ", {"hive_success":hive_success})
-                #logging.info("READ Relation between {0} {1} position 2\n".format(table_entity.eid, entity.eid)) UNLOGGED
+                logging.debug("READ Relation between {0} {1} position 2\n".format(table_entity.eid, entity.eid))
         else:
             if outmost_query is not None and outmost_query != entity.eid:
                 redis_conn.createRelationship(entity.eid, table_entity.eid, "SUBQUERYWRITE")
                 redis_conn.setRelationship(entity.eid, table_entity.eid, "SUBQUERYWRITE", {"hive_success":hive_success})
-                #logging.info("SUBQUERYWRITE Relation between {0} {1} position 3\n".format(entity.eid, table_entity.eid)) UNLOGGED
+                logging.debug("SUBQUERYWRITE Relation between {0} {1} position 3\n".format(entity.eid, table_entity.eid))
 
             else:
                 redis_conn.createRelationship(entity.eid, table_entity.eid, "WRITE")
                 redis_conn.setRelationship(entity.eid, table_entity.eid, "WRITE", {"hive_success":hive_success})
-                #logging.info("WRITE Relation between {0} {1} position 4\n".format(entity.eid, table_entity.eid)) UNLOGGED
+                logging.debug("WRITE Relation between {0} {1} position 4\n".format(entity.eid, table_entity.eid))
 
         '''
         Makes sure to follow context for the table and outmost query.
@@ -605,13 +605,13 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
     if database_entity is not None:
         if table_entity is not None:
             redis_conn.createRelationship(database_entity.eid, table_entity.eid, "CONTAINS")
-            #logging.info("Relation between {0} {1} position 5\n".format(database_entity.eid, table_entity.eid)) UNLOGGED
+            logging.debug("Relation between {0} {1} position 5\n".format(database_entity.eid, table_entity.eid))
 
         """ Note this assumes that formRelations is idempotent
         """
         if entity is not None:
             redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
-            #logging.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid)) UNLOGGED
+            logging.debug("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))
 
     #mongoconn.finishBatchUpdate()
 
@@ -706,7 +706,7 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
                 if "message_id" in received_msg:
                     msg_dict['query_message_id'] = received_msg["message_id"]
             message = dumps(msg_dict)
-            #logging.info("Sending message to Math pos1:" + str(msg_dict)) UNLOGGED
+            logging.debug("Sending message to Math pos1:" + str(msg_dict))
             incrementPendingMessage(collection, redis_conn, uid,message_id)
             connection1.publish(ch,'','mathqueue',message)
 
@@ -958,7 +958,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     unique_count = int(smc_json["unique_uniquequeries"])
     sem_unique_count = int(smc_json["unique_queries"])
     total_query_count = int(smc_json["parsed"])
-    #logging.info("Updating query counts " + str(unique_count)) UNLOGGED
+    logging.debug("Updating query counts " + str(unique_count))
     dash_update_dict = {
                         "TotalQueries": total_query_count,
                         "semantically_unique_count": sem_unique_count,
@@ -972,11 +972,11 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if "queryExtendedHash" in compile_doc[key]:
                 q_hash =  compile_doc[key]["queryExtendedHash"]
                 profile_dict["md5"] = q_hash
-                #logging.info("Compiler {0} Program {1}  md5 {2}".format(key, query, q_hash)) UNLOGGED
+                logging.debug("Compiler {0} Program {1}  md5 {2}".format(key, query, q_hash))
             elif "queryHash" in compile_doc[key]:
                 q_hash =  compile_doc[key]["queryHash"]
                 profile_dict["md5"] = q_hash
-                #logging.info("Compiler {0} Program {1}  md5 {2}".format(key, query, q_hash)) UNLOGGED
+                logging.debug("Compiler {0} Program {1}  md5 {2}".format(key, query, q_hash))
             if "queryNameHash" in compile_doc[key]:
                 q_name_hash =  compile_doc[key]["queryNameHash"]
             if "queryTemplate" in compile_doc[key]:
@@ -1032,7 +1032,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
     update = False
     if entity is None:
-        #logging.info("Going to create the entity") UNLOGGED
+        logging.debug("Going to create the entity")
         profile_dict["instance_count"] = 1
         if custom_id is not None:
             profile_dict['custom_id'] = custom_id
@@ -1285,7 +1285,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
             if key == compiler_to_use and compile_doc[key].has_key("subQueries") and\
                 len(compile_doc[key]["subQueries"]) > 0:
-                #logging.info("Processing Sub queries") UNLOGGED
+                logging.debug("Processing Sub queries")
 
                 for sub_q_dict in compile_doc[key]["subQueries"]:
 
@@ -1293,7 +1293,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         logging.error("Original query not found in sub query dictionary")
                         continue
                     sub_q = sub_q_dict["origQuery"]
-                    #logging.info("Processing Sub queries " + sub_q) UNLOGGED
+                    logging.debug("Processing Sub queries " + sub_q)
                     sub_entity, sub_opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection,
                                                     tenant, uid, sub_q, data, {key:sub_q_dict}, source_platform, smc, context)
                     temp_msg = {'test_mode':1} if context.test_mode else None
@@ -1475,7 +1475,7 @@ def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_con
     data = None
     data = loads(response.result)
 
-    #logging.info(dumps(data)) UNLOGGED
+    logging.debug(dumps(data))
 
     mongoconn.db.entities.update({'eid':eid},{"$set":{'profile.Compiler.HAQR':data}})
     updateRedisforHAQR(redis_conn,data,tenant,eid)
@@ -1557,7 +1557,7 @@ def callback(ch, method, properties, body):
     tmpAdditions = [0,0]
     msg_dict = loads(body)
 
-    #logging.info("compiler Got message "+ str(msg_dict)) UNLOGGED
+    logging.debug("compiler Got message "+ str(msg_dict))
 
 
     """
@@ -1580,7 +1580,7 @@ def callback(ch, method, properties, body):
 
 
     if "opcode" in msg_dict and msg_dict["opcode"] == "HbaseDDL":
-        #logging.info("Got the opcode of Hbase") UNLOGGED
+        logging.debug("Got the opcode of Hbase")
         db = client[tenant]
         redis_conn = RedisConnector(tenant)
         process_hbase_ddl_request(ch, properties, tenant, instances, db, redis_conn)
@@ -1591,7 +1591,7 @@ def callback(ch, method, properties, body):
         return
 
     if "opcode" in msg_dict and msg_dict["opcode"] == "MongoTransform":
-        #logging.info("Got the opcode For Mongo Translation") UNLOGGED
+        logging.debug("Got the opcode For Mongo Translation")
         process_mongo_rewrite_request(ch, properties, tenant, instances)
 
         """
@@ -1601,7 +1601,7 @@ def callback(ch, method, properties, body):
         return
 
     if "opcode" in msg_dict and msg_dict["opcode"] == "scale_mode":
-        #logging.info("Got the opcode for scale mode analysis") UNLOGGED
+        logging.debug("Got the opcode for scale mode analysis")
         if 'uid' in msg_dict:
             uid = msg_dict['uid']
             db = client[tenant]
@@ -1690,9 +1690,9 @@ def callback(ch, method, properties, body):
             continue
 
         query = inst["query"].encode('utf-8').strip()
-        #logging.info("Program Entity : {0}, eid {1}\n".format(query, prog_id)) UNLOGGED
+        logging.debug("Program Entity : {0}, eid {1}\n".format(query, prog_id))
 
-        #logging.info("Event received for {0}, entity {1}\n".format(tenant, prog_id)) UNLOGGED
+        logging.debug("Event received for {0}, entity {1}\n".format(tenant, prog_id))
 
         """
           Parameters required to create a query entity in the system.
@@ -1790,7 +1790,7 @@ def callback(ch, method, properties, body):
             continue
 
 
-    ##logging.info("Event Processing Complete") UNLOGGED
+    #logging.debug("Event Processing Complete") 
 
     endTime = time.time()
 
@@ -1805,8 +1805,8 @@ def callback(ch, method, properties, body):
 
 connection1 = RabbitConnection(callback, ['compilerqueue'], ['mathqueue'], {})
 
-##logging.info("BaazCompiler going to start Consuming") UNLOGGED
+#logging.debug("BaazCompiler going to start Consuming")
 
 connection1.run()
 
-##logging.info("Closing BaazCompiler") UNLOGGED
+#logging.debug("Closing BaazCompiler")

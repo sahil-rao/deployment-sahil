@@ -342,7 +342,7 @@ def callback(ch, method, properties, body):
             if (processed_queries%10 == 0 or\
                (total_queries) <= (processed_queries + 1)) and \
                int(redis_conn.numMessagesPending(uid)) != 0:
-                #logging.info("Procesing progress bar event")     
+                logging.debug("Procesing progress bar event")     
                 out_dict = {"messageType" : "uploadProgress", "tenantId": tenant, 
                             "completed": processed_queries + 1, "total":total_queries}
                 connection1.publish(ch, 'node-update', '', dumps(out_dict))
