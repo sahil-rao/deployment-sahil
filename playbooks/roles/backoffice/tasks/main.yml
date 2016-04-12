@@ -147,6 +147,9 @@
 - name: Install python-logstash
   pip: name=python-logstash
   sudo: yes
+- name: Install binaryornot
+  pip: name=binaryornot
+  sudo: yes
 - name: Upgrade pymongo to 3.0
   pip: name=pymongo state=latest
   sudo: yes
