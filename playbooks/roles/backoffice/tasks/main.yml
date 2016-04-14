@@ -38,6 +38,7 @@
   sudo: yes
 - name: Stop running rule engine
   service: name=ruleengineservice state=stopped
+  ignore_errors: yes
   sudo: yes
 # - name: Start dataacquisitionservice (upstart).
 #   service: name=dataacquisitionservice state=started
@@ -145,6 +146,9 @@
   sudo: yes
 - name: Install python-logstash
   pip: name=python-logstash
+  sudo: yes
+- name: Install binaryornot
+  pip: name=binaryornot
   sudo: yes
 - name: Upgrade pymongo to 3.0
   pip: name=pymongo state=latest

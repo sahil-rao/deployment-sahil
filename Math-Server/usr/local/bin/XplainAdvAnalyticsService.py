@@ -371,7 +371,7 @@ def callback(ch, method, properties, body):
     startTime = time.time()
     msg_dict = loads(body)
 
-    #logging.info("Analytics: Got message "+ str(msg_dict))
+    logging.debug("Analytics: Got message "+ str(msg_dict))
 
     """
     Validate the message.
