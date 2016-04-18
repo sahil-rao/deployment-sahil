@@ -86,10 +86,21 @@ def callback(ch, method, properties, body):
     msg_dict["connection"] = connection1
     msg_dict["ch"] = ch
     resp_dict = None
+    client = getMongoServer(tenant)
+    mongoconn = Connector.getConnector(tenant)
+    if mongoconn is None:
+        mongoconn = MongoConnector({'client': client, 'context': tenant,
+                                    'create_db_if_not_exist': False})
+    msg_dict['client'] = client
+    msg_dict['mongoconn'] = mongoconn
+    target_platform = None
+    if 'target_platform' in msg_dict:
+        target_platform = target_platform
 
     '''
+    Checks if Import, Function, RuleIds, and version are present.
+    Checks to see if workflow hass been run before.
     Runs prerequisite rules for given workflow.
-    Run workflows that has the given opcode.
     '''
     section = msg_dict['opcode']
     if workflow_config.has_section(section):
@@ -102,39 +113,38 @@ def callback(ch, method, properties, body):
             '''
             Run rules before running the workflow.
             '''
-            rule_ids = workflow_config.get(section, "RuleIds").split(',')
-            for rule_id in rule_ids:
-                rule_name = rule_config.get(rule_id, "RuleName")
-                rule_mod = importlib.import_module(rule_config.get(rule_id, "Import"))
-                rule_function = getattr(rule_mod, rule_config.get(rule_id, "Function"))
-                try:
-                    msg_dict[rule_name] = rule_function(tenant, msg_dict)
-                except:
-                    msg_dict[rule_name] = None
-                    logging.exception("Rule Failed for " + rule_name)
-            mod = importlib.import_module(workflow_config.get(section, "Import"))
-            methodToCall = getattr(mod, workflow_config.get(section, "Function"))
             msg_dict['version'] = workflow_config.get(section, "version")
-            try:
-                resp_dict = methodToCall(tenant, msg_dict)
-            except:
-                logging.exception("Proceesing request for " + msg_dict["opcode"])
+            rule_ids = workflow_config.get(section, "RuleIds").split(',')
+            mod = importlib.import_module(workflow_config.get(section, "Import"))
+            has_run = False
+            if workflow_config.has_option(section, "VerifyFunction"):
+                methodToCall = getattr(mod, workflow_config.get(section, "VerifyFunction"))
+                try:
+                    has_run = methodToCall(tenant, msg_dict)
+                except:
+                    logging.exception("VerifyFunction for " + msg_dict["opcode"])
+
+            if not has_run:
+                for rule_id in rule_ids:
+                    rule_name = rule_config.get(rule_id, "RuleName")
+                    rule_mod = importlib.import_module(rule_config.get(rule_id, "Import"))
+                    rule_function = getattr(rule_mod, rule_config.get(rule_id, "Function"))
+                    try:
+                        msg_dict[rule_name] = rule_function(tenant, msg_dict)
+                    except:
+                        msg_dict[rule_name] = None
+                        logging.exception("Rule Failed for " + rule_name)
+
+                methodToCall = getattr(mod, workflow_config.get(section, "Function"))
+                try:
+                    resp_dict = methodToCall(tenant, msg_dict)
+                except:
+                    logging.exception("Proceesing request for " + msg_dict["opcode"])
 
     if resp_dict is None:
         resp_dict = {"status": "Failed"}
 
-    '''
-    try:
-        logging.info("Responding to coorelation ID : " + properties.correlation_id)
-        ch.basic_publish(exchange='',
-                         routing_key=properties.reply_to,
-                         properties=pika.BasicProperties(correlation_id=\
-                                                         properties.correlation_id),
-                         body=dumps(resp_dict))
-    except:
-        logging.error("Unable to send response message")
-    '''
-
+    mongoconn.close()
     connection1.basicAck(ch, method)
 
 connection1 = RabbitConnection(callback, ['ruleengine'], [], {}, prefetch_count=1)
