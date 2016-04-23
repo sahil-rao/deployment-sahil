@@ -91,28 +91,12 @@ for fname in dirList:
 #        continue
 #    classpath = classpath + fullpath + ":"
 
-PIG_FEATURE = ['UNKNOWN', 'MERGE_JOIN', 'REPLICATED_JOIN', 'SKEWED_JOIN', 'HASH_JOIN',\
-     'COLLECTED_GROUP', 'MERGE_COGROUP', 'COGROUP', 'GROUP_BY', 'ORDER_BY', 'DISTINCT', \
-     'STREAMING', 'SAMPLING', 'MULTI_QUERY', 'FILTER', 'MAP_ONLY', 'CROSS', 'LIMIT', 'UNION',\
-     'COMBINER']
-
 table_regex = re.compile("([\w]*)\.([\w]*)")
 myip = socket.gethostbyname(socket.gethostname())
 
 class Compiler_Context:
     def __init__(self):
         pass
-
-def generatePigSignature(pig_data, tenant, entity_id):
-    operations = []
-    for i in range(0, len(PIG_FEATURE)):
-        if (((pig_data >> i) & 0x00000001) != 0):
-            operations.append(PIG_FEATURE[i])
-    ret_dict = { 'EntityId':entity_id, 'TenentId': tenant, \
-                 'ComplexityScore': len(operations),\
-                 'InputTableList': [], 'OutputTableList': [],\
-                 'Operations': operations}
-    return ret_dict
 
 def end_of_phase_callback(params, current_phase):
     if current_phase > 1:
@@ -1683,11 +1667,6 @@ def callback(ch, method, properties, body):
 
         if "data" in inst:
             msg_data = inst["data"]
-
-        if inst['program_type'] == "Pig":
-            compile_doc = generatePigSignature(inst['pig_features'], tenant, prog_id)
-            mongoconn.updateProfile(entity, "Compiler", "Pig", compile_doc)
-            continue
 
         query = inst["query"].encode('utf-8').strip()
         logging.debug("Program Entity : {0}, eid {1}\n".format(query, prog_id))
