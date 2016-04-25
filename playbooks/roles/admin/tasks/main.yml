@@ -8,6 +8,12 @@
 - name: NTP installed
   apt: name=ntp state=present
   sudo: yes
+- name: Add nginx ppa
+  apt_repository: repo='ppa:nginx/stable'
+  sudo: yes
+- name: Install nginx
+  apt: name=nginx state=present
+  sudo: yes
 ### SET UP ENVIRONMENT ###
 - name: Stop admin_nodejs
   service: name=admin_nodejs state=stopped
@@ -54,16 +60,26 @@
 - name: Create create deployement dir2
   file: path=/boot/build/deployement state=directory owner=bitnami mode=755
   sudo: yes
-- name: Copy deployment scripts 
+- name: Copy deployment scripts
   copy: src=/mnt/build/deployment/playbooks dest=/boot/build/deployement/ owner=bitnami mode=755
   sudo: yes
 ### DEPLOY AND CONFIGURE ###
 - name: Create node admin upstart script
   template: src=admin_nodejs.conf dest=/etc/init/admin_nodejs.conf
   sudo: yes
+- name: Template and copy nginx conf file
+  template: src=nginx.conf dest=/etc/nginx/nginx.conf
+  sudo: yes
 - name: Save configuration file
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
   sudo: yes
 - name: Start admin nodejs
   service: name=admin_nodejs state=started
+  sudo: yes
+- name: Start nginx
+  command: /usr/sbin/nginx
+  sudo: yes
+  ignore_errors: yes
+- name: Reload nginx
+  command: /usr/sbin/nginx -s reload
   sudo: yes
