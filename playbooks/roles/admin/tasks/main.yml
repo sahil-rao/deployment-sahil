@@ -70,6 +70,9 @@
 - name: Disable default binami
   shell: /opt/bitnami/ctlscript.sh stop
   sudo: yes
+- name: Create username/password for nginx
+  command: /usr/bin/htpasswd -b -c /etc/nginx/.htpasswd xplain xplainio
+  sudo: yes
 - name: Create node admin upstart script
   template: src=admin_nodejs.conf dest=/etc/init/admin_nodejs.conf
   sudo: yes
