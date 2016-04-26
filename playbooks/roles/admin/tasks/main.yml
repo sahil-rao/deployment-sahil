@@ -70,9 +70,6 @@
 - name: Disable default binami
   shell: /opt/bitnami/ctlscript.sh stop
   sudo: yes
-- name: Get username/password for nginx
-  template: src=/usr/bin/htpasswd dest=/usr/bin/
-  sudo: yes
 - name: Create username/password for nginx
   command: htpasswd -b -c /etc/nginx/.htpasswd xplain xplainio
   sudo: yes
