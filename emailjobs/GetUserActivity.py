@@ -41,19 +41,7 @@ users_skip_list = [
 ]
 
 recipients_list = [
-    "parna@cloudera.com",
-    "sakinapelli@cloudera.com",
-    "samir@cloudera.com",
-    "sangeeta@cloudera.com",
-    "ewa@cloudera.com",
-    "prithviraj.pandian@cloudera.com",
-    "ravi@cloudera.com",
-    "dmitri@cloudera.com",
-    "sean.wensel@cloudera.com",
-    "irina@cloudera.com",
-    "avsingh@cloudera.com",
-    "harshil@cloudera.com",
-    "erickt@cloudera.com"
+    "data-mgmt@cloudera.com"
 ]
 
 
@@ -213,14 +201,18 @@ def execute():
             t_dict[user]['number_of_uploads'] = len(t_dict[user]['uid'])
             t_dict[user].pop("uid", None)
 
-    top_users_by_queries = sorted(t_dict, key=lambda x: t_dict[x]['total_queries'], reverse=True)
-    top_users_by_uploads = sorted(t_dict, key=lambda x: (t_dict[x]['number_of_uploads']), reverse=True)
-    top_users_by_logins = sorted(t_dict, key=lambda x: t_dict[x]['number_of_logins'] if 'number_of_logins' in t_dict[x] else 0 , reverse=True)
-    top_users_by_logouts = sorted(t_dict, key=lambda x: (t_dict[x]['number_of_logouts'] if 'number_of_logouts' in t_dict[x] else 0), reverse=True)
-    users_by_domain = filter_users_by_domain(t_dict)
+    #make sure we have some data
+    if t_dict:
+        top_users_by_queries = sorted(t_dict, key=lambda x: t_dict[x]['total_queries'], reverse=True)
+        top_users_by_uploads = sorted(t_dict, key=lambda x: (t_dict[x]['number_of_uploads']), reverse=True)
+        top_users_by_logins = sorted(t_dict, key=lambda x: t_dict[x]['number_of_logins'] if 'number_of_logins' in t_dict[x] else 0 , reverse=True)
+        top_users_by_logouts = sorted(t_dict, key=lambda x: (t_dict[x]['number_of_logouts'] if 'number_of_logouts' in t_dict[x] else 0), reverse=True)
+        users_by_domain = filter_users_by_domain(t_dict)
 
-    formattedData = formatDataforEmail(t_dict, top_users_by_queries, top_users_by_uploads, users_by_domain, top_users_by_logins, top_users_by_logouts) 
-    sendEmail(formattedData)
+        #make sure we have atleast either of sorted data.
+        if top_users_by_queries or top_users_by_uploads or top_users_by_logins or top_users_by_logouts or users_by_domain:
+            formattedData = formatDataforEmail(t_dict, top_users_by_queries, top_users_by_uploads, users_by_domain, top_users_by_logins, top_users_by_logouts)
+            sendEmail(formattedData)
     return t_dict
 
 if __name__ == '__main__':
