@@ -388,7 +388,6 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
             If the current queue entry from the context is given,
             set the view entity id.
             """
-            clog.debug("PARNA: Current queue " + str(current_queue_entry))
             if current_queue_entry is not None:
                 current_queue_entry["view_entity_id"] = view_entity.eid
     else:
@@ -1538,6 +1537,95 @@ def updateRedisforHAQR(redis_conn,data,tenant,eid):
                         redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseWhereFailure", sort=False, incrBy=1)
     return
 
+def compile_query(mongoconn, redis_conn, compilername, data_dict):
+    """
+    Interact with the compiler service to compile the query.
+    Column resolution is performed as a second pass if :
+       - the query has unqualified columns.
+       - metadata is available for the tables in the query.
+    """
+    opcode = 1
+    retries = 3
+    response = tclient.send_compiler_request(opcode, data_dict, retries)
+
+    compile_doc = None
+    if not response.isSuccess:
+        logging.error("compiler request failed")
+    else:
+        compile_doc = loads(response.result)
+
+    compiler_data = compile_doc[compilername]
+
+    # if there is an unqualified column, try again with catalog included
+    if "unqualifiedColumn" in compiler_data and\
+	 compiler_data["unqualifiedColumn"] and\
+         "InputTableList" in compiler_data:
+        try:
+            compile_doc = compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, compile_doc) 
+        except:
+            logging.exception("CAUGHT: {0}\n".format(traceback.format_exc()))         
+
+    return compile_doc
+
+
+def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, compile_doc): 
+    compiler_data = compile_doc[compilername]
+    table_dict = {}
+    # get list of input tables
+    for table_entry in compiler_data["InputTableList"]:
+        table_dict[table_entry["TableName"]] = []
+
+    if not table_dict:
+        """
+        No tables from the compiler.
+        """
+        return compile_doc
+
+
+    # get the tables data.
+    for entry in mongoconn.db.entities.find({"etype":"SQL_TABLE", "name": { "$in" : table_dict.keys()}}, 
+                                            {"eid":1, "name":1}):
+        table_eid = entry["eid"]
+        column_eids = []
+        for rel in redis_conn.getRelationships(table_eid, None, "TABLE_COLUMN"):
+            column_eids.append(rel["end_en"])
+        
+        logging.debug(column_eids)
+        for column_entry in mongoconn.db.entities.find({"etype":"SQL_TABLE_COLUMN", 
+                                                        "eid": { "$in" : column_eids}},
+                                                        {"name":1}):
+            c_split = column_entry["name"].split(".")
+            if len(c_split) == 2:
+                table_dict[entry["name"]].append(c_split[1])
+            else:
+                table_dict[entry["name"]].append(column_entry["name"])
+
+    # filter out tables with no data 
+    nonempty_dict = {}
+    for table in table_dict:
+        if len(table_dict[table]) != 0:
+            nonempty_dict[table] = table_dict[table]             
+    table_dict = nonempty_dict
+
+    if len(table_dict.keys()) == 0:
+        return compile_doc
+
+    try:
+        opcode = 10
+        retries = 3
+        data_dict["catalog"] = dumps(table_dict)
+        response = tclient.send_compiler_request(opcode, data_dict, retries)
+
+        if not response.isSuccess:
+            logging.warn("compiler request returned isSuccess false")
+        else:
+            compile_doc = loads(response.result)
+    except:
+        logging.exception("CAUGHT: opcode 10 exception {0}\n".format(traceback.format_exc())) 
+    
+    return compile_doc
+
+
 def callback(ch, method, properties, body):
     startTime = time.time()
     dbAdditions = [0,0]
@@ -1714,12 +1802,12 @@ def callback(ch, method, properties, body):
                               "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
                 if source_platform is not None:
                     data_dict["source_platform"] = source_platform
-                opcode = 1
-                retries = 3
-                response = tclient.send_compiler_request(opcode, data_dict, retries)
+                
+                compile_doc = compile_query(mongoconn, redis_conn, compilername, data_dict)
                 """
                 It is possible the tenant has been cleared. If this is the case then do not add an new entities.
                 """
+
                 if not checkUID(redis_conn, uid):
                     """
                     Just drain the queue.
@@ -1729,20 +1817,11 @@ def callback(ch, method, properties, body):
                     ch.basic_ack(delivery_tag=method.delivery_tag)
                     return
 
-                if response.isSuccess == True:
-                    clog.debug("Got Done")
-                else:
+                if compile_doc == None:
                     redis_conn.incrEntityCounter(uid, stats_runfailure_key, incrBy = 1)
                     redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy = 0)
                     continue
-
-                compile_doc = None
-                if not response.isSuccess:
-                  clog.error("compiler request failed")
                 else:
-                  compile_doc = loads(response.result)
-
-                if compile_doc is not None:
                     for key in compile_doc:
                         comp_outs[key] = compile_doc[key]
 
