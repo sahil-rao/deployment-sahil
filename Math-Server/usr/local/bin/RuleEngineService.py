@@ -6,7 +6,7 @@ Process request for simulation on Imapla.
 #from flightpath.parsing.hadoop.HadoopConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
-import flightpath.utils as utils
+from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 import sys
 from flightpath.MongoConnector import *
@@ -53,6 +53,9 @@ logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     filename=LOG_FILE,
                     level=logging.INFO,
                     datefmt='%m/%d/%Y %I:%M:%S %p')
+es_logger = logging.getLogger('elasticsearch')
+es_logger.propagate = False
+es_logger.setLevel(logging.WARN)
 
 """
 In AWS use S3 log rotate to save the log files.
@@ -83,6 +86,11 @@ def callback(ch, method, properties, body):
         return
 
     tenant = msg_dict["tenant"]
+    log_dict = {'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode']}
+    if 'uid' in msg_dict:
+        log_dict['uid'] = msg_dict['uid']
+    clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)
+
     msg_dict["connection"] = connection1
     msg_dict["ch"] = ch
     resp_dict = None
@@ -108,7 +116,7 @@ def callback(ch, method, properties, body):
           not workflow_config.has_option(section, "Function") or\
           not workflow_config.has_option(section, "RuleIds") or \
           not workflow_config.has_option(section, "version"):
-            logging.error("rule_workflows.cfg section not defined properly for %s"%(section))
+            clog.error("rule_workflows.cfg section not defined properly for %s"%(section))
         else:
             '''
             Run rules before running the workflow.
@@ -122,7 +130,7 @@ def callback(ch, method, properties, body):
                 try:
                     has_run = methodToCall(tenant, msg_dict)
                 except:
-                    logging.exception("VerifyFunction for " + msg_dict["opcode"])
+                    clog.exception("VerifyFunction for " + msg_dict["opcode"])
 
             if not has_run:
                 for rule_id in rule_ids:
@@ -133,13 +141,13 @@ def callback(ch, method, properties, body):
                         msg_dict[rule_name] = rule_function(tenant, msg_dict)
                     except:
                         msg_dict[rule_name] = None
-                        logging.exception("Rule Failed for " + rule_name)
+                        clog.exception("Rule Failed for " + rule_name)
 
                 methodToCall = getattr(mod, workflow_config.get(section, "Function"))
                 try:
                     resp_dict = methodToCall(tenant, msg_dict)
                 except:
-                    logging.exception("Proceesing request for " + msg_dict["opcode"])
+                    clog.exception("Proceesing request for " + msg_dict["opcode"])
 
     if resp_dict is None:
         resp_dict = {"status": "Failed"}

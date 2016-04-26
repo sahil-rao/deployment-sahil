@@ -45,7 +45,6 @@ if usingAWS:
 
 rabbitserverIP = config.get("RabbitMQ", "server")
 
-
 """
 For VM there is not S3 connectivity. Save the logs with a timestamp. 
 At some point we should move to using a log rotate handler in the VM.
@@ -56,6 +55,9 @@ if not usingAWS:
         shutil.copy(XPLAIN_LOG_FILE, XPLAIN_LOG_FILE+timestr)
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=XPLAIN_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
+es_logger = logging.getLogger('elasticsearch')
+es_logger.propagate = False
+es_logger.setLevel(logging.WARN)
 
 """
 In AWS use S3 log rotate to save the log files.
@@ -120,10 +122,11 @@ def analytics_callback(params):
     '''
     Callback method that is used to initiate the processing of a passed in opcode.
     '''
+    clog = params['clog']
     if 'opcode' in params:
-        logging.info("Calling the analytics callback for opcode %s"%(params['opcode']))
+        clog.info("Calling the analytics callback for opcode %s"%(params['opcode']))
     else:
-        logging.info("Calling the analytics callback with no opcode.")
+        clog.info("Calling the analytics callback with no opcode.")
     msg_dict = {'tenant':params['tenant'], 'opcode':params['opcode']}
     msg_dict['uid'] = params['uid']
     msg_dict['entityid'] = params["entityid"]
@@ -140,7 +143,7 @@ def analytics_callback(params):
 class analytics_context:
     pass
 
-def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
+def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn, clog):
     if platform not in ["impala", "hive"]:
         return #currently HAQR supported only for impala
 
@@ -179,15 +182,15 @@ def analyzeHAQR(query, platform, tenant, eid, source_platform, db, redis_conn):
     retries = 3
     response = tclient.send_compiler_request(opcode, data_dict, retries)
     if response.isSuccess == True:
-        logging.info("HAQR Got Done")
+        clog.info("HAQR Got Done")
     else:
-        logging.error("compiler request failed")
+        clog.error("compiler request failed")
         return None
 
     data = None
     data = loads(response.result)
 
-    logging.info(dumps(data))
+    clog.info(dumps(data))
 
     updateMongoRedisforHAQR(db,redis_conn,data,tenant,eid)
 
@@ -358,13 +361,13 @@ def updateMongoRedisforHAQR(db,redis_conn,data,tenant,eid):
 
     return
 
-def process_HAQR_request(msg_dict):
+def process_HAQR_request(msg_dict, clog):
     client = getMongoServer(msg_dict['tenant'])
     db = client[msg_dict['tenant']]
     redis_conn = RedisConnector(msg_dict['tenant'])
     
     analyzeHAQR(msg_dict['query'], msg_dict['key'], msg_dict['tenant'], \
-                msg_dict['eid'], msg_dict['source_platform'], db, redis_conn)
+                msg_dict['eid'], msg_dict['source_platform'], db, redis_conn, clog)
 
 def callback(ch, method, properties, body):
 
@@ -382,15 +385,20 @@ def callback(ch, method, properties, body):
 
         connection1.basicAck(ch,method)
         return
-
+    
     tenant = msg_dict['tenant']
     opcode = msg_dict['opcode']
+    log_dict = {'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode']}
+    if 'uid' in msg_dict:
+        log_dict['uid'] = msg_dict['uid']
+    clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)
+    clog.info("Logging the message")
     #check if the request is for HAQR processing
     if opcode == "HAQRPhase":
         try:
-            process_HAQR_request(msg_dict)
+            process_HAQR_request(msg_dict, clog)
         except:
-            logging.exception('HAQR failed for tenant: %s.'%(tenant))
+            clog.exception('HAQR failed for tenant: %s.'%(tenant))
     
 
     try:
@@ -432,7 +440,7 @@ def callback(ch, method, properties, body):
         if not mathconfig.has_option(section, "Opcode") or\
            not mathconfig.has_option(section, "Import") or\
            not mathconfig.has_option(section, "Function"):
-            logging.error("Section "+ section + " Does not have all params")
+            clog.error("Section "+ section + " Does not have all params")
             if mathconfig.has_option(section, "BatchMode") and\
                 mathconfig.get(section, "BatchMode") == "True" and\
                 received_msgID is not None:
@@ -443,7 +451,7 @@ def callback(ch, method, properties, body):
                 notif_queue = mathconfig.get(section, "NotificationQueue")
                 notif_name = mathconfig.get(section, "NotificationName")
                 message = {"messageType" : notif_name, "tenantId": tenant}
-                logging.info("Sending message to node!")
+                clog.info("Sending message to node!")
                 connection1.publish(ch,'', notif_queue, dumps(message))
             continue
  
@@ -467,7 +475,7 @@ def callback(ch, method, properties, body):
 
             mod = importlib.import_module(mathconfig.get(section, "Import"))
             methodToCall = getattr(mod, mathconfig.get(section, "Function"))
-            logging.info("Executing " + section + " for " + tenant)
+            clog.info("Executing " + section + " for " + tenant)
             ctx = analytics_context
             ctx.tenant = tenant
             ctx.entityid = entityid
@@ -476,6 +484,7 @@ def callback(ch, method, properties, body):
             ctx.callback = analytics_callback
             ctx.rabbit_conn = connection1
             ctx.rabbit_ch = ch
+            ctx.clog = clog
             ctx.msg_dict = msg_dict
 
             if 'uid' in msg_dict:
@@ -496,10 +505,10 @@ def callback(ch, method, properties, body):
                 notif_queue = mathconfig.get(section, "NotificationQueue")
                 notif_name = mathconfig.get(section, "NotificationName")
                 message = {"messageType" : notif_name, "tenantId": tenant}
-                logging.info("Sending message to node!")
+                clog.info("Sending message to node!")
                 connection1.publish(ch,'', notif_queue, dumps(message))
         except:
-            logging.exception("Section :"+section)
+            clog.exception("Section :"+section)
             if 'uid' in msg_dict:
                 redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 0)
                 redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy = 1)
@@ -513,7 +522,7 @@ def callback(ch, method, properties, body):
             else:
                 redis_conn.setEntityProfile(uid, {stats_phase_key: 1})
 
-    logging.info("Event Processing Complete")     
+    clog.info("Event Processing Complete")     
     if opcode == "PhaseTwoAnalysis":
         collection.update({'uid':"0"},{'$set': { "done":True}})        
 
@@ -524,7 +533,7 @@ def callback(ch, method, properties, body):
         try:
             write_upload_stats.run_workflow(tenant, {'uid':uid})
         except:
-            logging.exception("Could not write upload stats dict to MongoDB: ")
+            clog.exception("Could not write upload stats dict to MongoDB: ")
 
     connection1.basicAck(ch, method)
 

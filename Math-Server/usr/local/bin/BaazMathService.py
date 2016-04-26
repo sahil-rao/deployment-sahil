@@ -42,7 +42,6 @@ if usingAWS:
 
 rabbitserverIP = config.get("RabbitMQ", "server")
 
-
 """
 For VM there is not S3 connectivity. Save the logs with a timestamp. 
 At some point we should move to using a log rotate handler in the VM.
@@ -53,6 +52,9 @@ if not usingAWS:
         shutil.copy(BAAZ_MATH_LOG_FILE, BAAZ_MATH_LOG_FILE+timestr)
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_MATH_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
+es_logger = logging.getLogger('elasticsearch')
+es_logger.propagate = False
+es_logger.setLevel(logging.WARN)
 
 """
 In AWS use S3 log rotate to save the log files.
@@ -129,10 +131,11 @@ def analytics_callback(params):
     '''
     Callback method that is used to initiate the processing of a passed in opcode.
     '''
+    clog = params['clog']
     if 'opcode' in params:
-        logging.info("Calling the analytics callback for opcode %s"%(params['opcode']))
+        clog.info("Calling the analytics callback for opcode %s"%(params['opcode']))
     else:
-        logging.info("Calling the analytics callback with no opcode.")
+        clog.info("Calling the analytics callback with no opcode.")
     msg_dict = {'tenant':params['tenant'], 'opcode':params['opcode']}
     msg_dict['uid'] = params['uid']
     msg_dict['entityid'] = params["entityid"]
@@ -202,6 +205,7 @@ def callback(ch, method, properties, body):
         connection1.basicAck(ch,method)
         return
 
+    clog = LoggerCustomAdapter(logging.getLogger(__name__), {'tenant': tenant, 'opcode':opcode, 'uid':uid})
     callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
 
     mathconfig = ConfigParser.RawConfigParser()
@@ -227,13 +231,13 @@ def callback(ch, method, properties, body):
         sectionStartTime = time.time()
         
         if not admin_pref_dict[section]:
-            logging.error("Section :"+ section + " Has been disabled for this workload")
+            clog.error("Section :"+ section + " Has been disabled for this workload")
             continue
                
         if not mathconfig.has_option(section, "Opcode") or\
            not mathconfig.has_option(section, "Import") or\
            not mathconfig.has_option(section, "Function"):
-            logging.error("Section "+ section + " Does not have all params")
+            clog.error("Section "+ section + " Does not have all params")
             if mathconfig.has_option(section, "BatchMode") and\
                 mathconfig.get(section, "BatchMode") == "True" and\
                 received_msgID is not None:
@@ -244,7 +248,7 @@ def callback(ch, method, properties, body):
                 notif_queue = mathconfig.get(section, "NotificationQueue")
                 notif_name = mathconfig.get(section, "NotificationName")
                 message = {"messageType" : notif_name, "tenantId": tenant}
-                logging.info("Sending message to node!")
+                clog.info("Sending message to node!")
                 connection1.publish(ch,'', notif_queue, dumps(message))
             continue
  
@@ -268,13 +272,14 @@ def callback(ch, method, properties, body):
 
             mod = importlib.import_module(mathconfig.get(section, "Import"))
             methodToCall = getattr(mod, mathconfig.get(section, "Function"))
-            logging.info("Executing " + section + " for " + tenant)
+            clog.info("Executing " + section + " for " + tenant)
             ctx = analytics_context
             ctx.tenant = tenant
             ctx.entityid = entityid
             ctx.collection = collection
             ctx.redis_conn = redis_conn
             ctx.callback = analytics_callback
+            ctx.clog = clog
             if 'uid' in msg_dict:
                 ctx.uid = uid
             else:
@@ -303,10 +308,10 @@ def callback(ch, method, properties, body):
                 notif_queue = mathconfig.get(section, "NotificationQueue")
                 notif_name = mathconfig.get(section, "NotificationName")
                 message = {"messageType" : notif_name, "tenantId": tenant}
-                logging.info("Sending message to node!")
+                clog.info("Sending message to node!")
                 connection1.publish(ch,'', notif_queue, dumps(message))
         except:
-            logging.exception("Section :"+section)
+            clog.exception("Section :"+section)
             if 'uid' in msg_dict:
                 redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 0)
                 redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy = 1)
@@ -320,14 +325,14 @@ def callback(ch, method, properties, body):
             else:
                 redis_conn.setEntityProfile(uid, {stats_phase_key: 1})
         
-    logging.info("Event Processing Complete")     
+    clog.info("Event Processing Complete")     
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
     """
      Progress Bar update
     """
     notif_queue = "node-update-queue"
-    logging.info("Going to check progress bar")     
+    clog.info("Going to check progress bar")     
     try:
         stats_dict = redis_conn.getEntityProfile(uid)
         if stats_dict is not None and\
@@ -342,12 +347,12 @@ def callback(ch, method, properties, body):
             if (processed_queries%10 == 0 or\
                (total_queries) <= (processed_queries + 1)) and \
                int(redis_conn.numMessagesPending(uid)) != 0:
-                logging.debug("Procesing progress bar event")     
+                clog.debug("Procesing progress bar event")     
                 out_dict = {"messageType" : "uploadProgress", "tenantId": tenant, 
                             "completed": processed_queries + 1, "total":total_queries}
                 connection1.publish(ch, 'node-update', '', dumps(out_dict))
     except:
-        logging.exception("While making update to progress bar")
+        clog.exception("While making update to progress bar")
 
     """
      Progress Bar Update end
