@@ -5,7 +5,7 @@
   sudo: yes
   tasks:
   - name: copy script to crontab folder
-    copy: src=/mnt/build/deployment/emailjobs/GetUserActivity.py dest=/etc/cron.daily
+    copy: src=../emailjobs/GetUserActivity.py dest=/etc/cron.daily
   - name: change permission
     command: chmod +x /etc/cron.daily/GetUserActivity.py
   #- name: Set up cron job for uploadUpdateEmail.py to run every 12 hours
