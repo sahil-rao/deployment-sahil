@@ -63,15 +63,18 @@
 - name: Create create deployement dir2
   file: path=/boot/build/deployement state=directory owner=bitnami mode=755
   sudo: yes
-- name: Copy deployment scripts
-  copy: src=/mnt/build/deployment/playbooks dest=/boot/build/deployement/ owner=bitnami mode=755
-  sudo: yes
+#- name: Copy deployment scripts
+#  copy: src=/mnt/build/deployment/playbooks dest=/boot/build/deployement/ owner=bitnami mode=755
+#  sudo: yes
 ### DEPLOY AND CONFIGURE ###
 - name: Disable default binami
   shell: /opt/bitnami/ctlscript.sh stop
   sudo: yes
+- name: Get username/password for nginx
+  template: src=/usr/bin/htpasswd dest=/usr/bin/
+  sudo: yes
 - name: Create username/password for nginx
-  command: /usr/bin/htpasswd -b -c /etc/nginx/.htpasswd xplain xplainio
+  command: htpasswd -b -c /etc/nginx/.htpasswd xplain xplainio
   sudo: yes
 - name: Create node admin upstart script
   template: src=admin_nodejs.conf dest=/etc/init/admin_nodejs.conf
