@@ -14,6 +14,12 @@
 - name: Install nginx
   apt: name=nginx state=present
   sudo: yes
+- name: Install Monit service
+  apt: pkg=monit state=present
+  sudo: yes
+- name: Stop monit
+  shell: monit quit
+  sudo: yes
 ### SET UP ENVIRONMENT ###
 - name: Stop admin_nodejs
   service: name=admin_nodejs state=stopped
@@ -97,4 +103,10 @@
   ignore_errors: yes
 - name: Reload nginx
   command: /usr/sbin/nginx -s reload
+  sudo: yes
+- name: copy monitrc file
+  template: src=roles/admin/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+- name: Start monit service
+  shell: monit
   sudo: yes
