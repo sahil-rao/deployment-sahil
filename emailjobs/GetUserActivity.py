@@ -37,7 +37,8 @@ users_skip_list = [
     "irina@cloudera.com",
     "avsingh@cloudera.com",
     "harshil@cloudera.com",
-    "erickt@cloudera.com"
+    "erickt@cloudera.com",
+    "laurel@cloudera.com"
 ]
 
 recipients_list = [
@@ -169,10 +170,12 @@ def execute():
         user = tenant_data['email']
         tenants = tenant_data['organizations']
         for tenant in tenants:
-            client = getMongoServer(tenant)
-            db = client[tenant]
+            tclient = getMongoServer(tenant)
+            db = tclient[tenant]
             uploadStats = db.uploadStats
-            upload_cursor = uploadStats.find({ 'tenant': tenant, '$where': 'function () { return Date.now() - this.timestamp < (7 * 24 * 60 * 60 * 1000)  }'  }, {"uid":1, "total_queries":1})
+            upload_cursor = uploadStats.find({ 'tenant': tenant, '$where': 'function ()'+ 
+                                             '{ return Date.now() - this.timestamp < (7 * 24 * 60 * 60 * 1000)  }'
+                                             }, {"uid":1, "total_queries":1})
             for upload in upload_cursor:
                 if 'uid' not in upload:
                     continue
@@ -192,7 +195,9 @@ def execute():
                 if 'total_queries' in upload:
                     t_dict[user]['total_queries'] += int(upload['total_queries'])
    
-                event_cursor = db.events.find({'tenant': tenant, '$where': 'function () { return Date.now() - this.timestamp < (7 * 24 * 60 * 60 * 1000)  }'  }, {"event":1})
+                event_cursor = db.events.find({'tenant': tenant, '$where': 'function ()'+ 
+                                              '{ return Date.now() - this.timestamp < (7 * 24 * 60 * 60 * 1000)  }'
+                                              }, {"event":1})
                 for event in event_cursor:
                     if event['event'] == 'login':
                         t_dict[user]['number_of_logins'] += 1 
@@ -206,13 +211,17 @@ def execute():
     if t_dict:
         top_users_by_queries = sorted(t_dict, key=lambda x: t_dict[x]['total_queries'], reverse=True)
         top_users_by_uploads = sorted(t_dict, key=lambda x: (t_dict[x]['number_of_uploads']), reverse=True)
-        top_users_by_logins = sorted(t_dict, key=lambda x: t_dict[x]['number_of_logins'] if 'number_of_logins' in t_dict[x] else 0 , reverse=True)
-        top_users_by_logouts = sorted(t_dict, key=lambda x: (t_dict[x]['number_of_logouts'] if 'number_of_logouts' in t_dict[x] else 0), reverse=True)
+        top_users_by_logins = sorted(t_dict, key=lambda x: t_dict[x]['number_of_logins'] 
+                                     if 'number_of_logins' in t_dict[x] else 0 , reverse=True)
+        top_users_by_logouts = sorted(t_dict, key=lambda x: (t_dict[x]['number_of_logouts'] 
+                                      if 'number_of_logouts' in t_dict[x] else 0), reverse=True)
         users_by_domain = filter_users_by_domain(t_dict)
 
         #make sure we have atleast either of sorted data.
-        if top_users_by_queries or top_users_by_uploads or top_users_by_logins or top_users_by_logouts or users_by_domain:
-            formattedData = formatDataforEmail(t_dict, top_users_by_queries, top_users_by_uploads, users_by_domain, top_users_by_logins, top_users_by_logouts)
+        if (top_users_by_queries or top_users_by_uploads or top_users_by_logins or 
+            top_users_by_logouts or users_by_domain):
+            formattedData = formatDataforEmail(t_dict, top_users_by_queries, top_users_by_uploads, users_by_domain, 
+                                               top_users_by_logins, top_users_by_logouts) 
             sendEmail(formattedData)
     return t_dict
 
