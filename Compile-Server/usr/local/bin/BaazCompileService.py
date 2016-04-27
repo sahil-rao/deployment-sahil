@@ -1799,7 +1799,7 @@ def callback(ch, method, properties, body):
                 stats_failure_key = "Compiler." + compilername + ".failure"
 
                 data_dict = { "input_query": query,
-                              "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
+                              "Compiler": compilername, "EntityId": prog_id, "TenantId": tenant, "uid":uid}
                 if source_platform is not None:
                     data_dict["source_platform"] = source_platform
                 
