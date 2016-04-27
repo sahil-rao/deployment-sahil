@@ -9,4 +9,12 @@
   template: src=logstash-backoffice.conf dest=/etc/logstash/conf.d/logstash-backoffice.conf
 - name: Restart logstash
   service: name=logstash state=restarted
-  
+- name: Install monit service
+  apt: pkg=monit state=present
+  sudo: yes
+- name: copy monitrc file
+  template: src=roles/logstash/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+- name: Start monit service
+  shell: monit reload
+  sudo: yes
