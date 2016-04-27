@@ -258,7 +258,7 @@ set alert prithviraj.pandian@cloudera.com # receive all alerts
 set httpd port 2812
    allow localhost
 
-check process api_noded with pidfile /var/run/admin_nodejs.pid
+check process admin_nodejs with pidfile /var/run/admin_nodejs.pid
     start program = "/sbin/start admin_nodejs"
     stop program = "/sbin/stop admin_nodejs"
     if failed port 30000 protocol http then restart
