@@ -169,6 +169,7 @@ def execute():
         user = tenant_data['email']
         tenants = tenant_data['organizations']
         for tenant in tenants:
+            client = getMongoServer(tenant)
             db = client[tenant]
             uploadStats = db.uploadStats
             upload_cursor = uploadStats.find({ 'tenant': tenant, '$where': 'function () { return Date.now() - this.timestamp < (7 * 24 * 60 * 60 * 1000)  }'  }, {"uid":1, "total_queries":1})
