@@ -1,7 +1,7 @@
 ---
 #This script creates cron jobs that generate email alerts
 
-- hosts: localhost
+- hosts: tag_Name_BackofficeCron
   sudo: yes
   tasks:
   - name: copy script to crontab folder
