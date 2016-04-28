@@ -263,6 +263,7 @@ check process kibana with pidfile /var/run/.pid
     start program = "/etc/init.d/kibana4 start"
     stop program = "/etc/init.d/kibana4 stop"
     alert harshil@cloudera.com only on { nonexist }
+
 check process elasticsearch with pidfile /var/run/elasticsearch.pid
     start program = "/etc/init.d/elasticsearch start"
     stop program = "/etc/init.d/elasticsearch stop"

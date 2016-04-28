@@ -280,3 +280,9 @@ check process node with pidfile /var/run/nodejs.pid
     start program = "/sbin/start nodejs"
     stop program = "/sbin/stop nodejs"
 #    alert sean@baazdata.com only on { nonexist }
+
+check filesystem root with path /
+    if space usage > 80% then alert
+
+check filesystem mnt with path /mnt
+    if space usage > 80% then alert
