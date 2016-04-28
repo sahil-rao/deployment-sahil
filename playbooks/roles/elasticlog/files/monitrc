@@ -116,9 +116,7 @@ set mmonit http://monit:monit@{{ groups['tag_Name_DeploymentRoot'][0] }}:8080/co
 #                                                # timeout alert
 #
 
-set alert sean@cloudera.com # receive all alerts
-set alert samir@cloudera.com # receive all alerts
-set alert prithviraj.pandian@cloudera.com # receive all alerts
+set alert navopt-alerts@cloudera.com # receive all alerts
 
 #
 ## Monit has an embedded web server which can be used to view status of 
@@ -262,8 +260,17 @@ set httpd port 2812
 check process kibana with pidfile /var/run/.pid
     start program = "/etc/init.d/kibana4 start"
     stop program = "/etc/init.d/kibana4 stop"
-    alert harshil@cloudera.com only on { nonexist }
+    alert navopt-alerts@cloudera.com only on { nonexist }
+
 check process elasticsearch with pidfile /var/run/elasticsearch.pid
     start program = "/etc/init.d/elasticsearch start"
     stop program = "/etc/init.d/elasticsearch stop"
-    alert harshil@cloudera.com only on { nonexist }
+    alert navopt-alerts@cloudera.com only on { nonexist }
+
+check filesystem mnt with path /mnt
+    if space usage > 80% then alert
+    if inode usage > 80% then alert
+
+check filesystem mnt with path /mnt/volume2
+    if space usage > 80% then alert
+    if inode usage > 80% then alert
