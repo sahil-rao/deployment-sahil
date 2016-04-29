@@ -115,9 +115,7 @@ set mmonit http://monit:monit@{{ services.mmonit.server }}:8080/collector
 # set alert manager@foo.bar only on { timeout }  # receive just service-
 #                                                # timeout alert
 #
-set alert samir@cloudera.com only on { timeout }    # receive only timeout alerts
-set alert prithviraj.pandian@cloudera.com only on { timeout }    # receive only timeout alerts
-set alert parna@cloudera.com only on { timeout }    # receive only timeout alerts
+set alert navopt-alerts@cloudera.com only on { timeout }    # receive only timeout alerts
 #
 ## Monit has an embedded web server which can be used to view status of 
 ## services monitored and manage services from a web interface. See the
@@ -258,3 +256,8 @@ set alert parna@cloudera.com only on { timeout }    # receive only timeout alert
 set httpd port 2812
    allow localhost
 
+check filesystem root with path /
+    if space usage > 80% then alert
+
+check filesystem mnt with path /mnt
+    if space usage > 80% then alert

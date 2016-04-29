@@ -11,5 +11,12 @@
   get_url: url=https://gist.githubusercontent.com/thisismitch/8b15ac909aed214ad04a/raw/bce61d85643c2dcdfbc2728c55a41dab444dca20/kibana4 dest=/etc/init.d mode="a+x"
 - name: Start kibana4 as service
   service: name=kibana4 state=started
-
-  
+- name: Install monit service
+  apt: pkg=monit state=present
+  sudo: yes
+- name: copy monitrc file
+  template: src=roles/kibana/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+- name: Start monit service
+  shell: monit reload
+  sudo: yes

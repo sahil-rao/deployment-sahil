@@ -13,3 +13,12 @@
   service: name=elasticsearch state=started
 - name: Restart elasticsearch
   service: name=elasticsearch state=restarted
+- name: Install monit service
+  apt: pkg=monit state=present
+  sudo: yes
+- name: copy monitrc file
+  template: src=roles/elasticlog/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+- name: Start monit service
+  shell: monit reload
+  sudo: yes

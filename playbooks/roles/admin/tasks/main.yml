@@ -8,6 +8,18 @@
 - name: NTP installed
   apt: name=ntp state=present
   sudo: yes
+- name: Add nginx ppa
+  apt_repository: repo='ppa:nginx/stable'
+  sudo: yes
+- name: Install nginx
+  apt: name=nginx state=present
+  sudo: yes
+- name: Install Monit service
+  apt: pkg=monit state=present
+  sudo: yes
+- name: Stop monit
+  shell: monit quit
+  sudo: yes
 ### SET UP ENVIRONMENT ###
 - name: Stop admin_nodejs
   service: name=admin_nodejs state=stopped
@@ -21,6 +33,9 @@
   sudo: yes
 - name: Create /var/admin
   file: path=/var/admin state=directory owner=bitnami mode=755
+  sudo: yes
+- name: Create /etc/nginx/ssl
+  file: path=/etc/nginx/ssl state=directory owner=bitnami mode=755
   sudo: yes
 ### UNPACK S3 TARBALLS ###
 - name: Get Optimizer Admin
@@ -54,16 +69,44 @@
 - name: Create create deployement dir2
   file: path=/boot/build/deployement state=directory owner=bitnami mode=755
   sudo: yes
-- name: Copy deployment scripts 
-  copy: src=/mnt/build/deployment/playbooks dest=/boot/build/deployement/ owner=bitnami mode=755
-  sudo: yes
+#- name: Copy deployment scripts
+#  copy: src=/mnt/build/deployment/playbooks dest=/boot/build/deployement/ owner=bitnami mode=755
+#  sudo: yes
 ### DEPLOY AND CONFIGURE ###
+- name: Disable default binami
+  shell: /opt/bitnami/ctlscript.sh stop
+  sudo: yes
+- name: Create username/password for nginx
+  command: htpasswd -b -c /etc/nginx/.htpasswd xplain xplainio
+  sudo: yes
 - name: Create node admin upstart script
   template: src=admin_nodejs.conf dest=/etc/init/admin_nodejs.conf
+  sudo: yes
+- name: Template and copy nginx conf file
+  template: src=nginx.conf dest=/etc/nginx/nginx.conf
   sudo: yes
 - name: Save configuration file
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
   sudo: yes
+- name: Get xplain cert
+  template: src=/etc/nginx/ssl/xplain_san_cert.crt dest=/etc/nginx/ssl/
+  sudo: yes
+- name: Get Cloudera Key
+  template: src=/etc/nginx/ssl/san_cloudera_com.key dest=/etc/nginx/ssl/
+  sudo: yes
 - name: Start admin nodejs
   service: name=admin_nodejs state=started
+  sudo: yes
+- name: Start nginx
+  command: /usr/sbin/nginx
+  sudo: yes
+  ignore_errors: yes
+- name: Reload nginx
+  command: /usr/sbin/nginx -s reload
+  sudo: yes
+- name: copy monitrc file
+  template: src=roles/admin/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+- name: Start monit service
+  shell: monit
   sudo: yes
