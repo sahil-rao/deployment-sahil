@@ -136,11 +136,11 @@ def updateRelationCounter(redis_conn, eid):
 
 def elasticConnect(tenantID):
 
-    elastichost = getElasticServer(tenantID)
-    if elastichost is None:
+    elastichosts = getElasticServer(tenantID)
+    if not elastichosts:
         return
 
-    es = elasticsearch.Elasticsearch(hosts=[{'host' : elastichost, 'port' : 9200}])
+    es = elasticsearch.Elasticsearch(hosts=[{'host' : es_host, 'port' : 9200} for es_host in elastichosts])
     if es is None:
         return
     try:
