@@ -275,6 +275,8 @@ def callback(ch, method, properties, body):
             clog.info("Executing " + section + " for " + tenant)
             ctx = analytics_context
             ctx.tenant = tenant
+            ctx.ch = ch
+            ctx.connection = connection1
             ctx.entityid = entityid
             ctx.collection = collection
             ctx.redis_conn = redis_conn
