@@ -111,6 +111,7 @@ gzip -f  xplain_dashboard.tar
 
 
 cd /home/xplain/build/compiler
+mvn clean
 mvn package -DskipTests
 if [ $? -eq 0 ]
 then
