@@ -73,14 +73,14 @@ git pull
 #Checkout analytics
 cd /home/xplain/build/analytics
 git pull
-git checkout master
+git checkout $1
 git reset --hard
 git pull
 
 #Checkout compiler
 cd /home/xplain/build/compiler
 git pull
-git checkout master
+git checkout $1
 git reset --hard
 git pull
 
@@ -94,7 +94,7 @@ git pull
 #Checkout UI
 cd /home/xplain/build/UI
 git pull
-git checkout master
+git checkout $1
 git reset --hard
 git pull
 
