@@ -1,6 +1,11 @@
 #!/bin/bash
 
-sudo echo "Strating build vm proces..."
+echo "Starting build vm process..."
+
+# Service discovery changes
+redis-cli hset dbsilo:Silo1:info redis 127.0.0.1 mongo 127.0.0.1 elastic 127.0.0.1
+redis-cli -p 26379 sentinel monitor redismaster.dbsilo1.vm.xplain.io 127.0.0.1 6379 1
+redis-cli -p 26379 sentinel monitor redismaster.Silo1.vm.xplain.io 127.0.0.1 6379 1
 
 #check mvn dependency
 if [ `command -v mvn` ]
@@ -68,14 +73,14 @@ git pull
 #Checkout analytics
 cd /home/xplain/build/analytics
 git pull
-git checkout $1
+git checkout master
 git reset --hard
 git pull
 
 #Checkout compiler
 cd /home/xplain/build/compiler
 git pull
-git checkout $1
+git checkout master
 git reset --hard
 git pull
 
@@ -89,7 +94,7 @@ git pull
 #Checkout UI
 cd /home/xplain/build/UI
 git pull
-git checkout $1
+git checkout master
 git reset --hard
 git pull
 
