@@ -24,7 +24,7 @@
     copy: src=installrabbit.sh dest=/home/xplain/installrabbit.sh owner=root group=root mode=0744
   #Commented out but may be needed later when we can figure out how to make sure it's installed already
   #- name: Install Erlang and RabbitMQ from source. This will take some time.
-  #  command: ./installrabbit.sh chdir=/home/xplain/ 
+  #  command: ./installrabbit.sh chdir=/home/xplain/
 
   # Setting up clustering erlang cookie
   - name: create cookie directory
@@ -33,7 +33,7 @@
     template: src=erlang.cookie.j2 dest=/var/lib/rabbitmq/.erlang.cookie owner=rabbitmq group=rabbitmq mode=0400
     register: erlang_cookie
   #Set up web UI plugin, port 15672 must be open
-  - name: Adding web management plugin 
+  - name: Adding web management plugin
     rabbitmq_plugin: names=rabbitmq_management state=enabled
   - name: restart rabbitmq
     service: name=rabbitmq-server state=restarted
@@ -62,7 +62,7 @@
 
 
   - name: Start Mongo
-    shell: 
+    shell:
 
     sudo: yes
     ignore_errors: True
@@ -112,9 +112,9 @@
     pip: name=redis
 
   - name: Install binaryornot py
-    pip: name=binaryornot 
+    pip: name=binaryornot
   - name: Install boto py
-    pip: name=boto 
+    pip: name=boto
 
   #REDIS SENTINEL DEPLOYMENT
   - name: Stop running redis server
@@ -134,7 +134,7 @@
   - name: Copy sentinel config file
     template: src=/home/xplain/sentinel.conf dest=/etc/redis/local/sentinel.conf owner=redis group=redis mode=0644
   - name: Write upstart script in /etc/init/redis-sentinel.conf
-    copy: src=/home/xplain/redis-sentinel.conf dest=/etc/init/redis-sentinel.conf 
+    copy: src=/home/xplain/redis-sentinel.conf dest=/etc/init/redis-sentinel.conf
   - name: Start sentinel
     service: name=redis-sentinel state=started
   - name: Start running redis server
@@ -202,6 +202,6 @@
   - name: Move the new code
     shell: mv /home/xplain/xplain.io /var/xplain{{ port }}
   - name: Install npm modules.
-    npm: path=/var/xplain{{ port }}
+    npm: path=/var/xplain{{ port }} production=yes
   - name: copy monitrc file
     copy: src=/home/xplain/monitrc dest=/etc/monit/monitrc
