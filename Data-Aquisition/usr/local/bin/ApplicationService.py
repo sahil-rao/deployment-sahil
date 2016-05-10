@@ -434,6 +434,9 @@ def callback(ch, method, properties, body):
             resp_dict = {'mongo_url': FPConnector.get_mongo_url(tenant)}
         elif msg_dict['opcode'] == "RedisMasterNameForTenant":
             resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant)}
+        elif msg_dict['opcode'] == "GetRedisForTenant":
+            resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant),
+                         'redis_hosts': FPConnector.get_redis_hosts(tenant)}
         elif msg_dict['opcode'] == "ElasticNodesForTenant":
             resp_dict = {'elastic_nodes': FPConnector.get_elastic_nodes(tenant)}
         else:
