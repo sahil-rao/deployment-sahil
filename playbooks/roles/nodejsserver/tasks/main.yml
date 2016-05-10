@@ -44,6 +44,7 @@
   sudo: yes
 - name: Get the npm modules.
   npm: path=/var/xplain{{ port }}
+  production: yes
 ### DEPLOY AND CONFIGURE ###
 - name: Create node upstart script
   template: src=nodejs.conf dest=/etc/init/nodejs.conf
