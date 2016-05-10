@@ -202,7 +202,6 @@
   - name: Move the new code
     shell: mv /home/xplain/xplain.io /var/xplain{{ port }}
   - name: Install npm modules.
-    npm: path=/var/xplain{{ port }}
-    production: yes
+    npm: path=/var/xplain{{ port }} production=yes
   - name: copy monitrc file
     copy: src=/home/xplain/monitrc dest=/etc/monit/monitrc
