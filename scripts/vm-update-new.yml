@@ -113,6 +113,8 @@
 
   - name: Install binaryornot py
     pip: name=binaryornot 
+  - name: Install boto py
+    pip: name=boto 
 
   #REDIS SENTINEL DEPLOYMENT
   - name: Stop running redis server
