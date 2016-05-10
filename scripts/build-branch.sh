@@ -122,6 +122,7 @@ gzip optimizer_admin.io.tar
 s3cmd sync optimizer_admin.io.tar.gz s3://$S3Bucket/
 
 cd ../compiler
+mvn clean
 mvn package -DskipTests
 if [ $? -eq 0 ]
 then
