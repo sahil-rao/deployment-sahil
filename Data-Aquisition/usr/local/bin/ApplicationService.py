@@ -392,8 +392,7 @@ def callback(ch, method, properties, body):
             resp_dict = table_transform_stats.execute(tenant, instances)
         elif msg_dict['opcode'] == "QueryTransformStats":
             #get list of patterns that are being transformed
-            instances = msg_dict["job_instances"]
-            resp_dict = query_transform_stats.execute(tenant, instances)
+            resp_dict = query_transform_stats.execute(tenant, msg_dict)
         elif msg_dict["opcode"] == "TableDetails":
             entity_id = msg_dict["entity_id"]
             resp_dict = table_details.execute(tenant, entity_id)
