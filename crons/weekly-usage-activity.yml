@@ -1,13 +1,13 @@
 ---
 #This script creates cron jobs that generate email alerts
 
-- hosts: localhost
+- hosts: tag_Name_DeploymentRoot
   sudo: yes
   tasks:
   - name: copy script to crontab folder
-    copy: src=../emailjobs/GetUserActivity.py dest=/etc/cron.daily
+    copy: src=../emailjobs/GetUserActivity.py dest=/etc/cron.daily/GetUserActivity
   - name: change permission
-    command: chmod +x /etc/cron.daily/GetUserActivity.py
+    command: chmod +x /etc/cron.daily/GetUserActivity
   #- name: Set up cron job for uploadUpdateEmail.py to run every 12 hours
   #  cron: name="general status email" hour=*/12 job=/mnt/build/deployment/emailjobs/app_get_user_activity.py
 

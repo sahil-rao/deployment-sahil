@@ -12,6 +12,8 @@ import sys
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath import FPConnector
+from rlog import RedisHandler
+
 from json import *
 import shutil
 import os
@@ -65,7 +67,9 @@ if usingAWS:
     bucket = boto_conn.get_bucket('partner-logs')
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-
+    redis_host = config.get("RedisLog", "server")
+    if redis_host:
+        logging.getLogger().addHandler(RedisHandler('logstash', level=logging.INFO, host=redis_host, port=6379))
 
 def callback(ch, method, properties, body):
     '''
@@ -86,7 +90,7 @@ def callback(ch, method, properties, body):
         return
 
     tenant = msg_dict["tenant"]
-    log_dict = {'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode']}
+    log_dict = {'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode'], 'tag': 'ruleengine'}
     if 'uid' in msg_dict:
         log_dict['uid'] = msg_dict['uid']
     clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)

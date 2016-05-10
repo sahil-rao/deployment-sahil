@@ -12,7 +12,6 @@ from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
-from flightpath.services.xplain_log_handler import XplainLogstashHandler
 from json import *
 from baazmath.interface.BaazCSV import *
 from subprocess import Popen, PIPE
@@ -28,6 +27,7 @@ import traceback
 import logging
 import importlib
 import socket
+from rlog import RedisHandler
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -63,7 +63,9 @@ if usingAWS:
     boto_conn = boto.connect_s3()
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_MATH_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-    logging.getLogger().addHandler(XplainLogstashHandler(tags=['mathservice', 'backoffice']))
+    redis_host = config.get("RedisLog", "server")
+    if redis_host:
+        logging.getLogger().addHandler(RedisHandler('logstash', level=logging.INFO, host=redis_host, port=6379))
 
 def generateBaseStats(tenant):
     """
@@ -206,7 +208,7 @@ def callback(ch, method, properties, body):
         return
 
     clog = LoggerCustomAdapter(logging.getLogger(__name__), {'tenant': tenant, 'opcode':opcode, 'uid':uid})
-    callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
+    callback_params = {'tag': 'mathservice', 'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
 
     mathconfig = ConfigParser.RawConfigParser()
     mathconfig.read("/etc/xplain/analytics.cfg")
@@ -275,6 +277,8 @@ def callback(ch, method, properties, body):
             clog.info("Executing " + section + " for " + tenant)
             ctx = analytics_context
             ctx.tenant = tenant
+            ctx.ch = ch
+            ctx.connection = connection1
             ctx.entityid = entityid
             ctx.collection = collection
             ctx.redis_conn = redis_conn

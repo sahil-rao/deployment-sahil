@@ -36,7 +36,6 @@ import flightpath.services.app_get_access_patterns as access_patterns
 import flightpath.services.app_cleanup_user as cleanup_user
 import flightpath.services.app_add_table_volume as add_table_volume
 import flightpath.services.app_get_impala_import as get_impala_import
-from flightpath.services.xplain_log_handler import XplainLogstashHandler
 from flightpath import FPConnector
 from json import *
 import elasticsearch
@@ -51,6 +50,7 @@ import socket
 import importlib
 import urllib
 import traceback
+from rlog import RedisHandler
 
 APPSRV_LOG_FILE = "/var/log/applicationserice.err"
 
@@ -103,7 +103,9 @@ if usingAWS:
     bucket = boto_conn.get_bucket(bucket_location)
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(APPSRV_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-    logging.getLogger().addHandler(XplainLogstashHandler(tags=['applicationservice', 'backoffice']))
+    redis_host = config.get("RedisLog", "server")
+    if redis_host:
+        logging.getLogger().addHandler(RedisHandler('logstash', level=logging.INFO, host=redis_host, port=6379))
 
 def process_mongo_rewrite_request(ch, properties, tenant, instances, clog):
 
@@ -316,7 +318,7 @@ def callback(ch, method, properties, body):
     client = getMongoServer(tenant)
     resp_dict = None
 
-    log_dict = {'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode']}
+    log_dict = {'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode'], 'tag':'applicationservice'}
     if 'uid' in msg_dict:
         log_dict['uid'] = msg_dict['uid']
     clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)
@@ -392,8 +394,7 @@ def callback(ch, method, properties, body):
             resp_dict = table_transform_stats.execute(tenant, instances)
         elif msg_dict['opcode'] == "QueryTransformStats":
             #get list of patterns that are being transformed
-            instances = msg_dict["job_instances"]
-            resp_dict = query_transform_stats.execute(tenant, instances)
+            resp_dict = query_transform_stats.execute(tenant, msg_dict)
         elif msg_dict["opcode"] == "TableDetails":
             entity_id = msg_dict["entity_id"]
             resp_dict = table_details.execute(tenant, entity_id)
@@ -435,6 +436,9 @@ def callback(ch, method, properties, body):
             resp_dict = {'mongo_url': FPConnector.get_mongo_url(tenant)}
         elif msg_dict['opcode'] == "RedisMasterNameForTenant":
             resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant)}
+        elif msg_dict['opcode'] == "GetRedisForTenant":
+            resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant),
+                         'redis_hosts': FPConnector.get_redis_hosts(tenant)}
         elif msg_dict['opcode'] == "ElasticNodesForTenant":
             resp_dict = {'elastic_nodes': FPConnector.get_elastic_nodes(tenant)}
         else:

@@ -13,7 +13,6 @@ from flightpath.RedisConnector import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from flightpath.clustering.querygroup import QueryGroup
-from flightpath.services.xplain_log_handler import XplainLogstashHandler
 import flightpath.thriftclient.compilerthriftclient as tclient
 
 import baazmath.workflows.write_upload_stats as write_upload_stats
@@ -32,6 +31,7 @@ import traceback
 import logging
 import importlib
 import socket
+from rlog import RedisHandler
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 XPLAIN_LOG_FILE = "/var/log/XplainAdvAnalyticsService.err"
@@ -66,7 +66,9 @@ if usingAWS:
     boto_conn = boto.connect_s3()
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(XPLAIN_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-    logging.getLogger().addHandler(XplainLogstashHandler(tags=['advanalyticsservice', 'backoffice']))
+    redis_host = config.get("RedisLog", "server")
+    if redis_host:
+        logging.getLogger().addHandler(RedisHandler('logstash', level=logging.INFO, host=redis_host, port=6379))
 
 def generateBaseStats(tenant):
     """
@@ -388,7 +390,7 @@ def callback(ch, method, properties, body):
     
     tenant = msg_dict['tenant']
     opcode = msg_dict['opcode']
-    log_dict = {'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode']}
+    log_dict = {'tag':'advanalytics', 'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode']}
     if 'uid' in msg_dict:
         log_dict['uid'] = msg_dict['uid']
     clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)

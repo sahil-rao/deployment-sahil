@@ -153,6 +153,21 @@
 - name: Upgrade pymongo to 3.0
   pip: name=pymongo state=latest
   sudo: yes
+- name: Install python logger package
+  pip: name=rlog
+  sudo: yes
+- name: Install python mock package
+  pip: name=mock
+  sudo: yes
+- name: Install python six package
+  pip: name=six extra_args='--upgrade'
+  sudo: yes
+- name: Install python pbr package
+  pip: name=pbr
+  sudo: yes
+- name: Install python funcsigs package
+  pip: name=funcsigs
+  sudo: yes
 #REDIS SENTINEL DEPLOYMENT
 #- name: Install Redis APT Package
 #  apt: name=redis-server update_cache=yes

@@ -13,7 +13,6 @@ from baazmath.workflows.hbase_analytics import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from flightpath.services.mq_template import *
-from flightpath.services.xplain_log_handler import XplainLogstashHandler
 import flightpath.thriftclient.compilerthriftclient as tclient
 
 from subprocess import Popen, PIPE
@@ -30,6 +29,7 @@ import ConfigParser
 import logging
 import socket
 import pprint
+from rlog import RedisHandler
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -70,8 +70,10 @@ if usingAWS:
     boto_conn = boto.connect_s3()
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_COMPILER_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-    logging.getLogger().addHandler(XplainLogstashHandler(tags=['compileservice', 'backoffice']))
-
+    redis_host = config.get("RedisLog", "server")
+    if redis_host:
+        logging.getLogger().addHandler(RedisHandler('logstash', level=logging.INFO, host=redis_host, port=6379))
+ 
 COMPILER_MODULES='/usr/lib/baaz_compiler'
 
 dirList=os.listdir(COMPILER_MODULES)
@@ -1652,7 +1654,7 @@ def callback(ch, method, properties, body):
     db = None
 
     client = getMongoServer(tenant)
-    log_dict = {'tenant':tenant}
+    log_dict = {'tenant':tenant, 'tag': 'compileservice'}
     if 'uid' in msg_dict:
         log_dict['uid'] = msg_dict['uid']
     if 'opcode' in msg_dict:
@@ -1799,7 +1801,7 @@ def callback(ch, method, properties, body):
                 stats_failure_key = "Compiler." + compilername + ".failure"
 
                 data_dict = { "input_query": query,
-                              "Compiler": compilername, "EntityId": prog_id, "TenantId": "100"}
+                              "Compiler": compilername, "EntityId": prog_id, "TenantId": tenant, "uid":uid}
                 if source_platform is not None:
                     data_dict["source_platform"] = source_platform
                 

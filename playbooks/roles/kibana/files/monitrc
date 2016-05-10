@@ -54,7 +54,7 @@
 #                localhost                   # fallback relay
 #
 set mailserver smtp.gmail.com port 587
-     username "noreply@baazdata.com" password "Xplainio123" using tlsv1 
+     username "no-reply-data@cloudera.com" password "D8eH5C8T" using tlsv1 
      with timeout 15 seconds
 #
 ## By default Monit will drop alert events if no mail servers are available. 
@@ -115,7 +115,11 @@ set mmonit http://monit:monit@{{ groups['tag_Name_DeploymentRoot'][0] }}:8080/co
 # set alert manager@foo.bar only on { timeout }  # receive just service-
 #                                                # timeout alert
 #
-set alert navopt-alerts@cloudera.com # receive all alerts
+
+set alert sean@cloudera.com # receive all alerts
+set alert samir@cloudera.com # receive all alerts
+set alert prithviraj.pandian@cloudera.com # receive all alerts
+
 #
 ## Monit has an embedded web server which can be used to view status of 
 ## services monitored and manage services from a web interface. See the
@@ -255,27 +259,12 @@ set alert navopt-alerts@cloudera.com # receive all alerts
 set httpd port 2812
    allow localhost
 
-check process baazdataacquisition with pidfile /var/run/FPProcessingService.pid
-    start program = "/etc/init.d/baazdataacquisition start"
-    stop program = "/etc/init.d/baazdataacquisition  stop"
-    alert navopt-alerts@cloudera.com only on { nonexist }
+check process kibana with pidfile /var/run/.pid
+    start program = "/etc/init.d/kibana4 start"
+    stop program = "/etc/init.d/kibana4 stop"
+    alert harshil@cloudera.com only on { nonexist }
 
-check process baazcompile with pidfile /var/run/BaazCompileService.pid
-    start program = "/etc/init.d/baazcompile start"
-    stop program = "/etc/init.d/baazcompile stop"
-
-check process baazmath with pidfile /var/run/BaazMathService.pid
-    start program = "/etc/init.d/baazmath start"
-    stop program = "/etc/init.d/baazmath stop"
-
-check process xplaincompile with pidfile /var/run/xplaincompile.pid
-    start program = "/sbin/start xplaincompile"
-    stop program = "/sbin/stop xplaincompile"
-
-check filesystem root with path /
-    if space usage > 80% then alert
-    if inode usage > 80% then alert
-
-check filesystem mnt with path /mnt
-    if space usage > 80% then alert
-    if inode usage > 80% then alert
+check process elasticsearch with pidfile /var/run/elasticsearch.pid
+    start program = "/etc/init.d/elasticsearch start"
+    stop program = "/etc/init.d/elasticsearch stop"
+    alert harshil@cloudera.com only on { nonexist }

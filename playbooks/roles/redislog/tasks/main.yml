@@ -1,0 +1,52 @@
+---
+
+#MONIT INSTALL
+- name: Install Monit service
+  apt: pkg=monit state=present
+  sudo: yes
+- name: Kill Monit so it won't interfere with installation
+  shell: monit quit
+  sudo: yes
+- name: Refresh monit ID
+  shell: rm -f /var/lib/monit/id
+  sudo: yes
+- name: copy monitrc file
+  template: src=roles/redislog/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+
+
+#REDIS SERVER DEPLOYMENT
+- name: Install Redis APT Package
+  apt: name=redis-server update_cache=yes
+  sudo: yes
+- name: Stop running redis server
+  service: name=redis-server state=stopped
+  sudo: yes
+- name: disable redis-server from init.d
+  shell: update-rc.d -f redis-server disable
+  sudo: yes
+- name: remove redis-server from init.d
+  shell: update-rc.d -f redis-server remove
+  sudo: yes
+- name: Create redis config directory
+  file: path=/etc/redis/local owner=redis group=redis mode=777 state=directory
+  sudo: yes
+- name: Create redis log directory
+  file: path=/var/log/redis owner=redis group=redis mode=777 state=directory
+  sudo: yes
+- name: Create redis data persistence/dump directory
+  file: path=/var/lib/redis owner=redis group=redis mode=777 state=directory
+  sudo: yes
+- name: Copy redis config file
+  copy: src=roles/redislog/files/redis.conf dest=/etc/redis/local/redis.conf owner=redis group=redis mode=0644
+  sudo: yes
+- name: Write upstart script in /etc/init/redis-sentinel.conf
+  copy: src=roles/redislog/files/redis-server.conf dest=/etc/init/redis-server.conf 
+  sudo: yes
+- name: Start redis-server
+  service: name=redis-server state=started
+  sudo: yes
+
+- name: Start monit service
+  shell: monit 
+  sudo: yes

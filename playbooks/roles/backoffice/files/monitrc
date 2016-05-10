@@ -115,9 +115,7 @@ set mmonit http://monit:monit@{{ groups['tag_Name_DeploymentRoot'][0] }}:8080/co
 # set alert manager@foo.bar only on { timeout }  # receive just service-
 #                                                # timeout alert
 #
-set alert samir@cloudera.com only on { timeout }    # receive only timeout alerts
-set alert prithviraj.pandian@cloudera.com only on { timeout }    # receive only timeout alerts
-set alert parna@cloudera.com only on { timeout }    # receive only timeout alerts
+set alert navopt-alerts@cloudera.com only on { timeout }    # receive only timeout alerts
 #
 ## Monit has an embedded web server which can be used to view status of 
 ## services monitored and manage services from a web interface. See the
@@ -285,3 +283,11 @@ check process advanalytics with pidfile /var/run/advanalyticsservice.pid
 check process ruleengineservice with pidfile /var/run/ruleengineservice.pid
     start program = "/sbin/start ruleengineservice" with timeout 30 seconds
     stop program = "/sbin/stop ruleengineservice"
+
+check filesystem root with path /
+    if space usage > 80% then alert
+    if inode usage > 80% then alert
+
+check filesystem mnt with path /mnt
+    if space usage > 80% then alert
+    if inode usage > 80% then alert
