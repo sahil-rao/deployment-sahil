@@ -6,12 +6,12 @@ Usage : FPProcessing.py <tenant> <log Directory>
 """
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
-from flightpath.services.xplain_log_handler import XplainLogstashHandler
 from flightpath.utils import *
 from flightpath.parsing.ParseDemux import *
 from flightpath.Provenance import getMongoServer
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
+
 from json import *
 import elasticsearch
 import shutil
@@ -25,6 +25,7 @@ import logging
 import socket
 import urllib
 import re
+from rlog import RedisHandler
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -77,7 +78,9 @@ if usingAWS:
     bucket = boto_conn.get_bucket(bucket_location)
     log_bucket = boto_conn.get_bucket(log_bucket_location)
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_FP_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-    logging.getLogger().addHandler(XplainLogstashHandler(tags=['dataacquisitionservice', 'backoffice']))
+    redis_host = config.get("RedisLog", "server")
+    if redis_host:
+        logging.getLogger().addHandler(RedisHandler('logstash', level=logging.INFO, host=redis_host, port=6379))
 
 def generateTagArray(header_info):
     tagArray = []
@@ -199,7 +202,7 @@ class callback_context():
         Self.col_stat_table_name_list = []
         Self.table_stat_table_name_list = []
         Self.compiler_to_use = get_compiler(Self.sourcePlatform)
-        Self.clog = LoggerCustomAdapter(logging.getLogger(__name__), {'tenant': tenant, 'uid':uid})
+        Self.clog = LoggerCustomAdapter(logging.getLogger(__name__), {'tag': 'dataacquisitionservice', 'tenant': tenant, 'uid':uid})
 
     def get_source_platform(Self):
         return Self.sourcePlatform
@@ -499,7 +502,7 @@ def callback(ch, method, properties, body):
     xplain_client = getMongoServer("xplainIO")
     redis_conn = RedisConnector(tenant)
 
-    log_dict = {'tenant': tenant}
+    log_dict = {'tenant': tenant, 'tag': 'dataacquisitionservice'}
     if 'opcode' in msg_dict:
         log_dict['opcode'] = msg_dict['opcode']
     if 'uid' in msg_dict:

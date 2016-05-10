@@ -74,3 +74,8 @@
   roles:
   - role: logstash
     sudo: true
+
+- hosts: tag_Name_RedisLog
+  roles:
+  - role: redislog
+    sudo: true
