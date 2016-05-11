@@ -1120,10 +1120,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if field == "custom_id":
                     setDict["custom_id"] = data["custom_id"]
                     continue
-                if field in setDict:
-                    if setDict[field] and not isinstance(setDict[field], list):
-                        if setDict[field] is not None:
-                            setDict[field] = [setDict[field]]
+                if field in setDict and setDict[field] is not None and not isinstance(setDict[field], list):
+                    setDict[field] = [setDict[field]]
                 else:
                     setDict[field] = []
                 setDict[field].append(data[field])
