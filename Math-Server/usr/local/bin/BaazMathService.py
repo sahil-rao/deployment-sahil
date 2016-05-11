@@ -4,6 +4,7 @@
 Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenant> <log Directory>
 """
+from flightpath import cluster_config
 from flightpath.parsing.hadoop.HadoopConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.XplainBlockingConnection import *
@@ -42,8 +43,13 @@ if usingAWS:
 
 rabbitserverIP = config.get("RabbitMQ", "server")
 
+mode = cluster_config.get_cluster_mode()
+logging_level = logging.INFO
+if mode == "development":
+    logging_level = logging.DEBUG
+
 """
-For VM there is not S3 connectivity. Save the logs with a timestamp. 
+For VM there is not S3 connectivity. Save the logs with a timestamp.
 At some point we should move to using a log rotate handler in the VM.
 """
 if not usingAWS:
@@ -51,7 +57,7 @@ if not usingAWS:
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
         shutil.copy(BAAZ_MATH_LOG_FILE, BAAZ_MATH_LOG_FILE+timestr)
 
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_MATH_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_MATH_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
 es_logger = logging.getLogger('elasticsearch')
 es_logger.propagate = False
 es_logger.setLevel(logging.WARN)
@@ -65,14 +71,14 @@ if usingAWS:
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_MATH_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
     redis_host = config.get("RedisLog", "server")
     if redis_host:
-        logging.getLogger().addHandler(RedisHandler('logstash', level=logging.INFO, host=redis_host, port=6379))
+        logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
 
 def generateBaseStats(tenant):
     """
     Create a destination/processing folder.
     """
     destination = "/tmp"
-    #destination = '/mnt/volume1/base-stats-' + tenant + "/" + timestr 
+    #destination = '/mnt/volume1/base-stats-' + tenant + "/" + timestr
     #if not os.path.exists(destination):
     #    os.makedirs(destination)
 
@@ -81,13 +87,13 @@ def generateBaseStats(tenant):
     generateBaseStatsCSV(tenant, dest_file)
     dest_file.flush()
     dest_file.close()
-   
+
     """
     Call Base stats generation.
-    """ 
+    """
 
 def storeResourceProfile(tenant):
-    logging.info("Going to store resource profile\n")    
+    logging.info("Going to store resource profile\n")
     if not os.path.isfile("/tmp/test_hadoop_job_resource_share.out"):
         return
 
@@ -109,10 +115,10 @@ def storeResourceProfile(tenant):
 
             entity = mongoconn.getEntity(splits[0])
             if entity is None:
-                logging.error("Entity {0} not found for storing resource profile\n".format(splits[0]))    
+                logging.error("Entity {0} not found for storing resource profile\n".format(splits[0]))
                 continue
 
-            logging.info("Entity {0} resource profile {1}\n".format(splits[0], splits[1]))    
+            logging.info("Entity {0} resource profile {1}\n".format(splits[0], splits[1]))
             resource_doc = { "Resource_share": splits[1]}
             mongoconn.updateProfile(entity, "Resource", resource_doc)
     mongoconn.close()
@@ -123,10 +129,10 @@ def end_of_phase_callback(params, current_phase):
         return
 
     logging.info("Changing processing Phase")
-    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"} 
+    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"}
     msg_dict['uid'] = params['uid']
     message = dumps(msg_dict)
-    params['connection'].publish(params['channel'],'',params['queuename'],message) 
+    params['connection'].publish(params['channel'],'',params['queuename'],message)
     return
 
 def analytics_callback(params):
@@ -148,7 +154,7 @@ def analytics_callback(params):
     incrementPendingMessage(collection, redis_conn, msg_dict['uid'], message_id)
 
     message = dumps(msg_dict)
-    params['connection'].publish(params['channel'],'',params['queuename'],message) 
+    params['connection'].publish(params['channel'],'',params['queuename'],message)
     return
 
 class analytics_context:
@@ -163,7 +169,7 @@ def callback(ch, method, properties, body):
 
     """
     Validate the message.
-    """ 
+    """
     if not msg_dict.has_key("tenant") or \
        not msg_dict.has_key("opcode"):
         logging.error("Invalid message received\n")
@@ -194,11 +200,11 @@ def callback(ch, method, properties, body):
             """
             connection1.basicAck(ch,method)
             return
-      
+
         collection = db.uploadStats
         process_pref_col = db.adminSettings
 
-            
+
         redis_conn.incrEntityCounter(uid, 'Math.count', incrBy = 1)
     else:
         """
@@ -212,7 +218,7 @@ def callback(ch, method, properties, body):
 
     mathconfig = ConfigParser.RawConfigParser()
     mathconfig.read("/etc/xplain/analytics.cfg")
-    
+
     """
     Pull and update admin settings at upload to ensure user has prefs if admin didn't set anything
     """
@@ -228,14 +234,14 @@ def callback(ch, method, properties, body):
             if section not in admin_pref_dict:
                 admin_pref_dict[section] = True
         process_pref_col.update({'type': 'workflows'}, admin_pref_dict, upsert = True)
-    
+
     for section in mathconfig.sections():
         sectionStartTime = time.time()
-        
+
         if not admin_pref_dict[section]:
             clog.error("Section :"+ section + " Has been disabled for this workload")
             continue
-               
+
         if not mathconfig.has_option(section, "Opcode") or\
            not mathconfig.has_option(section, "Import") or\
            not mathconfig.has_option(section, "Function"):
@@ -253,10 +259,10 @@ def callback(ch, method, properties, body):
                 clog.info("Sending message to node!")
                 connection1.publish(ch,'', notif_queue, dumps(message))
             continue
- 
+
         if not opcode == mathconfig.get(section, "Opcode"):
             continue
-        
+
         stats_success_key = "Math." + section + ".success"
         stats_failure_key = "Math." + section + ".failure"
         stats_time_key = "Math." + section + ".time"
@@ -328,15 +334,15 @@ def callback(ch, method, properties, body):
 
             else:
                 redis_conn.setEntityProfile(uid, {stats_phase_key: 1})
-        
-    clog.info("Event Processing Complete")     
+
+    clog.info("Event Processing Complete")
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
     """
      Progress Bar update
     """
     notif_queue = "node-update-queue"
-    clog.info("Going to check progress bar")     
+    clog.info("Going to check progress bar")
     try:
         stats_dict = redis_conn.getEntityProfile(uid)
         if stats_dict is not None and\
@@ -351,8 +357,8 @@ def callback(ch, method, properties, body):
             if (processed_queries%10 == 0 or\
                (total_queries) <= (processed_queries + 1)) and \
                int(redis_conn.numMessagesPending(uid)) != 0:
-                clog.debug("Procesing progress bar event")     
-                out_dict = {"messageType" : "uploadProgress", "tenantId": tenant, 
+                clog.debug("Procesing progress bar event")
+                out_dict = {"messageType" : "uploadProgress", "tenantId": tenant,
                             "completed": processed_queries + 1, "total":total_queries}
                 connection1.publish(ch, 'node-update', '', dumps(out_dict))
     except:

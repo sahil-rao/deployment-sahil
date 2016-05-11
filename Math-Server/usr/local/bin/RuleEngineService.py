@@ -4,6 +4,7 @@
 Process request for simulation on Imapla.
 """
 #from flightpath.parsing.hadoop.HadoopConnector import *
+from flightpath import cluster_config
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
 from flightpath.utils import *
@@ -33,6 +34,11 @@ if usingAWS:
     from boto.s3.key import Key
     import boto
 
+mode = cluster_config.get_cluster_mode()
+logging_level = logging.INFO
+if mode == "development":
+    logging_level = logging.DEBUG
+
 rabbitserverIP = config.get("RabbitMQ", "server")
 metrics_url = None
 
@@ -53,7 +59,7 @@ if not usingAWS:
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     filename=LOG_FILE,
-                    level=logging.INFO,
+                    level=logging_level,
                     datefmt='%m/%d/%Y %I:%M:%S %p')
 es_logger = logging.getLogger('elasticsearch')
 es_logger.propagate = False
@@ -69,7 +75,7 @@ if usingAWS:
     logging.getLogger().addHandler(RotatingS3FileHandler(LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
     redis_host = config.get("RedisLog", "server")
     if redis_host:
-        logging.getLogger().addHandler(RedisHandler('logstash', level=logging.INFO, host=redis_host, port=6379))
+        logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
 
 def callback(ch, method, properties, body):
     '''

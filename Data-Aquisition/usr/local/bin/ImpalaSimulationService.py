@@ -4,6 +4,7 @@
 Process request for simulation on Imapla.
 """
 #from flightpath.parsing.hadoop.HadoopConnector import *
+from flightpath import cluster_config
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
 from flightpath.utils import *
@@ -41,22 +42,28 @@ rabbitserverIP = config.get("RabbitMQ", "server")
 metrics_url = None
 
 """
-For VM there is not S3 connectivity. Save the logs with a timestamp. 
+For VM there is not S3 connectivity. Save the logs with a timestamp.
 At some point we should move to using a log rotate handler in the VM.
 """
+
+mode = cluster_config.get_cluster_mode()
+logging_level = logging.INFO
+if mode == "development":
+    logging_level = logging.DEBUG
+
 if not usingAWS:
     if os.path.isfile(APPSRV_LOG_FILE):
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
         shutil.copy(APPSRV_LOG_FILE, APPSRV_LOG_FILE+timestr)
 
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=APPSRV_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=APPSRV_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
 
 """
 In AWS use S3 log rotate to save the log files.
 """
 if usingAWS:
     boto_conn = boto.connect_s3()
-    bucket = boto_conn.get_bucket('partner-logs') 
+    bucket = boto_conn.get_bucket('partner-logs')
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(APPSRV_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
 
@@ -64,7 +71,7 @@ if usingAWS:
 def callback(ch, method, properties, body):
 
     starttime = time.time()
-    
+
     try:
         msg_dict = loads(body)
     except:
