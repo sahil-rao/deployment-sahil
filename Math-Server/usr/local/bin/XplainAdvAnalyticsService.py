@@ -4,6 +4,7 @@
 Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenant> <log Directory>
 """
+from flightpath import cluster_config
 from flightpath.parsing.hadoop.HadoopConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.XplainBlockingConnection import *
@@ -13,7 +14,6 @@ from flightpath.RedisConnector import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from flightpath.clustering.querygroup import QueryGroup
-from flightpath.services.xplain_log_handler import XplainLogstashHandler
 import flightpath.thriftclient.compilerthriftclient as tclient
 
 import baazmath.workflows.write_upload_stats as write_upload_stats
@@ -32,6 +32,7 @@ import traceback
 import logging
 import importlib
 import socket
+from rlog import RedisHandler
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 XPLAIN_LOG_FILE = "/var/log/XplainAdvAnalyticsService.err"
@@ -43,10 +44,15 @@ if usingAWS:
     from boto.s3.key import Key
     import boto
 
+mode = cluster_config.get_cluster_mode()
+logging_level = logging.INFO
+if mode == "development":
+    logging_level = logging.DEBUG
+
 rabbitserverIP = config.get("RabbitMQ", "server")
 
 """
-For VM there is not S3 connectivity. Save the logs with a timestamp. 
+For VM there is not S3 connectivity. Save the logs with a timestamp.
 At some point we should move to using a log rotate handler in the VM.
 """
 if not usingAWS:
@@ -54,7 +60,7 @@ if not usingAWS:
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
         shutil.copy(XPLAIN_LOG_FILE, XPLAIN_LOG_FILE+timestr)
 
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=XPLAIN_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=XPLAIN_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
 es_logger = logging.getLogger('elasticsearch')
 es_logger.propagate = False
 es_logger.setLevel(logging.WARN)
@@ -66,14 +72,16 @@ if usingAWS:
     boto_conn = boto.connect_s3()
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(XPLAIN_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-    logging.getLogger().addHandler(XplainLogstashHandler(tags=['advanalyticsservice', 'backoffice']))
+    redis_host = config.get("RedisLog", "server")
+    if redis_host:
+        logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
 
 def generateBaseStats(tenant):
     """
     Create a destination/processing folder.
     """
     destination = "/tmp"
-    #destination = '/mnt/volume1/base-stats-' + tenant + "/" + timestr 
+    #destination = '/mnt/volume1/base-stats-' + tenant + "/" + timestr
     #if not os.path.exists(destination):
     #    os.makedirs(destination)
 
@@ -82,13 +90,13 @@ def generateBaseStats(tenant):
     generateBaseStatsCSV(tenant, dest_file)
     dest_file.flush()
     dest_file.close()
-   
+
     """
     Call Base stats generation.
-    """ 
+    """
 
 def storeResourceProfile(tenant):
-    logging.info("Going to store resource profile\n")    
+    logging.info("Going to store resource profile\n")
     if not os.path.isfile("/tmp/test_hadoop_job_resource_share.out"):
         return
 
@@ -110,10 +118,10 @@ def storeResourceProfile(tenant):
 
             entity = mongoconn.getEntity(splits[0])
             if entity is None:
-                logging.error("Entity {0} not found for storing resource profile\n".format(splits[0]))    
+                logging.error("Entity {0} not found for storing resource profile\n".format(splits[0]))
                 continue
 
-            logging.info("Entity {0} resource profile {1}\n".format(splits[0], splits[1]))    
+            logging.info("Entity {0} resource profile {1}\n".format(splits[0], splits[1]))
             resource_doc = { "Resource_share": splits[1]}
             mongoconn.updateProfile(entity, "Resource", resource_doc)
     mongoconn.close()
@@ -137,7 +145,7 @@ def analytics_callback(params):
     incrementPendingMessage(collection, redis_conn, msg_dict['uid'], message_id)
 
     message = dumps(msg_dict)
-    params['connection'].publish(params['channel'],'',params['queuename'],message) 
+    params['connection'].publish(params['channel'],'',params['queuename'],message)
     return
 
 class analytics_context:
@@ -365,7 +373,7 @@ def process_HAQR_request(msg_dict, clog):
     client = getMongoServer(msg_dict['tenant'])
     db = client[msg_dict['tenant']]
     redis_conn = RedisConnector(msg_dict['tenant'])
-    
+
     analyzeHAQR(msg_dict['query'], msg_dict['key'], msg_dict['tenant'], \
                 msg_dict['eid'], msg_dict['source_platform'], db, redis_conn, clog)
 
@@ -378,17 +386,17 @@ def callback(ch, method, properties, body):
 
     """
     Validate the message.
-    """ 
+    """
     if not msg_dict.has_key("tenant") or \
        not msg_dict.has_key("opcode"):
         logging.error("Invalid message received\n")
 
         connection1.basicAck(ch,method)
         return
-    
+
     tenant = msg_dict['tenant']
     opcode = msg_dict['opcode']
-    log_dict = {'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode']}
+    log_dict = {'tag':'advanalytics', 'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode']}
     if 'uid' in msg_dict:
         log_dict['uid'] = msg_dict['uid']
     clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)
@@ -399,7 +407,7 @@ def callback(ch, method, properties, body):
             process_HAQR_request(msg_dict, clog)
         except:
             clog.exception('HAQR failed for tenant: %s.'%(tenant))
-    
+
 
     try:
         received_msgID = msg_dict['message_id']
@@ -422,7 +430,7 @@ def callback(ch, method, properties, body):
             """
             connection1.basicAck(ch,method)
             return
-        
+
         collection = client[tenant].uploadStats
         redis_conn.incrEntityCounter(uid, 'Math.count', incrBy = 1)
     else:
@@ -454,7 +462,7 @@ def callback(ch, method, properties, body):
                 clog.info("Sending message to node!")
                 connection1.publish(ch,'', notif_queue, dumps(message))
             continue
- 
+
         if not opcode == mathconfig.get(section, "Opcode"):
             continue
 
@@ -522,9 +530,9 @@ def callback(ch, method, properties, body):
             else:
                 redis_conn.setEntityProfile(uid, {stats_phase_key: 1})
 
-    clog.info("Event Processing Complete")     
+    clog.info("Event Processing Complete")
     if opcode == "PhaseTwoAnalysis":
-        collection.update({'uid':"0"},{'$set': { "done":True}})        
+        collection.update({'uid':"0"},{'$set': { "done":True}})
 
     if int(redis_conn.numMessagesPending(uid)) == 0:
         #The length function in the if statement is a count of the mending messages

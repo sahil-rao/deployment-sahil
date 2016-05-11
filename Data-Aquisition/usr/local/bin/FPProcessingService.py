@@ -4,14 +4,15 @@
 Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenant> <log Directory>
 """
+from flightpath import cluster_config
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
-from flightpath.services.xplain_log_handler import XplainLogstashHandler
 from flightpath.utils import *
 from flightpath.parsing.ParseDemux import *
 from flightpath.Provenance import getMongoServer
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
+
 from json import *
 import elasticsearch
 import shutil
@@ -25,6 +26,7 @@ import logging
 import socket
 import urllib
 import re
+from rlog import RedisHandler
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -54,6 +56,10 @@ if usingAWS:
 rabbitserverIP = config.get("RabbitMQ", "server")
 metrics_url = None
 
+mode = cluster_config.get_cluster_mode()
+logging_level = logging.INFO
+if mode == "development":
+    logging_level = logging.DEBUG
 
 """
 For VM there is not S3 connectivity. Save the logs with a timestamp.
@@ -64,7 +70,7 @@ if not usingAWS:
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
         shutil.copy(BAAZ_FP_LOG_FILE, BAAZ_FP_LOG_FILE+timestr)
 
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_FP_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_FP_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
 es_logger = logging.getLogger('elasticsearch')
 es_logger.propagate = False
 es_logger.setLevel(logging.WARN)
@@ -77,7 +83,9 @@ if usingAWS:
     bucket = boto_conn.get_bucket(bucket_location)
     log_bucket = boto_conn.get_bucket(log_bucket_location)
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_FP_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-    logging.getLogger().addHandler(XplainLogstashHandler(tags=['dataacquisitionservice', 'backoffice']))
+    redis_host = config.get("RedisLog", "server")
+    if redis_host:
+        logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
 
 def generateTagArray(header_info):
     tagArray = []
@@ -199,7 +207,7 @@ class callback_context():
         Self.col_stat_table_name_list = []
         Self.table_stat_table_name_list = []
         Self.compiler_to_use = get_compiler(Self.sourcePlatform)
-        Self.clog = LoggerCustomAdapter(logging.getLogger(__name__), {'tenant': tenant, 'uid':uid})
+        Self.clog = LoggerCustomAdapter(logging.getLogger(__name__), {'tag': 'dataacquisitionservice', 'tenant': tenant, 'uid':uid})
 
     def get_source_platform(Self):
         return Self.sourcePlatform
@@ -499,7 +507,7 @@ def callback(ch, method, properties, body):
     xplain_client = getMongoServer("xplainIO")
     redis_conn = RedisConnector(tenant)
 
-    log_dict = {'tenant': tenant}
+    log_dict = {'tenant': tenant, 'tag': 'dataacquisitionservice'}
     if 'opcode' in msg_dict:
         log_dict['opcode'] = msg_dict['opcode']
     if 'uid' in msg_dict:

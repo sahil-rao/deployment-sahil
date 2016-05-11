@@ -3,6 +3,7 @@
 """
 Compile Service:
 """
+from flightpath import cluster_config
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath.ScaleModeConnector import *
@@ -13,7 +14,6 @@ from baazmath.workflows.hbase_analytics import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 from flightpath.services.mq_template import *
-from flightpath.services.xplain_log_handler import XplainLogstashHandler
 import flightpath.thriftclient.compilerthriftclient as tclient
 
 from subprocess import Popen, PIPE
@@ -30,6 +30,7 @@ import ConfigParser
 import logging
 import socket
 import pprint
+from rlog import RedisHandler
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -40,6 +41,11 @@ config.read("/var/Baaz/hosts.cfg")
 rabbitserverIP = config.get("RabbitMQ", "server")
 
 usingAWS = config.getboolean("mode", "usingAWS")
+mode = cluster_config.get_cluster_mode()
+logging_level = logging.INFO
+if mode == "development":
+    logging_level = logging.DEBUG
+
 if usingAWS:
     from boto.s3.key import Key
     import boto
@@ -58,7 +64,7 @@ if not usingAWS:
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
         shutil.copy(BAAZ_COMPILER_LOG_FILE, BAAZ_COMPILER_LOG_FILE+timestr)
 
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_COMPILER_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_COMPILER_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
 es_logger = logging.getLogger('elasticsearch')
 es_logger.propagate = False
 es_logger.setLevel(logging.WARN)
@@ -70,7 +76,9 @@ if usingAWS:
     boto_conn = boto.connect_s3()
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_COMPILER_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-    logging.getLogger().addHandler(XplainLogstashHandler(tags=['compileservice', 'backoffice']))
+    redis_host = config.get("RedisLog", "server")
+    if redis_host:
+        logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
 
 COMPILER_MODULES='/usr/lib/baaz_compiler'
 
@@ -1559,14 +1567,14 @@ def compile_query(mongoconn, redis_conn, compilername, data_dict):
 	 compiler_data["unqualifiedColumn"] and\
          "InputTableList" in compiler_data:
         try:
-            compile_doc = compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, compile_doc) 
+            compile_doc = compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, compile_doc)
         except:
-            logging.exception("CAUGHT: {0}\n".format(traceback.format_exc()))         
+            logging.exception("CAUGHT: {0}\n".format(traceback.format_exc()))
 
     return compile_doc
 
 
-def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, compile_doc): 
+def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, compile_doc):
     compiler_data = compile_doc[compilername]
     table_dict = {}
     # get list of input tables
@@ -1581,15 +1589,15 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
 
 
     # get the tables data.
-    for entry in mongoconn.db.entities.find({"etype":"SQL_TABLE", "name": { "$in" : table_dict.keys()}}, 
+    for entry in mongoconn.db.entities.find({"etype":"SQL_TABLE", "name": { "$in" : table_dict.keys()}},
                                             {"eid":1, "name":1}):
         table_eid = entry["eid"]
         column_eids = []
         for rel in redis_conn.getRelationships(table_eid, None, "TABLE_COLUMN"):
             column_eids.append(rel["end_en"])
-        
+
         logging.debug(column_eids)
-        for column_entry in mongoconn.db.entities.find({"etype":"SQL_TABLE_COLUMN", 
+        for column_entry in mongoconn.db.entities.find({"etype":"SQL_TABLE_COLUMN",
                                                         "eid": { "$in" : column_eids}},
                                                         {"name":1}):
             c_split = column_entry["name"].split(".")
@@ -1598,11 +1606,11 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
             else:
                 table_dict[entry["name"]].append(column_entry["name"])
 
-    # filter out tables with no data 
+    # filter out tables with no data
     nonempty_dict = {}
     for table in table_dict:
         if len(table_dict[table]) != 0:
-            nonempty_dict[table] = table_dict[table]             
+            nonempty_dict[table] = table_dict[table]
     table_dict = nonempty_dict
 
     if len(table_dict.keys()) == 0:
@@ -1619,8 +1627,8 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
         else:
             compile_doc = loads(response.result)
     except:
-        logging.exception("CAUGHT: opcode 10 exception {0}\n".format(traceback.format_exc())) 
-    
+        logging.exception("CAUGHT: opcode 10 exception {0}\n".format(traceback.format_exc()))
+
     return compile_doc
 
 
@@ -1650,7 +1658,7 @@ def callback(ch, method, properties, body):
     db = None
 
     client = getMongoServer(tenant)
-    log_dict = {'tenant':tenant}
+    log_dict = {'tenant':tenant, 'tag': 'compileservice'}
     if 'uid' in msg_dict:
         log_dict['uid'] = msg_dict['uid']
     if 'opcode' in msg_dict:
@@ -1800,7 +1808,7 @@ def callback(ch, method, properties, body):
                               "Compiler": compilername, "EntityId": prog_id, "TenantId": tenant, "uid":uid}
                 if source_platform is not None:
                     data_dict["source_platform"] = source_platform
-                
+
                 compile_doc = compile_query(mongoconn, redis_conn, compilername, data_dict)
                 """
                 It is possible the tenant has been cleared. If this is the case then do not add an new entities.
@@ -1854,7 +1862,7 @@ def callback(ch, method, properties, body):
             continue
 
 
-    #logging.debug("Event Processing Complete") 
+    #logging.debug("Event Processing Complete")
 
     endTime = time.time()
 
