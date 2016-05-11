@@ -37,7 +37,7 @@ if usingAWS:
 mode = cluster_config.get_cluster_mode()
 logging_level = logging.INFO
 if mode == "development":
-    logging_level = logging.DEBUG
+    logging_level = logging.INFO
 
 rabbitserverIP = config.get("RabbitMQ", "server")
 metrics_url = None
