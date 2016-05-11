@@ -44,7 +44,7 @@ usingAWS = config.getboolean("mode", "usingAWS")
 mode = cluster_config.get_cluster_mode()
 logging_level = logging.INFO
 if mode == "development":
-    logging_level = logging.DEBUG
+    logging_level = logging.INFO
 
 if usingAWS:
     from boto.s3.key import Key
