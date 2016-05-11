@@ -700,7 +700,7 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
                 if "message_id" in received_msg:
                     msg_dict['query_message_id'] = received_msg["message_id"]
             message = dumps(msg_dict)
-            logging.debug("Sending message to Math pos1:" + str(msg_dict))
+            logging.info("Sending message to Math pos1:" + str(msg_dict))
             incrementPendingMessage(collection, redis_conn, uid,message_id)
             connection1.publish(ch,'','mathqueue',message)
 
@@ -1638,7 +1638,7 @@ def callback(ch, method, properties, body):
     tmpAdditions = [0,0]
     msg_dict = loads(body)
 
-    logging.debug("compiler Got message "+ str(msg_dict))
+    logging.info("compiler Got message "+ str(msg_dict))
 
 
     """
@@ -1862,7 +1862,7 @@ def callback(ch, method, properties, body):
             continue
 
 
-    #logging.debug("Event Processing Complete")
+    logging.info("Event Processing Complete")
 
     endTime = time.time()
 
@@ -1877,7 +1877,7 @@ def callback(ch, method, properties, body):
 
 connection1 = RabbitConnection(callback, ['compilerqueue'], ['mathqueue'], {})
 
-#logging.debug("BaazCompiler going to start Consuming")
+logging.info("BaazCompiler going to start Consuming")
 
 connection1.run()
 

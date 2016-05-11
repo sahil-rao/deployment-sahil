@@ -490,7 +490,7 @@ def callback(ch, method, properties, body):
     except:
         logging.exception("Could not load the message JSON")
 
-    logging.debug("FPPS Got message "+ str( msg_dict))
+    logging.info("FPPS Got message "+ str( msg_dict))
     """
     Validate the message.
     """
