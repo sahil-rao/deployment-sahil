@@ -79,3 +79,12 @@
   roles:
   - role: redislog
     sudo: true
+
+- hosts: tag_Name_Bastion
+  roles:
+  - role: dashboard_server
+    sudo: true
+  - role: cronjobs
+    sudo: true
+  - role: monit_collector #TODO needs to add this
+    sudo: true
