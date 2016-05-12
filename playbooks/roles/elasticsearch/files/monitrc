@@ -271,6 +271,6 @@ check filesystem mnt with path /mnt
     if space usage > 80% then alert
     if inode usage > 80% then alert
 
-check filesystem mnt with path /mnt/volume2
+check filesystem mnt_volume2 with path /mnt/volume2
     if space usage > 80% then alert
     if inode usage > 80% then alert
