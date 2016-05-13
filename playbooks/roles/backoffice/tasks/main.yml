@@ -95,8 +95,8 @@
 - name: Remove any previous service that may be installed.
   shell: update-rc.d -f baazcompile remove
   sudo: yes
-- name: Remove any previous xplaincompile server that may be installed.
-  service: name=xplaincompile state=stopped
+- name: Remove any previous compile server that may be installed.
+  service: name=compileserver state=stopped
   ignore_errors: yes
   sudo: yes
 - name: Delete xplaincompile.conf
@@ -106,13 +106,13 @@
   service: name=compileservice state=stopped
   sudo: yes
 - name: Stop advanalytics_compiler
-  service: name=compileserver state=stopped
+  service: name=advanalytics_compiler state=stopped
   sudo: yes
 - name: Stop compileservice_compiler
-  service: name=compileserver state=stopped
+  service: name=compileservice_compiler state=stopped
   sudo: yes
 - name: Stop applicationservice_compiler
-  service: name=compileserver state=stopped
+  service: name=applicationservice_compiler state=stopped
   sudo: yes
 # - name: Start compileserver.
 #   service: name=compileserver state=started
