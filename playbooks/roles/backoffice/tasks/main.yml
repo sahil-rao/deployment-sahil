@@ -105,7 +105,13 @@
 - name: Stop compileservice.
   service: name=compileservice state=stopped
   sudo: yes
-- name: Stop compileserver.
+- name: Stop advanalytics_compiler
+  service: name=compileserver state=stopped
+  sudo: yes
+- name: Stop compileservice_compiler
+  service: name=compileserver state=stopped
+  sudo: yes
+- name: Stop applicationservice_compiler
   service: name=compileserver state=stopped
   sudo: yes
 # - name: Start compileserver.
