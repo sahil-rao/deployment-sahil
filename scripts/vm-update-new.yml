@@ -177,7 +177,8 @@
   - name: Stop any previous compile server that may be installed
     service: name=compileserver state=stopped
     ignore_errors: True
-
+  - name: Remove any previous compile server that may be installed
+    file: path=/etc/init/compileserver.conf state=absent
   - name: Stop advanalytics_compiler
     service: name=advanalytics_compiler state=stopped
     ignore_errors: True
