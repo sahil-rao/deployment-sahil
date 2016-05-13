@@ -57,8 +57,8 @@
 - name: Install the s3 configuration file
   template: src=s3.json dest=/var/admin/config/s3.json
   sudo: yes
-- name: Get the npm modules.
-  npm: path=/var/admin
+- name: Install npm
+  shell: npm install /var/admin
 ### Ansibleception
 - name: Copy ansible folders
   copy: src=/etc/ansible dest=/etc/ owner=bitnami mode=755
@@ -77,7 +77,7 @@
   shell: /opt/bitnami/ctlscript.sh stop
   sudo: yes
 - name: Create username/password for nginx
-  command: htpasswd -b -c /etc/nginx/.htpasswd xplain xplainio
+  command: htpasswd -b -c /etc/nginx/.htpasswd xplain e8f9a2ebb6f125af864a909246a3b730
   sudo: yes
 - name: Create node admin upstart script
   template: src=admin_nodejs.conf dest=/etc/init/admin_nodejs.conf
