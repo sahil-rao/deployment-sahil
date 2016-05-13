@@ -59,7 +59,7 @@ metrics_url = None
 mode = cluster_config.get_cluster_mode()
 logging_level = logging.INFO
 if mode == "development":
-    logging_level = logging.DEBUG
+    logging_level = logging.INFO
 
 """
 For VM there is not S3 connectivity. Save the logs with a timestamp.
@@ -490,7 +490,7 @@ def callback(ch, method, properties, body):
     except:
         logging.exception("Could not load the message JSON")
 
-    logging.debug("FPPS Got message "+ str( msg_dict))
+    logging.info("FPPS Got message "+ str( msg_dict))
     """
     Validate the message.
     """
