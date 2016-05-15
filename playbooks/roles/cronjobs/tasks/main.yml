@@ -1,9 +1,9 @@
 ---
 - name: Get Flightpath
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}flightpath-deployment.tar.gz .
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}flightpath-deployment.tar.gz /home/ubuntu/
   sudo: no
 - name: Untar flightpath
-  shell: tar -zxf /home/ubuntu/flightpath-deployment.tar.gz chdir=/
+  shell: tar -zxf /home/ubuntu/flightpath-deployment.tar.gz -C /
   sudo: yes
 - name: install networkx
   pip: name=networkx
@@ -26,19 +26,19 @@
 #  pip: requirements=AMI-scripts/backoffice_base/requirements.txt chdir=/mnt/build/deployment
 #  sudo: yes
 - name: copy user activity script to crontab folder
-  copy: src=../../../../emailjobs/GetUserActivity.py dest=/etc/cron.weekly/GetUserActivity
+  copy: src=../emailjobs/GetUserActivity.py dest=/etc/cron.weekly/GetUserActivity
   sudo: yes
 - name: change permission
-  command: chmod +x /etc/cron.daily/GetUserActivity
+  command: chmod +x /etc/cron.weekly/GetUserActivity
   sudo: yes
 - name: copy failure upload script to crontab folder
-  copy: src=../../../../emailjobs/failureUpdateEmail.py dest=/etc/cron.daily/failureUpdateEmail
+  copy: src=../emailjobs/failureUpdateEmail.py dest=/etc/cron.daily/failureUpdateEmail
   sudo: yes
 - name: change permission
   command: chmod +x /etc/cron.daily/failureUpdateEmail
   sudo: yes
 - name: copy upload script to crontab folder
-  copy: src=../../../../emailjobs/uploadUpdateEmail.py dest=/etc/cron.daily/uploadUpdateEmail
+  copy: src=../emailjobs/uploadUpdateEmail.py dest=/etc/cron.daily/uploadUpdateEmail
   sudo: yes
 - name: change permission
   command: chmod +x /etc/cron.daily/uploadUpdateEmail
