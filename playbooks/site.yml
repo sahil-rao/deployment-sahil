@@ -83,8 +83,11 @@
 - hosts: tag_Name_Bastion
   roles:
   - role: dashboard_server
+    tags: ['dasbboard']
     sudo: true
   - role: cronjobs
+    tags: ['crons']
     sudo: true
   - role: monit_collector #TODO needs to add this
+    tags: ['monit_data']
     sudo: true

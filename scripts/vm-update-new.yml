@@ -205,3 +205,18 @@
     npm: path=/var/xplain{{ port }} production=yes
   - name: copy monitrc file
     copy: src=/home/xplain/monitrc dest=/etc/monit/monitrc
+  - name: Install python logger package
+    pip: name=rlog
+    sudo: yes
+  - name: Install python mock package
+    pip: name=mock
+    sudo: yes
+  - name: Install python six package
+    pip: name=six extra_args='--upgrade'
+    sudo: yes
+  - name: Install python pbr package
+    pip: name=pbr
+    sudo: yes
+  - name: Install python funcsigs package
+    pip: name=funcsigs
+    sudo: yes
