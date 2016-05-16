@@ -1560,6 +1560,10 @@ def compile_query(mongoconn, redis_conn, compilername, data_dict):
     else:
         compile_doc = loads(response.result)
 
+    if compile_doc == None:
+        logging.error("Got Null compiler doc from compiler")
+        return compile_doc
+
     compiler_data = compile_doc[compilername]
 
     # if there is an unqualified column, try again with catalog included
