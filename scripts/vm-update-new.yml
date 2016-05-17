@@ -174,33 +174,16 @@
   - name: Install Compiler Service
     shell: tar -zxf /home/xplain/Baaz-Compile-Service.tar.gz chdir=/
 
-  - name: Stop any previous compile server that may be installed
-    service: name=compileserver state=stopped
+  - name: Stop compileserver
+    action: service name=compileserver state=stopped
     ignore_errors: True
-  - name: Remove any previous compile server that may be installed
-    file: path=/etc/init/compileserver.conf state=absent
-  - name: Stop advanalytics_compiler
-    service: name=advanalytics_compiler state=stopped
-    ignore_errors: True
-  - name: Stop compileservice_compiler
-    service: name=compileservice_compiler state=stopped
-    ignore_errors: True
-  - name: Stop applicationservice_compiler
-    service: name=applicationservice_compiler state=stopped
-    ignore_errors: True
-    
-  - name: Start advanalytics_compiler
-    service: name=advanalytics_compiler state=started
-  - name: Start compileservice_compiler
-    service: name=compileservice_compiler state=started
-  - name: Start applicationservice_compiler
-    service: name=applicationservice_compiler state=started
-
   - name: Stop compileservice
     service: name=compileservice state=stopped
     ignore_errors: True
   - name: Start compileserver
     action: service name=compileserver state=started
+  - name: Start compileservice
+    service: name=compileservice state=started
 
   - name: Untar flightpath
     shell: tar -zxf /home/xplain/flightpath-deployment.tar.gz chdir=/
