@@ -57,8 +57,8 @@
 - name: Install the s3 configuration file
   template: src=s3.json dest=/var/admin/config/s3.json
   sudo: yes
-- name: Install npm
-  shell: npm install /var/admin
+- name: Get the npm modules.
+  npm: path=/var/admin
 ### Ansibleception
 - name: Copy ansible folders
   copy: src=/etc/ansible dest=/etc/ owner=bitnami mode=755
