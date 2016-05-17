@@ -1,7 +1,7 @@
 ---
 ### DEPENDENCIES ###
 - name: Install S3 CMD
-  apt: name=s3cmd state=present
+  apt: name=s3cmd state=present update_cache=yes
   sudo: yes
 - name: Copy s3cmd config file
   copy: src=/home/ubuntu/.s3cfg dest=/home/bitnami/.s3cfg
