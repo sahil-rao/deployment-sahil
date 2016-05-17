@@ -264,9 +264,16 @@ check process applicationservice with pidfile /var/run/applicationservice.pid
     start program = "/sbin/start applicationservice" with timeout 30 seconds
     stop program = "/sbin/stop applicationservice"
 
-check process compileserver with pidfile /var/run/compileserver.pid
-    start program = "/sbin/start compileserver" with timeout 30 seconds
-    stop program = "/sbin/stop compileserver"
+# Three java compilers (one for each service it talks to)
+check process advanalytics_compiler with pidfile /var/run/advanalytics_compiler.pid
+    start program = "/sbin/start advanalytics_compiler" with timeout 30 seconds
+    stop program = "/sbin/stop advanalytics_compiler"
+check process compileservice_compiler with pidfile /var/run/compileservice_compiler.pid
+    start program = "/sbin/start compileservice_compiler" with timeout 30 seconds
+    stop program = "/sbin/stop compileservice_compiler"
+check process applicationservice_compiler with pidfile /var/run/applicationservice_compiler.pid
+    start program = "/sbin/start applicationservice_compiler" with timeout 30 seconds
+    stop program = "/sbin/stop applicationservice_compiler"
 
 check process compileservice with pidfile /var/run/compileservice.pid
     start program = "/sbin/start compileservice" with timeout 30 seconds
