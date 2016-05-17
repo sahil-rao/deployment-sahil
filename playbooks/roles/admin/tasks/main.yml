@@ -1,7 +1,7 @@
 ---
 ### DEPENDENCIES ###
 - name: Install S3 CMD
-  apt: name=s3cmd state=present
+  apt: name=s3cmd state=present update_cache=yes
   sudo: yes
 - name: Copy s3cmd config file
   copy: src=/home/ubuntu/.s3cfg dest=/home/bitnami/.s3cfg
@@ -77,7 +77,7 @@
   shell: /opt/bitnami/ctlscript.sh stop
   sudo: yes
 - name: Create username/password for nginx
-  command: htpasswd -b -c /etc/nginx/.htpasswd xplain xplainio
+  command: htpasswd -b -c /etc/nginx/.htpasswd xplain e8f9a2ebb6f125af864a909246a3b730
   sudo: yes
 - name: Create node admin upstart script
   template: src=admin_nodejs.conf dest=/etc/init/admin_nodejs.conf
