@@ -199,8 +199,6 @@
   - name: Stop compileservice
     service: name=compileservice state=stopped
     ignore_errors: True
-  - name: Start compileserver
-    action: service name=compileserver state=started
 
   - name: Untar flightpath
     shell: tar -zxf /home/xplain/flightpath-deployment.tar.gz chdir=/
