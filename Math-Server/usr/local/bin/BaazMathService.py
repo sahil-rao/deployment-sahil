@@ -32,7 +32,7 @@ from rlog import RedisHandler
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
-BAAZ_MATH_LOG_FILE = "/var/log/BaazMathService.err"
+BAAZ_MATH_LOG_FILE = "/var/log/cloudera/navopt/BaazMathService.err"
 
 config = ConfigParser.RawConfigParser ()
 config.read("/var/Baaz/hosts.cfg")

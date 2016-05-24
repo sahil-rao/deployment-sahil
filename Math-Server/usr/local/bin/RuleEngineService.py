@@ -25,7 +25,7 @@ import logging
 import socket
 import importlib
 
-LOG_FILE = "/var/log/RuleEngineService.err"
+LOG_FILE = "/var/log/cloudera/navopt/RuleEngineService.err"
 
 config = ConfigParser.RawConfigParser()
 config.read("/var/Baaz/hosts.cfg")

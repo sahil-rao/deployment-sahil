@@ -34,7 +34,7 @@ from rlog import RedisHandler
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
-BAAZ_COMPILER_LOG_FILE = "/var/log/BaazCompileService.err"
+BAAZ_COMPILER_LOG_FILE = "/var/log/cloudera/navopt/BaazCompileService.err"
 
 config = ConfigParser.RawConfigParser ()
 config.read("/var/Baaz/hosts.cfg")

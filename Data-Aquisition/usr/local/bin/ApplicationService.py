@@ -53,7 +53,7 @@ import urllib
 import traceback
 from rlog import RedisHandler
 
-APPSRV_LOG_FILE = "/var/log/applicationserice.err"
+APPSRV_LOG_FILE = "/var/log/cloudera/navopt/applicationserice.err"
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"

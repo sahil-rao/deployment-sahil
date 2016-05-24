@@ -3,6 +3,12 @@
 - name: Install S3 CMD
   apt: name=s3cmd state=present
   sudo: yes
+- name: Create Log directory
+  shell: mkdir -p /var/log/cloudera/navopt/nodejs
+  sudo: yes
+- name: Change the permission
+  shell: chown xplain:xplain /var/log/cloudera/navopt/nodejs
+  sudo: yes
 - name: Copy s3cmd config file
   copy: src=/home/ubuntu/.s3cfg dest=/home/bitnami/.s3cfg
 - name: NTP installed
