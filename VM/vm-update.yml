@@ -4,6 +4,13 @@
 
 - hosts: localhost
   tasks:
+  #create a new log directory
+  - name: Create Log directory
+    shell: mkdir -p /var/log/cloudera/navopt/nodejs
+    sudo: yes
+  - name: Change the permission
+    shell: chown xplain:xplain /var/log/cloudera/navopt/nodejs
+    sudo: yes
   #copy config files.
   - name: Copy hosts.cfg
     copy: src=/home/xplain/hosts.cfg dest=/var/Baaz/hosts.cfg

@@ -35,7 +35,7 @@ import socket
 from rlog import RedisHandler
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
-XPLAIN_LOG_FILE = "/var/log/XplainAdvAnalyticsService.err"
+XPLAIN_LOG_FILE = "/var/log/cloudera/navopt/XplainAdvAnalyticsService.err"
 
 config = ConfigParser.RawConfigParser ()
 config.read("/var/Baaz/hosts.cfg")
