@@ -1,4 +1,22 @@
 #!/bin/bash
+
+LOCKFILE=/var/lock/buildlock
+function cleanup() {
+  rm $LOCKFILE
+  exit 1
+}
+
+trap cleanup INT
+
+if [ -f $LOCKFILE ]; then
+  echo "Someone else is building!"
+  exit 1
+fi
+
+touch $LOCKFILE
+
+set -e
+
 #check prerequisites
 if [ `command -v mvn` ]
 then
@@ -51,22 +69,6 @@ else
  echo "All thrift dependencies met..."
 fi
 
-
-LOCKFILE=/var/lock/buildlock
-function cleanup() {
-  rm $LOCKFILE
-  exit 0
-}
-
-trap cleanup INT
-
-if [ -f $LOCKFILE ]; then
-  echo "Someone else is building!"
-  exit 0
-fi
-
-touch $LOCKFILE
-
 S3Bucket='baaz-deployment'
 #Make sure the build directory does not yet exist
 rm -rf build/
@@ -91,8 +93,15 @@ git clone https://github.com/baazdata/graph.git
 #Checkout UI
 git clone https://github.com/baazdata/UI.git 
 
+#Checkout documentation
+git clone https://github.com/baazdata/documentation.git
+
 #Checkout Application
 git clone https://github.com/baazdata/application.git
+
+#add help topics to S3
+s3cmd sync documentation/GettingStarted/ s3://$clusterName/documentation/GettingStarted/ --delete
+s3cmd sync documentation/WhatsNew/ s3://$clusterName/documentation/WhatsNew/ --delete
 
 cd graph
 python setup.py bdist 
@@ -111,15 +120,15 @@ s3cmd sync xplain.io.tar.gz s3://$S3Bucket/
 tar -cvf optimizer_api.io.tar optimizer_api
 gzip optimizer_api.io.tar
 s3cmd sync optimizer_api.io.tar.gz s3://$S3Bucket/
+tar -cvf optimizer_admin.io.tar optimizer_admin
+gzip optimizer_admin.io.tar
+s3cmd sync optimizer_admin.io.tar.gz s3://$S3Bucket/
 tar -cvf xplain_admin.tar xplain_admin
 gzip xplain_admin.tar
 s3cmd sync xplain_admin.tar.gz s3://$S3Bucket/
 tar -cvf xplain_dashboard.tar xplain_dashboard
 gzip xplain_dashboard.tar
 s3cmd sync xplain_dashboard.tar.gz s3://$S3Bucket/
-tar -cvf optimizer_admin.io.tar optimizer_admin
-gzip optimizer_admin.io.tar
-s3cmd sync optimizer_admin.io.tar.gz s3://$S3Bucket/
 
 cd ../compiler
 mvn clean
@@ -166,10 +175,5 @@ cd ../Math-Server
 tar -cf Baaz-Analytics-Service.tar etc usr
 gzip Baaz-Analytics-Service.tar 
 s3cmd sync Baaz-Analytics-Service.tar.gz s3://$S3Bucket/
-
-cd ../../compiler/
-tar -cf Baaz-Basestats-Report.tar reports 
-gzip Baaz-Basestats-Report.tar
-s3cmd sync Baaz-Basestats-Report.tar.gz s3://$S3Bucket/
 
 rm $LOCKFILE

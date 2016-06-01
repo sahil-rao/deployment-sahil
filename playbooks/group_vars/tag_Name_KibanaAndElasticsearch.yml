@@ -1,0 +1,14 @@
+datadog_config:
+  tags: "{{ datadog_tag }}, log, elasticsearch, kibana"
+datadog_checks:
+  process:
+    init_config:
+    instances:
+    - name: ssh
+      search_string: ['ssh', 'sshd']
+    - name: kibana
+      search_string: ['kibana']
+  elastic:
+    init_config:
+    instances:
+    - url: "http://{{ ansible_hostname }}:9200"

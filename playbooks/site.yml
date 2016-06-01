@@ -91,3 +91,8 @@
   - role: monit_collector #TODO needs to add this
     tags: ['monit_data']
     sudo: true
+
+- hosts: tag_Name_Datadog
+  roles:
+  - role: Datadog.datadog
+    sudo: true

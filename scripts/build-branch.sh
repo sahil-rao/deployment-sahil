@@ -1,4 +1,22 @@
 #!/bin/bash
+
+LOCKFILE=/var/lock/buildlock
+function cleanup() {
+  rm $LOCKFILE
+  exit 0
+}
+
+trap cleanup INT
+
+if [ -f $LOCKFILE ]; then
+  echo "Someone else is building!"
+  exit 0
+fi
+
+touch $LOCKFILE
+
+set -e
+
 #check prerequisites
 if [ `command -v mvn` ]
 then
@@ -51,22 +69,6 @@ else
  echo "All thrift dependencies met..."
 fi
 
-
-LOCKFILE=/var/lock/buildlock
-function cleanup() {
-  rm $LOCKFILE
-  exit 0
-}
-
-trap cleanup INT
-
-if [ -f $LOCKFILE ]; then
-  echo "Someone else is building!"
-  exit 0
-fi
-
-touch $LOCKFILE
-
 S3Bucket="baaz-deployment/$1"
 #Make sure the build directory does not yet exist
 rm -rf build/
@@ -91,8 +93,12 @@ git clone https://github.com/baazdata/graph.git --branch $1 --single-branch
 #Checkout UI
 git clone https://github.com/baazdata/UI.git --branch $1 --single-branch
 
-#Checkout Application
-git clone https://github.com/baazdata/application.git
+#Checkout documentation
+git clone https://github.com/baazdata/documentation.git
+
+#add help topics to S3
+s3cmd sync documentation/GettingStarted/ s3://$clusterName/documentation/GettingStarted/ --delete
+s3cmd sync documentation/WhatsNew/ s3://$clusterName/documentation/WhatsNew/ --delete
 
 cd graph
 python setup.py bdist 
@@ -145,11 +151,11 @@ cd dist
 echo "anaytics is built"
 s3cmd sync baazmath-*.tar.gz s3://$S3Bucket/Baaz-Analytics.tar.gz
 
-cd ../../application
-python setup.py bdist 
-cd dist
-echo "application is built"
-s3cmd sync Baazapp-*.tar.gz s3://$S3Bucket/Baazapp-deployment.tar.gz
+# cd ../../application
+# python setup.py bdist 
+# cd dist
+# echo "application is built"
+# s3cmd sync Baazapp-*.tar.gz s3://$S3Bucket/Baazapp-deployment.tar.gz
 
 cd ../../deployment/Data-Aquisition
 tar -cf Baaz-DataAcquisition-Service.tar etc usr
@@ -165,10 +171,5 @@ cd ../Math-Server
 tar -cf Baaz-Analytics-Service.tar etc usr
 gzip Baaz-Analytics-Service.tar 
 s3cmd sync Baaz-Analytics-Service.tar.gz s3://$S3Bucket/
-
-cd ../../compiler/
-tar -cf Baaz-Basestats-Report.tar reports 
-gzip Baaz-Basestats-Report.tar
-s3cmd sync Baaz-Basestats-Report.tar.gz s3://$S3Bucket/
 
 rm $LOCKFILE

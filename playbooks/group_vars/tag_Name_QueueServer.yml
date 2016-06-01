@@ -1,0 +1,16 @@
+datadog_config:
+  tags: "{{ datadog_tag }}, queue-server"
+datadog_checks:
+  process:
+    init_config:
+    instances:
+    - name: ssh
+      search_string: ['ssh', 'sshd']
+  rabbitmq:
+    init_config:
+    instances:
+    - rabbitmq_api_url: http://localhost:15672/api/
+      rabbitmq_user: "{{ rabbitmq_username }}"
+      rabbitmq_pass: "{{ rabbitmq_password }}"
+      vhosts:
+      - xplain
