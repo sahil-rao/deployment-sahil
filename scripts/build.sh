@@ -1,4 +1,7 @@
 #!/bin/bash
+
+set -e
+
 #check prerequisites
 if [ `command -v mvn` ]
 then
@@ -55,14 +58,14 @@ fi
 LOCKFILE=/var/lock/buildlock
 function cleanup() {
   rm $LOCKFILE
-  exit 0
+  exit 1
 }
 
 trap cleanup INT
 
 if [ -f $LOCKFILE ]; then
   echo "Someone else is building!"
-  exit 0
+  exit 1
 fi
 
 touch $LOCKFILE
@@ -111,15 +114,15 @@ s3cmd sync xplain.io.tar.gz s3://$S3Bucket/
 tar -cvf optimizer_api.io.tar optimizer_api
 gzip optimizer_api.io.tar
 s3cmd sync optimizer_api.io.tar.gz s3://$S3Bucket/
+tar -cvf optimizer_admin.io.tar optimizer_admin
+gzip optimizer_admin.io.tar
+s3cmd sync optimizer_admin.io.tar.gz s3://$S3Bucket/
 tar -cvf xplain_admin.tar xplain_admin
 gzip xplain_admin.tar
 s3cmd sync xplain_admin.tar.gz s3://$S3Bucket/
 tar -cvf xplain_dashboard.tar xplain_dashboard
 gzip xplain_dashboard.tar
 s3cmd sync xplain_dashboard.tar.gz s3://$S3Bucket/
-tar -cvf optimizer_admin.io.tar optimizer_admin
-gzip optimizer_admin.io.tar
-s3cmd sync optimizer_admin.io.tar.gz s3://$S3Bucket/
 
 cd ../compiler
 mvn clean
