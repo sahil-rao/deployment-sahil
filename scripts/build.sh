@@ -1,5 +1,20 @@
 #!/bin/bash
 
+LOCKFILE=/var/lock/buildlock
+function cleanup() {
+  rm $LOCKFILE
+  exit 1
+}
+
+trap cleanup INT
+
+if [ -f $LOCKFILE ]; then
+  echo "Someone else is building!"
+  exit 1
+fi
+
+touch $LOCKFILE
+
 set -e
 
 #check prerequisites
@@ -54,22 +69,6 @@ else
  echo "All thrift dependencies met..."
 fi
 
-
-LOCKFILE=/var/lock/buildlock
-function cleanup() {
-  rm $LOCKFILE
-  exit 1
-}
-
-trap cleanup INT
-
-if [ -f $LOCKFILE ]; then
-  echo "Someone else is building!"
-  exit 1
-fi
-
-touch $LOCKFILE
-
 S3Bucket='baaz-deployment'
 #Make sure the build directory does not yet exist
 rm -rf build/
@@ -94,8 +93,15 @@ git clone https://github.com/baazdata/graph.git
 #Checkout UI
 git clone https://github.com/baazdata/UI.git 
 
+#Checkout documentation
+git clone https://github.com/baazdata/documentation.git
+
 #Checkout Application
 git clone https://github.com/baazdata/application.git
+
+#add help topics to S3
+s3cmd sync documentation/GettingStarted/ s3://$clusterName/documentation/GettingStarted/ --delete
+s3cmd sync documentation/WhatsNew/ s3://$clusterName/documentation/WhatsNew/ --delete
 
 cd graph
 python setup.py bdist 
@@ -169,10 +175,5 @@ cd ../Math-Server
 tar -cf Baaz-Analytics-Service.tar etc usr
 gzip Baaz-Analytics-Service.tar 
 s3cmd sync Baaz-Analytics-Service.tar.gz s3://$S3Bucket/
-
-cd ../../compiler/
-tar -cf Baaz-Basestats-Report.tar reports 
-gzip Baaz-Basestats-Report.tar
-s3cmd sync Baaz-Basestats-Report.tar.gz s3://$S3Bucket/
 
 rm $LOCKFILE
