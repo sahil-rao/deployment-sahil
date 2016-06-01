@@ -1,0 +1,2 @@
+datadog_config:
+  tags: "{{ datadog_tag }}, bastion"

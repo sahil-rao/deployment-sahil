@@ -1,0 +1,7 @@
+---
+# This Playbook installs Datadog inside the cluster.
+
+- hosts: tag_Name_Datadog
+  roles:
+  - role: Datadog.datadog
+    sudo: true
