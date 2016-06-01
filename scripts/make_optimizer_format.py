@@ -25,6 +25,9 @@ Column Name |   Column Type
 identity    |   SQL ID
 queryText   |   SQL FULLTEXT
 
+example of how to run with configs:
+python make_optimizer_format.py --url link.to.nav:port --login username
+
 """
 
 import sys
