@@ -95,6 +95,9 @@
 - name: Install Compiler Service
   shell: tar -zxf /home/ubuntu/Baaz-Compile-Service.tar.gz chdir=/
   sudo: yes
+- name: copy logback file
+  template: src=logback.xml dest=/usr/lib/baaz_compiler/
+  sudo: yes
 - name: Stop any previous compile server that may be installed.
   service: name=compileserver state=stopped
   ignore_errors: yes
