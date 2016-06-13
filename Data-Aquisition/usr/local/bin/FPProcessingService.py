@@ -75,6 +75,7 @@ es_logger = logging.getLogger('elasticsearch')
 es_logger.propagate = False
 es_logger.setLevel(logging.WARN)
 
+
 """
 In AWS use S3 log rotate to save the log files.
 """
@@ -303,6 +304,9 @@ class callback_context():
                 table_entry = {"uid" : Self.uid}
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
+                #create Elastic search index
+                sendToElastic(Self.redis_conn, Self.tenant, Self.uid,
+                              table_entity, table_name, EntityType.SQL_TABLE)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
                                                             "instance_count",
@@ -329,6 +333,9 @@ class callback_context():
                 column_entry['tableName'] = table_name
                 column_entity = Self.mongoconn.addEn(eid, column_entity_name, Self.tenant,\
                                                 EntityType.SQL_TABLE_COLUMN, column_entry, None)
+                #create Elastic search index
+                sendToElastic(Self.redis_conn, Self.tenant, Self.uid,
+                              column_entity, column_entity_name, EntityType.SQL_TABLE_COLUMN)
                 #updated the upload stats for column
                 Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.newColumns"%(Self.compiler_to_use), incrBy=1)
                 '''
@@ -356,6 +363,9 @@ class callback_context():
                 table_entry = {"uid" : Self.uid, "stats":stats}
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
+                #create Elastic search index
+                sendToElastic(Self.redis_conn, Self.tenant, Self.uid,
+                              table_entity, table_name, EntityType.SQL_TABLE)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
                                                             "instance_count",
@@ -749,7 +759,7 @@ def callback(ch, method, properties, body):
 
     connection1.basicAck(ch,method)
 
-connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)
+connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue', 'elasticpub'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)
 
 
 logging.info("FPProcessingService going to start consuming")
