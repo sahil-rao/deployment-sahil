@@ -1919,7 +1919,7 @@ def callback(ch, method, properties, body):
     callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
-connection1 = RabbitConnection(callback, ['compilerqueue'], ['mathqueue', 'elasticpub'], {})
+connection1 = RabbitConnection(callback, ['compilerqueue'], ['mathqueue'], {})
 
 logging.info("BaazCompiler going to start Consuming")
 

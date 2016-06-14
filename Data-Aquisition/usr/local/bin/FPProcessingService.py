@@ -759,7 +759,7 @@ def callback(ch, method, properties, body):
 
     connection1.basicAck(ch,method)
 
-connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue', 'elasticpub'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)
+connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)
 
 
 logging.info("FPProcessingService going to start consuming")
