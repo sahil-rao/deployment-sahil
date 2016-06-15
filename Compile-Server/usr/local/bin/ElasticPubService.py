@@ -118,6 +118,15 @@ def callback(ch, method, properties, body):
         log_dict['uid'] = msg_dict['uid']
     clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)
 
+    #check if index needs to be update in ES
+    if 'update' in msg_dict:
+        #get silo for tenant
+        dbsilo = get_silo(tenant)
+        es_conn_silo[dbsilo].update(index=msg_dict['tenant'], id=msg_dict['eid'], doc_type="entity",
+                                    body={"doc": msg_dict['update_dict']})
+        connection1.basicAck(ch, method)
+        return
+
     msg_dict["connection"] = connection1
     msg_dict["ch"] = ch
     resp_dict = None
