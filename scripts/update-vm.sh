@@ -214,6 +214,4 @@ tar -zxf ExplainIO-SingleVM-deploy.tar.gz
 
 sudo ansible-playbook vm-update-new.yml --connection=local
 
-python /home/xplain/build/deployment/scripts/update_terms_and_conditions.py
-
 sudo ./refresh.sh
