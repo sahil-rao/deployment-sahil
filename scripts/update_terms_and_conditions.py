@@ -9,7 +9,6 @@ client = getMongoServer(tenant)
 
 cur_version = 2
 db = client['xplainIO']
-db.terms_and_conditions.remove()
 db.terms_and_conditions.update({'version': cur_version},
                                {'$set': {'text': t_and_c_text,
                                          'version': cur_version}}, upsert=True)
