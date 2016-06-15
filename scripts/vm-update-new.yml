@@ -194,6 +194,9 @@
   - name: Stop applicationservice_compiler
     service: name=applicationservice_compiler state=stopped
     ignore_errors: True
+  - name: Stop elasticpub
+    service: name=elasticpub state=stopped
+    ignore_errors: True
     
   - name: Start advanalytics_compiler
     service: name=advanalytics_compiler state=started
@@ -201,6 +204,8 @@
     service: name=compileservice_compiler state=started
   - name: Start applicationservice_compiler
     service: name=applicationservice_compiler state=started
+  - name: Start elasticpub
+    service: name=elasticpub state=started
 
   - name: Stop compileservice
     service: name=compileservice state=stopped

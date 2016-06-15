@@ -10,7 +10,6 @@ from flightpath.services.RotatingS3FileHandler import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 import sys
-from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath.FPConnector import *
 from rlog import RedisHandler
@@ -26,7 +25,7 @@ import socket
 import importlib
 import elasticsearch
 
-LOG_FILE = "/var/log/ElasticPubService.err"
+LOG_FILE = "/var/log/cloudera/navopt/ElasticPubService.err"
 
 config = ConfigParser.RawConfigParser()
 config.read("/var/Baaz/hosts.cfg")
@@ -96,9 +95,8 @@ if usingAWS:
 
 def callback(ch, method, properties, body):
     '''
-    Callback method for the RuleEngineService.
-    Attempts to run the workflow in rule_workflows.cfg specified by the opcode.
-    Imports and runs the rules that are needed which are put in rules.cfg.
+    Callback method for the ElasticPubService.
+    This service is used to create/update elasticsearch indexes
     '''
     try:
         msg_dict = loads(body)
@@ -127,35 +125,18 @@ def callback(ch, method, properties, body):
         connection1.basicAck(ch, method)
         return
 
-    msg_dict["connection"] = connection1
-    msg_dict["ch"] = ch
-    resp_dict = None
-    client = getMongoServer(tenant)
-    mongoconn = Connector.getConnector(tenant)
-    if mongoconn is None:
-        mongoconn = MongoConnector({'client': client, 'context': tenant,
-                                    'create_db_if_not_exist': False})
-    msg_dict['client'] = client
-    msg_dict['mongoconn'] = mongoconn
-
     es_cfg = {}
 
-    if mongoconn.es is not None:
-        es_cfg['eid'] = msg_dict['eid']
-        es_cfg['name'] = msg_dict['name']
-        es_cfg['etype'] = msg_dict['etype']
-        mongoconn._cleanup_es_dict(es_cfg)
-        try:
-            #get silo for tenant
-            dbsilo = get_silo(tenant)
-            es_conn_silo[dbsilo].create(index=tenant, id=msg_dict['eid'], doc_type="entity", body=es_cfg)
-        except elasticsearch.TransportError, e:
-            logging.error("Could not connect to ElasticSearch %s", e.args)
-            
-    if resp_dict is None:
-        resp_dict = {"status": "Failed"}
+    es_cfg['eid'] = msg_dict['eid']
+    es_cfg['name'] = msg_dict['name']
+    es_cfg['etype'] = msg_dict['etype']
+    try:
+        #get silo for tenant
+        dbsilo = get_silo(tenant)
+        es_conn_silo[dbsilo].create(index=tenant, id=msg_dict['eid'], doc_type="entity", body=es_cfg)
+    except elasticsearch.TransportError, e:
+        logging.error("Could not connect to ElasticSearch %s", e.args)
 
-    mongoconn.close()
     connection1.basicAck(ch, method)
 
 connection1 = RabbitConnection(callback, ['elasticpub'], [], {}, prefetch_count=50)

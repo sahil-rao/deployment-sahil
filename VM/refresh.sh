@@ -23,6 +23,8 @@ sudo stop applicationservice
 sudo start applicationservice
 sudo stop ruleengineservice
 sudo start ruleengineservice
+sudo stop elasticpub
+sudo start elasticpub
 
 # Restart node processes
 sudo stop nodejs                                 
