@@ -291,6 +291,10 @@ check process ruleengineservice with pidfile /var/run/ruleengineservice.pid
     start program = "/sbin/start ruleengineservice" with timeout 30 seconds
     stop program = "/sbin/stop ruleengineservice"
 
+check process elasticpub with pidfile /var/run/elasticpub.pid
+    start program = "/sbin/start elasticpub" with timeout 30 seconds
+    stop program = "/sbin/stop elasticpub"
+
 check filesystem root with path /
     if space usage > 80% then alert
     if inode usage > 80% then alert

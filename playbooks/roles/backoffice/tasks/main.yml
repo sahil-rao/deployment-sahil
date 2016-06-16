@@ -117,6 +117,9 @@
 - name: Stop applicationservice_compiler
   service: name=applicationservice_compiler state=stopped
   sudo: yes
+- name: Stop elasticpub
+  service: name=elasticpub state=stopped
+  sudo: yes
 # - name: Start compileserver.
 #   service: name=compileserver state=started
 #   sudo: yes
