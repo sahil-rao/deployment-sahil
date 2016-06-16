@@ -31,7 +31,6 @@ config = ConfigParser.RawConfigParser()
 config.read("/var/Baaz/hosts.cfg")
 usingAWS = config.getboolean("mode", "usingAWS")
 if usingAWS:
-    from boto.s3.key import Key
     import boto
 
 mode = cluster_config.get_cluster_mode()
@@ -50,11 +49,8 @@ if not usingAWS:
     if os.path.isfile(LOG_FILE):
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
         shutil.copy(LOG_FILE, LOG_FILE+timestr)
-    #db silo list
-    dbsilo_list = ['Silo1']
-else:
-    dbsilo_list = ['dbsilo1', 'dbsilo2']
 
+dbsilo_list = get_dbsilo_list(usingAWS)
 def setup_es_conn():
     #find all dbsilo's specific elastic host
     prefix = 'dbsilo:'
@@ -65,7 +61,7 @@ def setup_es_conn():
         info = r.hgetall(key)
         es_hosts_silo[dbsilo] = info['elastic'].split(',')
 
-    for key in es_hosts_silo:    
+    for key in es_hosts_silo:
         #setup connection to ES host
         es_conn_silo[key] = elasticsearch.Elasticsearch(hosts=[{'host': es_host, 'port': 9200} for es_host in es_hosts_silo[key]])
     return es_conn_silo
@@ -111,10 +107,6 @@ def callback(ch, method, properties, body):
         return
 
     tenant = msg_dict["tenant"]
-    log_dict = {'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode'], 'tag': 'elasticpub'}
-    if 'uid' in msg_dict:
-        log_dict['uid'] = msg_dict['uid']
-    clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)
 
     #check if index needs to be update in ES
     if 'update' in msg_dict:
@@ -133,7 +125,7 @@ def callback(ch, method, properties, body):
     try:
         #get silo for tenant
         dbsilo = get_silo(tenant)
-        es_conn_silo[dbsilo].create(index=tenant, id=msg_dict['eid'], doc_type="entity", body=es_cfg)
+        es_conn_silo[dbsilo].create(index=tenant, id=msg_dict['eid'], doc_type=msg_dict['doc_type'], body=es_cfg)
     except elasticsearch.TransportError, e:
         logging.error("Could not connect to ElasticSearch %s", e.args)
 
