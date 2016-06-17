@@ -305,7 +305,7 @@ class callback_context():
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
                 #create Elastic search index
-                sendToElastic(Self.redis_conn, Self.tenant, Self.uid,
+                sendToElastic(connection1, Self.redis_conn, Self.tenant, Self.uid,
                               table_entity, table_name, EntityType.SQL_TABLE)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
@@ -334,7 +334,7 @@ class callback_context():
                 column_entity = Self.mongoconn.addEn(eid, column_entity_name, Self.tenant,\
                                                 EntityType.SQL_TABLE_COLUMN, column_entry, None)
                 #create Elastic search index
-                sendToElastic(Self.redis_conn, Self.tenant, Self.uid,
+                sendToElastic(connection1, Self.redis_conn, Self.tenant, Self.uid,
                               column_entity, column_entity_name, EntityType.SQL_TABLE_COLUMN)
                 #updated the upload stats for column
                 Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.newColumns"%(Self.compiler_to_use), incrBy=1)
@@ -364,7 +364,7 @@ class callback_context():
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
                 #create Elastic search index
-                sendToElastic(Self.redis_conn, Self.tenant, Self.uid,
+                sendToElastic(connection1, Self.redis_conn, Self.tenant, Self.uid,
                               table_entity, table_name, EntityType.SQL_TABLE)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
@@ -759,7 +759,7 @@ def callback(ch, method, properties, body):
 
     connection1.basicAck(ch,method)
 
-connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)
+connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue','elasticpub'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)
 
 
 logging.info("FPProcessingService going to start consuming")

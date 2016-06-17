@@ -143,7 +143,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
                     EntityType.SQL_TABLE, {"uid" : uid}, None)
             if eid == table_entity.eid:
                 #create Elastic search index
-                sendToElastic(redis_conn, tenant, uid,
+                sendToElastic(connection1, redis_conn, tenant, uid,
                               table_entity, tablename, EntityType.SQL_TABLE)
                 redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 tableCount = tableCount + 1
@@ -158,7 +158,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
 
             if column_entity.eid == eid:
                 #create Elastic search index
-                sendToElastic(redis_conn, tenant, uid,
+                sendToElastic(connection1, redis_conn, tenant, uid,
                               column_entity, column_entity_name, EntityType.SQL_TABLE_COLUMN)
                 clog.debug("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))
                 redis_conn.createEntityProfile(column_entity.eid, "SQL_TABLE_COLUMN")
@@ -223,7 +223,7 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
 
             if eid == table_entity.eid:
                 #create Elastic search index
-                sendToElastic(redis_conn, tenant, uid,
+                sendToElastic(connection1, redis_conn, tenant, uid,
                               table_entity, tablename, EntityType.SQL_TABLE)
                 redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 '''
@@ -251,7 +251,7 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                           EntityType.SQL_DATABASE, endict, None)
                 database_entity = mongoconn.getEntityByName(database_name)
                 #create Elastic search index
-                sendToElastic(redis_conn, tenant, uid,
+                sendToElastic(connection1, redis_conn, tenant, uid,
                               database_entity, database_name, EntityType.SQL_DATABASE)
                 dbCount = dbCount + 1
 
@@ -395,7 +395,7 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
 
         if eid == view_entity.eid:
             #create Elastic search index
-            sendToElastic(redis_conn, tenant, uid,
+            sendToElastic(connection1, redis_conn, tenant, uid,
                           view_entity, viewname, EntityType.SQL_TABLE)
             redis_conn.createEntityProfile(view_entity.eid, "SQL_TABLE")
             #incrementing by 0 so secondary sort_key is set.
@@ -441,7 +441,7 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
                       EntityType.SQL_DATABASE, endict, None)
             database_entity = mongoconn.getEntityByName(database_name)
             #create Elastic search index
-            sendToElastic(redis_conn, collection, tenant, uid,
+            sendToElastic(connection1, redis_conn, collection, tenant, uid,
                           database_entity, database_name, EntityType.SQL_DATABASE)
             dbCount = dbCount + 1
 
@@ -538,7 +538,7 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
 
         if eid == table_entity.eid:
             #create Elastic search index
-            sendToElastic(redis_conn, tenant, uid,
+            sendToElastic(connection1, redis_conn, tenant, uid,
                           table_entity, tablename, EntityType.SQL_TABLE)
             redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
             redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
@@ -559,7 +559,7 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
                       EntityType.SQL_DATABASE, endict, None)
             database_entity = mongoconn.getEntityByName(database_name)
             #create Elastic search index
-            sendToElastic(redis_conn, tenant, uid,
+            sendToElastic(connection1, redis_conn, tenant, uid,
                           database_entity, database_name, EntityType.SQL_DATABASE)
             dbCount = dbCount + 1
 
@@ -868,7 +868,7 @@ def process_tag_array(tenant, q_eid, mongoconn, redis_conn, tagArray, data):
             if tag_eid == tag_entity.eid:
                 redis_conn.createEntityProfile(tag_entity.eid, tag_etype)
             #create Elastic search index
-            sendToElastic(redis_conn, tenant, uid,
+            sendToElastic(connection1, redis_conn, tenant, uid,
                           tag_entity, tag_name, tag_etype)
             """
             Establish relationship between the Tag entity and the query.
@@ -1071,7 +1071,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if eid == entity.eid:
 
                 #create Elastic search index
-                sendToElastic(redis_conn, tenant, uid,
+                sendToElastic(connection1, redis_conn, tenant, uid,
                               entity, query, etype)
                 redis_conn.createEntityProfile(entity.eid, etype)
                 redis_conn.incrEntityCounterWithSecKey(entity.eid,
@@ -1361,7 +1361,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
             if compile_doc[key].has_key("createTableName"):
                 tmpAdditions = processCreateTable(compile_doc[key]["createTableName"],
-                                              mongoconn, redis_conn, tenant, uid, entity, False, context, clog, tableEidList)
+                                              mongoconn, redis_conn,tenant, uid, entity, False, context, clog, tableEidList)
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
@@ -1919,7 +1919,7 @@ def callback(ch, method, properties, body):
     callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
-connection1 = RabbitConnection(callback, ['compilerqueue'], ['mathqueue'], {})
+connection1 = RabbitConnection(callback, ['compilerqueue'], ['mathqueue', 'elasticpub'], {})
 
 logging.info("BaazCompiler going to start Consuming")
 
