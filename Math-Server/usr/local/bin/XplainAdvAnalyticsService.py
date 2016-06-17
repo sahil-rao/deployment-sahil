@@ -634,7 +634,7 @@ def callback(ch, method, properties, body):
         #if uid has been set, the variable will be set already
         redis_conn.incrEntityCounter(uid, "Math.time", incrBy=(endTime - startTime))
 
-connection1 = RabbitConnection(callback, ['advanalytics'], [], {}, prefetch_count=1)
+connection1 = RabbitConnection(callback, ['advanalytics'], ['elasticpub'], {}, prefetch_count=1)
 
 logging.info("XplainAdvAnalytics going to start consuming")
 

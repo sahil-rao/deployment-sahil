@@ -375,7 +375,7 @@ def callback(ch, method, properties, body):
         redis_conn.incrEntityCounter(uid, "Math.time", incrBy = endTime-startTime)
 
 
-connection1 = RabbitConnection(callback, ['mathqueue'], [], {})
+connection1 = RabbitConnection(callback, ['mathqueue'], ['elasticpub'], {})
 
 logging.info("BaazMath going to start consuming")
 
