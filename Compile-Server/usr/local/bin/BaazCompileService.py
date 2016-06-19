@@ -848,7 +848,7 @@ def check_query_type(query_character_list):
             return False
 
 
-def process_tag_array(tenant, q_eid, mongoconn, redis_conn, tagArray, data):
+def process_tag_array(tenant, q_eid, mongoconn, redis_conn, tagArray, data, uid):
     '''
     Given a tagArray, creates entities for each tag in the array,
         then creates relationships between the entities that were created.
@@ -1089,7 +1089,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 if data is not None:
                     inst_dict.update(data)
                     if tagArray is not None:
-                        process_tag_array(tenant, entity.eid, mongoconn, redis_conn, tagArray, data)
+                        process_tag_array(tenant, entity.eid, mongoconn, redis_conn, tagArray, data, uid)
                     if countArray is not None:
                         process_count_array(tenant, entity.eid, mongoconn, redis_conn, countArray, data, clog)
 
@@ -1182,7 +1182,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         if data is not None:
             inst_dict.update(data)
             if tagArray is not None:
-                process_tag_array(tenant, entity.eid, mongoconn, redis_conn, tagArray, data)
+                process_tag_array(tenant, entity.eid, mongoconn, redis_conn, tagArray, data, uid)
             if countArray is not None:
                 process_count_array(tenant, entity.eid, mongoconn, redis_conn, countArray, data, clog)
 
