@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Ubuntu 14.04, m4.xlarge (hvm)
 
 # AWS EC2 instances sometimes have stale APT caches when starting up... so we wait for AWS to do its magic and refresh them
@@ -38,3 +40,13 @@ cp /tmp/etc/redis/local/redis.conf /tmp/etc/redis/local/sentinel.conf /etc/redis
 chown -R redis.redis /etc/redis/local
 cp /tmp/etc/init/redis-server.conf /tmp/etc/init/redis-sentinel.conf /etc/init/
 cp /tmp/etc/logrotate.d/redis /etc/logrotate.d/redis
+
+
+# Install Datadog
+sudo apt-get install -y apt-transport-https
+sudo sh -c "echo 'deb https://apt.datadoghq.com/ stable main' > /etc/apt/sources.list.d/datadog.list"
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C7A7DA52
+sudo apt-get update
+sudo apt-get install -y datadog-agent
+cp /tmp/etc/init/install-datadog.conf /etc/init/
+cp /tmp/etc/dd-agent/conf.d/* /etc/dd-agent/conf.d

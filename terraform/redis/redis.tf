@@ -11,7 +11,15 @@ resource "aws_launch_configuration" "redis_cluster_lc" {
     enable_monitoring = false
     key_name = "Baaz-Deployment"
     security_groups = ["sg-a8b7b5cd"]
-    user_data = "{\"dbsilo\": \"dbsilo4\", \"service\": \"redis\", \"cluster\": \"alpha\", \"datadog_api_key\": \"42bbac658841fd4c44253c01423b3227\", \"backup_file\": \"s3://xplain-alpha/redis-backups/alpha-dump.rdb\"}"
+    user_data = <<EOF
+{
+    "dbsilo": "dbsilo4",
+    "service": "redis",
+    "cluster": "alpha",
+    "datadog_api_key": "42bbac658841fd4c44253c01423b3227",
+    "backup_file": "s3://xplain-alpha/redis-backups/alpha-dump.rdb"
+}
+EOF
     root_block_device {
         volume_size = 60
     }
@@ -19,6 +27,7 @@ resource "aws_launch_configuration" "redis_cluster_lc" {
         create_before_destroy = true
     }
 }
+
 resource "aws_autoscaling_group" "redis_cluster_asg" {
     name = "tf-redis-asg-test"
     max_size = 3
