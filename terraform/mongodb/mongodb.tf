@@ -1,6 +1,6 @@
 provider "aws" {
-    access_key = "AKIAJ7LQXN75F7K25JIQ"
-    secret_key = "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"
+    access_key = ""
+    secret_key = ""
     region = "us-west-1"
 }
 resource "aws_launch_configuration" "mongodb_cluster_lc" {
