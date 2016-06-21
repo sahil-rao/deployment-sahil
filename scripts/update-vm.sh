@@ -2,6 +2,14 @@
 
 echo "Starting build vm process..."
 
+$BRANCH_NAME='master'
+if [ -z "$1" ]
+then
+  echo "No branch supplied, using master"
+else
+  $BRANCH_NAME=$1
+fi
+
 # Service discovery changes
 redis-cli hmset dbsilo:Silo1:info redis 127.0.0.1 mongo 127.0.0.1 elastic 127.0.0.1
 redis-cli -p 26379 sentinel monitor redismaster.dbsilo1.vm.xplain.io 127.0.0.1 6379 1
@@ -66,35 +74,35 @@ cd  /home/xplain/build
 #Checkout deployment
 cd /home/xplain/build/deployment
 git pull
-git checkout $1
+git checkout $BRANCH_NAME
 git reset --hard
 git pull
 
 #Checkout analytics
 cd /home/xplain/build/analytics
 git pull
-git checkout $1
+git checkout $BRANCH_NAME
 git reset --hard
 git pull
 
 #Checkout compiler
 cd /home/xplain/build/compiler
 git pull
-git checkout $1
+git checkout $BRANCH_NAME
 git reset --hard
 git pull
 
 #Checkout graph
 cd /home/xplain/build/graph
 git pull
-git checkout $1
+git checkout $BRANCH_NAME
 git reset --hard
 git pull
 
 #Checkout UI
 cd /home/xplain/build/UI
 git pull
-git checkout $1
+git checkout $BRANCH_NAME
 git reset --hard
 git pull
 
