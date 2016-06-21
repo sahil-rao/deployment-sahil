@@ -1,10 +1,9 @@
 provider "aws" {
-    access_key = ""
-    secret_key = ""
+    profile = "navopt_prod"
     region = "us-west-1"
 }
 resource "aws_launch_configuration" "redis_cluster_lc" {
-    image_id = "ami-5e195d3e"
+    image_id = "ami-e31b5f83"
     instance_type = "r3.2xlarge"
     iam_instance_profile = "MongoDB_Server"
     ebs_optimized = true

@@ -1,13 +1,9 @@
 {
-    "variables": {
-	"aws_access_key": "",
-	"aws_secret_key": ""
-    },
     "builders": [
 	{
+	    "access_key": "",
+	    "secret_key": "",
 	    "type": "amazon-ebs",
-	    "access_key": "{{user `aws_access_key`}}",
-	    "secret_key": "{{user `aws_secret_key`}}",
 	    "region": "us-west-1",
 	    "source_ami": "ami-06116566",
 	    "instance_type": "r3.2xlarge",
