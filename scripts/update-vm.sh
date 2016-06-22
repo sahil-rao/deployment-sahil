@@ -2,6 +2,14 @@
 
 echo "Starting build vm process..."
 
+BRANCH_NAME="master"
+if [ -z "$1" ]
+then
+  echo "No branch supplied, using master"
+else
+  BRANCH_NAME=$1
+fi
+
 # Service discovery changes
 redis-cli hmset dbsilo:Silo1:info redis 127.0.0.1 mongo 127.0.0.1 elastic 127.0.0.1
 redis-cli -p 26379 sentinel monitor redismaster.dbsilo1.vm.xplain.io 127.0.0.1 6379 1
