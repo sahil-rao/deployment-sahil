@@ -2,12 +2,12 @@
 
 echo "Starting build vm process..."
 
-$BRANCH_NAME='master'
+BRANCH_NAME="master"
 if [ -z "$1" ]
 then
   echo "No branch supplied, using master"
 else
-  $BRANCH_NAME=$1
+  BRANCH_NAME=$1
 fi
 
 # Service discovery changes
