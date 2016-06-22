@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ev
+
 # Ubuntu 14.04, m4.xlarge (hvm)
 
 # AWS EC2 instances sometimes have stale APT caches when starting up... so we wait for AWS to do its magic and refresh them
@@ -7,7 +9,7 @@ sleep 10s
 
 # Install basics
 apt-get clean; apt-get update
-apt-get -y install emacs ntp monit git python-pip python-dev
+apt-get -y install emacs ntp monit git python-pip python-dev logrotate
 pip install awscli pymongo boto 
 wget -qO /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64; chmod +x /usr/local/bin/jq
 
@@ -32,4 +34,12 @@ cp /tmp/etc/mongod.conf /etc/mongod.conf
 cp /tmp/etc/init/mongod.conf /etc/init/mongod.conf
 cp /tmp/etc/logrotate.d/mongodb /etc/logrotate.d/mongodb
 
-
+# Install Datadog
+sudo apt-get install -y apt-transport-https
+sudo sh -c "echo 'deb https://apt.datadoghq.com/ stable main' > /etc/apt/sources.list.d/datadog.list"
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C7A7DA52
+sudo apt-get update
+sudo apt-get install -y datadog-agent
+cp /tmp/etc/dd-agent/conf.d/* /etc/dd-agent/conf.d
+update-rc.d datadog-agent defaults
+initctl reload-configuration

@@ -16,9 +16,9 @@ set=$(${curl} ${host})
 if [ $? -eq 0 ]; then
     result=$(mongo ${hostname} --quiet --eval 'rs.isMaster().ismaster' 2>&1)
     if [[ $result == *failed* ]]; then
-	echo "yes"
+        echo "yes"
     else
-	echo "no"
+        echo "no"
     fi
 else
     echo "yes"

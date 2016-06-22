@@ -45,7 +45,7 @@ def record_exists(route53_zone, db_silo_name, service_name, ip):
             return True
 
     return False
-    
+
 
 def upsert_record(route53_zone, record_name, ip):
     """
@@ -53,7 +53,7 @@ def upsert_record(route53_zone, record_name, ip):
     Does nothing if record already exists with same ip
     """
     record = route53_zone.get_a(record_name)
-    
+
     if record and ip not in record.resource_records:
         route53_zone.update_a(record_name, ip)
     elif not record:
@@ -61,7 +61,7 @@ def upsert_record(route53_zone, record_name, ip):
     else:
         pass
 
-        
+
 def register_host(cluster_name, db_silo_name, service_name, is_master=False):
 
     zone_name = "{0}.{1}".format(cluster_name, SUFFIX)
@@ -72,21 +72,19 @@ def register_host(cluster_name, db_silo_name, service_name, is_master=False):
     if is_master:
         record_name = "{0}{1}.{2}.{3}".format(service_name, 'master',
                                               db_silo_name, zone_name)
-        print str(dt.now()), "Registering host as", record_name        
+        print str(dt.now()), "Registering host as", record_name
         upsert_record(route53_zone, record_name, my_ip)
 
     if not record_exists(route53_zone, db_silo_name, service_name, my_ip):
         service_num = get_new_service_num(route53_zone, db_silo_name, service_name)
         record_name = "{0}{1}.{2}.{3}".format(service_name, service_num,
                                               db_silo_name, zone_name)
-        print str(dt.now()), "Registering host as", record_name        
+        print str(dt.now()), "Registering host as", record_name
         upsert_record(route53_zone, record_name, my_ip)
 
 
-        
+
 if len(sys.argv) > 4 and sys.argv[4] == 'master':
     register_host(sys.argv[1], sys.argv[2], sys.argv[3], True)
 else:
     register_host(sys.argv[1], sys.argv[2], sys.argv[3])
-
-
