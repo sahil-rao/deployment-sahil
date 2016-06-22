@@ -8,7 +8,7 @@
 	    "source_ami": "ami-06116566",
 	    "instance_type": "r3.2xlarge",
 	    "ssh_username": "ubuntu",
-	    "ami_name": "prithvi-redis-test {{timestamp}}"
+	    "ami_name": "erickt-redis-test {{timestamp}}"
 	}
     ],
     "provisioners": [

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ev
 
 # Ubuntu 14.04, m4.xlarge (hvm)
 
@@ -9,7 +9,7 @@ sleep 10s
 
 # Install basics
 apt-get clean; apt-get update
-apt-get -y install emacs ntp monit git python-pip python-dev
+apt-get -y install emacs ntp monit git python-pip python-dev logrotate
 pip install awscli boto
 wget -qO /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64; chmod +x /usr/local/bin/jq
 
@@ -41,12 +41,12 @@ chown -R redis.redis /etc/redis/local
 cp /tmp/etc/init/redis-server.conf /tmp/etc/init/redis-sentinel.conf /etc/init/
 cp /tmp/etc/logrotate.d/redis /etc/logrotate.d/redis
 
-
 # Install Datadog
 sudo apt-get install -y apt-transport-https
 sudo sh -c "echo 'deb https://apt.datadoghq.com/ stable main' > /etc/apt/sources.list.d/datadog.list"
 sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys C7A7DA52
 sudo apt-get update
 sudo apt-get install -y datadog-agent
-cp /tmp/etc/init/install-datadog.conf /etc/init/
 cp /tmp/etc/dd-agent/conf.d/* /etc/dd-agent/conf.d
+update-rc.d datadog-agent defaults
+initctl reload-configuration

@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 source /usr/local/bin/navoptenv.sh
 
@@ -23,5 +23,3 @@ fi
 # Ensure that all files with the prefix will expire in 3 days
 expire_policy_json='{"Rules":[{"Status":"Enabled","Prefix":'"\"${prefix}"\"',"Expiration":{"Days":3}}]}'
 /usr/local/bin/aws s3api put-bucket-lifecycle --bucket $bucket --lifecycle-configuration $expire_policy_json
-
-
