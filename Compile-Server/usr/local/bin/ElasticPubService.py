@@ -112,8 +112,11 @@ def callback(ch, method, properties, body):
     if 'update' in msg_dict:
         #get silo for tenant
         dbsilo = get_silo(tenant)
-        es_conn_silo[dbsilo].update(index=msg_dict['tenant'], id=msg_dict['eid'], doc_type="entity",
-                                    body={"doc": msg_dict['update_dict']})
+        try:
+            es_conn_silo[dbsilo].update(index=msg_dict['tenant'], id=msg_dict['eid'], doc_type="entity",
+                                        body={"doc": msg_dict['update_dict']})
+        except elasticsearch.TransportError, e:
+            logging.error("ElasticSearch index update failed %s", e.args)
         connection1.basicAck(ch, method)
         return
 
