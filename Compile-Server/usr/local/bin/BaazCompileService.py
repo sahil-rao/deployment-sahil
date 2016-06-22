@@ -441,7 +441,7 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
                       EntityType.SQL_DATABASE, endict, None)
             database_entity = mongoconn.getEntityByName(database_name)
             #create Elastic search index
-            sendToElastic(redis_conn, collection, tenant, uid,
+            sendToElastic(redis_conn, tenant, uid,
                           database_entity, database_name, EntityType.SQL_DATABASE)
             dbCount = dbCount + 1
 
