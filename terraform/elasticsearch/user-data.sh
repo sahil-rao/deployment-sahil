@@ -8,7 +8,7 @@ set -ev
     "service": "${service}",
     "cluster": "${cluster}",
     "datadog_api_key": "${datadog_api_key}",
-    "sg_name": "${sg_name}
+    "sg_name": "${sg_name}"
 }
 EOF
 
