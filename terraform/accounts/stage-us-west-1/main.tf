@@ -12,7 +12,7 @@ provider "aws" {
 #'
 #'    key_name = "${var.key_name}"
 #'
-#'    name_prefix = ""
+#'    name_prefix = "${var.cluster_name}-dbsilo2"
 #'    dbsilo_name = "dbsilo2"
 #'    cluster_name = "${var.cluster_name}"
 #'
