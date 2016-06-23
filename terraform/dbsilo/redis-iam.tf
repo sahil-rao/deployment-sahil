@@ -14,6 +14,10 @@ resource "aws_iam_role" "redis" {
     ]
 }
 EOF
+
+    lifecycle {
+        create_before_destroy = true
+    }
 }
 
 resource "aws_iam_role_policy" "redis" {
@@ -112,9 +116,17 @@ resource "aws_iam_role_policy" "redis" {
     ]
 }
 EOF
+
+    lifecycle {
+        create_before_destroy = true
+    }
 }
 
 resource "aws_iam_instance_profile" "redis" {
     name = "${var.name_prefix}-redis"
     roles = ["${aws_iam_role.redis.name}"]
+
+    lifecycle {
+        create_before_destroy = true
+    }
 }

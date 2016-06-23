@@ -14,6 +14,10 @@ resource "aws_iam_role" "mongo" {
     ]
 }
 EOF
+
+    lifecycle {
+        create_before_destroy = true
+    }
 }
 
 resource "aws_iam_role_policy" "mongo" {
@@ -112,9 +116,17 @@ resource "aws_iam_role_policy" "mongo" {
     ]
 }
 EOF
+
+    lifecycle {
+        create_before_destroy = true
+    }
 }
 
 resource "aws_iam_instance_profile" "mongo" {
     name = "${var.name_prefix}-mongo"
     roles = ["${aws_iam_role.mongo.name}"]
+
+    lifecycle {
+        create_before_destroy = true
+    }
 }

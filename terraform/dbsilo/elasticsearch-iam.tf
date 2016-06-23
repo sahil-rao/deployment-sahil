@@ -14,6 +14,10 @@ resource "aws_iam_role" "elasticsearch" {
     ]
 }
 EOF
+
+    lifecycle {
+        create_before_destroy = true
+    }
 }
 
 resource "aws_iam_role_policy" "elasticsearch" {
@@ -112,9 +116,17 @@ resource "aws_iam_role_policy" "elasticsearch" {
     ]
 }
 EOF
+
+    lifecycle {
+        create_before_destroy = true
+    }
 }
 
 resource "aws_iam_instance_profile" "elasticsearch" {
     name = "${var.name_prefix}-elasticsearch"
     roles = ["${aws_iam_role.elasticsearch.name}"]
+
+    lifecycle {
+        create_before_destroy = true
+    }
 }
