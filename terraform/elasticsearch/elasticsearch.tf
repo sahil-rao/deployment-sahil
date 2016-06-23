@@ -55,9 +55,9 @@ resource "template_file" "user_data" {
     template = "${file("${path.module}/user-data.sh")}"
 
     vars {
-        dbsilo = "${var.dbsilo}"
+        dbsilo = "${var.dbsilo_name}"
         service = "elasticsearch"
-        cluster = "${var.cluster}"
+        cluster = "${var.cluster_name}"
         datadog_api_key = "42bbac658841fd4c44253c01423b3227"
     }
 
