@@ -1,4 +1,4 @@
-resource "aws_iam_role" "default" {
+resource "aws_iam_role" "mongo" {
     name = "${var.name_prefix}"
     assume_role_policy = <<EOF
 {
@@ -16,9 +16,9 @@ resource "aws_iam_role" "default" {
 EOF
 }
 
-resource "aws_iam_role_policy" "default" {
+resource "aws_iam_role_policy" "mongo" {
     name = "${var.name_prefix}"
-    role = "${aws_iam_role.default.id}"
+    role = "${aws_iam_role.mongo.id}"
     policy = <<EOF
 {
     "Version": "2012-10-17",
@@ -114,7 +114,7 @@ resource "aws_iam_role_policy" "default" {
 EOF
 }
 
-resource "aws_iam_instance_profile" "default" {
+resource "aws_iam_instance_profile" "mongo" {
     name = "${var.name_prefix}"
-    roles = ["${aws_iam_role.default.name}"]
+    roles = ["${aws_iam_role.mongo.name}"]
 }

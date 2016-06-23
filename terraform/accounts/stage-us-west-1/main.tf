@@ -12,7 +12,7 @@ module "dbsilo4" {
 
     key_name = "${var.key_name}"
 
-    name_prefix = "erickt-tf-redis-test"
+    name_prefix = "erickt-tf-test"
     dbsilo_name = "dbsilo4"
     cluster_name = "${var.cluster_name}"
 

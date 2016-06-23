@@ -1,55 +1,18 @@
-variable "vpc_id" {}
-variable "vpc_cidr" {}
 variable "subnet_ids" {}
+variable "security_groups" {}
 
 variable "name_prefix" {}
 variable "dbsilo_name" {}
 variable "cluster_name" {}
 
 variable "key_name" {}
+variable "instance_profile" {}
 
 variable "ami_id" {}
 variable "instance_type" {}
 variable "min_size" {}
 variable "max_size" {}
 variable "desired_capacity" {}
-
-resource "aws_security_group" "default" {
-    name = "${var.name_prefix}"
-    vpc_id = "${var.vpc_id}"
-
-    ingress {
-        from_port = 22
-        to_port = 22
-        protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
-    }
-
-    ingress {
-        from_port = 6379
-        to_port = 6379
-        protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
-    }
-
-    ingress {
-        from_port = 26379
-        to_port = 26379
-        protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
-    }
-
-    egress {
-        from_port = 0
-        to_port = 0
-        protocol = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-
-    lifecycle {
-        create_before_destroy = true
-    }
-}
 
 resource "template_file" "user_data" {
     template = "${file("${path.module}/user-data.sh")}"
@@ -71,11 +34,11 @@ resource "aws_launch_configuration" "default" {
     name_prefix = "${var.name_prefix}-"
     image_id = "${var.ami_id}"
     instance_type = "${var.instance_type}"
-    iam_instance_profile = "${aws_iam_instance_profile.default.name}"
+    iam_instance_profile = "${var.instance_profile}"
     ebs_optimized = true
     enable_monitoring = false
     key_name = "${var.key_name}"
-    security_groups = ["${aws_security_group.default.id}"]
+    security_groups = ["${split(",", var.security_groups)}"]
     user_data = "${template_file.user_data.rendered}"
 
     root_block_device {

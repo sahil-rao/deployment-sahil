@@ -47,11 +47,11 @@ variable "elasticsearch_green_desired_capacity" {}
 module "mongodb-blue" {
     source = "../mongodb"
 
-    vpc_id = "${var.vpc_id}"
-    vpc_cidr = "${var.vpc_cidr}"
     subnet_ids = "${var.subnet_ids}"
+    security_groups = "${aws_security_group.mongo.id}"
 
     key_name = "${var.key_name}"
+    instance_profile = "${aws_iam_instance_profile.mongo.name}"
 
     name_prefix = "${var.name_prefix}-mongo-blue"
     dbsilo_name = "${var.dbsilo_name}"
@@ -67,11 +67,11 @@ module "mongodb-blue" {
 module "mongodb-green" {
     source = "../mongodb"
 
-    vpc_id = "${var.vpc_id}"
-    vpc_cidr = "${var.vpc_cidr}"
     subnet_ids = "${var.subnet_ids}"
+    security_groups = "${aws_security_group.mongo.id}"
 
     key_name = "${var.key_name}"
+    instance_profile = "${aws_iam_instance_profile.mongo.name}"
 
     name_prefix = "${var.name_prefix}-mongo-green"
     dbsilo_name = "${var.dbsilo_name}"
@@ -87,11 +87,11 @@ module "mongodb-green" {
 module "redis-blue" {
     source = "../redis"
 
-    vpc_id = "${var.vpc_id}"
-    vpc_cidr = "${var.vpc_cidr}"
     subnet_ids = "${var.subnet_ids}"
+    security_groups = "${aws_security_group.redis.id}"
 
     key_name = "${var.key_name}"
+    instance_profile = "${aws_iam_instance_profile.redis.name}"
 
     name_prefix = "${var.name_prefix}-redis-blue"
     dbsilo_name = "${var.dbsilo_name}"
@@ -107,11 +107,11 @@ module "redis-blue" {
 module "redis-green" {
     source = "../redis"
 
-    vpc_id = "${var.vpc_id}"
-    vpc_cidr = "${var.vpc_cidr}"
     subnet_ids = "${var.subnet_ids}"
+    security_groups = "${aws_security_group.redis.id}"
 
     key_name = "${var.key_name}"
+    instance_profile = "${aws_iam_instance_profile.redis.name}"
 
     name_prefix = "${var.name_prefix}-redis-green"
     dbsilo_name = "${var.dbsilo_name}"
@@ -127,11 +127,11 @@ module "redis-green" {
 module "elasticsearch-blue" {
     source = "../elasticsearch"
 
-    vpc_id = "${var.vpc_id}"
-    vpc_cidr = "${var.vpc_cidr}"
     subnet_ids = "${var.subnet_ids}"
+    security_groups = "${aws_security_group.elasticsearch.id}"
 
     key_name = "${var.key_name}"
+    instance_profile = "${aws_iam_instance_profile.elasticsearch.name}"
 
     name_prefix = "${var.name_prefix}-elasticsearch-blue"
     dbsilo_name = "${var.dbsilo_name}"
@@ -147,11 +147,11 @@ module "elasticsearch-blue" {
 module "elasticsearch-green" {
     source = "../elasticsearch"
 
-    vpc_id = "${var.vpc_id}"
-    vpc_cidr = "${var.vpc_cidr}"
     subnet_ids = "${var.subnet_ids}"
+    security_groups = "${aws_security_group.elasticsearch.id}"
 
     key_name = "${var.key_name}"
+    instance_profile = "${aws_iam_instance_profile.elasticsearch.name}"
 
     name_prefix = "${var.name_prefix}-elasticsearch-green"
     dbsilo_name = "${var.dbsilo_name}"
