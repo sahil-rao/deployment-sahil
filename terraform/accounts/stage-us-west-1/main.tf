@@ -67,6 +67,7 @@ module "dbsilo4" {
     name_prefix = "erickt-tf-test"
     dbsilo_name = "dbsilo4"
     cluster_name = "${var.cluster_name}"
+    datadog_api_key = "${var.datadog_api_key}"
 
     mongo_blue_ami_id = "ami-50400430"
     mongo_blue_instance_type = "m4.xlarge"

@@ -5,6 +5,7 @@ variable "subnet_ids" {}
 variable "name_prefix" {}
 variable "dbsilo_name" {}
 variable "cluster_name" {}
+variable "datadog_api_key" {}
 
 variable "key_name" {}
 
@@ -56,6 +57,7 @@ module "mongodb-blue" {
     name_prefix = "${var.name_prefix}-mongo-blue"
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
+    datadog_api_key = "${var.datadog_api_key}"
 
     ami_id = "${var.mongo_blue_ami_id}"
     instance_type = "${var.mongo_green_instance_type}"
@@ -76,6 +78,7 @@ module "mongodb-green" {
     name_prefix = "${var.name_prefix}-mongo-green"
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
+    datadog_api_key = "${var.datadog_api_key}"
 
     ami_id = "${var.mongo_green_ami_id}"
     instance_type = "${var.mongo_green_instance_type}"
@@ -96,6 +99,7 @@ module "redis-blue" {
     name_prefix = "${var.name_prefix}-redis-blue"
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
+    datadog_api_key = "${var.datadog_api_key}"
 
     ami_id = "${var.redis_blue_ami_id}"
     instance_type = "${var.redis_blue_instance_type}"
@@ -116,6 +120,7 @@ module "redis-green" {
     name_prefix = "${var.name_prefix}-redis-green"
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
+    datadog_api_key = "${var.datadog_api_key}"
 
     ami_id = "${var.redis_green_ami_id}"
     instance_type = "${var.redis_green_instance_type}"
@@ -136,6 +141,7 @@ module "elasticsearch-blue" {
     name_prefix = "${var.name_prefix}-elasticsearch-blue"
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
+    datadog_api_key = "${var.datadog_api_key}"
 
     ami_id = "${var.elasticsearch_blue_ami_id}"
     instance_type = "${var.elasticsearch_blue_instance_type}"
@@ -156,6 +162,7 @@ module "elasticsearch-green" {
     name_prefix = "${var.name_prefix}-elasticsearch-green"
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
+    datadog_api_key = "${var.datadog_api_key}"
 
     ami_id = "${var.elasticsearch_green_ami_id}"
     instance_type = "${var.elasticsearch_green_instance_type}"

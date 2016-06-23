@@ -18,6 +18,10 @@ variable "cluster_name" {
     default = "alpha"
 }
 
+variable "datadog_api_key" {
+    default = "42bbac658841fd4c44253c01423b3227"
+}
+
 variable "key_name" {
     default = "Baaz-Deployment"
 }
