@@ -1,5 +1,5 @@
 resource "aws_iam_role" "elasticsearch" {
-    name = "${var.name_prefix}"
+    name = "${var.name_prefix}-elasticsearch"
     assume_role_policy = <<EOF
 {
     "Version": "2012-10-17",
@@ -17,7 +17,7 @@ EOF
 }
 
 resource "aws_iam_role_policy" "elasticsearch" {
-    name = "${var.name_prefix}"
+    name = "${var.name_prefix}-elasticsearch"
     role = "${aws_iam_role.elasticsearch.id}"
     policy = <<EOF
 {
@@ -115,6 +115,6 @@ EOF
 }
 
 resource "aws_iam_instance_profile" "elasticsearch" {
-    name = "${var.name_prefix}"
+    name = "${var.name_prefix}-elasticsearch"
     roles = ["${aws_iam_role.elasticsearch.name}"]
 }

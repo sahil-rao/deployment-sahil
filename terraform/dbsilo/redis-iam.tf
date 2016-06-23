@@ -1,5 +1,5 @@
 resource "aws_iam_role" "redis" {
-    name = "${var.name_prefix}"
+    name = "${var.name_prefix}-redis"
     assume_role_policy = <<EOF
 {
     "Version": "2012-10-17",
@@ -17,7 +17,7 @@ EOF
 }
 
 resource "aws_iam_role_policy" "redis" {
-    name = "${var.name_prefix}"
+    name = "${var.name_prefix}-redis"
     role = "${aws_iam_role.redis.id}"
     policy = <<EOF
 {
@@ -115,6 +115,6 @@ EOF
 }
 
 resource "aws_iam_instance_profile" "redis" {
-    name = "${var.name_prefix}"
+    name = "${var.name_prefix}-redis"
     roles = ["${aws_iam_role.redis.name}"]
 }

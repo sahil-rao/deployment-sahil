@@ -1,5 +1,5 @@
 resource "aws_iam_role" "mongo" {
-    name = "${var.name_prefix}"
+    name = "${var.name_prefix}-mongo"
     assume_role_policy = <<EOF
 {
     "Version": "2012-10-17",
@@ -17,7 +17,7 @@ EOF
 }
 
 resource "aws_iam_role_policy" "mongo" {
-    name = "${var.name_prefix}"
+    name = "${var.name_prefix}-mongo"
     role = "${aws_iam_role.mongo.id}"
     policy = <<EOF
 {
@@ -115,6 +115,6 @@ EOF
 }
 
 resource "aws_iam_instance_profile" "mongo" {
-    name = "${var.name_prefix}"
+    name = "${var.name_prefix}-mongo"
     roles = ["${aws_iam_role.mongo.name}"]
 }
