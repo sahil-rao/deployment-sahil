@@ -48,7 +48,7 @@ resource "aws_launch_configuration" "default" {
 }
 
 resource "aws_autoscaling_group" "default" {
-    name = "${var.name_prefix}"
+    name = "${aws_launch_configuration.default.name}"
 
     launch_configuration = "${aws_launch_configuration.default.name}"
     min_size = "${var.min_size}"
@@ -60,5 +60,9 @@ resource "aws_autoscaling_group" "default" {
         key = "Name"
         value = "${var.name_prefix}"
         propagate_at_launch = true
+    }
+
+    lifecycle {
+        create_before_destroy = true
     }
 }
