@@ -2,7 +2,7 @@
 
 set -ev
 
-# Ubuntu 14.04, m4.xlarge (hvm)
+# Ubuntu 14.04, r3.2xlarge (hvm)
 
 # AWS EC2 instances sometimes have stale APT caches when starting up... so we wait for AWS to do its magic and refresh them
 sleep 10s
