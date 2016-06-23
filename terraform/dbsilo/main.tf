@@ -32,6 +32,18 @@ variable "redis_green_min_size" {}
 variable "redis_green_max_size" {}
 variable "redis_green_desired_capacity" {}
 
+variable "elasticsearch_blue_ami_id" {}
+variable "elasticsearch_blue_instance_type" {}
+variable "elasticsearch_blue_min_size" {}
+variable "elasticsearch_blue_max_size" {}
+variable "elasticsearch_blue_desired_capacity" {}
+
+variable "elasticsearch_green_ami_id" {}
+variable "elasticsearch_green_instance_type" {}
+variable "elasticsearch_green_min_size" {}
+variable "elasticsearch_green_max_size" {}
+variable "elasticsearch_green_desired_capacity" {}
+
 module "mongodb-blue" {
     source = "../mongodb"
 
@@ -110,4 +122,44 @@ module "redis-green" {
     min_size = "${var.redis_green_min_size}"
     max_size = "${var.redis_green_max_size}"
     desired_capacity = "${var.redis_green_desired_capacity}"
+}
+
+module "elasticsearch-blue" {
+    source = "../elasticsearch"
+
+    vpc_id = "${var.vpc_id}"
+    vpc_cidr = "${var.vpc_cidr}"
+    subnet_ids = "${var.subnet_ids}"
+
+    key_name = "${var.key_name}"
+
+    name_prefix = "${var.name_prefix}-elasticsearch-blue"
+    dbsilo_name = "${var.dbsilo_name}"
+    cluster_name = "${var.cluster_name}"
+
+    ami_id = "${var.elasticsearch_blue_ami_id}"
+    instance_type = "${var.elasticsearch_blue_instance_type}"
+    min_size = "${var.elasticsearch_blue_min_size}"
+    max_size = "${var.elasticsearch_blue_max_size}"
+    desired_capacity = "${var.elasticsearch_blue_desired_capacity}"
+}
+
+module "elasticsearch-green" {
+    source = "../elasticsearch"
+
+    vpc_id = "${var.vpc_id}"
+    vpc_cidr = "${var.vpc_cidr}"
+    subnet_ids = "${var.subnet_ids}"
+
+    key_name = "${var.key_name}"
+
+    name_prefix = "${var.name_prefix}-elasticsearch-green"
+    dbsilo_name = "${var.dbsilo_name}"
+    cluster_name = "${var.cluster_name}"
+
+    ami_id = "${var.elasticsearch_green_ami_id}"
+    instance_type = "${var.elasticsearch_green_instance_type}"
+    min_size = "${var.elasticsearch_green_min_size}"
+    max_size = "${var.elasticsearch_green_max_size}"
+    desired_capacity = "${var.elasticsearch_green_desired_capacity}"
 }
