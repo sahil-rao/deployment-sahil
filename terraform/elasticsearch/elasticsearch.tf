@@ -22,6 +22,7 @@ resource "template_file" "user_data" {
         service = "elasticsearch"
         cluster = "${var.cluster_name}"
         datadog_api_key = "42bbac658841fd4c44253c01423b3227"
+	sg_name = "${var.security_groups}"
     }
 
     lifecycle {

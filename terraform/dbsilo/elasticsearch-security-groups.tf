@@ -10,15 +10,8 @@ resource "aws_security_group" "elasticsearch" {
     }
 
     ingress {
-        from_port = 6379
-        to_port = 6379
-        protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
-    }
-
-    ingress {
-        from_port = 26379
-        to_port = 26379
+        from_port = 9200
+        to_port = 9400
         protocol = "tcp"
         cidr_blocks = ["${var.vpc_cidr}"]
     }
