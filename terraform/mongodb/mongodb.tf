@@ -20,7 +20,7 @@ resource "template_file" "user_data" {
 
     vars {
         dbsilo = "${var.dbsilo_name}"
-        service = "mongodb"
+        service = "mongo"
         cluster = "${var.cluster_name}"
         datadog_api_key = "${var.datadog_api_key}"
     }
