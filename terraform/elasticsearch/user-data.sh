@@ -23,3 +23,9 @@ tags: navopt, ${cluster}, dbsilo, redis
 EOF
 /bin/chown dd-agent /etc/dd-agent/datadog.conf
 /usr/sbin/service datadog-agent start
+
+# Create elasticsearch volume
+mkfs -t ext3 /dev/xvdf
+/bin/mount -t ext3 /dev/xvdf /mnt
+
+service elasticsearch start
