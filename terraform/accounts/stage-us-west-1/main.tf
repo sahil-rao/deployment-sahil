@@ -69,7 +69,7 @@ module "dbsilo4" {
 
     mongo_blue_ami_id = "ami-50400430"
     mongo_blue_instance_type = "m4.xlarge"
-    mongo_blue_min_size = 3
+    mongo_blue_min_size = 1
     mongo_blue_max_size = 3
     mongo_blue_desired_capacity = 3
 
