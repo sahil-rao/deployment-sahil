@@ -80,14 +80,14 @@ module "dbsilo4" {
     mongo_green_max_size = 3
     mongo_green_desired_capacity = 3
 
-    redis_blue_ami_id = "ami-319bdf51"
+    redis_blue_ami_id = "ami-179eda77"
     redis_blue_instance_type = "r3.2xlarge"
     redis_blue_min_size = 1
     redis_blue_max_size = 3
     redis_blue_desired_capacity = 3
     redis_blue_backup_file = "s3://xplain-alpha/redis-backups/${var.cluster_name}-dump.rdb"
 
-    redis_green_ami_id = "ami-319bdf51"
+    redis_green_ami_id = "ami-179eda77"
     redis_green_instance_type = "r3.2xlarge"
     redis_green_min_size = 0
     redis_green_max_size = 0
