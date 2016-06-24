@@ -10,7 +10,7 @@ sleep 10s
 # Install basics
 apt-get clean; apt-get update
 apt-get -y install emacs ntp monit git python-pip python-dev logrotate
-pip install awscli boto j2cli
+pip install awscli boto j2cli 
 wget -qO /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64; chmod +x /usr/local/bin/jq
 
 # Oracle Java 8 installation
@@ -26,6 +26,9 @@ apt-get update && apt-get -y install elasticsearch
 
 # Install elasticsearch AWS plugin
 /usr/share/elasticsearch/bin/plugin install cloud-aws --batch
+
+# Install elasticsearch curator to manage backups (snapshots)
+pip install elasticsearch-curator==3.4.1
 
 # Set timezone as PST
 echo "America/Los_Angeles" | sudo tee /etc/timezone
