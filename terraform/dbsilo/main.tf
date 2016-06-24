@@ -26,12 +26,18 @@ variable "redis_blue_instance_type" {}
 variable "redis_blue_min_size" {}
 variable "redis_blue_max_size" {}
 variable "redis_blue_desired_capacity" {}
+variable "redis_blue_backup_file" {
+    default = ""
+}
 
 variable "redis_green_ami_id" {}
 variable "redis_green_instance_type" {}
 variable "redis_green_min_size" {}
 variable "redis_green_max_size" {}
 variable "redis_green_desired_capacity" {}
+variable "redis_green_backup_file" {
+    default = ""
+}
 
 variable "elasticsearch_blue_ami_id" {}
 variable "elasticsearch_blue_instance_type" {}
@@ -100,6 +106,7 @@ module "redis-blue" {
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
     datadog_api_key = "${var.datadog_api_key}"
+    backup_file = "${var.redis_blue_backup_file}"
 
     ami_id = "${var.redis_blue_ami_id}"
     instance_type = "${var.redis_blue_instance_type}"
@@ -121,6 +128,7 @@ module "redis-green" {
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
     datadog_api_key = "${var.datadog_api_key}"
+    backup_file = "${var.redis_green_backup_file}"
 
     ami_id = "${var.redis_green_ami_id}"
     instance_type = "${var.redis_green_instance_type}"

@@ -5,6 +5,7 @@ variable "name_prefix" {}
 variable "dbsilo_name" {}
 variable "cluster_name" {}
 variable "datadog_api_key" {}
+variable "backup_file" {}
 
 variable "key_name" {}
 variable "instance_profile" {}
@@ -23,7 +24,7 @@ resource "template_file" "user_data" {
         service = "redis"
         cluster = "${var.cluster_name}"
         datadog_api_key = "${var.datadog_api_key}"
-        backup_file = "s3://xplain-alpha/redis-backups/${var.cluster_name}-dump.rdb"
+        backup_file = "${var.backup_file}"
     }
 
     lifecycle {
