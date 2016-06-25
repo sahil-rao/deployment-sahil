@@ -9,18 +9,21 @@ variable "datadog_api_key" {}
 
 variable "key_name" {}
 
+variable "mongo_blue_name_prefix" {}
 variable "mongo_blue_ami_id" {}
 variable "mongo_blue_instance_type" {}
 variable "mongo_blue_min_size" {}
 variable "mongo_blue_max_size" {}
 variable "mongo_blue_desired_capacity" {}
 
+variable "mongo_green_name_prefix" {}
 variable "mongo_green_ami_id" {}
 variable "mongo_green_instance_type" {}
 variable "mongo_green_min_size" {}
 variable "mongo_green_max_size" {}
 variable "mongo_green_desired_capacity" {}
 
+variable "redis_blue_name_prefix" {}
 variable "redis_blue_ami_id" {}
 variable "redis_blue_instance_type" {}
 variable "redis_blue_min_size" {}
@@ -30,6 +33,7 @@ variable "redis_blue_backup_file" {
     default = ""
 }
 
+variable "redis_green_name_prefix" {}
 variable "redis_green_ami_id" {}
 variable "redis_green_instance_type" {}
 variable "redis_green_min_size" {}
@@ -39,12 +43,14 @@ variable "redis_green_backup_file" {
     default = ""
 }
 
+variable "elasticsearch_blue_name_prefix" {}
 variable "elasticsearch_blue_ami_id" {}
 variable "elasticsearch_blue_instance_type" {}
 variable "elasticsearch_blue_min_size" {}
 variable "elasticsearch_blue_max_size" {}
 variable "elasticsearch_blue_desired_capacity" {}
 
+variable "elasticsearch_green_name_prefix" {}
 variable "elasticsearch_green_ami_id" {}
 variable "elasticsearch_green_instance_type" {}
 variable "elasticsearch_green_min_size" {}
@@ -60,7 +66,7 @@ module "mongodb-blue" {
     key_name = "${var.key_name}"
     instance_profile = "${aws_iam_instance_profile.mongo.name}"
 
-    name_prefix = "${var.name_prefix}-mongo-blue"
+    name_prefix = "${var.mongo_blue_name_prefix}"
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
     datadog_api_key = "${var.datadog_api_key}"
@@ -81,7 +87,7 @@ module "mongodb-green" {
     key_name = "${var.key_name}"
     instance_profile = "${aws_iam_instance_profile.mongo.name}"
 
-    name_prefix = "${var.name_prefix}-mongo-green"
+    name_prefix = "${var.mongo_green_name_prefix}"
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
     datadog_api_key = "${var.datadog_api_key}"
@@ -102,7 +108,7 @@ module "redis-blue" {
     key_name = "${var.key_name}"
     instance_profile = "${aws_iam_instance_profile.redis.name}"
 
-    name_prefix = "${var.name_prefix}-redis-blue"
+    name_prefix = "${var.redis_blue_name_prefix}"
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
     datadog_api_key = "${var.datadog_api_key}"
@@ -124,7 +130,7 @@ module "redis-green" {
     key_name = "${var.key_name}"
     instance_profile = "${aws_iam_instance_profile.redis.name}"
 
-    name_prefix = "${var.name_prefix}-redis-green"
+    name_prefix = "${var.redis_green_name_prefix}"
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
     datadog_api_key = "${var.datadog_api_key}"
@@ -146,7 +152,7 @@ module "elasticsearch-blue" {
     key_name = "${var.key_name}"
     instance_profile = "${aws_iam_instance_profile.elasticsearch.name}"
 
-    name_prefix = "${var.name_prefix}-elasticsearch-blue"
+    name_prefix = "${var.elasticsearch_blue_name_prefix}"
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
     datadog_api_key = "${var.datadog_api_key}"
@@ -167,7 +173,7 @@ module "elasticsearch-green" {
     key_name = "${var.key_name}"
     instance_profile = "${aws_iam_instance_profile.elasticsearch.name}"
 
-    name_prefix = "${var.name_prefix}-elasticsearch-green"
+    name_prefix = "${var.elasticsearch_green_name_prefix}"
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
     datadog_api_key = "${var.datadog_api_key}"
