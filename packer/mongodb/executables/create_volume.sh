@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 source /usr/local/bin/navoptenv.sh
 
 MAX_TRIES=60
