@@ -8,7 +8,11 @@
             "source_ami": "ami-06116566",
             "instance_type": "r3.2xlarge",
             "ssh_username": "ubuntu",
-            "ami_name": "erickt-redis-test {{timestamp}}"
+            "ami_name": "dbsilo-redis {{timestamp}}",
+            "ami_regions": [
+                "us-west-1",
+                "us-west-2"
+            ]
         }
     ],
     "provisioners": [

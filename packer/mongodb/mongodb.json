@@ -8,7 +8,11 @@
             "source_ami": "ami-06116566",
             "instance_type": "m4.xlarge",
             "ssh_username": "ubuntu",
-            "ami_name": "erickt-mongodb-test {{timestamp}}"
+            "ami_name": "dbsilo-mongodb {{timestamp}}",
+            "ami_regions": [
+                "us-west-1",
+                "us-west-2"
+            ]
         }
     ],
     "provisioners": [
