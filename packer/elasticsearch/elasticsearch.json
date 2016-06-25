@@ -1,0 +1,36 @@
+{
+    "builders": [
+	{
+	    "access_key": "",
+	    "secret_key": "",
+	    "type": "amazon-ebs",
+	    "region": "us-west-1",
+	    "source_ami": "ami-06116566",
+	    "instance_type": "m3.xlarge",
+	    "ssh_username": "ubuntu",
+	    "ami_name": "prithvi-elastic-test {{timestamp}}"
+	}
+    ],
+    "provisioners": [
+	{
+	    "type": "file",
+	    "source": "executables",
+	    "destination": "/tmp"
+	},
+	{
+	    "type": "file",
+	    "source": "etc",
+	    "destination": "/tmp"
+	},
+	{
+	    "type": "file",
+	    "source": "templates",
+	    "destination": "/tmp"
+	},
+	{
+	    "type": "shell",
+	    "script": "setup_elasticsearch.sh",
+	    "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+	}
+    ]
+}

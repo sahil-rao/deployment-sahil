@@ -23,3 +23,5 @@ tags: navopt, ${cluster}, dbsilo, redis
 EOF
 /bin/chown dd-agent /etc/dd-agent/datadog.conf
 /usr/sbin/service datadog-agent start
+
+/usr/sbin/service redis-server start

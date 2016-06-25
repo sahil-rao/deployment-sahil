@@ -20,9 +20,10 @@ resource "template_file" "user_data" {
 
     vars {
         dbsilo = "${var.dbsilo_name}"
-        service = "mongo"
+        service = "elasticsearch"
         cluster = "${var.cluster_name}"
         datadog_api_key = "${var.datadog_api_key}"
+        sg_name = "${var.security_groups}"
     }
 
     lifecycle {
@@ -40,6 +41,13 @@ resource "aws_launch_configuration" "default" {
     key_name = "${var.key_name}"
     security_groups = ["${split(",", var.security_groups)}"]
     user_data = "${template_file.user_data.rendered}"
+
+    ebs_block_device {
+        device_name = "/dev/xvdf"
+        volume_size = 100
+        volume_type = "gp2"
+        delete_on_termination = true
+    }
 
     lifecycle {
         create_before_destroy = true

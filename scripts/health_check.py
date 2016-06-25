@@ -45,6 +45,7 @@ def get_redis_servers(dbsilo_name):
 def get_elasticsearch_servers(dbsilo_name):
     return find_route53_records('elasticsearch', dbsilo_name)
 
+# TODO: Make this function real
 def get_backoffice_servers():
     return [
         "172.31.5.184",
@@ -59,7 +60,7 @@ def get_backoffice_servers():
     ]
 
 
-
+# Terminal codes for colors to make things pretty
 class color:
    PURPLE = '\033[95m'
    CYAN = '\033[96m'
@@ -73,6 +74,7 @@ class color:
    END = '\033[0m'
 
 
+# Subclass this to make a new check
 class HealthCheck(object):
 
     def __init__(self, hosts, description=""):
@@ -90,10 +92,10 @@ class HealthCheck(object):
     def check_host(self, host):
         """Return True if healthcheck passed no host"""
         raise NotImplementedError
-            
 
 
 
+# Executes all healthchecks added to the checklist; Checklists may be composed
 class HealthCheckList(object):
 
     def __init__(self, description):
@@ -120,7 +122,7 @@ class HealthCheckList(object):
                         print "\t" * (tabs+1), "PASSED\t" + host
                     else:
                         print "\t" * (tabs+1), "FAILED\t" + host
-            
+
             healthcheck_statuses.append(status)
 
         status = all(healthcheck_statuses)
@@ -197,7 +199,7 @@ class DiskUsageCheck(HealthCheck):
             if int(percent_full) > 80:
                 return False
         return True
-            
+
 
 class RedisHealthCheck(HealthCheck):
 
@@ -263,7 +265,7 @@ class RedisClusterConfigurationCheck(RedisHealthCheck):
 
 
 def main():
-    
+
     cluster_checklist = HealthCheckList("NavOpt Cluster Health Checklist")
 
     for dbsilo_name in ("dbsilo1", "dbsilo2"):
@@ -271,7 +273,7 @@ def main():
         dbsilo_checklist = HealthCheckList(dbsilo_name.upper() + " Health Checklist")
 
         mongodb_checklist = HealthCheckList("MongoDB Cluster Health Checklist")
-        for klass in (MongoClusterConfigurationCheck, MongoClusterConfigVersionsCheck, DiskUsageCheck):    
+        for klass in (MongoClusterConfigurationCheck, MongoClusterConfigVersionsCheck, DiskUsageCheck):
             mongodb_checklist.add_check(klass(get_mongodb_servers(dbsilo_name)))
         dbsilo_checklist.add_check(mongodb_checklist)
 
@@ -285,11 +287,8 @@ def main():
     backoffice_checklist = HealthCheckList("Backoffice Health Checklist")
     backoffice_checklist.add_check(DiskUsageCheck(get_backoffice_servers()))
     cluster_checklist.add_check(backoffice_checklist)
-    
+
     cluster_checklist.execute()
 
 if __name__ == "__main__":
     main()
-
-
-
