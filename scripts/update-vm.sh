@@ -74,35 +74,35 @@ cd  /home/xplain/build
 #Checkout deployment
 cd /home/xplain/build/deployment
 git pull
-git checkout $1
+git checkout $BRANCH_NAME
 git reset --hard
 git pull
 
 #Checkout analytics
 cd /home/xplain/build/analytics
 git pull
-git checkout $1
+git checkout $BRANCH_NAME
 git reset --hard
 git pull
 
 #Checkout compiler
 cd /home/xplain/build/compiler
 git pull
-git checkout $1
+git checkout $BRANCH_NAME
 git reset --hard
 git pull
 
 #Checkout graph
 cd /home/xplain/build/graph
 git pull
-git checkout $1
+git checkout $BRANCH_NAME
 git reset --hard
 git pull
 
 #Checkout UI
 cd /home/xplain/build/UI
 git pull
-git checkout $1
+git checkout $BRANCH_NAME
 git reset --hard
 git pull
 

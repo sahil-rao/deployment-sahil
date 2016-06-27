@@ -27,10 +27,10 @@ sudo stop elasticpub
 sudo start elasticpub
 
 # Restart node processes
-sudo stop nodejs                                 
-sudo start nodejs  
-sudo stop api_nodejs
-sudo start api_nodejs
+sudo stop nodejs
+sudo start nodejs
+# sudo stop api_nodejs
+# sudo start api_nodejs
 
-#sudo monit                               
+# sudo monit
 exit 0
