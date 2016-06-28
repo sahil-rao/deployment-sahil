@@ -97,6 +97,9 @@
 - name: Start admin nodejs
   service: name=admin_nodejs state=started
   sudo: yes
+- name: Create dir for logs
+  file: path=/var/log/cloudera/navopt/nodejs state=directory owner=bitname mode=755
+  sudo: yes
 - name: Start nginx
   command: /usr/sbin/nginx
   sudo: yes
