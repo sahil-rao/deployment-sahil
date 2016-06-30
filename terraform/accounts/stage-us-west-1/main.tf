@@ -140,12 +140,12 @@ module "dbsilo4" {
     mongo_blue_max_size = 3
     mongo_blue_desired_capacity = 3
 
-    mongo_green_name_prefix = "${var.cluster_name}-dbsilo4-mongo-green-v2"
+    mongo_green_name_prefix = "${var.cluster_name}-dbsilo4-mongo-green-v3"
     mongo_green_ami_id = "ami-a699ddc6"
     mongo_green_instance_type = "m4.xlarge"
-    mongo_green_min_size = 0
-    mongo_green_max_size = 0
-    mongo_green_desired_capacity = 0
+    mongo_green_min_size = 3
+    mongo_green_max_size = 3
+    mongo_green_desired_capacity = 3
 
     redis_blue_name_prefix = "${var.cluster_name}-dbsilo4-redis-blue-v2"
     redis_blue_ami_id = "ami-179eda77"
