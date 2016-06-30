@@ -7,7 +7,8 @@ set -ev
     "dbsilo": "${dbsilo}",
     "service": "${service}",
     "cluster": "${cluster}",
-    "datadog_api_key": "${datadog_api_key}"
+    "datadog_api_key": "${datadog_api_key}",
+    "source": "${snapshot_id}"
 }
 EOF
 
