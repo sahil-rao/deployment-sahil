@@ -15,6 +15,9 @@ variable "mongo_blue_instance_type" {}
 variable "mongo_blue_min_size" {}
 variable "mongo_blue_max_size" {}
 variable "mongo_blue_desired_capacity" {}
+variable "mongo_blue_snapshot_id" {
+    default = "null"
+}
 
 variable "mongo_green_name_prefix" {}
 variable "mongo_green_ami_id" {}
@@ -22,6 +25,9 @@ variable "mongo_green_instance_type" {}
 variable "mongo_green_min_size" {}
 variable "mongo_green_max_size" {}
 variable "mongo_green_desired_capacity" {}
+variable "mongo_green_snapshot_id" {
+    default = "null"
+}
 
 variable "redis_blue_name_prefix" {}
 variable "redis_blue_ami_id" {}
@@ -70,9 +76,10 @@ module "mongodb-blue" {
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
     datadog_api_key = "${var.datadog_api_key}"
+    snapshot_id = "${var.mongo_blue_snapshot_id}"
 
     ami_id = "${var.mongo_blue_ami_id}"
-    instance_type = "${var.mongo_green_instance_type}"
+    instance_type = "${var.mongo_blue_instance_type}"
     min_size = "${var.mongo_blue_min_size}"
     max_size = "${var.mongo_blue_max_size}"
     desired_capacity = "${var.mongo_blue_desired_capacity}"
@@ -91,6 +98,7 @@ module "mongodb-green" {
     dbsilo_name = "${var.dbsilo_name}"
     cluster_name = "${var.cluster_name}"
     datadog_api_key = "${var.datadog_api_key}"
+    snapshot_id = "${var.mongo_green_snapshot_id}"
 
     ami_id = "${var.mongo_green_ami_id}"
     instance_type = "${var.mongo_green_instance_type}"
