@@ -242,9 +242,6 @@ class callback_context():
             Self.scale_mode = True
 
     def __getUploadLimit(Self):
-        if Self.CLUSTER_MODE == "development":
-            return 0
-
         userdb = getMongoServer("xplainIO")["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
 
