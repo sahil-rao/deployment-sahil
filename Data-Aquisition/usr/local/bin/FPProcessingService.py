@@ -395,10 +395,21 @@ class callback_context():
                 if header_info is not None:
                     jinst_dict['tagArray'] = generateTagArray(header_info)
                     jinst_dict['countArray'] = generateCountArray(header_info)
-                    Self.mongoconn.db.userPrefs.update_one({"userPrefs":"userPrefs"},
-                                                           {'$set':{'tagArray': jinst_dict['tagArray'],
-                                                                    'countArray': jinst_dict['countArray']}}, upsert=True)
-                compiler_msg = {'tenant':Self.tenant, 'job_instances':[jinst_dict]}
+
+                    user_obj = Self.mongoconn.db.userPrefs.find_one({"userPrefs": "userPrefs"}, {"tagArray": 1, "countArray": 1})
+
+                    if user_obj:
+                        if "tagArray" in user_obj:
+                            jinst_dict['tagArray'] += user_obj["tagArray"]
+                        if "countArray" in user_obj:
+                            jinst_dict['countArray'] += user_obj["countArray"]
+
+                    tag_list = list(set(jinst_dict['tagArray']))
+                    count_list = list(set(jinst_dict['countArray']))
+                    Self.mongoconn.db.userPrefs.update_one({"userPrefs": "userPrefs"},
+                                                           {'$set': {'tagArray': tag_list,
+                                                                     'countArray': count_list}}, upsert=True)
+                compiler_msg = {'tenant': Self.tenant, 'job_instances': [jinst_dict]}
                 if Self.sourcePlatform is not None:
                     compiler_msg['source_platform'] = Self.sourcePlatform
                 else:
