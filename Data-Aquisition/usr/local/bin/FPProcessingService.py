@@ -49,6 +49,8 @@ if CLUSTER_MODE is None:
 if CLUSTER_NAME is not None:
     bucket_location = CLUSTER_NAME
 
+DEFAULT_QUERY_LIMIT = 50000
+
 if usingAWS:
     from boto.s3.key import Key
     import boto
@@ -189,6 +191,9 @@ def elasticConnect(tenantID, clog):
 
 class callback_context():
 
+    class QueryLimitReachedException(Exception):
+        pass
+
     def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode=False, skipLimit=False, testMode=False, sourcePlatform=None, header_info = None, delimiter = None):
         Self.tenant = tenant
         Self.uid = uid
@@ -237,14 +242,11 @@ class callback_context():
             Self.scale_mode = True
 
     def __getUploadLimit(Self):
-        if Self.CLUSTER_MODE == "development":
-            return 0
-
         userdb = getMongoServer("xplainIO")["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
 
         if "upLimit" not in org:
-            upLimit = 20000
+            upLimit = DEFAULT_QUERY_LIMIT
             userdb.organizations.update({"guid":Self.tenant}, {"$set": {"upLimit":upLimit}})
         else:
             upLimit = org["upLimit"]
@@ -390,7 +392,8 @@ class callback_context():
                 return
 
             if not Self.skipLimit and not Self.__checkQueryLimit():
-                return
+                raise callback_context.QueryLimitReachedException("Tenant " + Self.tenant + " has exceeded query limit of " +
+                                                                  str(Self.__getUploadLimit()) + " queries")
 
             Self.redis_conn.incrEntityCounter("dashboard_data", "TotalQueries", sort=False, incrBy=1)
             if update == False:
