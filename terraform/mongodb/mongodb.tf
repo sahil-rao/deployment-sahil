@@ -25,7 +25,7 @@ resource "template_file" "user_data" {
         service = "mongo"
         cluster = "${var.cluster_name}"
         datadog_api_key = "${var.datadog_api_key}"
-	snapshot_id = "${var.snapshot_id}"
+        snapshot_id = "${var.snapshot_id}"
     }
 
     lifecycle {
