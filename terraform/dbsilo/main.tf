@@ -16,7 +16,7 @@ variable "mongo_blue_min_size" {}
 variable "mongo_blue_max_size" {}
 variable "mongo_blue_desired_capacity" {}
 variable "mongo_blue_snapshot_id" {
-    default = ""
+    default = "null"
 }
 
 variable "mongo_green_name_prefix" {}
@@ -26,7 +26,7 @@ variable "mongo_green_min_size" {}
 variable "mongo_green_max_size" {}
 variable "mongo_green_desired_capacity" {}
 variable "mongo_green_snapshot_id" {
-    default = ""
+    default = "null"
 }
 
 variable "redis_blue_name_prefix" {}
