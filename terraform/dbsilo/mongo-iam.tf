@@ -72,7 +72,9 @@ resource "aws_iam_role_policy" "mongo" {
                 "ec2:AttachVolume",
                 "ec2:DetachVolume",
                 "ec2:CreateSnapshot",
-                "ec2:DeleteSnapshot"
+                "ec2:DeleteSnapshot",
+                "ec2:CreateTags",
+                "ec2:ModifyTags"
             ],
             "Resource": "*"
         },

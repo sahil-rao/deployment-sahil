@@ -11,7 +11,7 @@ variable "vpc_cidr" {
 }
 
 variable "subnet_ids" {
-    default = "subnet-6caca20e,subnet-82145ec4"
+    default = "subnet-c0022ab4,subnet-9b8688f9,subnet-80074dc6"
 }
 
 variable "cluster_name" {

@@ -49,6 +49,8 @@ if CLUSTER_MODE is None:
 if CLUSTER_NAME is not None:
     bucket_location = CLUSTER_NAME
 
+DEFAULT_QUERY_LIMIT = 50000
+
 if usingAWS:
     from boto.s3.key import Key
     import boto
@@ -189,6 +191,9 @@ def elasticConnect(tenantID, clog):
 
 class callback_context():
 
+    class QueryLimitReachedException(Exception):
+        pass
+
     def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode=False, skipLimit=False, testMode=False, sourcePlatform=None, header_info = None, delimiter = None):
         Self.tenant = tenant
         Self.uid = uid
@@ -237,14 +242,11 @@ class callback_context():
             Self.scale_mode = True
 
     def __getUploadLimit(Self):
-        if Self.CLUSTER_MODE == "development":
-            return 0
-
         userdb = getMongoServer("xplainIO")["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
 
         if "upLimit" not in org:
-            upLimit = 20000
+            upLimit = DEFAULT_QUERY_LIMIT
             userdb.organizations.update({"guid":Self.tenant}, {"$set": {"upLimit":upLimit}})
         else:
             upLimit = org["upLimit"]
@@ -390,7 +392,8 @@ class callback_context():
                 return
 
             if not Self.skipLimit and not Self.__checkQueryLimit():
-                return
+                raise callback_context.QueryLimitReachedException("Tenant " + Self.tenant + " has exceeded query limit of " +
+                                                                  str(Self.__getUploadLimit()) + " queries")
 
             Self.redis_conn.incrEntityCounter("dashboard_data", "TotalQueries", sort=False, incrBy=1)
             if update == False:
@@ -405,10 +408,21 @@ class callback_context():
                 if header_info is not None:
                     jinst_dict['tagArray'] = generateTagArray(header_info)
                     jinst_dict['countArray'] = generateCountArray(header_info)
-                    Self.mongoconn.db.userPrefs.update_one({"userPrefs":"userPrefs"},
-                                                           {'$set':{'tagArray': jinst_dict['tagArray'],
-                                                                    'countArray': jinst_dict['countArray']}}, upsert=True)
-                compiler_msg = {'tenant':Self.tenant, 'job_instances':[jinst_dict]}
+
+                    user_obj = Self.mongoconn.db.userPrefs.find_one({"userPrefs": "userPrefs"}, {"tagArray": 1, "countArray": 1})
+
+                    if user_obj:
+                        if "tagArray" in user_obj:
+                            jinst_dict['tagArray'] += user_obj["tagArray"]
+                        if "countArray" in user_obj:
+                            jinst_dict['countArray'] += user_obj["countArray"]
+
+                    tag_list = list(set(jinst_dict['tagArray']))
+                    count_list = list(set(jinst_dict['countArray']))
+                    Self.mongoconn.db.userPrefs.update_one({"userPrefs": "userPrefs"},
+                                                           {'$set': {'tagArray': tag_list,
+                                                                     'countArray': count_list}}, upsert=True)
+                compiler_msg = {'tenant': Self.tenant, 'job_instances': [jinst_dict]}
                 if Self.sourcePlatform is not None:
                     compiler_msg['source_platform'] = Self.sourcePlatform
                 else:

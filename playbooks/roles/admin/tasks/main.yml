@@ -101,9 +101,11 @@
   file: path=/var/log/cloudera/navopt/nodejs state=directory owner=bitnami mode=755
   sudo: yes
 - name: Start nginx
-  command: /usr/sbin/nginx
+  service: name=nginx state=started
   sudo: yes
-  ignore_errors: yes
+- name: Reload nginx
+  service: name=nginx state=reloaded
+  sudo: yes
 - name: Reload nginx
   command: /usr/sbin/nginx -s reload
   sudo: yes

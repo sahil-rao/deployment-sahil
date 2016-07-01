@@ -15,6 +15,8 @@ variable "min_size" {}
 variable "max_size" {}
 variable "desired_capacity" {}
 
+variable "snapshot_id" {}
+
 resource "template_file" "user_data" {
     template = "${file("${path.module}/user-data.sh")}"
 
@@ -23,6 +25,7 @@ resource "template_file" "user_data" {
         service = "mongo"
         cluster = "${var.cluster_name}"
         datadog_api_key = "${var.datadog_api_key}"
+	snapshot_id = "${var.snapshot_id}"
     }
 
     lifecycle {
