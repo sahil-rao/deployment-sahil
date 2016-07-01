@@ -313,11 +313,25 @@ class RedisClusterConfigurationCheck(RedisHealthCheck):
             return False
 
 
-class RedisSentinelMastersCheck(RedisHealthCheck):
+class RedisSentinelHealthCheck(RedisHealthCheck):
+
+    def check_redis_host(self, host, redis_server_info):
+        sentinel_info = self.redis_sentinel_info[host]
+        if sentinel_info is None:
+            self.host_msgs[host] += 'sentinel is not up'
+            return False
+
+        return self.check_sentinel_host(host, sentinel_info)
+
+    def check_sentinel_host(self, host, sentinel_info):
+        raise NotImplementedError
+
+
+class RedisSentinelMastersCheck(RedisSentinelHealthCheck):
 
     description = "Redis sentinels have the same master"
 
-    def check_redis_host(self, host, redis_server_info):
+    def check_sentinel_host(self, host, sentinel_info):
         ip = self.redis_sentinel_info[host]['ip']
         self.host_msgs[host] += 'master: {}'.format(ip)
 
@@ -331,13 +345,13 @@ class RedisSentinelMastersCheck(RedisHealthCheck):
         return True
 
 
-class RedisSentinelQuorumCheck(RedisHealthCheck):
+class RedisSentinelQuorumCheck(RedisSentinelHealthCheck):
 
     description = "Redis sentinel is >= quorum, is odd, and matches other sentinels"
 
-    def check_redis_host(self, host, redis_server_info):
-        quorum = self.redis_sentinel_info[host]['quorum']
-        sentinels = self.redis_sentinel_info[host]['num-other-sentinels'] + 1
+    def check_sentinel_host(self, host, sentinel_info):
+        quorum = sentinel_info['quorum']
+        sentinels = sentinel_info['num-other-sentinels'] + 1
 
         self.host_msgs[host] += 'sentinels: {} quorum: {}'.format(sentinels, quorum)
 
