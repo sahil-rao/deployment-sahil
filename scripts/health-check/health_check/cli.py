@@ -313,11 +313,25 @@ class RedisClusterConfigurationCheck(RedisHealthCheck):
             return False
 
 
-class RedisSentinelMastersCheck(RedisHealthCheck):
+class RedisSentinelHealthCheck(RedisHealthCheck):
+
+    def check_redis_host(self, host, redis_server_info):
+        sentinel_info = self.redis_sentinel_info[host]
+        if sentinel_info is None:
+            self.host_msgs[host] += 'sentinel is not up'
+            return False
+
+        return self.check_sentinel_host(host, sentinel_info)
+
+    def check_sentinel_host(self, host, sentinel_info):
+        raise NotImplementedError
+
+
+class RedisSentinelMastersCheck(RedisSentinelHealthCheck):
 
     description = "Redis sentinels have the same master"
 
-    def check_redis_host(self, host, redis_server_info):
+    def check_sentinel_host(self, host, sentinel_info):
         ip = self.redis_sentinel_info[host]['ip']
         self.host_msgs[host] += 'master: {}'.format(ip)
 
@@ -331,30 +345,39 @@ class RedisSentinelMastersCheck(RedisHealthCheck):
         return True
 
 
-class RedisSentinelQuorumCheck(RedisHealthCheck):
+class RedisSentinelQuorumCheck(RedisSentinelHealthCheck):
 
     description = "Redis sentinel is >= quorum, is odd, and matches other sentinels"
 
-    def check_redis_host(self, host, redis_server_info):
-        quorum = self.redis_sentinel_info[host]['quorum']
-        sentinels = self.redis_sentinel_info[host]['num-other-sentinels'] + 1
+    def check_sentinel_host(self, host, sentinel_info):
+        quorum = sentinel_info['quorum']
+        sentinels = sentinel_info['num-other-sentinels'] + 1
 
         self.host_msgs[host] += 'sentinels: {} quorum: {}'.format(sentinels, quorum)
 
-        if not (quorum <= sentinels and sentinels % 2 == 1):
-            return False
+        result = True
+
+        if sentinels < quorum:
+            self.host_msgs[host] += ' (under quorum)'
+            result = False
+
+        if sentinels % 2 == 0:
+            self.host_msgs[host] += ' (even number of sentinels)'
+            result = False
 
         for h, info in self.redis_sentinel_info.iteritems():
             if h == host or info is None:
                 continue
 
             if info.get('quorum') != quorum:
-                return False
+                self.host_msgs[host] += ' (quorum count does not match)'
+                result = False
 
-            if info['num-other-sentinels'] != sentinels:
-                return False
+            if info['num-other-sentinels'] + 1 != sentinels:
+                self.host_msgs[host] += ' (sentinel count does not match)'
+                result = False
 
-        return True
+        return result
 
 
 class RedisClusterSyncCheck(RedisHealthCheck):
