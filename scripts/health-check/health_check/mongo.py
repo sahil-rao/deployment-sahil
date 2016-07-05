@@ -1,13 +1,18 @@
 from __future__ import absolute_import
 
-from health_check.base import HealthCheck
+from health_check.base import HealthCheck, HealthCheckList
+from health_check.disk import DiskUsageCheck
+import boto3
+import pymongo
 
 
 class MongoClusterConfigurationCheck(HealthCheck):
 
     def __init__(self, hosts):
         self.hosts = hosts
-        self.description = "Mongo instance's replica set view has one primary and two secondaries"
+        self.description = \
+            "Mongo instance's replica set view has one " \
+            "primary and two secondaries"
 
     def check_host(self, host):
         mconn = pymongo.MongoClient(host)
@@ -23,7 +28,9 @@ class MongoClusterConfigurationCheck(HealthCheck):
             else:
                 num_otherstate += 1
 
-        return num_primaries == 1 and num_secondaries == 2 and num_otherstate == 0
+        return num_primaries == 1 and \
+            num_secondaries == 2 and \
+            num_otherstate == 0
 
 
 class MongoClusterConfigVersionsCheck(HealthCheck):
@@ -51,10 +58,41 @@ class MongoClusterHeartbeatCheck(HealthCheck):
     def check_host(self, host):
         mconn = pymongo.MongoClient(host)
         repl_status = mconn.admin.command('replSetGetStatus')
+        print repl_status
+
+        return False
 
 
-def check_mongodb(dbsilo):
+def check_mongodb(bastion, cluster, region, dbsilo):
     mongodb_checklist = HealthCheckList("MongoDB Cluster Health Checklist")
-    for klass in (MongoClusterConfigurationCheck, MongoClusterConfigVersionsCheck, DiskUsageCheck):
-        mongodb_checklist.add_check(klass(get_mongodb_servers(dbsilo)))
-    dbsilo_checklist.add_check(mongodb_checklist)
+
+    mongo_servers = _get_mongodb_servers(cluster, region, dbsilo)
+
+    for health_check in (
+            MongoClusterConfigurationCheck(mongo_servers),
+            MongoClusterConfigVersionsCheck(mongo_servers),
+            DiskUsageCheck(bastion, mongo_servers),
+            ):
+        mongodb_checklist.add_check(health_check)
+
+    return mongodb_checklist
+
+
+def _get_mongodb_servers(cluster, region, dbsilo):
+    ec2 = boto3.resource('ec2', region_name=region)
+    instances = ec2.instances.filter(Filters=[
+        {
+            'Name': 'tag:Name',
+            'Values': [
+                '{}-{}-mongo-green-*'.format(cluster, dbsilo),
+                '{}-{}-mongo-blue-*'.format(cluster, dbsilo),
+            ],
+        },
+    ])
+
+    hostnames = []
+    for instance in instances:
+        if instance.private_ip_address:
+            hostnames.append(instance.private_dns_name)
+
+    return hostnames

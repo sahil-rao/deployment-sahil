@@ -2,21 +2,13 @@ from __future__ import absolute_import
 
 from health_check.base import HealthCheck, HealthCheckList
 from health_check.disk import DiskUsageCheck
-from pprint import pprint
 import boto3
-import click
 import functools
-import health_check.base
-import health_check.dbsilo
-import json
 import multiprocessing
-import pymongo
-import re
 import redis
 import sshtunnel
 import sys
 import termcolor
-import urllib2
 
 
 class RedisHealthCheck(HealthCheck):
@@ -78,7 +70,9 @@ class RedisClusterConfigurationCheck(RedisHealthCheck):
         super(RedisClusterConfigurationCheck, self).__init__(*args, **kwargs)
 
         slaves = max(0, len(self.redis_server_info) - 1)
-        self.description = "Redis cluster has one master and {} connected slaves".format(slaves)
+        self.description = \
+            "Redis cluster has one master and {} " \
+            "connected slaves".format(slaves)
 
     def check_redis_host(self, host, redis_server_info):
         role = redis_server_info['role']
@@ -105,7 +99,8 @@ class RedisClusterConfigurationCheck(RedisHealthCheck):
         if master_link_status == 'up':
             return True
         else:
-            self.host_msgs[host] += ' master link status is `{}`'.format(master_link_status)
+            self.host_msgs[host] += \
+                ' master link status is `{}`'.format(master_link_status)
             return False
 
 
@@ -143,13 +138,16 @@ class RedisSentinelMastersCheck(RedisSentinelHealthCheck):
 
 class RedisSentinelQuorumCheck(RedisSentinelHealthCheck):
 
-    description = "Redis sentinel is >= quorum, is odd, and matches other sentinels"
+    description = \
+        "Redis sentinel is >= quorum, is odd, " \
+        "and matches other sentinels"
 
     def check_sentinel_host(self, host, sentinel_info):
         quorum = sentinel_info['quorum']
         sentinels = sentinel_info['num-other-sentinels'] + 1
 
-        self.host_msgs[host] += 'sentinels: {} quorum: {}'.format(sentinels, quorum)
+        self.host_msgs[host] += \
+            'sentinels: {} quorum: {}'.format(sentinels, quorum)
 
         result = True
 
@@ -192,7 +190,9 @@ def check_redis(bastion, cluster, region, dbsilo):
     redis_servers = _get_redis_servers(cluster, region, dbsilo)
 
     if not redis_servers:
-        print >> sys.stderr, termcolor.colored('WARNING:', 'yellow'), 'no redis servers found'
+        print >> sys.stderr, \
+            termcolor.colored('WARNING:', 'yellow'), \
+            'no redis servers found'
         return redis_checklist
 
     # Grab the redis info from each server.
@@ -210,7 +210,9 @@ def check_redis(bastion, cluster, region, dbsilo):
             RedisRdbBackupCheck(redis_server_info, redis_sentinel_info),
             RedisAofDisabledCheck(redis_server_info, redis_sentinel_info),
             RedisMemoryUsageCheck(redis_server_info, redis_sentinel_info),
-            RedisClusterConfigurationCheck(redis_server_info, redis_sentinel_info),
+            RedisClusterConfigurationCheck(
+                redis_server_info,
+                redis_sentinel_info),
             RedisSentinelQuorumCheck(redis_server_info, redis_sentinel_info),
             RedisSentinelMastersCheck(redis_server_info, redis_sentinel_info),
             RedisClusterSyncCheck(redis_server_info, redis_sentinel_info),
@@ -260,7 +262,6 @@ def _get_redis_server_info(bastion, redis_server):
     return redis_server, info
 
 
-
 def _get_redis_sentinel_info(bastion, cluster, dbsilo, redis_sentinel):
     sentinel = sshtunnel.SSHTunnelForwarder(
             bastion,
@@ -270,7 +271,8 @@ def _get_redis_sentinel_info(bastion, cluster, dbsilo, redis_sentinel):
         sentinel.start()
         rconn = redis.StrictRedis(port=sentinel.local_bind_port)
         sentinel_masters = rconn.sentinel_masters()
-        info = sentinel_masters.get('redismaster.{}.{}.xplain.io'.format(dbsilo, cluster))
+        info = sentinel_masters.get(
+            'redismaster.{}.{}.xplain.io'.format(dbsilo, cluster))
     except redis.ConnectionError:
         info = None
     except sshtunnel.HandlerSSHTunnelForwarderError:
