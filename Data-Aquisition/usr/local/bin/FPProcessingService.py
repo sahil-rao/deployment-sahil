@@ -413,7 +413,7 @@ class callback_context():
 
                     if user_obj:
                         if "tagArray" in user_obj:
-                            jinst_dict['tagArray'] += user_obj["tagArray"]
+                            jinst_dict['tagArray'] += list(set(user_obj["tagArray"]) - set(jinst_dict['tagArray']))
                         if "countArray" in user_obj:
                             jinst_dict['countArray'] += user_obj["countArray"]
 
