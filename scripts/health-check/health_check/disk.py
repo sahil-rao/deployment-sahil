@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from health_check.base import HealthCheck
 import functools
-import multiprocessing
+import multiprocessing.pool
 import os
 import paramiko
 
@@ -13,13 +13,17 @@ class DiskUsageCheck(HealthCheck):
     def __init__(self, bastion, *args, **kwargs):
         super(DiskUsageCheck, self).__init__(*args, **kwargs)
 
-        pool = multiprocessing.Pool(5)
+        pool = multiprocessing.pool.ThreadPool(5)
 
-        self.host_mounts = {}
-        for host, mounts in pool.map(
-                functools.partial(_check_host, bastion),
-                self.hosts):
-            self.host_mounts[host] = mounts
+        try:
+            self.host_mounts = {}
+            for host, mounts in pool.map(
+                    functools.partial(_check_host, bastion),
+                    self.hosts):
+                self.host_mounts[host] = mounts
+        finally:
+            pool.close()
+            pool.join()
 
     def check_host(self, host):
         for mount, percent_full in self.host_mounts[host].iteritems():

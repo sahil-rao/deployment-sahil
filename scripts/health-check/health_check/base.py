@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from termcolor import colored
+
 
 class color(object):
     """Terminal codes for colors to make things pretty"""
@@ -62,9 +64,9 @@ class HealthCheckList(object):
         print ""
         print \
             "\t" * (tabs-1), \
-            color.BLUE, \
-            color.BOLD, \
-            "Executing checklist: ", self.description, color.END, color.END
+            colored("Executing checklist: ", 'blue', attrs=['bold']), \
+            self.description, color.END, color.END
+
         print "\t" * (tabs-1), \
             " ", len(self.health_checks), \
             "checks to execute in the checklist:"
@@ -73,30 +75,31 @@ class HealthCheckList(object):
         for i, healthcheck in enumerate(self.health_checks):
             status = healthcheck.execute(tabs + 1)
             if isinstance(healthcheck, HealthCheck):
-                if status is True:
-                    print \
-                        "\t" * tabs, \
-                        str(i+1) + ")", \
-                        color.BOLD, color.GREEN, "PASSED", color.END, \
-                        ":", \
-                        color.BOLD, healthcheck.description, color.END
+                print "\t" * tabs, str(i+1) + ")",
+
+                if status:
+                    print colored('PASSED', 'green', attrs=['bold']),
                 else:
-                    print \
-                        "\t" * tabs, \
-                        str(i+1) + ")", \
-                        color.BOLD, color.RED, "FAILED", color.END, \
-                        ":", \
-                        color.BOLD, healthcheck.description, color.END
+                    print colored('FAILED', 'red', attrs=['bold']),
+
+                print ':', color.BOLD, healthcheck.description, color.END
+
+                max_len = max(len(str(host)) for host in healthcheck.hosts)
 
                 for host in healthcheck.hosts:
+                    hostname = str(host).ljust(max_len)
                     host_msg = healthcheck.host_msgs.get(host, '')
                     if host_msg:
-                        host_msg = '\t- {}'.format(host_msg)
+                        host_msg = '- {}'.format(host_msg)
+
+                    print "\t" * (tabs+1),
 
                     if healthcheck.check_host(host):
-                        print "\t" * (tabs+1), "PASSED\t" + str(host), host_msg
+                        print colored('PASSED', 'green', attrs=['bold']),
                     else:
-                        print "\t" * (tabs+1), "FAILED\t" + str(host), host_msg
+                        print colored('FAILED', 'red', attrs=['bold']),
+
+                    print hostname, host_msg
 
             healthcheck_statuses.append(status)
 
