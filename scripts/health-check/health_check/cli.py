@@ -26,7 +26,7 @@ def get_backoffice_servers():
 @click.option('-b', '--bastion', default=None)
 @click.argument('cluster')
 @click.argument('region')
-@click.argument('dbsilo')
+@click.argument('dbsilo', nargs=-1)
 def cli(bastion, cluster, region, dbsilo):
     try:
         bastion = {
@@ -40,11 +40,12 @@ def cli(bastion, cluster, region, dbsilo):
         "NavOpt Cluster Health Checklist")
 
     try:
-        cluster_checklist.add_check(health_check.dbsilo.check_dbsilo(
-            bastion,
-            cluster,
-            region,
-            dbsilo))
+        for silo in dbsilo:
+            cluster_checklist.add_check(health_check.dbsilo.check_dbsilo(
+                bastion,
+                cluster,
+                region,
+                silo))
 
     #    backoffice_checklist = HealthCheckList("Backoffice Health Checklist")
     #    backoffice_checklist.add_check(DiskUsageCheck(get_backoffice_servers()))

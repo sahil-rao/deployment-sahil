@@ -209,7 +209,7 @@ def check_redis(bastion, cluster, region, dbsilo):
     if not redis_hostnames:
         print >> sys.stderr, \
             termcolor.colored('WARNING:', 'yellow'), \
-            'no redis servers found'
+            'no redis servers found in', cluster, region, dbsilo
         return redis_checklist
 
     pool = multiprocessing.pool.ThreadPool(5)

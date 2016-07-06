@@ -7,6 +7,8 @@ import functools
 import multiprocessing.pool
 import pymongo
 import sshtunnel
+import sys
+import termcolor
 
 
 class Mongo(object):
@@ -101,21 +103,27 @@ class MongoClusterHeartbeatCheck(HealthCheck):
 
 def check_mongodb(bastion, cluster, region, dbsilo):
     mongodb_checklist = HealthCheckList("MongoDB Cluster Health Checklist")
-    mongo_hostnames = _get_mongodb_hostnames(cluster, region, dbsilo)
+    mongodb_hostnames = _get_mongodb_hostnames(cluster, region, dbsilo)
+
+    if not mongodb_hostnames:
+        print >> sys.stderr, \
+            termcolor.colored('WARNING:', 'yellow'), \
+            'no mongo servers found in', cluster, region, dbsilo
+        return mongodb_checklist
 
     pool = multiprocessing.pool.ThreadPool(5)
     try:
-        mongo_servers = pool.map(
+        mongodb_servers = pool.map(
             functools.partial(_create_mongo, bastion, 27017),
-            mongo_hostnames)
+            mongodb_hostnames)
     finally:
         pool.close()
         pool.join()
 
     for health_check in (
-            MongoClusterConfigurationCheck(mongo_servers),
-            MongoClusterConfigVersionsCheck(mongo_servers),
-            DiskUsageCheck(bastion, mongo_hostnames),
+            MongoClusterConfigurationCheck(mongodb_servers),
+            MongoClusterConfigVersionsCheck(mongodb_servers),
+            DiskUsageCheck(bastion, mongodb_hostnames),
             ):
         mongodb_checklist.add_check(health_check)
 
