@@ -7,18 +7,18 @@ def check_dbsilo(bastion, cluster, region, dbsilo):
     dbsilo_checklist = health_check.base.HealthCheckList(
             description=dbsilo.upper() + " Health Checklist")
 
-    dbsilo_checklist.add_check(
-        health_check.mongo.check_mongodb(
-            bastion,
-            cluster,
-            region,
-            dbsilo))
-
 #    dbsilo_checklist.add_check(
-#            health_check.redis.check_redis(
-#                bastion,
-#                cluster,
-#                region,
-#                dbsilo))
+#        health_check.mongo.check_mongodb(
+#            bastion,
+#            cluster,
+#            region,
+#            dbsilo))
+
+    dbsilo_checklist.add_check(
+            health_check.redis.check_redis(
+                bastion,
+                cluster,
+                region,
+                dbsilo))
 
     return dbsilo_checklist

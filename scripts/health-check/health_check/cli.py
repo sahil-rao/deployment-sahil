@@ -39,14 +39,17 @@ def cli(bastion, cluster, region, dbsilo):
     cluster_checklist = health_check.base.HealthCheckList(
         "NavOpt Cluster Health Checklist")
 
-    cluster_checklist.add_check(health_check.dbsilo.check_dbsilo(
-        bastion,
-        cluster,
-        region,
-        dbsilo))
+    try:
+        cluster_checklist.add_check(health_check.dbsilo.check_dbsilo(
+            bastion,
+            cluster,
+            region,
+            dbsilo))
 
-#    backoffice_checklist = HealthCheckList("Backoffice Health Checklist")
-#    backoffice_checklist.add_check(DiskUsageCheck(get_backoffice_servers()))
-#    cluster_checklist.add_check(backoffice_checklist)
+    #    backoffice_checklist = HealthCheckList("Backoffice Health Checklist")
+    #    backoffice_checklist.add_check(DiskUsageCheck(get_backoffice_servers()))
+    #    cluster_checklist.add_check(backoffice_checklist)
 
-    cluster_checklist.execute()
+        cluster_checklist.execute()
+    finally:
+        cluster_checklist.close()

@@ -41,6 +41,9 @@ class HealthCheck(object):
         """Return True if healthcheck passed no host"""
         raise NotImplementedError
 
+    def close(self):
+        pass
+
 
 def _check_host(health_check, *args, **kwargs):
     return health_check.check_host(*args, **kwargs)
@@ -91,9 +94,9 @@ class HealthCheckList(object):
                         host_msg = '\t- {}'.format(host_msg)
 
                     if healthcheck.check_host(host):
-                        print "\t" * (tabs+1), "PASSED\t" + host, host_msg
+                        print "\t" * (tabs+1), "PASSED\t" + str(host), host_msg
                     else:
-                        print "\t" * (tabs+1), "FAILED\t" + host, host_msg
+                        print "\t" * (tabs+1), "FAILED\t" + str(host), host_msg
 
             healthcheck_statuses.append(status)
 
@@ -112,3 +115,7 @@ class HealthCheckList(object):
                 color.UNDERLINE + self.description + color.END
 
         return status
+
+    def close(self):
+        for health_check in self.health_checks:
+            health_check.close()
