@@ -405,6 +405,8 @@ class callback_context():
 
                 tagArray = []
                 countArray = []
+                jinst_dict['tagArray'] = []
+                jinst_dict['countArray'] = []
                 if header_info is not None:
                     tagArray = generateTagArray(header_info)
                     countArray = generateCountArray(header_info)
