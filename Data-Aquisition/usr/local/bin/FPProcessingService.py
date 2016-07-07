@@ -403,22 +403,24 @@ class callback_context():
                 if data is not None:
                     jinst_dict['data'] = data
 
-                jinst_dict['tagArray'] = []
-                jinst_dict['countArray'] = []
+                tagArray = []
+                countArray = []
                 if header_info is not None:
-                    jinst_dict['tagArray'] = generateTagArray(header_info)
-                    jinst_dict['countArray'] = generateCountArray(header_info)
+                    tagArray = generateTagArray(header_info)
+                    countArray = generateCountArray(header_info)
 
                     user_obj = Self.mongoconn.db.userPrefs.find_one({"userPrefs": "userPrefs"}, {"tagArray": 1, "countArray": 1})
 
                     if user_obj:
                         if "tagArray" in user_obj:
-                            jinst_dict['tagArray'] += user_obj["tagArray"]
+                            tagArray += user_obj["tagArray"]
                         if "countArray" in user_obj:
-                            jinst_dict['countArray'] += user_obj["countArray"]
+                            countArray += user_obj["countArray"]
 
-                    tag_list = list(set(jinst_dict['tagArray']))
-                    count_list = list(set(jinst_dict['countArray']))
+                    jinst_dict['tagArray'] = list(set(tagArray))
+                    jinst_dict['countArray'] = list(set(countArray))
+                    tag_list = jinst_dict['tagArray']
+                    count_list = jinst_dict['countArray']
                     Self.mongoconn.db.userPrefs.update_one({"userPrefs": "userPrefs"},
                                                            {'$set': {'tagArray': tag_list,
                                                                      'countArray': count_list}}, upsert=True)
