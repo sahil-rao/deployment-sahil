@@ -77,9 +77,9 @@ module "dbsilo2" {
     mongo_blue_name_prefix = "${var.cluster_name}-dbsilo2-mongo-blue"
     mongo_blue_ami_id = "ami-a699ddc6"
     mongo_blue_instance_type = "m4.xlarge"
-    mongo_blue_min_size = 1
-    mongo_blue_max_size = 3
-    mongo_blue_desired_capacity = 3
+    mongo_blue_min_size = 0
+    mongo_blue_max_size = 0
+    mongo_blue_desired_capacity = 0
 
     # WARNING: Update version number if AMI is changed
     mongo_green_name_prefix = "${var.cluster_name}-dbsilo2-mongo-green-v2"
