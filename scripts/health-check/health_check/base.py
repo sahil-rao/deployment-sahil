@@ -35,7 +35,19 @@ class HealthCheck(object):
         host_statuses = []
 
         for host in self.hosts:
-            host_statuses.append(self.check_host(host))
+            try:
+                status = self.check_host(host)
+            except Exception, e:
+                status = False
+
+                try:
+                    msg = self.host_msgs[host]
+                except KeyError:
+                    self.host_msgs[host] = str(e)
+                else:
+                    self.host_msgs[host] = msg + ' - ' + str(e)
+
+            host_statuses.append(status)
 
         return all(host_statuses)
 

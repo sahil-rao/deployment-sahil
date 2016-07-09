@@ -1,41 +1,32 @@
 from __future__ import absolute_import
 
-from health_check.base import HealthCheck, HealthCheckList
-from health_check.disk import DiskUsageCheck
+from .base import HealthCheck, HealthCheckList
+from .disk import DiskUsageCheck
+from .tunnel import Tunnel
 import boto3
 import functools
 import multiprocessing.pool
 import pymongo
-import sshtunnel
 import sys
 import termcolor
 
 
-class Mongo(object):
+class Mongo(Tunnel):
     def __init__(self, bastion, host, port):
-        self.bastion = bastion
-        self.host = host
-        self.port = port
+        super(Mongo, self).__init__(bastion, host, port)
 
-        self.tunnel = sshtunnel.SSHTunnelForwarder(
-            bastion,
-            remote_bind_address=(host, port))
+#        if self.tunnel.is_use_local_check_up:
+        self.mconn = pymongo.MongoClient(
+            port=self.tunnel.local_bind_port,
+            socketTimeoutMS=10000,
+            connectTimeoutMS=10000,
+            serverSelectionTimeoutMS=10000,
+        )
 
-        self.tunnel.start()
-
-        self.mconn = pymongo.MongoClient(port=self.tunnel.local_bind_port)
-
-    def close(self):
-        self.tunnel.close()
-
-    def __del__(self):
-        self.close()
-
-    def __str__(self):
-        return '{}:{}'.format(self.host, self.port)
-
-    def __hash__(self):
-        return hash(self.host)
+        try:
+            self.mconn.admin.command('replSetGetStatus')
+        except pymongo.errors.ServerSelectionTimeoutError:
+            self.mconn = None
 
 
 class MongoHealthCheck(HealthCheck):
@@ -53,7 +44,12 @@ class MongoClusterConfigurationCheck(MongoHealthCheck):
             "primary and {} secondaries".format(len(self.hosts) - 1)
 
     def check_host(self, host):
+        if not host.mconn:
+            self.host_msgs[host] = 'tunnel is down'
+            return False
+
         repl_status = host.mconn.admin.command('replSetGetStatus')
+
         num_primaries = 0
         num_secondaries = 0
         num_otherstate = 0
@@ -81,6 +77,10 @@ class MongoClusterConfigVersionsCheck(HealthCheck):
     description = "Config version of all replica set members match"
 
     def check_host(self, host):
+        if not host.mconn:
+            self.host_msgs[host] = 'tunnel is down'
+            return False
+
         repl_status = host.mconn.admin.command('replSetGetStatus')
         config_versions = set()
         for member in repl_status['members']:
@@ -95,6 +95,10 @@ class MongoClusterHeartbeatCheck(HealthCheck):
     description = "Last heartbeat received is recent"
 
     def check_host(self, host):
+        if not host.mconn:
+            self.host_msgs[host] = 'tunnel is down'
+            return False
+
         repl_status = host.mconn.admin.command('replSetGetStatus')
         print repl_status
 
@@ -136,6 +140,8 @@ def _get_mongodb_hostnames(cluster, region, dbsilo):
         {
             'Name': 'tag:Name',
             'Values': [
+                '{}-{}-mongo-green'.format(cluster, dbsilo),
+                '{}-{}-mongo-blue'.format(cluster, dbsilo),
                 '{}-{}-mongo-green-*'.format(cluster, dbsilo),
                 '{}-{}-mongo-blue-*'.format(cluster, dbsilo),
             ],
