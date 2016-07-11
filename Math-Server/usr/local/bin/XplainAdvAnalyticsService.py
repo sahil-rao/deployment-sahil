@@ -43,6 +43,7 @@ usingAWS = config.getboolean("mode", "usingAWS")
 if usingAWS:
     from boto.s3.key import Key
     import boto
+    from datadog import initialize, statsd
 
 mode = cluster_config.get_cluster_mode()
 logging_level = logging.INFO
@@ -75,6 +76,7 @@ if usingAWS:
     redis_host = config.get("RedisLog", "server")
     if redis_host:
         logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
+    initialize(statsd_host='localhost', statsd_port=8125)
 
 def generateBaseStats(tenant):
     """
@@ -633,6 +635,10 @@ def callback(ch, method, properties, body):
     if 'uid' in msg_dict:
         #if uid has been set, the variable will be set already
         redis_conn.incrEntityCounter(uid, "Math.time", incrBy=(endTime - startTime))
+    #send stats to datadog
+    if statsd:
+        totalTime = ((time.time() - startTime) * 1000)
+        statsd.timing("advanalytics.per.msg.time", totalTime, tags=[tenant+":"+uid])
 
 connection1 = RabbitConnection(callback, ['advanalytics'], ['elasticpub'], {}, prefetch_count=1)
 

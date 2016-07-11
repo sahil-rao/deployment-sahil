@@ -49,6 +49,7 @@ if mode == "development":
 if usingAWS:
     from boto.s3.key import Key
     import boto
+    from datadog import initialize, statsd
 
 CLUSTER_NAME = config.get("ApplicationConfig", "clusterName")
 
@@ -79,6 +80,7 @@ if usingAWS:
     redis_host = config.get("RedisLog", "server")
     if redis_host:
         logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
+    initialize(statsd_host='localhost', statsd_port=8125)
 
 COMPILER_MODULES='/usr/lib/baaz_compiler'
 
@@ -104,6 +106,7 @@ for fname in dirList:
 
 table_regex = re.compile("([\w]*)\.([\w]*)")
 myip = socket.gethostbyname(socket.gethostname())
+
 
 class Compiler_Context:
     def __init__(self):
@@ -1909,7 +1912,10 @@ def callback(ch, method, properties, body):
     logging.info("Event Processing Complete")
 
     endTime = time.time()
-
+    #send stats to datadog
+    if statsd:
+        totalTime = ((endTime - startTime) * 1000)
+        statsd.timing("compilerservice.per.msg.time", totalTime, tags=[tenant+":"+uid])
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already
         redis_conn.incrEntityCounter(uid, 'Compiler.time', incrBy = endTime-startTime)
