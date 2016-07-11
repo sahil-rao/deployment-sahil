@@ -180,6 +180,9 @@
 - name: Install python funcsigs package
   pip: name=funcsigs
   sudo: yes
+- name: Install python datadog package
+  pip: name=datadog
+  sudo: yes
 #REDIS SENTINEL DEPLOYMENT
 #- name: Install Redis APT Package
 #  apt: name=redis-server update_cache=yes

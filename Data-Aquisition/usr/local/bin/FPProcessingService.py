@@ -54,6 +54,7 @@ DEFAULT_QUERY_LIMIT = 50000
 if usingAWS:
     from boto.s3.key import Key
     import boto
+    from datadog import initialize, statsd
 
 rabbitserverIP = config.get("RabbitMQ", "server")
 metrics_url = None
@@ -89,6 +90,7 @@ if usingAWS:
     redis_host = config.get("RedisLog", "server")
     if redis_host:
         logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
+    initialize(statsd_host='localhost', statsd_port=8125)
 
 def generateTagArray(header_info):
     tagArray = []
@@ -403,11 +405,13 @@ class callback_context():
                 if data is not None:
                     jinst_dict['data'] = data
 
+                tagArray = []
+                countArray = []
                 jinst_dict['tagArray'] = []
                 jinst_dict['countArray'] = []
                 if header_info is not None:
-                    jinst_dict['tagArray'] = generateTagArray(header_info)
-                    jinst_dict['countArray'] = generateCountArray(header_info)
+                    tagArray = generateTagArray(header_info)
+                    countArray = generateCountArray(header_info)
 
                     user_obj = Self.mongoconn.db.userPrefs.find_one({"userPrefs": "userPrefs"}, {"tagArray": 1, "countArray": 1})
 
@@ -415,10 +419,12 @@ class callback_context():
                         if "tagArray" in user_obj:
                             jinst_dict['tagArray'] += user_obj["tagArray"]
                         if "countArray" in user_obj:
-                            jinst_dict['countArray'] += user_obj["countArray"]
+                            countArray += user_obj["countArray"]
 
-                    tag_list = list(set(jinst_dict['tagArray']))
-                    count_list = list(set(jinst_dict['countArray']))
+                    jinst_dict['tagArray'] = list(set(tagArray))
+                    jinst_dict['countArray'] = list(set(countArray))
+                    tag_list = jinst_dict['tagArray']
+                    count_list = jinst_dict['countArray']
                     Self.mongoconn.db.userPrefs.update_one({"userPrefs": "userPrefs"},
                                                            {'$set': {'tagArray': tag_list,
                                                                      'countArray': count_list}}, upsert=True)
@@ -771,6 +777,10 @@ def callback(ch, method, properties, body):
     except:
         clog.exception("While closing mongo")
 
+    #send stats to datadog
+    if statsd:
+        totalTime = ((time.time() - startTime) * 1000)
+        statsd.timing("fpservice.per.msg.time", totalTime, tags=[tenant+":"+uid])
     connection1.basicAck(ch,method)
 
 connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue','elasticpub'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)
