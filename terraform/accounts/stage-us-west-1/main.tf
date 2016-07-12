@@ -27,9 +27,9 @@ module "dbsilo1" {
     mongo_green_name_prefix = "${var.cluster_name}-dbsilo1-mongo-green"
     mongo_green_ami_id = "ami-1ca7e37c"
     mongo_green_instance_type = "m4.xlarge"
-    mongo_green_min_size = 1
-    mongo_green_max_size = 3
-    mongo_green_desired_capacity = 3
+    mongo_green_min_size = 0
+    mongo_green_max_size = 0
+    mongo_green_desired_capacity = 0
 
     redis_blue_name_prefix = "${var.cluster_name}-dbsilo1-redis-blue-v2"
     redis_blue_ami_id = "ami-cfa0e4af"
