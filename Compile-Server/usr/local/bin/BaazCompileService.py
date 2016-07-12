@@ -49,6 +49,7 @@ if mode == "development":
 if usingAWS:
     from boto.s3.key import Key
     import boto
+    from datadog import initialize, statsd
 
 CLUSTER_NAME = config.get("ApplicationConfig", "clusterName")
 
@@ -104,6 +105,7 @@ for fname in dirList:
 
 table_regex = re.compile("([\w]*)\.([\w]*)")
 myip = socket.gethostbyname(socket.gethostname())
+
 
 class Compiler_Context:
     def __init__(self):
@@ -1929,7 +1931,10 @@ def callback(ch, method, properties, body):
     logging.info("Event Processing Complete")
 
     endTime = time.time()
-
+    #send stats to datadog
+    if statsd:
+        totalTime = ((endTime - startTime) * 1000)
+        statsd.timing("compileservice.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already
         redis_conn.incrEntityCounter(uid, 'Compiler.time', incrBy = endTime-startTime)

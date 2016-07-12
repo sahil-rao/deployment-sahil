@@ -32,6 +32,7 @@ config.read("/var/Baaz/hosts.cfg")
 usingAWS = config.getboolean("mode", "usingAWS")
 if usingAWS:
     import boto
+    from datadog import initialize, statsd
 
 mode = cluster_config.get_cluster_mode()
 logging_level = logging.INFO
@@ -95,6 +96,7 @@ def callback(ch, method, properties, body):
     This service is used to create/update elasticsearch indexes
     '''
     try:
+        startTime = time.time()
         msg_dict = loads(body)
     except:
         logging.exception("Could not load the message JSON")
@@ -133,6 +135,10 @@ def callback(ch, method, properties, body):
         logging.error("Could not connect to ElasticSearch %s", e.args)
 
     connection1.basicAck(ch, method)
+    #send stats to datadog
+    if statsd:
+        totalTime = ((time.time() - startTime) * 1000)
+        statsd.timing("elasticpub.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
 
 connection1 = RabbitConnection(callback, ['elasticpub'], [], {}, prefetch_count=50)
 logging.info("ElasticPub going to start consuming")

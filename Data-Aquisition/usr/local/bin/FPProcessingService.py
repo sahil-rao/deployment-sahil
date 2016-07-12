@@ -54,6 +54,7 @@ DEFAULT_QUERY_LIMIT = 50000
 if usingAWS:
     from boto.s3.key import Key
     import boto
+    from datadog import initialize, statsd
 
 rabbitserverIP = config.get("RabbitMQ", "server")
 metrics_url = None
@@ -775,6 +776,10 @@ def callback(ch, method, properties, body):
     except:
         clog.exception("While closing mongo")
 
+    #send stats to datadog
+    if statsd:
+        totalTime = ((time.time() - starttime) * 1000)
+        statsd.timing("fpservice.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
     connection1.basicAck(ch,method)
 
 connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue','elasticpub'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)

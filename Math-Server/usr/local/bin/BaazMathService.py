@@ -40,6 +40,7 @@ usingAWS = config.getboolean("mode", "usingAWS")
 if usingAWS:
     from boto.s3.key import Key
     import boto
+    from datadog import initialize, statsd
 
 rabbitserverIP = config.get("RabbitMQ", "server")
 
@@ -373,7 +374,10 @@ def callback(ch, method, properties, body):
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already
         redis_conn.incrEntityCounter(uid, "Math.time", incrBy = endTime-startTime)
-
+    #send stats to datadog
+    if statsd:
+        totalTime = ((time.time() - startTime) * 1000)
+        statsd.timing("mathservice.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
 
 connection1 = RabbitConnection(callback, ['mathqueue'], ['elasticpub'], {})
 

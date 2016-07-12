@@ -43,6 +43,7 @@ usingAWS = config.getboolean("mode", "usingAWS")
 if usingAWS:
     from boto.s3.key import Key
     import boto
+    from datadog import initialize, statsd
 
 mode = cluster_config.get_cluster_mode()
 logging_level = logging.INFO
@@ -587,7 +588,12 @@ def callback(ch, method, properties, body):
             if 'outmost_query' in msg_dict:
                 ctx.outmost_query = msg_dict['outmost_query']
 
+            opcode_startTime = time.time()
             methodToCall(tenant, ctx)
+            #send stats to datadog
+            if statsd:
+                totalTime = ((time.time() - opcode_startTime) * 1000)
+                statsd.timing("advanalytics.per.opcode.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid, "opcode:"+opcode])
 
             if 'uid' in msg_dict:
                 redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 1)
@@ -633,6 +639,10 @@ def callback(ch, method, properties, body):
     if 'uid' in msg_dict:
         #if uid has been set, the variable will be set already
         redis_conn.incrEntityCounter(uid, "Math.time", incrBy=(endTime - startTime))
+    #send stats to datadog
+    if statsd:
+        totalTime = ((time.time() - startTime) * 1000)
+        statsd.timing("advanalytics.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
 
 connection1 = RabbitConnection(callback, ['advanalytics'], ['elasticpub'], {}, prefetch_count=1)
 

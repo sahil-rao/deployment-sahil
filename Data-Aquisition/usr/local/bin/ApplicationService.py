@@ -65,6 +65,7 @@ usingAWS = config.getboolean("mode", "usingAWS")
 if usingAWS:
     from boto.s3.key import Key
     import boto
+    from datadog import initialize, statsd
 
 mode = cluster_config.get_cluster_mode()
 logging_level = logging.INFO
@@ -332,6 +333,7 @@ def callback(ch, method, properties, body):
         """
          This needs to be dynamic in nature.
         """
+        opcode_startTime = time.time()
         if msg_dict["opcode"] == "HbaseDDL":
 
             clog.debug("Got the opcode of Hbase")
@@ -341,7 +343,7 @@ def callback(ch, method, properties, body):
             add_table_volume.execute(tenant, msg_dict)
             resp_dict = process_ddl_request(ch, properties, tenant, "hbase", instances, db, redis_conn, clog)
         if msg_dict["opcode"] == "ImpalaDDL":
-
+            startTime = time.time()
             clog.debug("Got the opcode of Hbase")
             instances = msg_dict["job_instances"]
             db = client[tenant]
@@ -460,6 +462,15 @@ def callback(ch, method, properties, body):
                     mod = importlib.import_module(api_config.get(section, "Import"))
                     methodToCall = getattr(mod, api_config.get(section, "Function"))
                     resp_dict = methodToCall(tenant, msg_dict)
+        #send stats to datadog
+        if statsd:
+            uid = None
+            totalTime = ((time.time() - opcode_startTime) * 1000)
+            if "uid" in msg_dict:
+                uid = msg_dict["uid"]
+                statsd.timing("appservice."+msg_dict['opcode'], totalTime, tags=["tenant:"+tenant, "uid:"+uid])
+            else:
+                statsd.timing("appservice."+msg_dict['opcode'], totalTime, tags=["tenant:"+tenant])
     except:
         clog.exception("Proceesing request for " + msg_dict["opcode"])
 
