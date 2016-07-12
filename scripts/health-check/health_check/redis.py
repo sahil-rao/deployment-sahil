@@ -201,7 +201,7 @@ class RedisSameSentinelsCheck(RedisHealthCheck):
 class RedisSentinelQuorumCheck(RedisHealthCheck):
 
     description = \
-        "Redis sentinel is >= quorum, is odd, " \
+        "Redis sentinel is >= 3, >= quorum, is odd, " \
         "and matches other sentinels"
 
     def check_redis_host(self, host):
@@ -212,6 +212,10 @@ class RedisSentinelQuorumCheck(RedisHealthCheck):
             'sentinels: {} quorum: {}'.format(sentinels, quorum)
 
         result = True
+
+        if sentinels < 3:
+            self.host_msgs[host] += ' (under sized)'
+            result = False
 
         if sentinels < quorum:
             self.host_msgs[host] += ' (under quorum)'

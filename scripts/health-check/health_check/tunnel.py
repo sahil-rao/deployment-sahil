@@ -29,11 +29,11 @@ class Tunnel(object):
                 self.tunnel = None
 
     def close(self):
-        if self.tunnel is not None:
+        if hasattr(self, 'tunnel') and self.tunnel is not None:
             self.tunnel.close()
 
-    #def __del__(self):
-    #    self.close()
+    def __del__(self):
+        self.close()
 
     def __str__(self):
         return '{}:{}'.format(self.host, self.port)

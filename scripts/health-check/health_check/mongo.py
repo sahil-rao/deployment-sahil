@@ -76,9 +76,16 @@ class Mongo(Tunnel):
     def is_master(self):
         return self.current_repl_status.get('state') == 1
 
+    def is_replica(self):
+        return self.current_repl_status.get('state') == 2
+
+    def is_arbiter(self):
+        return self.current_repl_status.get('state') == 7
+
     def members(self):
         primaries = []
         secondaries = []
+        arbiters = []
         others = []
 
         for member in self.repl_status.get('members', []):
@@ -88,14 +95,22 @@ class Mongo(Tunnel):
                 primaries.append(name)
             elif member['state'] == 2:
                 secondaries.append(name)
+            elif member['state'] == 7:
+                arbiters.append(name)
             else:
                 others.append(name)
 
-        return sorted(primaries), sorted(secondaries), sorted(others)
+        return (
+            sorted(primaries),
+            sorted(secondaries),
+            sorted(arbiters),
+            sorted(others),
+        )
 
     def member_states(self):
         num_primaries = 0
         num_secondaries = 0
+        num_arbiters = 0
         num_otherstate = 0
 
         for member in self.repl_status.get('members', []):
@@ -103,10 +118,12 @@ class Mongo(Tunnel):
                 num_primaries += 1
             elif member['state'] == 2:
                 num_secondaries += 1
+            elif member['state'] == 7:
+                num_secondaries += 1
             else:
                 num_otherstate += 1
 
-        return num_primaries, num_secondaries, num_otherstate
+        return num_primaries, num_secondaries, num_arbiters, num_otherstate
 
     def config_versions(self):
         config_versions = set()
@@ -168,35 +185,13 @@ class MongoClusterAgreeOnMasterCheck(MongoHealthCheck):
         return True
 
 
-class MongoSameReplicasCheck(MongoHealthCheck):
-
-    description = "Mongo machines have the same replicas"
-
-    def check_mongo_host(self, host):
-        primaries, secondaries, others = host.members()
-        self.host_msgs[host] = 'P: {} S: {} O: {}'.format(
-            ','.join(sorted(primaries)),
-            ','.join(sorted(secondaries)),
-            ','.join(sorted(others)))
-
-        initial = None
-        for h in self.hosts:
-            if h == host:
-                continue
-
-            if (primaries, secondaries, others) != h.members():
-                return False
-
-        return True
-
-
 class MongoClusterConfigurationCheck(MongoHealthCheck):
     def __init__(self, *args, **kwargs):
         super(MongoClusterConfigurationCheck, self).__init__(*args, **kwargs)
 
         self.description = \
             "Mongo instance's replica set view has one " \
-            "primary and {} secondaries and arbiters".format(
+            "primary and {} secondaries + arbiters".format(
                 len(self.hosts) - 1)
 
     def execute(self, *args, **kwargs):
@@ -205,20 +200,26 @@ class MongoClusterConfigurationCheck(MongoHealthCheck):
             **kwargs)
 
         return \
-            self._all_equal(host.member_states() for host in self.hosts) and \
+            self._all_equal(host.members() for host in self.hosts) and \
             result
 
     def check_mongo_host(self, host):
-        num_primaries, num_secondaries, num_otherstate = host.member_states()
+        primaries, secondaries, arbiters, others = host.members()
+        self.host_msgs[host] = 'P: {} S: {} A: {} O: {}'.format(
+            ','.join(sorted(primaries)),
+            ','.join(sorted(secondaries)),
+            ','.join(sorted(arbiters)),
+            ','.join(sorted(others)))
 
-        self.host_msgs[host] = 'primaries: {} secondaries: {} other: {}'.format(
-            num_primaries,
-            num_secondaries,
-            num_otherstate)
+        initial = None
+        for h in self.hosts:
+            if h == host:
+                continue
 
-        return \
-            num_primaries == 1 and \
-            (num_secondaries + num_otherstate) == len(self.hosts) - 1
+            if (primaries, secondaries, arbiters, others) != h.members():
+                return False
+
+        return True
 
 
 class MongoClusterConfigVersionsCheck(MongoHealthCheck):
@@ -262,15 +263,24 @@ class MongoReplicaDelayCheck(MongoHealthCheck):
     description = "Check replicas are not behind master"
 
     def check_mongo_host(self, host):
-        primary_repl_status = host.primary_repl_status
-        repl_status = host.current_repl_status
+        # Arbiters don't have replica delays.
+        if host.is_arbiter():
+            self.host_msgs[host] = 'arbiter'
+            return True
 
         try:
-            lag = primary_repl_status['optimeDate'] - repl_status['optimeDate']
+            primary_optime = host.primary_repl_status['optimeDate']
         except KeyError:
+            self.host_msgs[host] = 'primary missing optime'
             return False
 
-        lag = max(0, lag.seconds)
+        try:
+            current_optime = host.current_repl_status['optimeDate']
+        except KeyError:
+            self.host_msgs[host] = 'current missing optime'
+            return False
+
+        lag = max(0, (primary_optime - current_optime).seconds)
 
         self.host_msgs[host] = 'lag: {}'.format(lag)
 
@@ -289,7 +299,7 @@ def check_mongodb(bastion, cluster, region, dbsilo):
 
     pool = multiprocessing.pool.ThreadPool(5)
     try:
-        mongodb_servers = map(
+        mongodb_servers = pool.map(
             functools.partial(_create_mongo, bastion, 27017),
             mongodb_hostnames)
     finally:
@@ -298,7 +308,6 @@ def check_mongodb(bastion, cluster, region, dbsilo):
 
     for health_check in (
             MongoClusterAgreeOnMasterCheck(mongodb_servers),
-            MongoSameReplicasCheck(mongodb_servers),
             MongoClusterConfigurationCheck(mongodb_servers),
             MongoClusterConfigVersionsCheck(mongodb_servers),
             MongoClusterHeartbeatCheck(mongodb_servers),

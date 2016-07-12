@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import click
 import health_check.base
 import health_check.dbsilo
+import health_check.ssh
 
 
 # TODO: Make this function real
@@ -28,13 +29,7 @@ def get_backoffice_servers():
 @click.argument('region')
 @click.argument('dbsilo', nargs=-1)
 def cli(bastion, cluster, region, dbsilo):
-    try:
-        bastion = {
-            'navopt-alpha': 'alpha-root.xplain.io',
-            'navopt-prod': '52.27.164.215',
-        }[bastion]
-    except KeyError:
-        pass
+    bastion = health_check.ssh.get_config(bastion)['hostname']
 
     cluster_checklist = health_check.base.HealthCheckList(
         "NavOpt Cluster Health Checklist")

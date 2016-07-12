@@ -26,26 +26,36 @@ class DiskUsageCheck(HealthCheck):
             pool.join()
 
     def check_host(self, host):
+        result = True
+        max_full = None
+
         for mount, percent_full in self.host_mounts[host].iteritems():
-            self.host_msgs[host] = '{}%'.format(percent_full)
-
+            max_full = max(max_full or 0, percent_full)
             if percent_full > 80:
-                return False
+                result = False
 
-        return True
+        if max_full is None:
+            self.host_msgs[host] = 'no mount disk usage?'
+            return False
+
+        self.host_msgs[host] = '{}%'.format(max_full)
+
+        return result
 
 
 def _check_host(bastion, host):
     with ssh.connect(bastion) as client:
-        stdin, stdout, stderr = client.exec_command(
-            "ssh {} df -hP | "
-            "awk 'NR>1{{print $1,$5}}' | "
+        cmd = "ssh {} df -hP | " \
+            "awk 'NR>1{{print $1,$5}}' | " \
             "sed -e's/%//g'".format(pipes.quote(host))
-        )
+
+        stdin, stdout, stderr = client.exec_command(cmd)
+
+        stdout_lines = stdout.readlines()
 
         mounts = {}
 
-        for line in stdout.readlines():
+        for line in stdout_lines:
             mount, percent_full = line.strip().split()
             mounts[mount] = int(percent_full)
 
