@@ -95,14 +95,14 @@ if usingAWS:
 def generateTagArray(header_info):
     tagArray = []
     for header in header_info:
-        if('tag' in header and header['tag'] is True):
+        if('tag' in header and header['tag'] is True and header['use'] is True):
             tagArray.append(header['type'].upper())
     return tagArray
 
 def generateCountArray(header_info):
     countArray = []
     for header in header_info:
-        if('count' in header and header['count'] is True):
+        if('count' in header and header['count'] is True and header['use'] is True):
             countArray.append(header['type'].upper())
     return countArray
 
@@ -111,7 +111,11 @@ def clean_header(header_info):
     if not header_info:
         return header_info
     for i, tag_info in enumerate(header_info):
-        header_info[i]['type'] = "".join(re.findall("[a-zA-Z-_]+", tag_info['type'].upper()))
+        '''
+        Dmitri's note: this is a bit redundant since the UI already sanitizes the values to begin with
+        '''
+        if header_info[i]['use'] is True:
+            header_info[i]['type'] = "".join(re.findall("[a-zA-Z-_]+", tag_info['type'].upper()))
     return header_info
 
 def end_of_phase_callback(params, current_phase):
