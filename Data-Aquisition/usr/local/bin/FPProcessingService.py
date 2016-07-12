@@ -90,7 +90,6 @@ if usingAWS:
     redis_host = config.get("RedisLog", "server")
     if redis_host:
         logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
-    initialize(statsd_host='localhost', statsd_port=8125)
 
 def generateTagArray(header_info):
     tagArray = []
@@ -779,8 +778,8 @@ def callback(ch, method, properties, body):
 
     #send stats to datadog
     if statsd:
-        totalTime = ((time.time() - startTime) * 1000)
-        statsd.timing("fpservice.per.msg.time", totalTime, tags=[tenant+":"+uid])
+        totalTime = ((time.time() - starttime) * 1000)
+        statsd.timing("fpservice.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
     connection1.basicAck(ch,method)
 
 connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue','elasticpub'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)

@@ -80,7 +80,6 @@ if usingAWS:
     redis_host = config.get("RedisLog", "server")
     if redis_host:
         logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
-    initialize(statsd_host='localhost', statsd_port=8125)
 
 COMPILER_MODULES='/usr/lib/baaz_compiler'
 
@@ -1915,7 +1914,7 @@ def callback(ch, method, properties, body):
     #send stats to datadog
     if statsd:
         totalTime = ((endTime - startTime) * 1000)
-        statsd.timing("compilerservice.per.msg.time", totalTime, tags=[tenant+":"+uid])
+        statsd.timing("compileservice.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already
         redis_conn.incrEntityCounter(uid, 'Compiler.time', incrBy = endTime-startTime)

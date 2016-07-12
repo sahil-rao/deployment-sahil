@@ -113,7 +113,6 @@ if usingAWS:
     redis_host = config.get("RedisLog", "server")
     if redis_host:
         logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
-    initialize(statsd_host='localhost', statsd_port=8125)
 
 def process_mongo_rewrite_request(ch, properties, tenant, instances, clog):
 
@@ -334,6 +333,7 @@ def callback(ch, method, properties, body):
         """
          This needs to be dynamic in nature.
         """
+        opcode_startTime = time.time()
         if msg_dict["opcode"] == "HbaseDDL":
 
             clog.debug("Got the opcode of Hbase")
@@ -341,11 +341,7 @@ def callback(ch, method, properties, body):
             db = client[tenant]
             redis_conn = RedisConnector(tenant)
             add_table_volume.execute(tenant, msg_dict)
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = process_ddl_request(ch, properties, tenant, "hbase", instances, db, redis_conn, clog)
-            else:
-                resp_dict = process_ddl_request(ch, properties, tenant, "hbase", instances, db, redis_conn, clog)
+            resp_dict = process_ddl_request(ch, properties, tenant, "hbase", instances, db, redis_conn, clog)
         if msg_dict["opcode"] == "ImpalaDDL":
             startTime = time.time()
             clog.debug("Got the opcode of Hbase")
@@ -357,11 +353,6 @@ def callback(ch, method, properties, body):
                 resp_dict = process_ddl_request(ch, properties, tenant, msg_dict['target'], instances, db, redis_conn, clog)
             else:
                 resp_dict = process_ddl_request(ch, properties, tenant, "impala", instances, db, redis_conn, clog)
-            endTime = time.time()
-            #send stats to datadog
-            if statsd:
-                totalTime = ((endTime - startTime) * 1000)
-                statsd.timing("appservice."+msg_dict['opcode'], totalTime, tags=[tenant+":"+uid])
         elif msg_dict["opcode"] == "ImpalaImport":
 
             clog.debug("Got the opcode of Impala import")
@@ -399,154 +390,65 @@ def callback(ch, method, properties, body):
             os.makedirs(logpath)
 
             shutil.copy(dest_file, logpath)
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = get_impala_import.execute(tenant, {'file':dest_file, 'stats':msg_dict['stats']})
-            else:
-                resp_dict = get_impala_import.execute(tenant, {'file':dest_file, 'stats':msg_dict['stats']})
+            resp_dict = get_impala_import.execute(tenant, {'file':dest_file, 'stats':msg_dict['stats']})
         elif msg_dict["opcode"] == "MongoTransform":
 
             clog.debug("Got the opcode For Mongo Translation")
             instances = msg_dict["job_instances"]
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = process_mongo_rewrite_request(ch, properties, tenant, instances, clog)
-            else:
-                resp_dict = process_mongo_rewrite_request(ch, properties, tenant, instances, clog)
+            resp_dict = process_mongo_rewrite_request(ch, properties, tenant, instances, clog)
         elif msg_dict['opcode'] == "TableTransformStats":
             #get list of patterns that are being transformed
             instances = msg_dict["job_instances"]
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = table_transform_stats.execute(tenant, instances)
-            else:
-                resp_dict = table_transform_stats.execute(tenant, instances)
+            resp_dict = table_transform_stats.execute(tenant, instances)
         elif msg_dict['opcode'] == "QueryTransformStats":
             #get list of patterns that are being transformed
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = query_transform_stats.execute(tenant, msg_dict)
-            else:
-                resp_dict = query_transform_stats.execute(tenant, msg_dict)
+            resp_dict = query_transform_stats.execute(tenant, msg_dict)
         elif msg_dict["opcode"] == "TableDetails":
             entity_id = msg_dict["entity_id"]
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = table_details.execute(tenant, entity_id)
-            else:
-                resp_dict = table_details.execute(tenant, entity_id)
+            resp_dict = table_details.execute(tenant, entity_id)
         elif msg_dict["opcode"] == "QueryDetails":
             entity_id = msg_dict["entity_id"]
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = query_details.execute(tenant, entity_id)
-            else:
-                resp_dict = query_details.execute(tenant, entity_id)
+            resp_dict = query_details.execute(tenant, entity_id)
         elif msg_dict["opcode"] == "UploadDetails":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = upload_details.execute(tenant)
-            else:
-                resp_dict = upload_details.execute(tenant)
+            resp_dict = upload_details.execute(tenant)
         elif msg_dict["opcode"] == "ScaleModeInfo":
             smc = ScaleModeConnector(tenant)
             rc = RedisConnector(tenant)
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = smc.generate_json()
-            else:
-                resp_dict = smc.generate_json()
+            resp_dict = smc.generate_json()
             if "uid" in msg_dict:
                 uid = msg_dict["uid"]
                 resp_dict["totalQueries"] = rc.getScaleModeTotalQueryCount(uid)
                 resp_dict["progress"] = rc.getProgress(uid)
         elif msg_dict['opcode'] == "TopDim":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = top_dim.execute(tenant)
-            else:
-                resp_dict = top_dim.execute(tenant)
+            resp_dict = top_dim.execute(tenant)
         elif msg_dict['opcode'] == "TopTablesByPattern":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = top_tables_by_pattern.execute(tenant)
-            else:
-                resp_dict = top_tables_by_pattern.execute(tenant)
+            resp_dict = top_tables_by_pattern.execute(tenant)
         elif msg_dict['opcode'] == "TopTables":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = top_tables.execute(tenant)
-            else:
-                resp_dict = top_tables.execute(tenant)
+            resp_dict = top_tables.execute(tenant)
         elif msg_dict['opcode'] == "TailTables":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = tail_tables.execute(tenant)
-            else:
-                resp_dict = tail_tables.execute(tenant)
+            resp_dict = tail_tables.execute(tenant)
         elif msg_dict['opcode'] == "ColumnByOperator":
             if 'operator' in msg_dict:
-                if statsd:
-                    with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                        resp_dict = columns_by_operator.execute(tenant, msg_dict['operator'])
-                else:
-                    resp_dict = columns_by_operator.execute(tenant, msg_dict['operator'])
+                resp_dict = columns_by_operator.execute(tenant, msg_dict['operator'])
         elif msg_dict['opcode'] == "TableStats":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = table_stats.execute(tenant)
-            else:
-                resp_dict = table_stats.execute(tenant)
+            resp_dict = table_stats.execute(tenant)
         elif msg_dict['opcode'] == "ColumnStats":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = column_stats.execute(tenant)
-            else:
-                resp_dict = column_stats.execute(tenant)
+            resp_dict = column_stats.execute(tenant)
         elif msg_dict['opcode'] == "SimpleQueries":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = simple_queries.execute(tenant)
-            else:
-                resp_dict = simple_queries.execute(tenant)
+            resp_dict = simple_queries.execute(tenant)
         elif msg_dict['opcode'] == "WorkloadAssessment":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = workload_assessment.execute(tenant)
-            else:
-                resp_dict = workload_assessment.execute(tenant)
+            resp_dict = workload_assessment.execute(tenant)
         elif msg_dict['opcode'] == "AccessPatterns":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = access_patterns.execute(tenant, msg_dict["accessPatternIds"])
-            else:
-                resp_dict = access_patterns.execute(tenant, msg_dict["accessPatternIds"])
+            resp_dict = access_patterns.execute(tenant, msg_dict["accessPatternIds"])
         elif msg_dict['opcode'] == "MongoUrlForTenant":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = {'mongo_url': FPConnector.get_mongo_url(tenant)}
-            else:
-                resp_dict = {'mongo_url': FPConnector.get_mongo_url(tenant)}
+            resp_dict = {'mongo_url': FPConnector.get_mongo_url(tenant)}
         elif msg_dict['opcode'] == "RedisMasterNameForTenant":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant)}
-            else:
-                resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant)}
+            resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant)}
         elif msg_dict['opcode'] == "GetRedisForTenant":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant),
-                                 'redis_hosts': FPConnector.get_redis_hosts(tenant)}
-            else:
-                resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant),
-                             'redis_hosts': FPConnector.get_redis_hosts(tenant)}
+            resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant),
+                         'redis_hosts': FPConnector.get_redis_hosts(tenant)}
         elif msg_dict['opcode'] == "ElasticNodesForTenant":
-            if statsd:
-                with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                    resp_dict = {'elastic_nodes': FPConnector.get_elastic_nodes(tenant)}
-            else:
-                resp_dict = {'elastic_nodes': FPConnector.get_elastic_nodes(tenant)}
+            resp_dict = {'elastic_nodes': FPConnector.get_elastic_nodes(tenant)}
         else:
             api_config= ConfigParser.RawConfigParser()
             api_config.read("/etc/xplain/application-api.cfg")
@@ -559,11 +461,16 @@ def callback(ch, method, properties, body):
                 else:
                     mod = importlib.import_module(api_config.get(section, "Import"))
                     methodToCall = getattr(mod, api_config.get(section, "Function"))
-                    if statsd:
-                        with statsd.timed('appservice.'+msg_dict['opcode'], tags=[tenant+":"+msg_dict['uid']]):
-                            resp_dict = methodToCall(tenant, msg_dict)
-                    else:
-                        resp_dict = methodToCall(tenant, msg_dict)
+                    resp_dict = methodToCall(tenant, msg_dict)
+        #send stats to datadog
+        if statsd:
+            uid = None
+            totalTime = ((time.time() - opcode_startTime) * 1000)
+            if "uid" in msg_dict:
+                uid = msg_dict["uid"]
+                statsd.timing("appservice."+msg_dict['opcode'], totalTime, tags=["tenant:"+tenant, "uid:"+uid])
+            else:
+                statsd.timing("appservice."+msg_dict['opcode'], totalTime, tags=["tenant:"+tenant])
     except:
         clog.exception("Proceesing request for " + msg_dict["opcode"])
 

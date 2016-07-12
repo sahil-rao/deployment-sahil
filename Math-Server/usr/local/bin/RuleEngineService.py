@@ -77,7 +77,6 @@ if usingAWS:
     redis_host = config.get("RedisLog", "server")
     if redis_host:
         logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
-    initialize(statsd_host='localhost', statsd_port=8125)
 
 def callback(ch, method, properties, body):
     '''
@@ -170,7 +169,7 @@ def callback(ch, method, properties, body):
     #send stats to datadog
     if statsd:
         totalTime = ((time.time() - startTime) * 1000)
-        statsd.timing("ruleengine.per.msg.time", totalTime, tags=[tenant+":"+uid])
+        statsd.timing("ruleengine.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
 
 connection1 = RabbitConnection(callback, ['ruleengine'], [], {}, prefetch_count=1)
 
