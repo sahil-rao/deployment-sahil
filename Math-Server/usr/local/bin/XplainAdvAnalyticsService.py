@@ -76,7 +76,6 @@ if usingAWS:
     redis_host = config.get("RedisLog", "server")
     if redis_host:
         logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
-    initialize(statsd_host='localhost', statsd_port=8125)
 
 def generateBaseStats(tenant):
     """
@@ -589,7 +588,12 @@ def callback(ch, method, properties, body):
             if 'outmost_query' in msg_dict:
                 ctx.outmost_query = msg_dict['outmost_query']
 
+            opcode_startTime = time.time()
             methodToCall(tenant, ctx)
+            #send stats to datadog
+            if statsd:
+                totalTime = ((time.time() - opcode_startTime) * 1000)
+                statsd.timing("advanalytics.per.opcode.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid, "opcode:"+opcode])
 
             if 'uid' in msg_dict:
                 redis_conn.incrEntityCounter(uid, stats_success_key, incrBy = 1)
@@ -638,7 +642,7 @@ def callback(ch, method, properties, body):
     #send stats to datadog
     if statsd:
         totalTime = ((time.time() - startTime) * 1000)
-        statsd.timing("advanalytics.per.msg.time", totalTime, tags=[tenant+":"+uid])
+        statsd.timing("advanalytics.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
 
 connection1 = RabbitConnection(callback, ['advanalytics'], ['elasticpub'], {}, prefetch_count=1)
 
