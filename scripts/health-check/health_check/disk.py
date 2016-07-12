@@ -1,10 +1,10 @@
 from __future__ import absolute_import
 
-from health_check.base import HealthCheck
+from . import ssh
+from .base import HealthCheck
 import functools
 import multiprocessing.pool
-import os
-import paramiko
+import pipes
 
 
 class DiskUsageCheck(HealthCheck):
@@ -36,34 +36,17 @@ class DiskUsageCheck(HealthCheck):
 
 
 def _check_host(bastion, host):
-    config_file = os.path.expanduser('~/.ssh/config')
+    with ssh.connect(bastion) as client:
+        stdin, stdout, stderr = client.exec_command(
+            "ssh {} df -hP | "
+            "awk 'NR>1{{print $1,$5}}' | "
+            "sed -e's/%//g'".format(pipes.quote(host))
+        )
 
-    if os.path.exists(config_file):
-        with open(config_file) as f:
-            config = paramiko.SSHConfig()
-            config.parse(f)
-            o = config.lookup(bastion)
-            kwargs = {
-                    'hostname': o['hostname'],
-                    'username': o['user'],
-                    'key_filename': o['identityfile']
-            }
-    else:
-        kwargs = {'hostname': bastion}
+        mounts = {}
 
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(**kwargs)
-    stdin, stdout, stderr = client.exec_command(
-        "ssh {} df -hP | "
-        "awk 'NR>1{{print $1,$5}}' | "
-        "sed -e's/%//g'".format(host)
-    )
+        for line in stdout.readlines():
+            mount, percent_full = line.strip().split()
+            mounts[mount] = int(percent_full)
 
-    mounts = {}
-
-    for line in stdout.readlines():
-        mount, percent_full = line.strip().split()
-        mounts[mount] = int(percent_full)
-
-    return host, mounts
+        return host, mounts
