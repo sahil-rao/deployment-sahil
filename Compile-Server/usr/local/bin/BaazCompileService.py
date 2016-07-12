@@ -663,6 +663,12 @@ def process_scale_mode(tenant, uid, instances, smc, clog):
         opcode = 1
         retries = 3
         response = tclient.send_compiler_request(opcode, data_dict, retries)
+
+        if not response:
+            # tclient didnt receive any response.
+            logging.error("response from tclient is null")
+            raise ValueError("Error waiting for response from compiler");
+
         if response.isSuccess == True:
           clog.debug("Got Done")
 
@@ -1493,6 +1499,10 @@ def analyzeHAQR(query, platform, tenant, eid,source_platform,mongoconn,redis_con
     opcdode_HAQR = 4
     retries = 3
     response = tclient.send_compiler_request(opcdode_HAQR, data_dict, retries)
+    if not response:
+        # tclient didnt receive any response.
+        logging.error("response from tclient is null")
+        raise ValueError("Error waiting for response from compiler");
 
     data = None
     data = loads(response.result)
@@ -1585,6 +1595,11 @@ def compile_query(mongoconn, redis_conn, compilername, data_dict):
     response = tclient.send_compiler_request(opcode, data_dict, retries)
 
     compile_doc = None
+    if not response:
+        # tclient didnt receive any response.
+        logging.error("response from tclient is null")
+        raise ValueError("Error waiting for response from compiler");
+
     if not response.isSuccess:
         logging.error("compiler request failed")
     else:
@@ -1665,6 +1680,11 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
         retries = 3
         data_dict["catalog"] = dumps(table_dict)
         response = tclient.send_compiler_request(opcode, data_dict, retries)
+
+        if not response:
+            # tclient didnt receive any response.
+            logging.error("response from tclient is null")
+            raise ValueError("Error waiting for response from compiler");
 
         if not response.isSuccess:
             logging.warn("compiler request returned isSuccess false")
