@@ -138,7 +138,7 @@ def callback(ch, method, properties, body):
     #send stats to datadog
     if statsd:
         totalTime = ((time.time() - startTime) * 1000)
-        statsd.timing("elasticpub.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
+        statsd.timing("elasticpub.per.msg.time", totalTime, tags=["tenant:"+tenant])
 
 connection1 = RabbitConnection(callback, ['elasticpub'], [], {}, prefetch_count=50)
 logging.info("ElasticPub going to start consuming")
