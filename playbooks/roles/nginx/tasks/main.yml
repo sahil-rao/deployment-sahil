@@ -27,6 +27,9 @@
   template: src=nginx.conf.staging dest=/etc/nginx/sites-enabled/default
   when: clusterName == 'xplain-staging'
   sudo: yes
+- name: Install nginx logrotate file
+  copy: src=roles/nginx/files/nginx dest=/etc/logrotate.d/nginx
+  sudo: yes
 - name: Start nginx
   command: /usr/sbin/nginx
   sudo: yes
