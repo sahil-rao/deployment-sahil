@@ -1,47 +1,188 @@
 from __future__ import absolute_import
 
-from health_check.base import HealthCheck, HealthCheckList
-from health_check.disk import DiskUsageCheck
+from .base import HealthCheck, HealthCheckList
+from .disk import DiskUsageCheck
+from .tunnel import Tunnel
 import boto3
+import datetime
 import functools
 import multiprocessing.pool
 import pymongo
-import sshtunnel
 import sys
 import termcolor
 
 
-class Mongo(object):
+class Mongo(Tunnel):
     def __init__(self, bastion, host, port):
-        self.bastion = bastion
-        self.host = host
-        self.port = port
+        super(Mongo, self).__init__(bastion, host, port)
 
-        self.tunnel = sshtunnel.SSHTunnelForwarder(
-            bastion,
-            remote_bind_address=(host, port))
-
-        self.tunnel.start()
-
-        self.mconn = pymongo.MongoClient(port=self.tunnel.local_bind_port)
+        if self.tunnel:
+            self.mconn = pymongo.MongoClient(
+                port=self.tunnel.local_bind_port,
+                socketTimeoutMS=10000,
+                connectTimeoutMS=10000,
+                serverSelectionTimeoutMS=10000,
+            )
+        else:
+            self.mconn = None
 
     def close(self):
-        self.tunnel.close()
+        if self.mconn:
+            self.mconn.close()
 
-    def __del__(self):
-        self.close()
+        return super(Mongo, self).close()
 
-    def __str__(self):
-        return '{}:{}'.format(self.host, self.port)
+    def server_status(self):
+        if self.mconn is None:
+            return {}
 
-    def __hash__(self):
-        return hash(self.host)
+        if not hasattr(self, '_server_status'):
+            try:
+                self._server_status = self.mconn.admin.command('serverStatus')
+            except pymongo.errors.PyMongoError:
+                self._server_status = {}
+
+        return self._server_status
+
+    @property
+    def repl_status(self):
+        if self.mconn is None:
+            return {}
+
+        if not hasattr(self, '_repl_status'):
+            try:
+                self._repl_status = self.mconn.admin.command('replSetGetStatus')
+            except pymongo.errors.PyMongoError:
+                self._repl_status = {}
+
+        return self._repl_status
+
+    @property
+    def primary_repl_status(self):
+        for member in self.repl_status.get('members', []):
+            if member['state'] == 1:
+                return member
+
+        return {}
+
+    @property
+    def current_repl_status(self):
+        for member in self.repl_status.get('members', []):
+            if member.get('self'):
+                return member
+
+        return {}
+
+    def is_master(self):
+        return self.current_repl_status.get('state') == 1
+
+    def is_replica(self):
+        return self.current_repl_status.get('state') == 2
+
+    def is_arbiter(self):
+        return self.current_repl_status.get('state') == 7
+
+    def members(self):
+        primaries = []
+        secondaries = []
+        arbiters = []
+        others = []
+
+        for member in self.repl_status.get('members', []):
+            name = member['name']
+
+            if member['state'] == 1:
+                primaries.append(name)
+            elif member['state'] == 2:
+                secondaries.append(name)
+            elif member['state'] == 7:
+                arbiters.append(name)
+            else:
+                others.append(name)
+
+        return (
+            sorted(primaries),
+            sorted(secondaries),
+            sorted(arbiters),
+            sorted(others),
+        )
+
+    def member_states(self):
+        num_primaries = 0
+        num_secondaries = 0
+        num_arbiters = 0
+        num_otherstate = 0
+
+        for member in self.repl_status.get('members', []):
+            if member['state'] == 1:
+                num_primaries += 1
+            elif member['state'] == 2:
+                num_secondaries += 1
+            elif member['state'] == 7:
+                num_secondaries += 1
+            else:
+                num_otherstate += 1
+
+        return num_primaries, num_secondaries, num_arbiters, num_otherstate
+
+    def config_versions(self):
+        config_versions = set()
+        for member in self.repl_status.get('members', []):
+            try:
+                config_versions.add(member['configVersion'])
+            except KeyError:
+                pass
+
+        return config_versions
 
 
 class MongoHealthCheck(HealthCheck):
     def close(self):
         for host in self.hosts:
             host.close()
+
+    def check_host(self, host):
+        if not host.mconn:
+            self.host_msgs[host] = 'cannot connect to MongoDB'
+            return False
+
+        return self.check_mongo_host(host)
+
+    def check_mongo_host(self, host):
+        raise NotImplementedError
+
+    def _all_equal(self, items):
+        # Make sure everyone agrees on the count
+        initial = None
+        for item in items:
+            if initial is None:
+                initial = item
+            elif initial != item:
+                return False
+
+        return True
+
+
+class MongoClusterAgreeOnMasterCheck(MongoHealthCheck):
+    description = "Mongo nodes agree on the same master"
+
+    def check_mongo_host(self, host):
+        if host.is_master():
+            self.host_msgs[host] = '(current primary)'
+            return True
+
+        primary = host.primary_repl_status.get('name')
+        if primary is None:
+            self.host_msgs[host] = 'no primary?'
+            return False
+
+        self.host_msgs[host] = 'primary: {}'.format(primary)
+
+        for h in self.hosts:
+            if primary != h.primary_repl_status.get('name'):
+                return False
+
+        return True
 
 
 class MongoClusterConfigurationCheck(MongoHealthCheck):
@@ -50,55 +191,100 @@ class MongoClusterConfigurationCheck(MongoHealthCheck):
 
         self.description = \
             "Mongo instance's replica set view has one " \
-            "primary and {} secondaries".format(len(self.hosts) - 1)
+            "primary and {} secondaries + arbiters".format(
+                len(self.hosts) - 1)
 
-    def check_host(self, host):
-        repl_status = host.mconn.admin.command('replSetGetStatus')
-        num_primaries = 0
-        num_secondaries = 0
-        num_otherstate = 0
-
-        for member in repl_status['members']:
-            if member['state'] == 1:
-                num_primaries += 1
-            elif member['state'] == 2:
-                num_secondaries += 1
-            else:
-                num_otherstate += 1
-
-        self.host_msgs[host] = 'primaries: {} secondaries: {} other: {}'.format(
-            num_primaries,
-            num_secondaries,
-            num_otherstate)
+    def execute(self, *args, **kwargs):
+        result = super(MongoClusterConfigurationCheck, self).execute(
+            *args,
+            **kwargs)
 
         return \
-            num_primaries == 1 and \
-            num_secondaries == len(self.hosts) - 1 and \
-            num_otherstate == 0
+            self._all_equal(host.members() for host in self.hosts) and \
+            result
+
+    def check_mongo_host(self, host):
+        primaries, secondaries, arbiters, others = host.members()
+        self.host_msgs[host] = 'P: {} S: {} A: {} O: {}'.format(
+            ','.join(sorted(primaries)),
+            ','.join(sorted(secondaries)),
+            ','.join(sorted(arbiters)),
+            ','.join(sorted(others)))
+
+        initial = None
+        for h in self.hosts:
+            if h == host:
+                continue
+
+            if (primaries, secondaries, arbiters, others) != h.members():
+                return False
+
+        return True
 
 
-class MongoClusterConfigVersionsCheck(HealthCheck):
+class MongoClusterConfigVersionsCheck(MongoHealthCheck):
     description = "Config version of all replica set members match"
 
-    def check_host(self, host):
-        repl_status = host.mconn.admin.command('replSetGetStatus')
-        config_versions = set()
-        for member in repl_status['members']:
-            config_versions.add(member['configVersion'])
+    def execute(self, *args, **kwargs):
+        result = super(MongoClusterConfigVersionsCheck, self).execute(
+            *args,
+            **kwargs)
+
+        return \
+            self._all_equal(host.config_versions() for host in self.hosts) and \
+            result
+
+    def check_mongo_host(self, host):
+        config_versions = host.config_versions()
 
         self.host_msgs[host] = 'versions: {}'.format(sorted(config_versions))
 
         return len(config_versions) <= 1
 
 
-class MongoClusterHeartbeatCheck(HealthCheck):
+class MongoClusterHeartbeatCheck(MongoHealthCheck):
     description = "Last heartbeat received is recent"
 
-    def check_host(self, host):
-        repl_status = host.mconn.admin.command('replSetGetStatus')
-        print repl_status
+    def check_mongo_host(self, host):
+        now = datetime.datetime.now()
+        heartbeats = []
+        for member in host.repl_status.get('members', []):
+            # Ignore ourselves
+            if member.get('self'):
+                continue
 
-        return False
+            heartbeats.append((now - member['lastHeartbeat']).seconds)
+
+        self.host_msgs[host] = 'heartbeats: {}'.format(heartbeats)
+
+        return any(heartbeat < 65000 for heartbeat in heartbeats)
+
+class MongoReplicaDelayCheck(MongoHealthCheck):
+    description = "Check replicas are not behind master"
+
+    def check_mongo_host(self, host):
+        # Arbiters don't have replica delays.
+        if host.is_arbiter():
+            self.host_msgs[host] = 'arbiter'
+            return True
+
+        try:
+            primary_optime = host.primary_repl_status['optimeDate']
+        except KeyError:
+            self.host_msgs[host] = 'primary missing optime'
+            return False
+
+        try:
+            current_optime = host.current_repl_status['optimeDate']
+        except KeyError:
+            self.host_msgs[host] = 'current missing optime'
+            return False
+
+        lag = max(0, (primary_optime - current_optime).seconds)
+
+        self.host_msgs[host] = 'lag: {}'.format(lag)
+
+        return lag < 10000
 
 
 def check_mongodb(bastion, cluster, region, dbsilo):
@@ -121,8 +307,11 @@ def check_mongodb(bastion, cluster, region, dbsilo):
         pool.join()
 
     for health_check in (
+            MongoClusterAgreeOnMasterCheck(mongodb_servers),
             MongoClusterConfigurationCheck(mongodb_servers),
             MongoClusterConfigVersionsCheck(mongodb_servers),
+            MongoClusterHeartbeatCheck(mongodb_servers),
+            MongoReplicaDelayCheck(mongodb_servers),
             DiskUsageCheck(bastion, mongodb_hostnames),
             ):
         mongodb_checklist.add_check(health_check)
@@ -131,11 +320,40 @@ def check_mongodb(bastion, cluster, region, dbsilo):
 
 
 def _get_mongodb_hostnames(cluster, region, dbsilo):
+    alpha_names = {
+        'alpha': 'Alpha',
+        'app': 'App',
+        'dbsilo1': 'DBSilo1',
+        'dbsilo2': 'DBSilo2',
+        'dbsilo3': 'DBSilo3',
+        'dbsilo4': 'DBSilo4',
+    }
+
+    app_names = {
+        'alpha': 'ALPHA',
+        'app': 'APP',
+        'dbsilo1': 'DBSILO1',
+        'dbsilo2': 'DBSILO2',
+        'dbsilo3': 'DBSILO3',
+        'dbsilo4': 'DBSILO4',
+    }
+
     ec2 = boto3.resource('ec2', region_name=region)
     instances = ec2.instances.filter(Filters=[
         {
             'Name': 'tag:Name',
             'Values': [
+                'MongoDB {} {}'.format(
+                    alpha_names[cluster],
+                    alpha_names[dbsilo]),
+                'MONGO_{}_{}'.format(
+                    app_names[cluster],
+                    app_names[dbsilo]),
+                'MONGO_{}_{} - Arbiter'.format(
+                    app_names[cluster],
+                    app_names[dbsilo]),
+                '{}-{}-mongo-green'.format(cluster, dbsilo),
+                '{}-{}-mongo-blue'.format(cluster, dbsilo),
                 '{}-{}-mongo-green-*'.format(cluster, dbsilo),
                 '{}-{}-mongo-blue-*'.format(cluster, dbsilo),
             ],
@@ -145,7 +363,9 @@ def _get_mongodb_hostnames(cluster, region, dbsilo):
     hostnames = []
     for instance in instances:
         if instance.private_ip_address:
-            hostnames.append(instance.private_dns_name)
+            hostnames.append(instance.private_ip_address)
+
+    hostnames.sort()
 
     return hostnames
 

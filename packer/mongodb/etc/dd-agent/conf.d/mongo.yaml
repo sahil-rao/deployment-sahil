@@ -1,4 +1,4 @@
 init_config:
 
 instances:
-  - server: mongodb://localhost:27016
+  - server: mongodb://localhost:27017

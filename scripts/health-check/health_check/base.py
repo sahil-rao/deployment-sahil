@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from termcolor import colored
+import traceback
 
 
 class color(object):
@@ -35,7 +36,21 @@ class HealthCheck(object):
         host_statuses = []
 
         for host in self.hosts:
-            host_statuses.append(self.check_host(host))
+            try:
+                status = self.check_host(host)
+            except Exception:
+                traceback.print_exc()
+
+                status = False
+
+                try:
+                    msg = self.host_msgs[host]
+                except KeyError:
+                    pass
+                else:
+                    self.host_msgs[host] = 'Error: {}'.format(msg)
+
+            host_statuses.append(status)
 
         return all(host_statuses)
 
@@ -73,9 +88,10 @@ class HealthCheckList(object):
 
         healthcheck_statuses = []
         for i, healthcheck in enumerate(self.health_checks):
-            status = healthcheck.execute(tabs + 1)
             if isinstance(healthcheck, HealthCheck):
-                print "\t" * tabs, str(i+1) + ")",
+                status, status_msgs = self._check_hosts(healthcheck)
+
+                print '{} {})'.format("\t" * tabs, i + 1),
 
                 if status:
                     print colored('PASSED', 'green', attrs=['bold']),
@@ -84,22 +100,10 @@ class HealthCheckList(object):
 
                 print ':', color.BOLD, healthcheck.description, color.END
 
-                max_len = max(len(str(host)) for host in healthcheck.hosts)
-
-                for host in healthcheck.hosts:
-                    hostname = str(host).ljust(max_len)
-                    host_msg = healthcheck.host_msgs.get(host, '')
-                    if host_msg:
-                        host_msg = '- {}'.format(host_msg)
-
-                    print "\t" * (tabs+1),
-
-                    if healthcheck.check_host(host):
-                        print colored('PASSED', 'green', attrs=['bold']),
-                    else:
-                        print colored('FAILED', 'red', attrs=['bold']),
-
-                    print hostname, host_msg
+                for status_msg in status_msgs:
+                    print "\t" * (tabs+1), status_msg
+            else:
+                status = healthcheck.execute(tabs + 1)
 
             healthcheck_statuses.append(status)
 
@@ -122,3 +126,38 @@ class HealthCheckList(object):
     def close(self):
         for health_check in self.health_checks:
             health_check.close()
+
+    def _check_hosts(self, healthcheck):
+        status = True
+        status_msgs = []
+
+        max_len = max(len(str(host)) for host in healthcheck.hosts)
+
+        for host in healthcheck.hosts:
+            hostname = str(host).ljust(max_len)
+
+            msg = ''
+
+            try:
+                result = healthcheck.check_host(host)
+            except Exception:
+                traceback.print_exc()
+                status = False
+
+                msg += colored('EXCEPTION', 'red', attrs=['bold'])
+            else:
+                if result:
+                    msg += colored('PASSED', 'green', attrs=['bold'])
+                else:
+                    status = False
+                    msg += colored('FAILED', 'red', attrs=['bold'])
+
+            msg += ' {}'.format(hostname)
+
+            host_msg = healthcheck.host_msgs.get(host, '')
+            if host_msg:
+                msg += ' - {}'.format(host_msg)
+
+            status_msgs.append(msg)
+
+        return status, status_msgs

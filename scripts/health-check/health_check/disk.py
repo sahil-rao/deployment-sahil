@@ -1,10 +1,10 @@
 from __future__ import absolute_import
 
-from health_check.base import HealthCheck
+from . import ssh
+from .base import HealthCheck
 import functools
 import multiprocessing.pool
-import os
-import paramiko
+import pipes
 
 
 class DiskUsageCheck(HealthCheck):
@@ -26,44 +26,37 @@ class DiskUsageCheck(HealthCheck):
             pool.join()
 
     def check_host(self, host):
+        result = True
+        max_full = None
+
         for mount, percent_full in self.host_mounts[host].iteritems():
-            self.host_msgs[host] = '{}%'.format(percent_full)
-
+            max_full = max(max_full or 0, percent_full)
             if percent_full > 80:
-                return False
+                result = False
 
-        return True
+        if max_full is None:
+            self.host_msgs[host] = 'no mount disk usage?'
+            return False
+
+        self.host_msgs[host] = '{}%'.format(max_full)
+
+        return result
 
 
 def _check_host(bastion, host):
-    config_file = os.path.expanduser('~/.ssh/config')
+    with ssh.connect(bastion) as client:
+        cmd = "ssh {} df -hP | " \
+            "awk 'NR>1{{print $1,$5}}' | " \
+            "sed -e's/%//g'".format(pipes.quote(host))
 
-    if os.path.exists(config_file):
-        with open(config_file) as f:
-            config = paramiko.SSHConfig()
-            config.parse(f)
-            o = config.lookup(bastion)
-            kwargs = {
-                    'hostname': o['hostname'],
-                    'username': o['user'],
-                    'key_filename': o['identityfile']
-            }
-    else:
-        kwargs = {'hostname': bastion}
+        stdin, stdout, stderr = client.exec_command(cmd)
 
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(**kwargs)
-    stdin, stdout, stderr = client.exec_command(
-        "ssh {} df -hP | "
-        "awk 'NR>1{{print $1,$5}}' | "
-        "sed -e's/%//g'".format(host)
-    )
+        stdout_lines = stdout.readlines()
 
-    mounts = {}
+        mounts = {}
 
-    for line in stdout.readlines():
-        mount, percent_full = line.strip().split()
-        mounts[mount] = int(percent_full)
+        for line in stdout_lines:
+            mount, percent_full = line.strip().split()
+            mounts[mount] = int(percent_full)
 
-    return host, mounts
+        return host, mounts

@@ -1,30 +1,26 @@
 from __future__ import absolute_import
 
-from health_check.base import HealthCheck, HealthCheckList
-from health_check.disk import DiskUsageCheck
+from .base import HealthCheck, HealthCheckList
+from .disk import DiskUsageCheck
+from .tunnel import Tunnel
 import boto3
 import functools
+import hurry.filesize
 import multiprocessing.pool
 import redis
-import sshtunnel
 import sys
 import termcolor
 
 
-class Redis(object):
+class Redis(Tunnel):
     def __init__(self, bastion, hostname, port, master):
-        self.bastion = bastion
-        self.hostname = hostname
-        self.port = port
+        super(Redis, self).__init__(bastion, hostname, port)
         self.master = master
 
-        self.tunnel = sshtunnel.SSHTunnelForwarder(
-            bastion,
-            remote_bind_address=(hostname, port))
-
-        self.tunnel.start()
-
-        self.rconn = redis.StrictRedis(port=self.tunnel.local_bind_port)
+        if self.tunnel:
+            self.rconn = redis.StrictRedis(port=self.tunnel.local_bind_port)
+        else:
+            self.rconn = None
 
     @property
     def info(self):
@@ -44,17 +40,20 @@ class Redis(object):
     def sentinel_info(self):
         return self.sentinel_masters[self.master]
 
-    def close(self):
-        self.tunnel.close()
+    @property
+    def sentinels(self):
+        if self.rconn is None:
+            return set()
 
-    def __del__(self):
-        self.close()
+        sentinels = set()
 
-    def __str__(self):
-        return '{}:{}'.format(self.hostname, self.port)
+        # Add the current host to the sentinel list.
+        sentinels.add('{}:{}'.format(self.host, self.port))
 
-    def __hash__(self):
-        return hash(self.hostname)
+        sentinels.update(sentinel['name']
+            for sentinel in self.rconn.sentinel_sentinels(self.master))
+
+        return sentinels
 
 
 class RedisHealthCheck(HealthCheck):
@@ -62,13 +61,24 @@ class RedisHealthCheck(HealthCheck):
         for host in self.hosts:
             host.close()
 
+    def check_host(self, host):
+        if host.rconn is None:
+            self.host_msgs[host] = 'cannot connect to Redis'
+            return False
+
+        return self.check_redis_host(host)
+
+    def check_redis_host(self, host):
+        raise NotImplementedError
+
+
 
 class RedisNoBlockedClientsCheck(RedisHealthCheck):
     description = "No currently blocked clients"
 
-    def check_host(self, host):
+    def check_redis_host(self, host):
         blocked_clients = host.info['blocked_clients']
-        self.host_msgs[host.hostname] = \
+        self.host_msgs[host] = \
             ' blocked_clients: {}'.format(blocked_clients)
 
         return blocked_clients == 0
@@ -77,23 +87,27 @@ class RedisNoBlockedClientsCheck(RedisHealthCheck):
 class RedisRdbBackupCheck(RedisHealthCheck):
     description = "RDB backup successfully saved to disk"
 
-    def check_host(self, host):
+    def check_redis_host(self, host):
         return host.info['rdb_last_bgsave_status'] == 'ok'
 
 
 class RedisAofDisabledCheck(RedisHealthCheck):
     description = "AOF backups are disabled"
 
-    def check_host(self, host):
+    def check_redis_host(self, host):
         return host.info['aof_enabled'] == 0
 
 
 class RedisMemoryUsageCheck(RedisHealthCheck):
-    description = "Redis memory usage is normal"
+    description = "Redis memory usage < 30GB"
 
-    def check_host(self, host):
+    def check_redis_host(self, host):
         """Redis memory usage is < 30 gb"""
-        return host.info['used_memory'] < 30000000000
+
+        used_memory = host.info['used_memory']
+        self.host_msgs[host] = hurry.filesize.size(used_memory)
+
+        return used_memory < 30000000000
 
 
 class RedisClusterConfigurationCheck(RedisHealthCheck):
@@ -105,7 +119,7 @@ class RedisClusterConfigurationCheck(RedisHealthCheck):
             "Redis cluster has one master and {} " \
             "connected slaves".format(slaves)
 
-    def check_host(self, host):
+    def check_redis_host(self, host):
         role = host.info['role']
         self.host_msgs[host] = '({})'.format(role)
 
@@ -139,7 +153,7 @@ class RedisClusterSyncCheck(RedisHealthCheck):
 
     description = "Redis cluster is not syncing"
 
-    def check_host(self, host):
+    def check_redis_host(self, host):
         if host.info['role'] == 'master':
             return True
         if host.info['role'] == 'slave':
@@ -150,7 +164,7 @@ class RedisSentinelMastersCheck(RedisHealthCheck):
 
     description = "Redis sentinels have the same master"
 
-    def check_host(self, host):
+    def check_redis_host(self, host):
         ip = host.sentinel_info['ip']
         self.host_msgs[host] = 'master: {}'.format(ip)
 
@@ -164,13 +178,33 @@ class RedisSentinelMastersCheck(RedisHealthCheck):
         return True
 
 
+class RedisSameSentinelsCheck(RedisHealthCheck):
+
+    description = "Redis machines have the same sentinels"
+
+    def check_redis_host(self, host):
+        sentinels = host.sentinels
+        self.host_msgs[host] = 'sentinels: {}'.format(
+            ','.join(sorted(sentinels)))
+
+        initial = None
+        for h in self.hosts:
+            if h == host:
+                continue
+
+            if h.sentinels != sentinels:
+                return False
+
+        return True
+
+
 class RedisSentinelQuorumCheck(RedisHealthCheck):
 
     description = \
-        "Redis sentinel is >= quorum, is odd, " \
+        "Redis sentinel is >= 3, >= quorum, is odd, " \
         "and matches other sentinels"
 
-    def check_host(self, host):
+    def check_redis_host(self, host):
         quorum = host.sentinel_info['quorum']
         sentinels = host.sentinel_info['num-other-sentinels'] + 1
 
@@ -178,6 +212,10 @@ class RedisSentinelQuorumCheck(RedisHealthCheck):
             'sentinels: {} quorum: {}'.format(sentinels, quorum)
 
         result = True
+
+        if sentinels < 3:
+            self.host_msgs[host] += ' (under sized)'
+            result = False
 
         if sentinels < quorum:
             self.host_msgs[host] += ' (under quorum)'
@@ -238,6 +276,7 @@ def check_redis(bastion, cluster, region, dbsilo):
 
             RedisClusterSyncCheck(redis_servers),
 
+            RedisSameSentinelsCheck(redis_sentinels),
             RedisSentinelQuorumCheck(redis_sentinels),
             RedisSentinelMastersCheck(redis_sentinels),
 
@@ -249,11 +288,37 @@ def check_redis(bastion, cluster, region, dbsilo):
 
 
 def _get_redis_hostnames(cluster, region, dbsilo):
+    alpha_names = {
+        'alpha': 'Alpha',
+        'app': 'App',
+        'dbsilo1': 'DBSilo1',
+        'dbsilo2': 'DBSilo2',
+        'dbsilo3': 'DBSilo3',
+        'dbsilo4': 'DBSilo4',
+    }
+
+    app_names = {
+        'alpha': 'ALPHA',
+        'app': 'APP',
+        'dbsilo1': 'DBSILO_1',
+        'dbsilo2': 'DBSILO_2',
+        'dbsilo3': 'DBSILO_3',
+        'dbsilo4': 'DBSILO_4',
+    }
+
     ec2 = boto3.resource('ec2', region_name=region)
     instances = ec2.instances.filter(Filters=[
         {
             'Name': 'tag:Name',
             'Values': [
+                'Redis {} {}'.format(
+                    alpha_names[cluster],
+                    alpha_names[dbsilo]),
+                'REDIS_{}_{}'.format(
+                    app_names[cluster],
+                    app_names[dbsilo]),
+                '{}-{}-redis-green'.format(cluster, dbsilo),
+                '{}-{}-redis-blue'.format(cluster, dbsilo),
                 '{}-{}-redis-green-*'.format(cluster, dbsilo),
                 '{}-{}-redis-blue-*'.format(cluster, dbsilo),
             ],
@@ -263,7 +328,9 @@ def _get_redis_hostnames(cluster, region, dbsilo):
     hostnames = []
     for instance in instances:
         if instance.private_ip_address:
-            hostnames.append(instance.private_dns_name)
+            hostnames.append(instance.private_ip_address)
+
+    hostnames.sort()
 
     return hostnames
 
