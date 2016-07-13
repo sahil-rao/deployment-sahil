@@ -169,7 +169,7 @@ def callback(ch, method, properties, body):
     #send stats to datadog
     if statsd:
         totalTime = ((time.time() - startTime) * 1000)
-        statsd.timing("ruleengine.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
+        statsd.timing("ruleengine.per.msg.time", totalTime, tags=["tenant:"+tenant])
 
 connection1 = RabbitConnection(callback, ['ruleengine'], [], {}, prefetch_count=1)
 
