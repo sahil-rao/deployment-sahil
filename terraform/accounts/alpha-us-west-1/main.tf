@@ -4,7 +4,7 @@ provider "aws" {
 }
 
 module "dbsilo1" {
-    source = "../../dbsilo"
+    source = "../../services/dbsilo"
 
     vpc_id = "${var.vpc_id}"
     vpc_cidr = "${var.vpc_cidr}"
@@ -61,7 +61,7 @@ module "dbsilo1" {
 }
 
 module "dbsilo2" {
-    source = "../../dbsilo"
+    source = "../../services/dbsilo"
 
     vpc_id = "${var.vpc_id}"
     vpc_cidr = "${var.vpc_cidr}"
@@ -120,7 +120,7 @@ module "dbsilo2" {
 }
 
 module "dbsilo4" {
-    source = "../../dbsilo"
+    source = "../../services/dbsilo"
 
     vpc_id = "${var.vpc_id}"
     vpc_cidr = "${var.vpc_cidr}"
