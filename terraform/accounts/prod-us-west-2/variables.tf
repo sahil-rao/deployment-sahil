@@ -19,7 +19,7 @@ variable "cluster_name" {
 }
 
 variable "datadog_api_key" {
-    default = "42bbac658841fd4c44253c01423b3227"
+    default = "450d437e4234a90b04a15396bd2a83b8"
 }
 
 variable "key_name" {
