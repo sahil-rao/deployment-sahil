@@ -163,7 +163,7 @@ class analytics_context:
 
 def callback(ch, method, properties, body):
 
-    startTime = time.time()
+    startTime = time.clock()
     msg_dict = loads(body)
 
     logging.info("Analytics: Got message "+ str(msg_dict))
@@ -370,13 +370,13 @@ def callback(ch, method, properties, body):
     """
     connection1.basicAck(ch,method)
 
-    endTime = time.time()
+    endTime = time.clock()
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already
         redis_conn.incrEntityCounter(uid, "Math.time", incrBy = endTime-startTime)
     #send stats to datadog
     if statsd:
-        totalTime = ((time.time() - startTime) * 1000)
+        totalTime = (time.clock() - startTime)
         statsd.timing("mathservice.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
 
 connection1 = RabbitConnection(callback, ['mathqueue'], ['elasticpub'], {})

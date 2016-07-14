@@ -304,7 +304,7 @@ def process_ddl_request(ch, properties, tenant, target, instances, db, redis_con
 
 def callback(ch, method, properties, body):
 
-    starttime = time.time()
+    startTime = time.time()
 
     try:
         msg_dict = loads(body)
@@ -333,7 +333,7 @@ def callback(ch, method, properties, body):
         """
          This needs to be dynamic in nature.
         """
-        opcode_startTime = time.time()
+        opcode_startTime = time.clock()
         if msg_dict["opcode"] == "HbaseDDL":
 
             clog.debug("Got the opcode of Hbase")
@@ -343,7 +343,6 @@ def callback(ch, method, properties, body):
             add_table_volume.execute(tenant, msg_dict)
             resp_dict = process_ddl_request(ch, properties, tenant, "hbase", instances, db, redis_conn, clog)
         if msg_dict["opcode"] == "ImpalaDDL":
-            startTime = time.time()
             clog.debug("Got the opcode of Hbase")
             instances = msg_dict["job_instances"]
             db = client[tenant]
@@ -465,7 +464,7 @@ def callback(ch, method, properties, body):
         #send stats to datadog
         if statsd:
             uid = None
-            totalTime = ((time.time() - opcode_startTime) * 1000)
+            totalTime = (time.clock() - opcode_startTime)
             if "uid" in msg_dict:
                 uid = msg_dict["uid"]
                 statsd.timing("appservice."+msg_dict['opcode'], totalTime, tags=["tenant:"+tenant, "uid:"+uid])
@@ -488,6 +487,10 @@ def callback(ch, method, properties, body):
         clog.error("Unable to send response message")
 
     connection1.basicAck(ch,method)
+    #send stats to datadog
+    if statsd:
+        totalTime = (time.clock() - startTime)
+        statsd.timing("appservice.per.msg.time", totalTime, tags=["tenant:"+tenant])
 
 connection1 = RabbitConnection(callback, ['appservicequeue'], [], {}, prefetch_count=1)
 

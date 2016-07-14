@@ -96,7 +96,7 @@ def callback(ch, method, properties, body):
     This service is used to create/update elasticsearch indexes
     '''
     try:
-        startTime = time.time()
+        startTime = time.clock()
         msg_dict = loads(body)
     except:
         logging.exception("Could not load the message JSON")
@@ -137,7 +137,7 @@ def callback(ch, method, properties, body):
     connection1.basicAck(ch, method)
     #send stats to datadog
     if statsd:
-        totalTime = ((time.time() - startTime) * 1000)
+        totalTime = (time.clock() - startTime)
         statsd.timing("elasticpub.per.msg.time", totalTime, tags=["tenant:"+tenant])
 
 connection1 = RabbitConnection(callback, ['elasticpub'], [], {}, prefetch_count=50)
