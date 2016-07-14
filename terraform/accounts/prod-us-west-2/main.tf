@@ -4,7 +4,7 @@ provider "aws" {
 }
 
 module "dbsilo2" {
-    source = "../../dbsilo"
+    source = "../../services/dbsilo"
 
     vpc_id = "${var.vpc_id}"
     vpc_cidr = "${var.vpc_cidr}"
@@ -62,7 +62,7 @@ module "dbsilo2" {
 
 
 module "dbsilo3" {
-    source = "../../dbsilo"
+    source = "../../services/dbsilo"
 
     vpc_id = "${var.vpc_id}"
     vpc_cidr = "${var.vpc_cidr}"
@@ -120,7 +120,7 @@ module "dbsilo3" {
 
 
 module "dbsilo5" {
-    source = "../../dbsilo"
+    source = "../../services/dbsilo"
 
     vpc_id = "${var.vpc_id}"
     vpc_cidr = "${var.vpc_cidr}"
@@ -177,5 +177,3 @@ module "dbsilo5" {
     elasticsearch_green_max_size = 0
     elasticsearch_green_desired_capacity = 0
 }
-
-
