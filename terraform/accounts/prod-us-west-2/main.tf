@@ -136,9 +136,9 @@ module "dbsilo5" {
     mongo_blue_name_prefix = "${var.cluster_name}-dbsilo5-mongo-blue-v2"
     mongo_blue_ami_id = "ami-8537f0e5"
     mongo_blue_instance_type = "m4.xlarge"
-    mongo_blue_min_size = 1
-    mongo_blue_max_size = 3
-    mongo_blue_desired_capacity = 1
+    mongo_blue_min_size = 0
+    mongo_blue_max_size = 0
+    mongo_blue_desired_capacity = 0
     mongo_blue_snapshot_id = "snap-4f3e8308"
 
     mongo_green_name_prefix = "${var.cluster_name}-dbsilo5-mongo-green-v1"
@@ -151,9 +151,9 @@ module "dbsilo5" {
     redis_blue_name_prefix = "${var.cluster_name}-dbsilo5-redis-blue-v2"
     redis_blue_ami_id = "ami-722dea12"
     redis_blue_instance_type = "r3.2xlarge"
-    redis_blue_min_size = 1
-    redis_blue_max_size = 3
-    redis_blue_desired_capacity = 1
+    redis_blue_min_size = 0
+    redis_blue_max_size = 0
+    redis_blue_desired_capacity = 0
     redis_blue_backup_file = "s3://xplain-app/dbsilo1/redis-backups/dump2016-06-28T23:05:05+0000.rdb"
 
     redis_green_name_prefix = "${var.cluster_name}-dbsilo5-redis-green-v1"
