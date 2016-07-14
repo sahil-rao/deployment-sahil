@@ -177,6 +177,7 @@ output "public_subnet_ids" {
 output "private_subnet_ids" {
     value = "${join(",", aws_subnet.private.*.id)}"
 }
+
 output "private_route_tables" {
     value = "${join(",", aws_route_table.private.*.id)}"
 }
