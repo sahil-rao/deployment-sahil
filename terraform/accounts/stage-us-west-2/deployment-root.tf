@@ -1,9 +1,9 @@
-module "nginx" {
-    source = "../../services/nginx"
+module "deployment-root" {
+    source = "../../services/deployment-root"
 
     region = "${var.region}"
     env = "${var.env}"
-    name = "nginx"
+    name = "deployment-root"
 
     vpc_id = "${terraform_remote_state.networking.output.vpc_id}"
     vpc_cidr = "${terraform_remote_state.networking.output.vpc_cidr}"
