@@ -211,6 +211,10 @@ class MongoClusterConfigurationCheck(MongoHealthCheck):
             ','.join(sorted(arbiters)),
             ','.join(sorted(others)))
 
+        if len(primaries) + len(secondaries) + len(arbiters) != \
+                len(self.hosts):
+            return False
+
         initial = None
         for h in self.hosts:
             if h == host:
