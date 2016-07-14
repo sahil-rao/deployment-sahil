@@ -57,6 +57,8 @@ if not usingAWS:
     if os.path.isfile(LOG_FILE):
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
         shutil.copy(LOG_FILE, LOG_FILE+timestr)
+    #no datadog statsd on VM
+    statsd = None
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     filename=LOG_FILE,

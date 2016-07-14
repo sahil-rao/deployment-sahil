@@ -60,6 +60,8 @@ if not usingAWS:
     if os.path.isfile(XPLAIN_LOG_FILE):
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
         shutil.copy(XPLAIN_LOG_FILE, XPLAIN_LOG_FILE+timestr)
+    #no datadog statsd on VM
+    statsd = None
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=XPLAIN_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
 es_logger = logging.getLogger('elasticsearch')

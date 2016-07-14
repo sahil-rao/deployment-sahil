@@ -96,6 +96,8 @@ if not usingAWS:
     if os.path.isfile(APPSRV_LOG_FILE):
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
         shutil.copy(APPSRV_LOG_FILE, APPSRV_LOG_FILE+timestr)
+    #no datadog statsd on VM
+    statsd = None
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=APPSRV_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
 es_logger = logging.getLogger('elasticsearch')
