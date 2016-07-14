@@ -4,8 +4,8 @@ variable "name" {}
 
 variable "vpc_id" {}
 variable "vpc_cidr" {}
-variable "public_cidr" {}
 variable "subnet_ids" {}
+variable "public_cidr" {}
 
 variable "ami" {
     default = ""
@@ -57,6 +57,10 @@ resource "aws_security_group" "admin" {
     lifecycle {
         create_before_destroy = true
     }
+
+    tags {
+        Terraform = "managed"
+    }
 }
 
 module "bitnami_nodejs" {
@@ -83,6 +87,8 @@ resource "aws_instance" "admin" {
     instance_type = "${var.instance_type}"
 
     tags {
+        Terraform = "managed"
+        Cluster = "${var.env}"
         Environment = "${var.env}"
         Name = "${var.name}"
     }

@@ -104,6 +104,10 @@ resource "aws_security_group" "default" {
     lifecycle {
         create_before_destroy = true
     }
+
+    tags {
+        Terraform = "managed"
+    }
 }
 
 resource "aws_instance" "default" {
@@ -123,6 +127,8 @@ resource "aws_instance" "default" {
     count = "${var.instance_count}"
 
     tags {
+        Terraform = "managed"
+        Cluster = "${var.env}"
         Environment = "${var.env}"
         Name = "${var.name}"
     }
