@@ -6,6 +6,10 @@ variable "region" {
     default = "us-west-2"
 }
 
+variable "env" {
+    default = "stage"
+}
+
 variable "terraform_remote_state_bucket" {
     default = "navopt-state-stage"
 }

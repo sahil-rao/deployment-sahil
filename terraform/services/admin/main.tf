@@ -83,8 +83,8 @@ resource "aws_instance" "admin" {
     instance_type = "${var.instance_type}"
 
     tags {
-        Name = "${var.name}"
         Environment = "${var.env}"
+        Name = "${var.name}"
     }
 }
 
