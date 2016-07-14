@@ -518,6 +518,10 @@ def callback(ch, method, properties, body):
     starttime = time.clock()
     curr_socket = socket.gethostbyname(socket.gethostname())
 
+    #send stats to datadog
+    if statsd:
+        statsd.increment('fpservice.msg.count', 1)
+
     try:
         msg_dict = loads(body)
     except:

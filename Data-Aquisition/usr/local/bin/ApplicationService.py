@@ -306,6 +306,10 @@ def callback(ch, method, properties, body):
 
     startTime = time.time()
 
+    #send stats to datadog
+    if statsd:
+        statsd.increment('appservice.msg.count', 1)
+
     try:
         msg_dict = loads(body)
     except:

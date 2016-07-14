@@ -95,6 +95,11 @@ def callback(ch, method, properties, body):
     Callback method for the ElasticPubService.
     This service is used to create/update elasticsearch indexes
     '''
+
+    #send stats to datadog
+    if statsd:
+        statsd.increment('elasticpub.msg.count', 1)
+
     try:
         startTime = time.clock()
         msg_dict = loads(body)

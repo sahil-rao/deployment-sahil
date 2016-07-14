@@ -166,6 +166,10 @@ def callback(ch, method, properties, body):
     startTime = time.clock()
     msg_dict = loads(body)
 
+    #send stats to datadog
+    if statsd:
+        statsd.increment('mathservice.msg.count', 1)
+
     logging.info("Analytics: Got message "+ str(msg_dict))
 
     """

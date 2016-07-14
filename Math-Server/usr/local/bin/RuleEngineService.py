@@ -84,6 +84,11 @@ def callback(ch, method, properties, body):
     Attempts to run the workflow in rule_workflows.cfg specified by the opcode.
     Imports and runs the rules that are needed which are put in rules.cfg.
     '''
+
+    #send stats to datadog
+    if statsd:
+        statsd.increment('ruleengine.msg.count', 1)
+
     try:
         startTime = time.clock()
         msg_dict = loads(body)

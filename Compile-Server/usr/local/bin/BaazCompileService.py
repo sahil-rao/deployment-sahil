@@ -1704,6 +1704,10 @@ def callback(ch, method, properties, body):
     tmpAdditions = [0,0]
     msg_dict = loads(body)
 
+    #send stats to datadog
+    if statsd:
+        statsd.increment('compileservice.msg.count', 1)
+
     logging.info("compiler Got message "+ str(msg_dict))
 
 
