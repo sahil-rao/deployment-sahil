@@ -1,12 +1,13 @@
+variable "region" {}
 variable "env" {}
 variable "name" {}
 
 ###################################################################
 
-variable "region" {}
 variable "vpc_id" {}
 variable "vpc_cidr" {}
 variable "subnet_ids" {}
+variable "dns_zone_id" {}
 
 ###################################################################
 
@@ -133,4 +134,15 @@ resource "aws_instance" "default" {
         Environment = "${var.env}"
         Name = "${var.name}"
     }
+}
+
+###################################################################
+
+resource "aws_route53_record" "default" {
+    zone_id = "${var.dns_zone_id}"
+    count = "${var.instance_count}"
+    name = "queue-${count.index}"
+    type = "A"
+    ttl = "5"
+    records = ["${element(aws_instance.default.*.private_ip, count.index)}"]
 }

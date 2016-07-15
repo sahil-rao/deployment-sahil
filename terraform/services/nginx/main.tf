@@ -1,13 +1,14 @@
+variable "region" {}
 variable "env" {}
 variable "name" {}
 
 ###################################################################
 
-variable "region" {}
 variable "vpc_id" {}
 variable "vpc_cidr" {}
 variable "subnet_ids" {}
 variable "public_cidr" {}
+variable "dns_zone_id" {}
 
 ###################################################################
 
@@ -25,9 +26,6 @@ variable "instance_type" {
 }
 variable "instance_count" {
     default = 1
-}
-variable "iam_instance_profile" {
-    default = ""
 }
 variable "key_name" {}
 variable "ebs_optimized" {
@@ -89,8 +87,7 @@ resource "aws_instance" "default" {
     subnet_id = "${element(split(",", var.subnet_ids), 0)}"
     key_name = "${var.key_name}"
 
-    # FIXME: Does this need an IAM role?
-    iam_instance_profile = "${var.iam_instance_profile}"
+    iam_instance_profile = "${aws_iam_instance_profile.default.name}"
 
     # FIXME: This is what's used in production.
     # instance_type = "m4.xlarge"
@@ -107,4 +104,15 @@ resource "aws_instance" "default" {
 resource "aws_eip" "default" {
   instance = "${aws_instance.default.id}"
   vpc      = true
+}
+
+###################################################################
+
+resource "aws_route53_record" "default" {
+    zone_id = "${var.dns_zone_id}"
+    count = "${var.instance_count}"
+    name = "lb-${count.index}"
+    type = "A"
+    ttl = "5"
+    records = ["${element(aws_instance.default.*.private_ip, count.index)}"]
 }

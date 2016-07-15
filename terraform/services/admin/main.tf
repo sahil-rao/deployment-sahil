@@ -2,10 +2,15 @@ variable "region" {}
 variable "env" {}
 variable "name" {}
 
+###################################################################
+
 variable "vpc_id" {}
 variable "vpc_cidr" {}
 variable "subnet_ids" {}
 variable "public_cidr" {}
+variable "dns_zone_id" {}
+
+###################################################################
 
 variable "ami" {
     default = ""
@@ -14,6 +19,8 @@ variable "instance_type" {
     default = "t2.micro"
 }
 variable "key_name" {}
+
+###################################################################
 
 resource "aws_security_group" "admin" {
     name = "${var.name}"
@@ -63,6 +70,8 @@ resource "aws_security_group" "admin" {
     }
 }
 
+###################################################################
+
 module "bitnami_nodejs" {
     source = "../../modules/bitnami"
     region = "${var.region}"
@@ -97,4 +106,14 @@ resource "aws_instance" "admin" {
 resource "aws_eip" "admin" {
   instance = "${aws_instance.admin.id}"
   vpc      = true
+}
+
+###################################################################
+
+resource "aws_route53_record" "admin" {
+    zone_id = "${var.dns_zone_id}"
+    name = "admin"
+    type = "A"
+    ttl = "5"
+    records = ["${aws_instance.admin.private_ip}"]
 }

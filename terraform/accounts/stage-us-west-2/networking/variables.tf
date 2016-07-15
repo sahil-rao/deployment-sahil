@@ -37,3 +37,7 @@ variable "private_subnets_count" {
 variable "virtual_gateway_id" {
     default = "vgw-b4e63faa"
 }
+
+variable "zone_name" {
+    default = "stage.navopt"
+}

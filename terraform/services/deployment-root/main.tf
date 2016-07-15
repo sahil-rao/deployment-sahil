@@ -6,8 +6,9 @@ variable "name" {}
 variable "region" {}
 variable "vpc_id" {}
 variable "vpc_cidr" {}
-variable "public_cidr" {}
 variable "subnet_ids" {}
+variable "public_cidr" {}
+variable "dns_zone_id" {}
 
 ###################################################################
 
@@ -119,4 +120,14 @@ resource "aws_instance" "default" {
 resource "aws_eip" "default" {
   instance = "${aws_instance.default.id}"
   vpc      = true
+}
+
+###################################################################
+
+resource "aws_route53_record" "bastion" {
+    zone_id = "${var.dns_zone_id}"
+    name = "bastion"
+    type = "A"
+    ttl = "5"
+    records = ["${aws_instance.default.private_ip}"]
 }

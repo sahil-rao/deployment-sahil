@@ -2,9 +2,14 @@ variable "region" {}
 variable "env" {}
 variable "name" {}
 
+###################################################################
+
 variable "vpc_id" {}
 variable "vpc_cidr" {}
 variable "subnet_ids" {}
+variable "dns_zone_id" {}
+
+###################################################################
 
 variable "iam_role_name" { default = "" }
 variable "iam_role_policy_name" { default = "" }
@@ -21,13 +26,7 @@ variable "instance_count" {
 }
 variable "key_name" {}
 
-module "bitnami_nodejs" {
-    source = "../../modules/bitnami"
-    region = "${var.region}"
-    distribution = "nodejs-6.2.0-0"
-    architecture = "x86_64"
-    virttype = "hvm"
-}
+###################################################################
 
 resource "aws_security_group" "default" {
     name = "${var.name}"
@@ -110,6 +109,16 @@ resource "aws_security_group" "default" {
     }
 }
 
+###################################################################
+
+module "bitnami_nodejs" {
+    source = "../../modules/bitnami"
+    region = "${var.region}"
+    distribution = "nodejs-6.2.0-0"
+    architecture = "x86_64"
+    virttype = "hvm"
+}
+
 resource "aws_instance" "default" {
     # FIXME: Production uses this AMI, which needs to be copied over to this image.
     # Backoffice-Foundation-07-16-2014 (ami-79b6cf49)
@@ -132,4 +141,15 @@ resource "aws_instance" "default" {
         Environment = "${var.env}"
         Name = "${var.name}"
     }
+}
+
+###################################################################
+
+resource "aws_route53_record" "default" {
+    zone_id = "${var.dns_zone_id}"
+    count = "${var.instance_count}"
+    name = "backoffice-${count.index}"
+    type = "A"
+    ttl = "5"
+    records = ["${element(aws_instance.default.*.private_ip, count.index)}"]
 }
