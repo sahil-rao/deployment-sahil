@@ -136,7 +136,7 @@
   pip: name=elasticsearch
   sudo: yes
 - name: Install pandas python module
-  pip: name=pandas
+  apt: name=python-pandas state=present
   sudo: yes
 - name: Install thrift
   pip: name=thrift version=0.9.3
