@@ -13,7 +13,7 @@
   file: path=/var/exec state=absent
   sudo: yes
 - name: Mkdir exec
-  file: path=/var/exec state=present
+  file: path=/var/exec state=directory
   sudo: yes
 ### UNPACK S3 TARBALLS ###
 - name: Get Exec Dashboard
