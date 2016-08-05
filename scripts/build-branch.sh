@@ -46,7 +46,7 @@ else
 fi
 
 #check for python thrift libraries
-pip show thrift|grep 0.9.3 
+pip show thrift|grep 0.9.3
 ispip=`echo $?`
 if [ $ispip -ne 0 ]
 then
@@ -57,7 +57,7 @@ fi
 
 thrift -version |grep 0.9.3
 is_thrift_ver=`echo $?`
-pip show thrift|grep 0.9.3 
+pip show thrift|grep 0.9.3
 is_thrift_py_lib_ver=`echo $?`
 
 #check if thrift went through
@@ -74,7 +74,7 @@ S3Bucket="baaz-deployment/$1"
 rm -rf build/
 
 #Make sure the build directory does not yet exist
-mkdir build 
+mkdir build
 
 cd build
 
@@ -100,7 +100,7 @@ git clone https://github.com/baazdata/documentation.git
 s3cmd sync documentation/NavOptHelp/ s3://xplain-public/$clusterName/documentation/NavOptHelp/ --delete --acl-public
 
 cd graph
-python setup.py bdist 
+python setup.py bdist
 cd dist
 s3cmd sync flightpath-*.tar.gz s3://$S3Bucket/flightpath-deployment.tar.gz
 echo "Graph is built"
@@ -116,9 +116,10 @@ s3cmd sync xplain.io.tar.gz s3://$S3Bucket/
 tar -cvf optimizer_api.io.tar optimizer_api
 gzip optimizer_api.io.tar
 s3cmd sync optimizer_api.io.tar.gz s3://$S3Bucket/
-tar -cvf xplain_admin.tar xplain_admin
-gzip xplain_admin.tar
-s3cmd sync xplain_admin.tar.gz s3://$S3Bucket/
+# xplain_admin has been removed
+# tar -cvf xplain_admin.tar xplain_admin
+# gzip xplain_admin.tar
+# s3cmd sync xplain_admin.tar.gz s3://$S3Bucket/
 tar -cvf xplain_dashboard.tar xplain_dashboard
 gzip xplain_dashboard.tar
 s3cmd sync xplain_dashboard.tar.gz s3://$S3Bucket/
@@ -132,7 +133,7 @@ mvn package -DskipTests
 if [ $? -eq 0 ]
 then
   echo "Compiler is built"
-else 
+else
   echo "ERROR with compiler build process"
   exit 1
 fi
@@ -145,30 +146,30 @@ gzip Baaz-Compiler.tar
 s3cmd sync Baaz-Compiler.tar.gz s3://$S3Bucket/
 
 cd ../analytics
-python setup.py bdist 
+python setup.py bdist
 cd dist
 echo "anaytics is built"
 s3cmd sync baazmath-*.tar.gz s3://$S3Bucket/Baaz-Analytics.tar.gz
 
 # cd ../../application
-# python setup.py bdist 
+# python setup.py bdist
 # cd dist
 # echo "application is built"
 # s3cmd sync Baazapp-*.tar.gz s3://$S3Bucket/Baazapp-deployment.tar.gz
 
 cd ../../deployment/Data-Aquisition
 tar -cf Baaz-DataAcquisition-Service.tar etc usr
-gzip Baaz-DataAcquisition-Service.tar 
+gzip Baaz-DataAcquisition-Service.tar
 s3cmd sync Baaz-DataAcquisition-Service.tar.gz s3://$S3Bucket/
 
 cd ../Compile-Server
 tar -cf Baaz-Compile-Service.tar etc usr
-gzip Baaz-Compile-Service.tar 
+gzip Baaz-Compile-Service.tar
 s3cmd sync Baaz-Compile-Service.tar.gz s3://$S3Bucket/
 
 cd ../Math-Server
 tar -cf Baaz-Analytics-Service.tar etc usr
-gzip Baaz-Analytics-Service.tar 
+gzip Baaz-Analytics-Service.tar
 s3cmd sync Baaz-Analytics-Service.tar.gz s3://$S3Bucket/
 
 rm $LOCKFILE
