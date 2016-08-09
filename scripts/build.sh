@@ -119,6 +119,15 @@ s3cmd sync xplain.io.tar.gz s3://$S3Bucket/
 tar -cvf optimizer_api.io.tar optimizer_api
 gzip optimizer_api.io.tar
 s3cmd sync optimizer_api.io.tar.gz s3://$S3Bucket/
+<<<<<<< HEAD
+=======
+tar -cvf optimizer_admin.io.tar optimizer_admin
+gzip optimizer_admin.io.tar
+s3cmd sync optimizer_admin.io.tar.gz s3://$S3Bucket/
+tar -cvf xplain_dashboard.tar xplain_dashboard
+gzip xplain_dashboard.tar
+s3cmd sync xplain_dashboard.tar.gz s3://$S3Bucket/
+>>>>>>> f9df4f7... Merge conflict
 tar -cvf optimizer_admin.io.tar optimizer_admin
 gzip optimizer_admin.io.tar
 s3cmd sync optimizer_admin.io.tar.gz s3://$S3Bucket/
