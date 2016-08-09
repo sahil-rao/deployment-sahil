@@ -2,7 +2,7 @@
 # This Playbook would deploy the whole Baazdata cluster with replication and sharding.
 # Before running this playbook, make sure old scripts have been stopped with scripts/stop-old-scripts.yml
 
-- hosts: tag_Name_MongoDBServer 
+- hosts: tag_Name_MongoDBServer
   roles:
   - role: common
   - role: mongodb
@@ -22,14 +22,18 @@
 - hosts: tag_Name_NodeJS
   roles:
   - role: nodejsserver
-  
+
 - hosts: tag_Name_APIServer
   roles:
   - role: api
-  
+
 - hosts: tag_Name_AdminServer
   roles:
   - role: admin
+
+- hosts: tag_Name_ExecServer
+  roles:
+  - role: exec
 
 - hosts: tag_Name_Nginx
   roles:
@@ -73,4 +77,26 @@
 - hosts: tag_Name_LogstashServer
   roles:
   - role: logstash
+    sudo: true
+
+- hosts: tag_Name_RedisLog
+  roles:
+  - role: redislog
+    sudo: true
+
+- hosts: tag_Name_Bastion
+  roles:
+  - role: dashboard_server
+    tags: ['dasbboard']
+    sudo: true
+  - role: cronjobs
+    tags: ['crons']
+    sudo: true
+  - role: monit_collector #TODO needs to add this
+    tags: ['monit_data']
+    sudo: true
+
+- hosts: tag_Name_Datadog
+  roles:
+  - role: Datadog.datadog
     sudo: true

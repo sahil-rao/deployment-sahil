@@ -25,6 +25,9 @@ Column Name |   Column Type
 identity    |   SQL ID
 queryText   |   SQL FULLTEXT
 
+example of how to run with configs:
+python make_optimizer_format.py --url link.to.nav:port --login username
+
 """
 
 import sys
@@ -36,6 +39,7 @@ import getpass
 
 DEFAULT_OUTPUT_FILENAME = 'navigator_optimizer_queries.csv'
 DEFAULT_PLATFORM = 'hive'
+DEFAULT_NUM_QUERIES = 1000
 
 
 def execute(params):
@@ -48,6 +52,7 @@ def execute(params):
         login = params['login']
         password = params['password']
         platform = params['platform']
+        query_count = params['query_count']
 
         '''
         Identify the version.
@@ -61,7 +66,7 @@ def execute(params):
         else:
             return 'failed in version api: got error code %s' % (r.status_code)
 
-        api_params = "/api/"+version+"/entities/?query=%2BsourceType%3A"+platform+"%20%2Btype%3Aoperation&limit=1000&offset=0"
+        api_params = "/api/"+version+"/entities/?query=%2BsourceType%3A"+platform+"%20%2Btype%3Aoperation&limit=" + str(query_count) + "&offset=0"
         full_url = navigator_url + api_params
         r = requests.get(full_url, auth=(login, password))
         if r.status_code == 200:
@@ -82,7 +87,10 @@ def execute(params):
             if extras:
                 for x in extras:
                     del data[i][x]
-
+            if 'queryText' in data[i]:
+                s = data[i]['queryText']
+                if type(s) is unicode:
+                    data[i]['queryText'] = s.encode('utf8')
         with open(out_file_name, 'wb') as output_file:
             dict_writer = csv.DictWriter(output_file, keys, lineterminator='~~')
             dict_writer.writeheader()
@@ -90,7 +98,7 @@ def execute(params):
 
         return 'success'
     except:
-        return 'fail: %s'%(sys.exc_info())
+        return "Unexpected error:", sys.exc_info()[0]
 
 if __name__ == '__main__':
     params = {}
@@ -99,6 +107,7 @@ if __name__ == '__main__':
     parser.add_argument('--login', nargs=1, help='Navigator Username.')
     parser.add_argument('--url', nargs=1, help='Url for Navigator instance.')
     parser.add_argument('--out_file_name', nargs=1, help='Output file name.')
+    parser.add_argument('--query_count', nargs=1, help='Number of queries to return')
     parser.add_argument('--platform', nargs=1,
                         help='Platform to retrieve queries of, defaults to hive. [hive, impala]')
     args = parser.parse_args()
@@ -119,6 +128,11 @@ if __name__ == '__main__':
         params['out_file_name'] = DEFAULT_OUTPUT_FILENAME
     else:
         params['out_file_name'] = args.out_file_name[0]
+    
+    if not args.query_count:
+        params['query_count'] = DEFAULT_NUM_QUERIES
+    else:
+        params['query_count'] = int(args.query_count[0])
 
     if not args.platform:
         params['platform'] = DEFAULT_PLATFORM

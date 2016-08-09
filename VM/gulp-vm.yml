@@ -1,0 +1,25 @@
+---
+# This Playbook would deploy the whole Baazdata cluster with replication and sharding.
+# Test
+
+- hosts: localhost
+  tasks:
+
+  - name: Copy node upstart configuration file
+    template: src=/home/xplain/nodejs.conf dest=/etc/init/nodejs.conf
+  - name: Copy api upstart configuration file
+    template: src=/home/xplain/api_nodejs.conf dest=/etc/init/api_nodejs.conf
+  - name: Copy xplain_admin upstart configuration file
+    copy: src=/home/xplain/xplain_admin.conf dest=/etc/init/xplain_admin.conf
+  - name: Untar Baazdata App
+    shell: tar -zxf /home/xplain/xplain.io.tar.gz
+  - name: Save modules
+    shell: mv /var/xplain{{ port }}/node_modules /var
+  - name: Remove the existing deployed code
+    file: path=/var/xplain{{ port }} state=absent
+  - name: Move the new code
+    shell: mv /home/xplain/xplain.io /var/xplain{{ port }}
+  - name: Return node modules
+    shell: mv /var/node_modules /var/xplain{{ port }}
+  - name: Install npm modules.
+    npm: path=/var/xplain{{ port }} production=yes

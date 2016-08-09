@@ -1,0 +1,12 @@
+datadog_config:
+  tags: "{{ datadog_tag }}, nginx"
+datadog_checks:
+  process:
+    init_config:
+    instances:
+    - name: ssh
+      search_string: ['ssh', 'sshd']
+  nginx:
+    init_config:
+    instances:
+    - nginx_status_url: http://localhost/nginx_status/

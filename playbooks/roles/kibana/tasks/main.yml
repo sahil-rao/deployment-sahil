@@ -3,6 +3,10 @@
   get_url: url=https://download.elasticsearch.org/kibana/kibana/kibana-4.0.1-linux-x64.tar.gz dest=/home/ubuntu
 - name: Unarchive tarball 
   unarchive: src=/home/ubuntu/kibana-4.0.1-linux-x64.tar.gz dest=/home/ubuntu copy=no
+- name: Stop kibana4 as service
+  service: name=kibana4 state=stopped
+  sudo: yes
+  ignore_errors: true
 - name: Create kibana directory as /opt/kibana
   file: path=/opt/kibana state=directory
 - name: Copy kibana files into /opt/kibana
@@ -11,5 +15,12 @@
   get_url: url=https://gist.githubusercontent.com/thisismitch/8b15ac909aed214ad04a/raw/bce61d85643c2dcdfbc2728c55a41dab444dca20/kibana4 dest=/etc/init.d mode="a+x"
 - name: Start kibana4 as service
   service: name=kibana4 state=started
-
-  
+- name: Install monit service
+  apt: pkg=monit state=present
+  sudo: yes
+- name: copy monitrc file
+  template: src=roles/kibana/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+- name: Start monit service
+  shell: monit reload
+  sudo: yes

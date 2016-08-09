@@ -4,6 +4,13 @@
 
 - hosts: localhost
   tasks:
+  #create a new log directory
+  - name: Create Log directory
+    shell: mkdir -p /var/log/cloudera/navopt/nodejs
+    sudo: yes
+  - name: Change the permission
+    shell: chown xplain:xplain /var/log/cloudera/navopt/nodejs
+    sudo: yes
   #copy config files.
   - name: Copy hosts.cfg
     copy: src=/home/xplain/hosts.cfg dest=/var/Baaz/hosts.cfg
@@ -207,3 +214,18 @@
     npm: path=/var/xplain3000
   - name: copy monitrc file
     copy: src=/home/xplain/monitrc dest=/etc/monit/monitrc
+  - name: Install python logger package
+    pip: name=rlog
+    sudo: yes
+  - name: Install python mock package
+    pip: name=mock
+    sudo: yes
+  - name: Install python six package
+    pip: name=six extra_args='--upgrade'
+    sudo: yes
+  - name: Install python pbr package
+    pip: name=pbr
+    sudo: yes
+  - name: Install python funcsigs package
+    pip: name=funcsigs
+    sudo: yes

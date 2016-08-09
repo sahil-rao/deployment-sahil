@@ -18,5 +18,5 @@ for f in ${HIVE_MODULES}/*.jar; do
   CLASSPATH=${CLASSPATH}:$f;
 done
 
-java -Dnavopt.log.dir=/var/log -Dlogback.configurationFile=$XPLAIN_HOME/logback.xml  -classpath $CLASSPATH com.cloudera.navopt.compiler.QueryCompilerServer
+java -Dcompiler.servicename=$SERVICE_NAME -Dcompiler.port=$COMPILER_PORT -Dnavopt.log.dir=/var/log/cloudera/navopt -Dlogback.configurationFile=$XPLAIN_HOME/logback.xml  -classpath $CLASSPATH com.cloudera.navopt.compiler.QueryCompilerServer
 

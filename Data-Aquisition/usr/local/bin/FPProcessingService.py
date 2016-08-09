@@ -4,14 +4,15 @@
 Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenant> <log Directory>
 """
+from flightpath import cluster_config
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
-from flightpath.services.xplain_log_handler import XplainLogstashHandler
 from flightpath.utils import *
 from flightpath.parsing.ParseDemux import *
 from flightpath.Provenance import getMongoServer
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
+
 from json import *
 import elasticsearch
 import shutil
@@ -25,10 +26,11 @@ import logging
 import socket
 import urllib
 import re
+from rlog import RedisHandler
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
-BAAZ_FP_LOG_FILE = "/var/log/FPProcessing.err"
+BAAZ_FP_LOG_FILE = "/var/log/cloudera/navopt/FPProcessing.err"
 
 config = ConfigParser.RawConfigParser ()
 config.read("/var/Baaz/hosts.cfg")
@@ -47,13 +49,20 @@ if CLUSTER_MODE is None:
 if CLUSTER_NAME is not None:
     bucket_location = CLUSTER_NAME
 
+DEFAULT_QUERY_LIMIT = 50000
+
 if usingAWS:
     from boto.s3.key import Key
     import boto
+    from datadog import initialize, statsd
 
 rabbitserverIP = config.get("RabbitMQ", "server")
 metrics_url = None
 
+mode = cluster_config.get_cluster_mode()
+logging_level = logging.INFO
+if mode == "development":
+    logging_level = logging.INFO
 
 """
 For VM there is not S3 connectivity. Save the logs with a timestamp.
@@ -63,8 +72,14 @@ if not usingAWS:
     if os.path.isfile(BAAZ_FP_LOG_FILE):
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
         shutil.copy(BAAZ_FP_LOG_FILE, BAAZ_FP_LOG_FILE+timestr)
+    #no datadog statsd on VM
+    statsd = None
 
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_FP_LOG_FILE,level=logging.INFO,datefmt='%m/%d/%Y %I:%M:%S %p')
+logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_FP_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
+es_logger = logging.getLogger('elasticsearch')
+es_logger.propagate = False
+es_logger.setLevel(logging.WARN)
+
 
 """
 In AWS use S3 log rotate to save the log files.
@@ -74,19 +89,21 @@ if usingAWS:
     bucket = boto_conn.get_bucket(bucket_location)
     log_bucket = boto_conn.get_bucket(log_bucket_location)
     logging.getLogger().addHandler(RotatingS3FileHandler(BAAZ_FP_LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-    logging.getLogger().addHandler(XplainLogstashHandler(tags=['dataacquisitionservice', 'backoffice']))
+    redis_host = config.get("RedisLog", "server")
+    if redis_host:
+        logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
 
 def generateTagArray(header_info):
     tagArray = []
     for header in header_info:
-        if('tag' in header and header['tag'] is True):
+        if('tag' in header and header['tag'] is True and header['use'] is True):
             tagArray.append(header['type'].upper())
     return tagArray
 
 def generateCountArray(header_info):
     countArray = []
     for header in header_info:
-        if('count' in header and header['count'] is True):
+        if('count' in header and header['count'] is True and header['use'] is True):
             countArray.append(header['type'].upper())
     return countArray
 
@@ -95,7 +112,11 @@ def clean_header(header_info):
     if not header_info:
         return header_info
     for i, tag_info in enumerate(header_info):
-        header_info[i]['type'] = "".join(re.findall("[a-zA-Z-_]+", tag_info['type'].upper()))
+        '''
+        Dmitri's note: this is a bit redundant since the UI already sanitizes the values to begin with
+        '''
+        if header_info[i]['use'] is True:
+            header_info[i]['type'] = "".join(re.findall("[a-zA-Z-_]+", tag_info['type'].upper()))
     return header_info
 
 def end_of_phase_callback(params, current_phase):
@@ -110,8 +131,8 @@ def end_of_phase_callback(params, current_phase):
     params['connection'].publish(params['channel'],'',params['queuename'],message)
     return
 
-def performTenantCleanup(tenant):
-    logging.info("Cleaning Tenant "+ tenant)
+def performTenantCleanup(tenant, clog):
+    clog.info("Cleaning Tenant "+ tenant)
     destination = BAAZ_DATA_ROOT + tenant
     if os.path.exists(destination):
         shutil.rmtree(destination)
@@ -134,13 +155,13 @@ def updateRelationCounter(redis_conn, eid):
         if rel['rtype'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
 
-def elasticConnect(tenantID):
+def elasticConnect(tenantID, clog):
 
-    elastichost = getElasticServer(tenantID)
-    if elastichost is None:
+    elastichosts = getElasticServer(tenantID)
+    if not elastichosts:
         return
 
-    es = elasticsearch.Elasticsearch(hosts=[{'host' : elastichost, 'port' : 9200}])
+    es = elasticsearch.Elasticsearch(hosts=[{'host' : es_host, 'port' : 9200} for es_host in elastichosts])
     if es is None:
         return
     try:
@@ -173,9 +194,12 @@ def elasticConnect(tenantID):
             es.indices.create(index=tenantID, body=settings, ignore=[400,409])
             es.indices.put_mapping(index=tenantID, doc_type='entity', body=mapping, ignore=[400,409])
     except:
-        logging.exception("Elastic Search : ")
+        clog.exception("Elastic Search : ")
 
 class callback_context():
+
+    class QueryLimitReachedException(Exception):
+        pass
 
     def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode=False, skipLimit=False, testMode=False, sourcePlatform=None, header_info = None, delimiter = None):
         Self.tenant = tenant
@@ -196,6 +220,7 @@ class callback_context():
         Self.col_stat_table_name_list = []
         Self.table_stat_table_name_list = []
         Self.compiler_to_use = get_compiler(Self.sourcePlatform)
+        Self.clog = LoggerCustomAdapter(logging.getLogger(__name__), {'tag': 'dataacquisitionservice', 'tenant': tenant, 'uid':uid})
 
     def get_source_platform(Self):
         return Self.sourcePlatform
@@ -212,7 +237,7 @@ class callback_context():
 
         Store the total count in the upload stats.
         """
-        logging.info("Total Queries found " + str(total_queries_found))
+        Self.clog.info("Total Queries found " + str(total_queries_found))
         overall_stats = Self.collection.find_one({'uid':'0'})
         queries_left = total_queries_found
         if 'query_processed' in overall_stats and Self.uploadLimit !=0 and not Self.skipLimit:
@@ -224,14 +249,11 @@ class callback_context():
             Self.scale_mode = True
 
     def __getUploadLimit(Self):
-        if Self.CLUSTER_MODE == "development":
-            return 0
-
         userdb = getMongoServer("xplainIO")["xplainIO"]
         org = userdb.organizations.find_one({"guid":Self.tenant}, {"upLimit":1})
 
         if "upLimit" not in org:
-            upLimit = 20000
+            upLimit = DEFAULT_QUERY_LIMIT
             userdb.organizations.update({"guid":Self.tenant}, {"$set": {"upLimit":upLimit}})
         else:
             upLimit = org["upLimit"]
@@ -291,6 +313,9 @@ class callback_context():
                 table_entry = {"uid" : Self.uid}
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
+                #create Elastic search index
+                sendToElastic(connection1, Self.redis_conn, Self.tenant, Self.uid,
+                              table_entity, table_name, EntityType.SQL_TABLE)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
                                                             "instance_count",
@@ -317,6 +342,9 @@ class callback_context():
                 column_entry['tableName'] = table_name
                 column_entity = Self.mongoconn.addEn(eid, column_entity_name, Self.tenant,\
                                                 EntityType.SQL_TABLE_COLUMN, column_entry, None)
+                #create Elastic search index
+                sendToElastic(connection1, Self.redis_conn, Self.tenant, Self.uid,
+                              column_entity, column_entity_name, EntityType.SQL_TABLE_COLUMN)
                 #updated the upload stats for column
                 Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.newColumns"%(Self.compiler_to_use), incrBy=1)
                 '''
@@ -344,6 +372,9 @@ class callback_context():
                 table_entry = {"uid" : Self.uid, "stats":stats}
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
+                #create Elastic search index
+                sendToElastic(connection1, Self.redis_conn, Self.tenant, Self.uid,
+                              table_entity, table_name, EntityType.SQL_TABLE)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
                                                             "instance_count",
@@ -368,7 +399,8 @@ class callback_context():
                 return
 
             if not Self.skipLimit and not Self.__checkQueryLimit():
-                return
+                raise callback_context.QueryLimitReachedException("Tenant " + Self.tenant + " has exceeded query limit of " +
+                                                                  str(Self.__getUploadLimit()) + " queries")
 
             Self.redis_conn.incrEntityCounter("dashboard_data", "TotalQueries", sort=False, incrBy=1)
             if update == False:
@@ -378,15 +410,30 @@ class callback_context():
                 if data is not None:
                     jinst_dict['data'] = data
 
+                tagArray = []
+                countArray = []
                 jinst_dict['tagArray'] = []
                 jinst_dict['countArray'] = []
                 if header_info is not None:
-                    jinst_dict['tagArray'] = generateTagArray(header_info)
-                    jinst_dict['countArray'] = generateCountArray(header_info)
-                    Self.mongoconn.db.userPrefs.update_one({"userPrefs":"userPrefs"},
-                                                           {'$set':{'tagArray': jinst_dict['tagArray'],
-                                                                    'countArray': jinst_dict['countArray']}}, upsert=True)
-                compiler_msg = {'tenant':Self.tenant, 'job_instances':[jinst_dict]}
+                    tagArray = generateTagArray(header_info)
+                    countArray = generateCountArray(header_info)
+
+                    user_obj = Self.mongoconn.db.userPrefs.find_one({"userPrefs": "userPrefs"}, {"tagArray": 1, "countArray": 1})
+
+                    if user_obj:
+                        if "tagArray" in user_obj:
+                            tagArray += user_obj["tagArray"]
+                        if "countArray" in user_obj:
+                            countArray += user_obj["countArray"]
+
+                    jinst_dict['tagArray'] = list(set(tagArray))
+                    jinst_dict['countArray'] = list(set(countArray))
+                    tag_list = jinst_dict['tagArray']
+                    count_list = jinst_dict['countArray']
+                    Self.mongoconn.db.userPrefs.update_one({"userPrefs": "userPrefs"},
+                                                           {'$set': {'tagArray': tag_list,
+                                                                     'countArray': count_list}}, upsert=True)
+                compiler_msg = {'tenant': Self.tenant, 'job_instances': [jinst_dict]}
                 if Self.sourcePlatform is not None:
                     compiler_msg['source_platform'] = Self.sourcePlatform
                 else:
@@ -408,7 +455,7 @@ class callback_context():
                 message = dumps(compiler_msg)
                 connection1.publish(Self.ch,'','compilerqueue',message)
                 incrementPendingMessage(Self.collection, Self.redis_conn, Self.uid, message_id)
-                logging.debug("Published Compiler Message {0}\n".format(message))
+                Self.clog.debug("Published Compiler Message {0}\n".format(message))
 
             else:
                 Self.redis_conn.incrEntityCounter(eid, "instance_count", incrBy=1)
@@ -416,13 +463,13 @@ class callback_context():
                 queryEntity = Self.mongoconn.db.entities.find_one({eid:"eid"},{'profile.Compiler.%s.ErrorSignature'%(Self.compiler_to_use):1})
 
                 if "profile" not in queryEntity:
-                    logging.error("Failed in FP sendToCompiler 1")
+                    Self.clog.error("Failed in FP sendToCompiler 1")
                 elif "Compiler" not in queryEntity["profile"]:
-                    logging.error("Failed in FP sendToCompiler 2")
+                    Self.clog.error("Failed in FP sendToCompiler 2")
                 elif Self.compiler_to_use not in queryEntity["profile"]["Compiler"]:
-                    logging.error("Failed in FP sendToCompiler 3")
+                    Self.clog.error("Failed in FP sendToCompiler 3")
                 elif "OperatorList" not in queryEntity["profile"]["Compiler"][Self.compiler_to_use]:
-                    logging.error("Failed in FP sendToCompiler 4")
+                    Self.clog.error("Failed in FP sendToCompiler 4")
 
                 elif len(queryEntity["profile"]["Compiler"][Self.compiler_to_use]["OperatorList"]) > 1:
                     unique_queries = Self.mongoconn.db.entities.find({'profile.Compiler.%s.OperatorList'%(Self.compiler_to_use):{"$exists":1},
@@ -454,7 +501,7 @@ class callback_context():
                 jinst_dict['program_type'] = "Pig"
                 jinst_dict['pig_features'] = int(entity.instances[0].config_data['pig.script.features'])
             else:
-                logging.debug("Progname found {0}\n".format(entity.name))
+                Self.clog.debug("Progname found {0}\n".format(entity.name))
                 pub = False
             if pub == True:
                 compiler_msg = {'tenant':Self.tenant, 'job_instances':[jinst_dict]}
@@ -467,7 +514,7 @@ class callback_context():
                 message = dumps(compiler_msg)
                 connection1.publish(Self.ch,'','compilerqueue',message)
                 incrementPendingMessage(Self.collection, Self.redis_conn, Self.uid, message_id)
-                logging.debug("Published Compiler Message {0}\n".format(message))
+                Self.clog.debug("Published Compiler Message {0}\n".format(message))
 
 def callback(ch, method, properties, body):
     starttime = time.time()
@@ -478,7 +525,7 @@ def callback(ch, method, properties, body):
     except:
         logging.exception("Could not load the message JSON")
 
-    logging.debug("FPPS Got message "+ str( msg_dict))
+    logging.info("FPPS Got message "+ str( msg_dict))
     """
     Validate the message.
     """
@@ -495,19 +542,25 @@ def callback(ch, method, properties, body):
     xplain_client = getMongoServer("xplainIO")
     redis_conn = RedisConnector(tenant)
 
+    log_dict = {'tenant': tenant, 'tag': 'dataacquisitionservice'}
+    if 'opcode' in msg_dict:
+        log_dict['opcode'] = msg_dict['opcode']
+    if 'uid' in msg_dict:
+        log_dict['uid'] = msg_dict['uid']
+    clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)
     uid = None
     try:
         filename = None
         opcode = None
 
         if msg_dict.has_key("opcode") and msg_dict["opcode"] == "DeleteTenant":
-            performTenantCleanup(tenant)
+            performTenantCleanup(tenant, clog)
 
             xplain_client["xplainIO"].organizations.update({"guid":tenant},\
             {"$set":{"uploads":0, "queries":0, "lastTimeStamp": 0}})
             return
     except:
-        logging.exception("Testing Cleanup")
+        clog.exception("Testing Cleanup")
 
     """
     Scale mode should be triggered by a query number threshold.
@@ -517,7 +570,7 @@ def callback(ch, method, properties, body):
     if "opcode" in msg_dict and msg_dict["opcode"] == "scale_mode":
         scale_mode = True
 
-    elasticConnect(tenant)
+    elasticConnect(tenant, clog)
     r_collection = None
     dest_file = None
 
@@ -557,7 +610,7 @@ def callback(ch, method, properties, body):
                     r_collection = MongoClient(metrics_url)["remote_"+tenant].uploadStats
                     r_collection.insert({'uid':uid, "FPProcessing": {"count":1}})
                 except:
-                    logging.exception("Remote collection:")
+                    clog.exception("Remote collection:")
                     r_collection = None
 
         source = tenant + "/" + filename
@@ -570,7 +623,7 @@ def callback(ch, method, properties, body):
                 source = "partner-logs/" + source
             file_key = bucket.get_key(source)
             if file_key is None:
-                logging.error("NOT FOUND: {0} not in S3\n".format(source))
+                clog.error("NOT FOUND: {0} not in S3\n".format(source))
                 connection1.basicAck(ch,method)
 
                 return
@@ -585,14 +638,14 @@ def callback(ch, method, properties, body):
             #    errlog.flush()
             #    return
         else:
-            logging.debug("Downloading and extracting file")
+            clog.debug("Downloading and extracting file")
 
         """
         Download the file and extract:
         """
         dest_file = BAAZ_DATA_ROOT + tenant + "/" + filename
         destination = os.path.dirname(dest_file)
-        logging.debug("Destination: "+str(destination))
+        clog.debug("Destination: "+str(destination))
         if not os.path.exists(destination):
             os.makedirs(destination)
 
@@ -617,11 +670,11 @@ def callback(ch, method, properties, body):
         else:
             shutil.copy(dest_file, logpath)
     except:
-        logging.exception("Downloading file")
+        clog.exception("Downloading file")
 
-    logging.debug("Extracted file : {0} \n".format(dest_file))
+    clog.debug("Extracted file : {0} \n".format(dest_file))
     if not usingAWS:
-        logging.debug("Extracted file to /mnt/volume1/[tenent]/processing")
+        clog.debug("Extracted file to /mnt/volume1/[tenent]/processing")
 
     """
     Check if this upload has requested to skip the limit check.
@@ -651,7 +704,7 @@ def callback(ch, method, properties, body):
         '''
         message_id = genMessageID("Pre", redis_conn)
         incrementPendingMessage(collection, redis_conn, uid, message_id)
-        logging.debug("Incremementing message count: " + message_id)
+        clog.debug("Incremementing message count: " + message_id)
 
         cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection,
                                   scale_mode, skipLimit, testMode, source_platform, header_info, delimiter)
@@ -660,7 +713,7 @@ def callback(ch, method, properties, body):
 
         callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
         decrementPendingMessage(collection, redis_conn, uid, message_id, end_of_phase_callback, callback_params)
-        logging.debug("Decrementing message count: " + message_id)
+        clog.debug("Decrementing message count: " + message_id)
 
         if usingAWS:
             """
@@ -669,7 +722,7 @@ def callback(ch, method, properties, body):
             chkpoint_key = Key(bucket)
             chkpoint_key.key = checkpoint
             chkpoint_key.set_contents_from_string("Processed")
-            logging.debug("Processed file : {0} \n".format(dest_file))
+            clog.debug("Processed file : {0} \n".format(dest_file))
 
         """
         If we are in scale mode, close mongo, ack, and exit.
@@ -681,7 +734,7 @@ def callback(ch, method, properties, body):
             return
 
     except:
-        logging.exception("Parsing the input and Compiler Message")
+        clog.exception("Parsing the input and Compiler Message")
 
     try:
         if uid is not None:
@@ -715,9 +768,9 @@ def callback(ch, method, properties, body):
                                                            {"$set": {"uploads": (collection.count()-1),
                                                             "lastTimeStamp": timestamp}})
 
-            logging.debug("Updated the overall stats values.")
+            clog.debug("Updated the overall stats values.")
     except:
-        logging.exception("Error while updating the overall stats values.")
+        clog.exception("Error while updating the overall stats values.")
 
     try:
         mongoconn.close()
@@ -727,11 +780,15 @@ def callback(ch, method, properties, body):
             if r_collection is not None:
                 r_collection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.time()-starttime)}})
     except:
-        logging.exception("While closing mongo")
+        clog.exception("While closing mongo")
 
+    #send stats to datadog
+    if statsd:
+        totalTime = ((time.time() - starttime) * 1000)
+        statsd.timing("fpservice.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
     connection1.basicAck(ch,method)
 
-connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)
+connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue','elasticpub'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)
 
 
 logging.info("FPProcessingService going to start consuming")

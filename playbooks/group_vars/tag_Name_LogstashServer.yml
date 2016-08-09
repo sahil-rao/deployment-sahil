@@ -1,0 +1,10 @@
+datadog_config:
+  tags: "{{ datadog_tag }}, log, logstash"
+datadog_checks:
+  process:
+    init_config:
+    instances:
+    - name: ssh
+      search_string: ['ssh', 'sshd']
+    - name: logstash
+      search_string: ['logstash']

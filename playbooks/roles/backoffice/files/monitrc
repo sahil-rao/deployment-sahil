@@ -115,9 +115,7 @@ set mmonit http://monit:monit@{{ groups['tag_Name_DeploymentRoot'][0] }}:8080/co
 # set alert manager@foo.bar only on { timeout }  # receive just service-
 #                                                # timeout alert
 #
-set alert samir@cloudera.com only on { timeout }    # receive only timeout alerts
-set alert prithviraj.pandian@cloudera.com only on { timeout }    # receive only timeout alerts
-set alert parna@cloudera.com only on { timeout }    # receive only timeout alerts
+set alert navopt-alerts@cloudera.com only on { timeout }    # receive only timeout alerts
 #
 ## Monit has an embedded web server which can be used to view status of 
 ## services monitored and manage services from a web interface. See the
@@ -266,9 +264,16 @@ check process applicationservice with pidfile /var/run/applicationservice.pid
     start program = "/sbin/start applicationservice" with timeout 30 seconds
     stop program = "/sbin/stop applicationservice"
 
-check process compileserver with pidfile /var/run/compileserver.pid
-    start program = "/sbin/start compileserver" with timeout 30 seconds
-    stop program = "/sbin/stop compileserver"
+# Three java compilers (one for each service it talks to)
+check process advanalytics_compiler with pidfile /var/run/advanalytics_compiler.pid
+    start program = "/sbin/start advanalytics_compiler" with timeout 30 seconds
+    stop program = "/sbin/stop advanalytics_compiler"
+check process compileservice_compiler with pidfile /var/run/compileservice_compiler.pid
+    start program = "/sbin/start compileservice_compiler" with timeout 30 seconds
+    stop program = "/sbin/stop compileservice_compiler"
+check process applicationservice_compiler with pidfile /var/run/applicationservice_compiler.pid
+    start program = "/sbin/start applicationservice_compiler" with timeout 30 seconds
+    stop program = "/sbin/stop applicationservice_compiler"
 
 check process compileservice with pidfile /var/run/compileservice.pid
     start program = "/sbin/start compileservice" with timeout 30 seconds
@@ -285,3 +290,15 @@ check process advanalytics with pidfile /var/run/advanalyticsservice.pid
 check process ruleengineservice with pidfile /var/run/ruleengineservice.pid
     start program = "/sbin/start ruleengineservice" with timeout 30 seconds
     stop program = "/sbin/stop ruleengineservice"
+
+check process elasticpub with pidfile /var/run/elasticpub.pid
+    start program = "/sbin/start elasticpub" with timeout 30 seconds
+    stop program = "/sbin/stop elasticpub"
+
+check filesystem root with path /
+    if space usage > 80% then alert
+    if inode usage > 80% then alert
+
+check filesystem mnt with path /mnt
+    if space usage > 80% then alert
+    if inode usage > 80% then alert

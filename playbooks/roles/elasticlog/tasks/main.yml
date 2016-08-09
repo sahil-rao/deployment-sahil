@@ -1,4 +1,10 @@
 ---
+- name: Add JRE ppa
+  apt_repository: repo=ppa:webupd8team/java state=present
+- name: Automatically select the Oracle License
+  shell: echo debconf shared/accepted-oracle-license-v1-1 select true | sudo debconf-set-selections
+- name: Install JRE
+  apt: pkg=oracle-java7-installer state=latest update-cache=yes force=yes
 - name: Add elasticsearch apt key
   apt_key: url=http://packages.elasticsearch.org/GPG-KEY-elasticsearch state=present
 - name: Add elasticsearch apt repository to sources list
@@ -7,9 +13,21 @@
   apt: name=elasticsearch=1.4.4 state=present update_cache=yes
 - name: Copy elasticsearch config
   copy: src=elasticsearch.yml dest=/etc/elasticsearch/elasticsearch.yml
+- name: Copy elasticsearch startup script
+  copy: src=elasticsearch dest=/etc/init.d/elasticsearch
+  sudo: yes
 - name: Cronjob every day to delete elasticsearch indices older than five days
   cron: name='delete old es indices' minute="00" hour="00" job="curl -XDELETE localhost:9200/logstash-`date --date='4 days ago' +%Y.%m.%d`"
 - name: Start elasticsearch as a service
   service: name=elasticsearch state=started
 - name: Restart elasticsearch
   service: name=elasticsearch state=restarted
+- name: Install monit service
+  apt: pkg=monit state=present
+  sudo: yes
+- name: copy monitrc file
+  template: src=roles/elasticlog/files/monitrc dest=/etc/monit/monitrc
+  sudo: yes
+- name: Start monit service
+  shell: monit reload
+  sudo: yes

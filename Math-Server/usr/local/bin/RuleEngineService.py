@@ -4,14 +4,17 @@
 Process request for simulation on Imapla.
 """
 #from flightpath.parsing.hadoop.HadoopConnector import *
+from flightpath import cluster_config
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
-import flightpath.utils as utils
+from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
 import sys
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath import FPConnector
+from rlog import RedisHandler
+
 from json import *
 import shutil
 import os
@@ -22,7 +25,7 @@ import logging
 import socket
 import importlib
 
-LOG_FILE = "/var/log/RuleEngineService.err"
+LOG_FILE = "/var/log/cloudera/navopt/RuleEngineService.err"
 
 config = ConfigParser.RawConfigParser()
 config.read("/var/Baaz/hosts.cfg")
@@ -30,6 +33,12 @@ usingAWS = config.getboolean("mode", "usingAWS")
 if usingAWS:
     from boto.s3.key import Key
     import boto
+    from datadog import initialize, statsd
+
+mode = cluster_config.get_cluster_mode()
+logging_level = logging.INFO
+if mode == "development":
+    logging_level = logging.INFO
 
 rabbitserverIP = config.get("RabbitMQ", "server")
 metrics_url = None
@@ -48,11 +57,16 @@ if not usingAWS:
     if os.path.isfile(LOG_FILE):
         timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%H-%M-%S')
         shutil.copy(LOG_FILE, LOG_FILE+timestr)
+    #no datadog statsd on VM
+    statsd = None
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     filename=LOG_FILE,
-                    level=logging.INFO,
+                    level=logging_level,
                     datefmt='%m/%d/%Y %I:%M:%S %p')
+es_logger = logging.getLogger('elasticsearch')
+es_logger.propagate = False
+es_logger.setLevel(logging.WARN)
 
 """
 In AWS use S3 log rotate to save the log files.
@@ -62,7 +76,9 @@ if usingAWS:
     bucket = boto_conn.get_bucket('partner-logs')
     log_bucket = boto_conn.get_bucket('xplain-servicelogs')
     logging.getLogger().addHandler(RotatingS3FileHandler(LOG_FILE, maxBytes=104857600, backupCount=5, s3bucket=log_bucket))
-
+    redis_host = config.get("RedisLog", "server")
+    if redis_host:
+        logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
 
 def callback(ch, method, properties, body):
     '''
@@ -71,6 +87,7 @@ def callback(ch, method, properties, body):
     Imports and runs the rules that are needed which are put in rules.cfg.
     '''
     try:
+        startTime = time.time()
         msg_dict = loads(body)
     except:
         logging.exception("Could not load the message JSON")
@@ -83,6 +100,11 @@ def callback(ch, method, properties, body):
         return
 
     tenant = msg_dict["tenant"]
+    log_dict = {'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode'], 'tag': 'ruleengine'}
+    if 'uid' in msg_dict:
+        log_dict['uid'] = msg_dict['uid']
+    clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)
+
     msg_dict["connection"] = connection1
     msg_dict["ch"] = ch
     resp_dict = None
@@ -108,7 +130,7 @@ def callback(ch, method, properties, body):
           not workflow_config.has_option(section, "Function") or\
           not workflow_config.has_option(section, "RuleIds") or \
           not workflow_config.has_option(section, "version"):
-            logging.error("rule_workflows.cfg section not defined properly for %s"%(section))
+            clog.error("rule_workflows.cfg section not defined properly for %s"%(section))
         else:
             '''
             Run rules before running the workflow.
@@ -122,7 +144,7 @@ def callback(ch, method, properties, body):
                 try:
                     has_run = methodToCall(tenant, msg_dict)
                 except:
-                    logging.exception("VerifyFunction for " + msg_dict["opcode"])
+                    clog.exception("VerifyFunction for " + msg_dict["opcode"])
 
             if not has_run:
                 for rule_id in rule_ids:
@@ -133,19 +155,23 @@ def callback(ch, method, properties, body):
                         msg_dict[rule_name] = rule_function(tenant, msg_dict)
                     except:
                         msg_dict[rule_name] = None
-                        logging.exception("Rule Failed for " + rule_name)
+                        clog.exception("Rule Failed for " + rule_name)
 
                 methodToCall = getattr(mod, workflow_config.get(section, "Function"))
                 try:
                     resp_dict = methodToCall(tenant, msg_dict)
                 except:
-                    logging.exception("Proceesing request for " + msg_dict["opcode"])
+                    clog.exception("Proceesing request for " + msg_dict["opcode"])
 
     if resp_dict is None:
         resp_dict = {"status": "Failed"}
 
     mongoconn.close()
     connection1.basicAck(ch, method)
+    #send stats to datadog
+    if statsd:
+        totalTime = ((time.time() - startTime) * 1000)
+        statsd.timing("ruleengine.per.msg.time", totalTime, tags=["tenant:"+tenant])
 
 connection1 = RabbitConnection(callback, ['ruleengine'], [], {}, prefetch_count=1)
 

@@ -1,0 +1,12 @@
+datadog_config:
+  tags: "{{ datadog_tag }}, dbsilo, elasticsearch"
+datadog_checks:
+  process:
+    init_config:
+    instances:
+    - name: ssh
+      search_string: ['ssh', 'sshd']
+  elastic:
+    init_config:
+    instances:
+    - url: "http://{{ ansible_hostname }}:9200"

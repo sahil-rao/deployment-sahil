@@ -1,0 +1,12 @@
+datadog_config:
+  tags: "{{ datadog_tag }}, dbsilo, mongodb"
+datadog_checks:
+  process:
+    init_config:
+    instances:
+    - name: ssh
+      search_string: ['ssh', 'sshd']
+  mongo:
+    init_config:
+    instances:
+    - server: mongodb://localhost:27017

@@ -3,6 +3,12 @@
 - name: Install S3 CMD
   apt: name=s3cmd state=present
   sudo: yes
+- name: Create Log directory
+  shell: mkdir -p /var/log/cloudera/navopt/nodejs
+  sudo: yes
+- name: Change the permission
+  shell: chown bitnami:bitnami /var/log/cloudera/navopt/nodejs
+  sudo: yes
 - name: Copy s3cmd config file
   copy: src=/home/ubuntu/.s3cfg dest=/home/bitnami/.s3cfg
 - name: NTP installed
@@ -43,7 +49,7 @@
   template: src=s3.json dest=/var/xplain{{ port }}/config/s3.json
   sudo: yes
 - name: Get the npm modules.
-  npm: path=/var/xplain{{ port }}
+  npm: path=/var/xplain{{ port }} production=yes
 ### DEPLOY AND CONFIGURE ###
 - name: Create node upstart script
   template: src=nodejs.conf dest=/etc/init/nodejs.conf

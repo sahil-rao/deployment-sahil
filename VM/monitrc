@@ -260,10 +260,17 @@ check process dataacquisitionservice with pidfile /var/run/FPProcessingService.p
     stop program = "stop dataacquisitionservice"
 #    alert parna@baazdata.com only on { nonexist }
 
-check process compileserver with pidfile /var/run/compileserver.pid
-    start program = "start compileserver"
-    stop program = "stop compileserver"
-
+# Three java compilers (one for each service it talks to)
+check process advanalytics_compiler with pidfile /var/run/advanalytics_compiler.pid
+    start program = "/sbin/start advanalytics_compiler" with timeout 30 seconds
+    stop program = "/sbin/stop advanalytics_compiler"
+check process compileservice_compiler with pidfile /var/run/compileservice_compiler.pid
+    start program = "/sbin/start compileservice_compiler" with timeout 30 seconds
+    stop program = "/sbin/stop compileservice_compiler"
+check process applicationservice_compiler with pidfile /var/run/applicationservice_compiler.pid
+    start program = "/sbin/start applicationservice_compiler" with timeout 30 seconds
+    stop program = "/sbin/stop applicationservice_compiler"
+    
 check process compileservice with pidfile /var/run/BaazCompileService.pid
     start program = "start compileservice"
     stop program = "stop compileservice"
@@ -280,3 +287,9 @@ check process node with pidfile /var/run/nodejs.pid
     start program = "/sbin/start nodejs"
     stop program = "/sbin/stop nodejs"
 #    alert sean@baazdata.com only on { nonexist }
+
+check filesystem root with path /
+    if space usage > 80% then alert
+
+check filesystem mnt with path /mnt
+    if space usage > 80% then alert

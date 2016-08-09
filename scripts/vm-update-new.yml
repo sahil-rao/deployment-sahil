@@ -4,6 +4,12 @@
 
 - hosts: localhost
   tasks:
+  - name: Create Log directory
+    shell: mkdir -p /var/log/cloudera/navopt/nodejs
+    sudo: yes
+  - name: Change the permission
+    shell: chown xplain:xplain /var/log/cloudera/navopt/nodejs
+    sudo: yes
   #copy config files.
   - name: Copy hosts.cfg
     copy: src=/home/xplain/hosts.cfg dest=/var/Baaz/hosts.cfg
@@ -24,7 +30,7 @@
     copy: src=installrabbit.sh dest=/home/xplain/installrabbit.sh owner=root group=root mode=0744
   #Commented out but may be needed later when we can figure out how to make sure it's installed already
   #- name: Install Erlang and RabbitMQ from source. This will take some time.
-  #  command: ./installrabbit.sh chdir=/home/xplain/ 
+  #  command: ./installrabbit.sh chdir=/home/xplain/
 
   # Setting up clustering erlang cookie
   - name: create cookie directory
@@ -33,7 +39,7 @@
     template: src=erlang.cookie.j2 dest=/var/lib/rabbitmq/.erlang.cookie owner=rabbitmq group=rabbitmq mode=0400
     register: erlang_cookie
   #Set up web UI plugin, port 15672 must be open
-  - name: Adding web management plugin 
+  - name: Adding web management plugin
     rabbitmq_plugin: names=rabbitmq_management state=enabled
   - name: restart rabbitmq
     service: name=rabbitmq-server state=restarted
@@ -62,7 +68,7 @@
 
 
   - name: Start Mongo
-    shell: 
+    shell:
 
     sudo: yes
     ignore_errors: True
@@ -102,6 +108,8 @@
     sudo: yes
   - name: Install elasticsearch py
     pip: name=elasticsearch version=1.1.1
+  - name: Install pandas python module
+    apt: name=python-pandas state=present
 
   #Redis deployments
   - name: Add APT repository with latest version of redis
@@ -112,7 +120,9 @@
     pip: name=redis
 
   - name: Install binaryornot py
-    pip: name=binaryornot 
+    pip: name=binaryornot
+  - name: Install boto py
+    pip: name=boto
 
   #REDIS SENTINEL DEPLOYMENT
   - name: Stop running redis server
@@ -132,7 +142,7 @@
   - name: Copy sentinel config file
     template: src=/home/xplain/sentinel.conf dest=/etc/redis/local/sentinel.conf owner=redis group=redis mode=0644
   - name: Write upstart script in /etc/init/redis-sentinel.conf
-    copy: src=/home/xplain/redis-sentinel.conf dest=/etc/init/redis-sentinel.conf 
+    copy: src=/home/xplain/redis-sentinel.conf dest=/etc/init/redis-sentinel.conf
   - name: Start sentinel
     service: name=redis-sentinel state=started
   - name: Start running redis server
@@ -172,16 +182,36 @@
   - name: Install Compiler Service
     shell: tar -zxf /home/xplain/Baaz-Compile-Service.tar.gz chdir=/
 
-  - name: Stop compileserver
-    action: service name=compileserver state=stopped
+  - name: Stop any previous compile server that may be installed
+    service: name=compileserver state=stopped
     ignore_errors: True
+  - name: Remove any previous compile server that may be installed
+    file: path=/etc/init/compileserver.conf state=absent
+  - name: Stop advanalytics_compiler
+    service: name=advanalytics_compiler state=stopped
+    ignore_errors: True
+  - name: Stop compileservice_compiler
+    service: name=compileservice_compiler state=stopped
+    ignore_errors: True
+  - name: Stop applicationservice_compiler
+    service: name=applicationservice_compiler state=stopped
+    ignore_errors: True
+  - name: Stop elasticpub
+    service: name=elasticpub state=stopped
+    ignore_errors: True
+    
+  - name: Start advanalytics_compiler
+    service: name=advanalytics_compiler state=started
+  - name: Start compileservice_compiler
+    service: name=compileservice_compiler state=started
+  - name: Start applicationservice_compiler
+    service: name=applicationservice_compiler state=started
+  - name: Start elasticpub
+    service: name=elasticpub state=started
+
   - name: Stop compileservice
     service: name=compileservice state=stopped
     ignore_errors: True
-  - name: Start compileserver
-    action: service name=compileserver state=started
-  - name: Start compileservice
-    service: name=compileservice state=started
 
   - name: Untar flightpath
     shell: tar -zxf /home/xplain/flightpath-deployment.tar.gz chdir=/
@@ -200,6 +230,21 @@
   - name: Move the new code
     shell: mv /home/xplain/xplain.io /var/xplain{{ port }}
   - name: Install npm modules.
-    npm: path=/var/xplain{{ port }}
+    npm: path=/var/xplain{{ port }} production=yes
   - name: copy monitrc file
     copy: src=/home/xplain/monitrc dest=/etc/monit/monitrc
+  - name: Install python logger package
+    pip: name=rlog
+    sudo: yes
+  - name: Install python mock package
+    pip: name=mock
+    sudo: yes
+  - name: Install python six package
+    pip: name=six extra_args='--upgrade'
+    sudo: yes
+  - name: Install python pbr package
+    pip: name=pbr
+    sudo: yes
+  - name: Install python funcsigs package
+    pip: name=funcsigs
+    sudo: yes

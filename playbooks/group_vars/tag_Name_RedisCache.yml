@@ -1,0 +1,13 @@
+datadog_config:
+  tags: "{{ datadog_tag }}, log, redis, rediscache"
+datadog_checks:
+  process:
+    init_config:
+    instances:
+    - name: ssh
+      search_string: ['ssh', 'sshd']
+  redisdb:
+    init_config:
+    instances:
+    - host: localhost
+      port: 6379

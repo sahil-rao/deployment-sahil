@@ -11,6 +11,9 @@
 - name: Save configuration file
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
   sudo: yes
+- name: Create Log directory
+  shell: mkdir -p /var/log/cloudera/navopt
+  sudo: yes
 - name: Get Flightpath
   shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}flightpath-deployment.tar.gz .
 - name: Untar flightpath
@@ -92,21 +95,30 @@
 - name: Install Compiler Service
   shell: tar -zxf /home/ubuntu/Baaz-Compile-Service.tar.gz chdir=/
   sudo: yes
-- name: Remove any previous service that may be installed.
-  shell: update-rc.d -f baazcompile remove
+- name: copy logback file
+  template: src=logback.xml dest=/usr/lib/baaz_compiler/
   sudo: yes
-- name: Remove any previous xplaincompile server that may be installed.
-  service: name=xplaincompile state=stopped
+- name: Stop any previous compile server that may be installed.
+  service: name=compileserver state=stopped
   ignore_errors: yes
   sudo: yes
-- name: Delete xplaincompile.conf
-  shell: rm -f /etc/init/xplaincompile.conf
+- name: Remove any previous compile server that may be installed.
+  file: path=/etc/init/compileserver.conf state=absent
   sudo: yes
 - name: Stop compileservice.
   service: name=compileservice state=stopped
   sudo: yes
-- name: Stop compileserver.
-  service: name=compileserver state=stopped
+- name: Stop advanalytics_compiler
+  service: name=advanalytics_compiler state=stopped
+  sudo: yes
+- name: Stop compileservice_compiler
+  service: name=compileservice_compiler state=stopped
+  sudo: yes
+- name: Stop applicationservice_compiler
+  service: name=applicationservice_compiler state=stopped
+  sudo: yes
+- name: Stop elasticpub
+  service: name=elasticpub state=stopped
   sudo: yes
 # - name: Start compileserver.
 #   service: name=compileserver state=started
@@ -122,6 +134,9 @@
 #  sudo: yes
 - name: Install Elasticsearch
   pip: name=elasticsearch
+  sudo: yes
+- name: Install pandas python module
+  apt: name=python-pandas state=present
   sudo: yes
 - name: Install thrift
   pip: name=thrift version=0.9.3
@@ -152,6 +167,24 @@
   sudo: yes
 - name: Upgrade pymongo to 3.0
   pip: name=pymongo state=latest
+  sudo: yes
+- name: Install python logger package
+  pip: name=rlog
+  sudo: yes
+- name: Install python mock package
+  pip: name=mock
+  sudo: yes
+- name: Install python six package
+  pip: name=six extra_args='--upgrade'
+  sudo: yes
+- name: Install python pbr package
+  pip: name=pbr
+  sudo: yes
+- name: Install python funcsigs package
+  pip: name=funcsigs
+  sudo: yes
+- name: Install python datadog package
+  pip: name=datadog
   sudo: yes
 #REDIS SENTINEL DEPLOYMENT
 #- name: Install Redis APT Package
