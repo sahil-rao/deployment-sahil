@@ -86,8 +86,13 @@ def callback(ch, method, properties, body):
     Attempts to run the workflow in rule_workflows.cfg specified by the opcode.
     Imports and runs the rules that are needed which are put in rules.cfg.
     '''
+
+    #send stats to datadog
+    if statsd:
+        statsd.increment('ruleengine.msg.count', 1)
+
     try:
-        startTime = time.time()
+        startTime = time.clock()
         msg_dict = loads(body)
     except:
         logging.exception("Could not load the message JSON")
@@ -170,7 +175,7 @@ def callback(ch, method, properties, body):
     connection1.basicAck(ch, method)
     #send stats to datadog
     if statsd:
-        totalTime = ((time.time() - startTime) * 1000)
+        totalTime = (time.clock() - startTime)
         statsd.timing("ruleengine.per.msg.time", totalTime, tags=["tenant:"+tenant])
 
 connection1 = RabbitConnection(callback, ['ruleengine'], [], {}, prefetch_count=1)

@@ -466,8 +466,12 @@ def process_HAQR_request(msg_dict, clog):
 
 def callback(ch, method, properties, body):
 
-    startTime = time.time()
+    startTime = time.clock()
     msg_dict = loads(body)
+
+    #send stats to datadog
+    if statsd:
+        statsd.increment('advanalytics.msg.count', 1)
 
     logging.debug("Analytics: Got message "+ str(msg_dict))
 
@@ -590,11 +594,11 @@ def callback(ch, method, properties, body):
             if 'outmost_query' in msg_dict:
                 ctx.outmost_query = msg_dict['outmost_query']
 
-            opcode_startTime = time.time()
+            opcode_startTime = time.clock()
             methodToCall(tenant, ctx)
             #send stats to datadog
             if statsd:
-                totalTime = ((time.time() - opcode_startTime) * 1000)
+                totalTime = (time.clock() - opcode_startTime)
                 statsd.timing("advanalytics.per.opcode.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid, "opcode:"+opcode])
 
             if 'uid' in msg_dict:
@@ -637,13 +641,13 @@ def callback(ch, method, properties, body):
 
     connection1.basicAck(ch, method)
 
-    endTime = time.time()
+    endTime = time.clock()
     if 'uid' in msg_dict:
         #if uid has been set, the variable will be set already
         redis_conn.incrEntityCounter(uid, "Math.time", incrBy=(endTime - startTime))
     #send stats to datadog
     if statsd:
-        totalTime = ((time.time() - startTime) * 1000)
+        totalTime = (time.clock() - startTime)
         statsd.timing("advanalytics.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
 
 connection1 = RabbitConnection(callback, ['advanalytics'], ['elasticpub'], {}, prefetch_count=1)

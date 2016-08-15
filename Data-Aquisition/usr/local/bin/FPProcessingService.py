@@ -517,8 +517,12 @@ class callback_context():
                 Self.clog.debug("Published Compiler Message {0}\n".format(message))
 
 def callback(ch, method, properties, body):
-    starttime = time.time()
+    starttime = time.clock()
     curr_socket = socket.gethostbyname(socket.gethostname())
+
+    #send stats to datadog
+    if statsd:
+        statsd.increment('fpservice.msg.count', 1)
 
     try:
         msg_dict = loads(body)
@@ -776,15 +780,15 @@ def callback(ch, method, properties, body):
         mongoconn.close()
         if msg_dict.has_key('uid'):
             #if uid has been set, the variable will be set already
-            redis_conn.setEntityProfile(uid, {"FPProcessing.time":(time.time()-starttime)})
+            redis_conn.setEntityProfile(uid, {"FPProcessing.time":(time.clock()-starttime)})
             if r_collection is not None:
-                r_collection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.time()-starttime)}})
+                r_collection.update({'uid':uid},{"$set": {"FPProcessing.time":(time.clock()-starttime)}})
     except:
         clog.exception("While closing mongo")
 
     #send stats to datadog
     if statsd:
-        totalTime = ((time.time() - starttime) * 1000)
+        totalTime = (time.clock() - starttime)
         statsd.timing("fpservice.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
     connection1.basicAck(ch,method)
 

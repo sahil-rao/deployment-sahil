@@ -1701,10 +1701,14 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
 
 
 def callback(ch, method, properties, body):
-    startTime = time.time()
+    startTime = time.clock()
     dbAdditions = [0,0]
     tmpAdditions = [0,0]
     msg_dict = loads(body)
+
+    #send stats to datadog
+    if statsd:
+        statsd.increment('compileservice.msg.count', 1)
 
     logging.info("compiler Got message "+ str(msg_dict))
 
@@ -1932,10 +1936,10 @@ def callback(ch, method, properties, body):
 
     logging.info("Event Processing Complete")
 
-    endTime = time.time()
+    endTime = time.clock()
     #send stats to datadog
     if statsd:
-        totalTime = ((endTime - startTime) * 1000)
+        totalTime = (endTime - startTime)
         statsd.timing("compileservice.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already
