@@ -100,3 +100,8 @@
   roles:
   - role: Datadog.datadog
     sudo: true
+
+- hosts: tag_Name_Docker
+  roles:
+  - role: angstwad.docker_ubuntu
+    sudo: true
