@@ -1,0 +1,6 @@
+/var/log/compileserver.out {
+        daily
+        missingok
+        rotate 3
+        compress
+}
