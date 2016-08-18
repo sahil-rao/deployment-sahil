@@ -1,5 +1,5 @@
 #
-# Super simple example of a Dockerfile
+# Dockerfile to install all required libraries needed for python services.
 #
 FROM ubuntu:14.04
 MAINTAINER Samir Pujari "samir@cloudera.com"
