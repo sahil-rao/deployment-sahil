@@ -240,12 +240,11 @@
   - name: Untar Admin App
     shell: tar -zxf /home/xplain/optimizer_admin.io.tar.gz
   - name: Remove the existing deployed code
-    file: path=/var/admin{{ port }} state=absent
+    file: path=/var/admin state=absent
   - name: Create /var/admin
     file: path=/var/admin state=directory
-    sudo: yes
-  - name: Move the new code
-    shell: mv /home/xplain/optimizer_admin /var/admin
+  - name: Move the new admin code
+    shell: cp -a /home/xplain/optimizer_admin/. /var/admin/
   - name: Install npm modules.
     npm: path=/var/admin production=yes
 
