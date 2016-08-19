@@ -45,7 +45,7 @@ else
 fi
 
 #check for python thrift libraries
-pip show thrift|grep 0.9.3 
+pip show thrift|grep 0.9.3
 ispip=`echo $?`
 if [ $ispip -ne 0 ]
 then
@@ -56,7 +56,7 @@ fi
 
 thrift -version |grep 0.9.3
 is_thrift_ver=`echo $?`
-pip show thrift|grep 0.9.3 
+pip show thrift|grep 0.9.3
 is_thrift_py_lib_ver=`echo $?`
 
 #check if thrift went through and has correct versions
@@ -108,7 +108,7 @@ git pull
 
 cd /home/xplain/build/graph
 rm -rf build dist
-python setup.py bdist 
+python setup.py bdist
 cd dist
 echo "Graph is built!"
 
@@ -116,8 +116,8 @@ cd /home/xplain/build/UI
 tar -cvf  xplain.io.tar xplain.io
 gzip -f  xplain.io.tar
 
-tar -cvf  xplain_admin.tar xplain_admin
-gzip -f  xplain_admin.tar
+tar -cvf  optimizer_admin.tar optimizer_admin
+gzip -f  optimizer_admin.tar
 
 tar -cvf  xplain_dashboard.tar xplain_dashboard
 gzip -f  xplain_dashboard.tar
@@ -129,7 +129,7 @@ mvn package -DskipTests
 if [ $? -eq 0 ]
 then
   echo "Compiler is built"
-else 
+else
   echo "ERROR with compiler build process"
   exit 1
 fi
@@ -142,7 +142,7 @@ tar -cvf  Baaz-Compiler.tar baaz_compiler
 gzip -f  Baaz-Compiler.tar
 
 cd /home/xplain/build/analytics
-python setup.py bdist 
+python setup.py bdist
 cd dist
 echo "anaytics is built"
 
@@ -151,20 +151,20 @@ cp /home/xplain/build/deployment/scripts/vm-update-new.yml ~/.
 
 cd /home/xplain/build/deployment/Data-Aquisition
 tar -cf  Baaz-DataAcquisition-Service.tar etc usr
-gzip -f   Baaz-DataAcquisition-Service.tar 
+gzip -f   Baaz-DataAcquisition-Service.tar
 
 
 cd /home/xplain/build/deployment/Compile-Server
 tar -cf  Baaz-Compile-Service.tar etc usr
-gzip -f   Baaz-Compile-Service.tar 
+gzip -f   Baaz-Compile-Service.tar
 
 
 cd /home/xplain/build/deployment/Math-Server
 tar -cf Baaz-Analytics-Service.tar etc usr
-gzip -f   Baaz-Analytics-Service.tar 
+gzip -f   Baaz-Analytics-Service.tar
 
 cd /home/xplain/build/compiler
-tar -cf Baaz-Basestats-Report.tar reports 
+tar -cf Baaz-Basestats-Report.tar reports
 gzip -f   Baaz-Basestats-Report.tar
 
 
@@ -182,7 +182,7 @@ cp /home/xplain/build/deployment/VM/clear_tenant.sh .
 cp /home/xplain/build/deployment/VM/monitrc .
 cp /home/xplain/build/deployment/VM/api_nodejs.conf .
 cp /home/xplain/build/deployment/VM/nodejs.conf .
-cp /home/xplain/build/deployment/VM/xplain_admin.conf .
+cp /home/xplain/build/deployment/VM/admin_nodejs.conf .
 cp /home/xplain/build/deployment/VM/README .
 cp /home/xplain/build/deployment/VM/refresh.sh .
 cp /home/xplain/build/deployment/VM/vm-update.yml .
