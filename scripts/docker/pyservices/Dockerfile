@@ -13,7 +13,7 @@ RUN apt-get update && \
 RUN pip install thrift==0.9.3 boto pika==0.9.8 networkx sqlparse \
                 elasticsearch httplib2 pygraphviz redis \
                 python-logstash binaryornot pymongo rlog mock \
-                six --upgrade pbr funcsigs datadog pandas
+                six --upgrade pbr funcsigs datadog pandas j2cli
 
 RUN mkdir /var/Baaz
 RUN mkdir /var/log/cloudera && mkdir /var/log/cloudera/navopt
