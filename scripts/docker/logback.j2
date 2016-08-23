@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="30 seconds">
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{dd MMM yyyy HH:mm:ss,PST} [%t] %-5p %c - %m%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="ROOT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${navopt.log.dir:-/tmp}/querycompiler.log</file>
+    <append>true</append>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- daily rollover -->
+      <fileNamePattern>${navopt.log.dir:-/tmp}/querycompiler.log.%d{yyyy-MM-dd}.%i</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy
+          class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+          <!-- or whenever the file size reaches 10MB -->
+        <maxFileSize>10MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+      <!-- keep 30 days' worth of history -->
+      <maxHistory>30</maxHistory>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{dd MMM yyyy HH:mm:ss,PST} [%t] %-5p %c - %m%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="REQUESTS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${navopt.log.dir:-/tmp}/querycompiler-strategy.log</file>
+    <append>true</append>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <!-- daily rollover -->
+      <fileNamePattern>${navopt.log.dir:-/tmp}/querycompiler-strategy.%d{yyyy-MM-dd}.%i</fileNamePattern>
+      <timeBasedFileNamingAndTriggeringPolicy
+          class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+          <!-- or whenever the file size reaches 10MB -->
+        <maxFileSize>10MB</maxFileSize>
+      </timeBasedFileNamingAndTriggeringPolicy>
+      <!-- keep 30 days' worth of history -->
+      <maxHistory>30</maxHistory>
+    </rollingPolicy>
+    <encoder>
+      <pattern>%d{dd MMM yyyy HH:mm:ss,PST} [%X{logSegregationId}] [%t] %-5p %c - %m%n</pattern>
+    </encoder>
+  </appender>
+
+  <appender name="logstash-tcp" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+    <destination>${logstash.host:-192.168.1.1}:5400</destination>
+    <!-- host>${logstash.host:-192.168.1.1}</host>
+    <port>5400</port -->
+    <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+      <customFields>{"tags":"java-compiler"}</customFields>
+    </encoder>
+  </appender>
+
+  <appender name="logstash-rabbitmq" class="org.springframework.amqp.rabbit.logback.AmqpAppender">
+    <layout>
+      <pattern><![CDATA[ %d %p %t [%c] - <%m>%n ]]></pattern>
+      <!-- pattern>%d{dd MMM yyyy HH:mm:ss,PST} [%t] %-5p %c - %m%n</pattern -->
+    </layout>
+    <host>${logstash.rabbitmq.host:-192.168.1.1}</host>
+    <port>5672</port>
+    <username>xplain</username>
+    <password>xplain</password>
+    <virtualHost>xplain</virtualHost>
+    <exchangeName>logstash</exchangeName>
+    <exchangeType>fanout</exchangeType>
+    <durable>false</durable>
+    <autoDelete>false</autoDelete>
+    <abbreviation>36</abbreviation>
+    <applicationId>java compiler</applicationId>
+    <routingKeyPattern>%property{applicationId}.%c.%p</routingKeyPattern>
+    <generateId>true</generateId>
+    <charset>UTF-8</charset>
+    <durable>false</durable>
+    <deliveryMode>NON_PERSISTENT</deliveryMode>
+  </appender>
+
+  <appender name="logstash-redis" class="com.cloudera.navopt.compiler.logback.NavOptRedisAppender">
+    <host>{{ services.redislog.server }}</host>
+    <port>6379</port>
+    <key>logstash</key>
+    <tags>java-compiler</tags>
+    <layout class="com.cwbase.logback.JSONEventLayout">
+      <!-- JSONEventLayout Attributes Here -->
+      <!-- source>java-compiler</source>
+      <sourcePath>mySourcePath</sourcePath>
+      <type>myApplication</type>
+      <tags>java-compiler</tags -->
+    </layout>
+  </appender>
+
+  <appender name="async" class="ch.qos.logback.classic.AsyncAppender">
+    <appender-ref ref="logstash-redis" />
+  </appender>
+
+  <logger name="com.cloudera.navopt.compiler.QueryCompilerServer" additivity="true" level="DEBUG">
+    <appender-ref ref="REQUESTS" />
+  </logger>
+  <logger name="org.apache.hadoop.hive.ql.parse.ParseDriver" level="OFF"/>
+  <logger name="ch.qos.logback" level="INFO"/>
+
+  <root level="INFO">
+    <appender-ref ref="ROOT" />
+    <appender-ref ref="async" />
+  </root>
+</configuration>

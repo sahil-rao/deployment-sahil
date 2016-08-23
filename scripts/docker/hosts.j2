@@ -1,0 +1,28 @@
+#This configuration file is used by all baaz service scripts, and is separate                                                               
+#from the Ansible hosts file. This should live in /var/Baaz/hosts.cfg.                                                                      
+#author: Prithvi Pandian                                                                                                                    
+#Redis server refers to the redis MASTER, slaves will be auto-discovered/configured 
+
+[MongoDB]
+server = {{ services.mongodb.servers | join (",") }}
+
+[RabbitMQ]
+server = {{ services.rabbitmq.server }}
+
+[Redis]
+server = {{ services.redis.server }}
+sentinels = {{ services.redis.sentinels | join(",") }}
+mastername = {{ services.redis.mastername }}
+
+[RedisLog]
+server = {{ services.redislog.server }}
+
+[Elasticsearch]
+server = {{ services.elasticsearch.servers[0] }}
+
+[mode]
+usingAWS = true
+
+[ApplicationConfig]
+mode = {{ application.mode }}
+clusterName = {{ application.cluster_name }}

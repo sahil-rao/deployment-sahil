@@ -22,3 +22,7 @@ ADD Baaz-DataAcquisition-Service.tar.gz /
 ADD Baaz-Analytics.tar.gz /
 ADD Baaz-Analytics-Service.tar.gz /
 ADD Baaz-Compile-Service.tar.gz /
+ADD hosts.j2 /
+ADD logback.j2 /
+ADD start.sh /
+CMD ./start.sh
