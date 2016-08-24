@@ -8,46 +8,38 @@ if [ "$SERVICE_NAME" == "applicationservice" ]
 then
 export COMPILER_PORT=12121
 export HIVE_HOME=/usr/local/hive
--v /home/ubuntu/.boto:/root/.boto
 /usr/local/bin/xplaincompileserver & sudo python /usr/local/bin/ApplicationService.py
 
 elif [ "$SERVICE_NAME" == "compileservice" ]
 then
 export COMPILER_PORT=13131
 export HIVE_HOME=/usr/local/hive
--v /home/ubuntu/.boto:/root/.boto
 bash /usr/local/bin/xplaincompileserver & sudo python /usr/local/bin/BaazCompileService.py
 
 elif [ "$SERVICE_NAME" == "advanalytics" ]
 then
 export COMPILER_PORT=14141
 export HIVE_HOME=/usr/local/hive
--v /home/ubuntu/.boto:/root/.boto
 /usr/local/bin/xplaincompileserver & sudo python /usr/local/bin/XplainAdvAnalyticsService.py
 
 elif [ "$SERVICE_NAME" == "mathservice" ]
 then
--v /home/ubuntu/.boto:/root/.boto
 sudo python /usr/local/bin/XplainAdvAnalyticsService.py
 
 elif [ "$SERVICE_NAME" == "ruleengineservice" ]
 then
--v /home/ubuntu/.boto:/root/.boto
 sudo python /usr/local/bin/RuleEngineService.py
 
 elif [ "$SERVICE_NAME" == "elasticpub" ]
 then
--v /home/ubuntu/.boto:/root/.boto
 sudo python /usr/local/bin/ElasticPubService.py
 
 elif [ "$SERVICE_NAME" == "mathservice" ]
 then
--v /home/ubuntu/.boto:/root/.boto
 sudo python /usr/local/bin/XplainAdvAnalyticsService.py
 
 elif [ "$SERVICE_NAME" == "dataacquisitionservice" ]
 then
--v /home/ubuntu/.boto:/root/.boto
 sudo python /usr/local/bin/FPProcessingService.py
 
 else

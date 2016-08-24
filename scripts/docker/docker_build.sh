@@ -87,4 +87,11 @@ docker build -t navopt/pyservice .
 cd $CUR_LOC/docker/javaservices
 docker build -t navopt/combinedservice .
 
+echo "Saving docker images"
+docker save -o $CUR_LOC/pyservice navopt/pyservice
+docker save -o $CUR_LOC/combinedservice navopt/combinedservice
+
+echo "Copying to s3"
+aws s3 cp $CUR_LOC/pyservice s3://$S3Bucket/
+aws s3 cp $CUR_LOC/combinedservice s3://$S3Bucket/
 echo "deployment is built"
