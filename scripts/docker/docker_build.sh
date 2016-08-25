@@ -32,7 +32,7 @@ do
 done
 
 rm -r $CUR_LOC/docker
-cp -r $CUR_LOC/build/deployment/scripts/docker $CUR_LOC/.
+cp -r $CUR_LOC/build/deployment/scripts/docker/ $CUR_LOC/.
 
 #Build and tar the compiler
 cd $CUR_LOC/build/compiler
