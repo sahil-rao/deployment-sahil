@@ -8,6 +8,8 @@ server = {{ services.mongodb.servers | join (",") }}
 
 [RabbitMQ]
 server = {{ services.rabbitmq.server }}
+username = {{ services.rabbitmq.username }}
+password = {{ services.rabbitmq.password }}
 
 [Redis]
 server = {{ services.redis.server }}

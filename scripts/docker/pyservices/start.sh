@@ -2,29 +2,31 @@
 #start.sh
 
 j2 /hosts.j2 /config.json > /var/Baaz/hosts.cfg
-j2 /logback.j2 /config.json > /usr/lib/baaz_compiler/logback.xml
 
 if [ "$SERVICE_NAME" == "applicationservice" ]
 then
+j2 /logback.j2 /config.json > /usr/lib/baaz_compiler/logback.xml
 export COMPILER_PORT=12121
 export HIVE_HOME=/usr/local/hive
 /usr/local/bin/xplaincompileserver & sudo python /usr/local/bin/ApplicationService.py
 
 elif [ "$SERVICE_NAME" == "compileservice" ]
 then
+j2 /logback.j2 /config.json > /usr/lib/baaz_compiler/logback.xml
 export COMPILER_PORT=13131
 export HIVE_HOME=/usr/local/hive
 bash /usr/local/bin/xplaincompileserver & sudo python /usr/local/bin/BaazCompileService.py
 
 elif [ "$SERVICE_NAME" == "advanalytics" ]
 then
+j2 /logback.j2 /config.json > /usr/lib/baaz_compiler/logback.xml
 export COMPILER_PORT=14141
 export HIVE_HOME=/usr/local/hive
 /usr/local/bin/xplaincompileserver & sudo python /usr/local/bin/XplainAdvAnalyticsService.py
 
 elif [ "$SERVICE_NAME" == "mathservice" ]
 then
-sudo python /usr/local/bin/XplainAdvAnalyticsService.py
+sudo python /usr/local/bin/BaazMathService.py
 
 elif [ "$SERVICE_NAME" == "ruleengineservice" ]
 then
