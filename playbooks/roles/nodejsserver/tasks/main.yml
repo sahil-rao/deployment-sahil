@@ -50,6 +50,8 @@
   sudo: yes
 - name: Get the npm modules.
   npm: path=/var/xplain{{ port }} production=yes
+- name: Get the npm modules for navigator.
+  npm: path=/var/xplain{{ port }}/navigator production=yes
 ### DEPLOY AND CONFIGURE ###
 - name: Create node upstart script
   template: src=nodejs.conf dest=/etc/init/nodejs.conf
