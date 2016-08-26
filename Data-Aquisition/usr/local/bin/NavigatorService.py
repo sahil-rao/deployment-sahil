@@ -107,7 +107,7 @@ def callback(ch, method, properties, body):
         connection1.basicAck(ch, method)
         return
 
-   tenant = msg_dict["tenant"]
+    tenant = msg_dict["tenant"]
     msg_dict["connection"] = connection1
     msg_dict["ch"] = ch
     resp_dict = None
