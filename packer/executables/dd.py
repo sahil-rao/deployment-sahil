@@ -27,9 +27,8 @@ def _connect():
         'instance_id:{}'.format(ec2_instance['instanceId']),
         'availability-zone:{}'.format(ec2_instance['availabilityZone']),
 
-        'application:navopt',
-        'env:{}'.format(env['cluster']),
-        'dbsilo:{}'.format(env['dbsilo']),
+        'app:navopt',
+        'env:{}'.format(env['env']),
         'service:{}'.format(env['service']),
     ]
 

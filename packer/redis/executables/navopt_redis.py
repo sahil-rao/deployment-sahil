@@ -7,27 +7,25 @@ import redis
 TERMINATED_STATES = ('shutting-down', 'terminating', 'terminated')
 
 
-def get_instances(region, dbsilo):
+def get_instances(region, service):
     """
-    Find all the dbsilo redis instances and split them up into a
+    Find all the redis instances and split them up into a
     list of running and terminated hostnames
     """
-
-    dbsilo_tag = '{}-redis'.format(dbsilo)
 
     # Discover all the instances in the redis cluster
     ec2 = boto3.resource('ec2', region_name=region)
     instances = list(ec2.instances.filter(Filters=[
         {
-            'Name': 'tag:DBSilo',
-            'Values': [dbsilo_tag],
+            'Name': 'tag:Service',
+            'Values': [service],
         },
     ]))
 
     if not instances:
         raise dd.Error(
             title='no instances',
-            text='no instances found for tag `{}`'.format(dbsilo_tag))
+            text='no instances found for tag `{}`'.format(service))
 
     running_instances = []
 
@@ -56,7 +54,7 @@ class RedisClient(object):
         return '{}:{}'.format(self.host, self.port)
 
 
-def get_clients(dbsilo, instances, port):
+def get_clients(service, instances, port):
     clients = []
     for instance in instances:
         host = instance.private_ip_address
@@ -66,7 +64,7 @@ def get_clients(dbsilo, instances, port):
 
     if not clients:
         raise dd.Error(
-            title='All {} databases offline'.format(dbsilo),
+            title='All {} databases offline'.format(service),
             instances=instances,
         )
 

@@ -10,7 +10,6 @@ is_master=$(/usr/local/bin/is_master.sh)
 if [ "x$is_master" = "xyes" ]; then
     /usr/bin/python /usr/local/bin/register_host.py \
         --region $AWS_DEFAULT_REGION \
-        --dbsilo $DBSILO \
         --service $SERVICE \
         --zone $ZONE_NAME \
         --master

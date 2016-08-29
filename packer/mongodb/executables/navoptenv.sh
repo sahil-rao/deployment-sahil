@@ -11,7 +11,7 @@ if [ "${userdata}" != "" ]; then
 	# basic settings
 	export SERVICE=`echo ${userdata} | /usr/local/bin/jq -r '.service'`
 	export DBSILO=`echo ${userdata} | /usr/local/bin/jq -r '.dbsilo'`
-	export CLUSTER=`echo ${userdata} | /usr/local/bin/jq -r '.cluster'`
+	export ENV=`echo ${userdata} | /usr/local/bin/jq -r '.env'`
 	export ZONE_NAME=`echo ${userdata} | /usr/local/bin/jq -r '.zone_name'`
 	export SET_SRC=`echo ${userdata} | /usr/local/bin/jq -r '.source'`
 	export DATADOG_API_KEY=`echo ${userdata} | /usr/local/bin/jq -r '.datadog_api_key'`

@@ -9,7 +9,7 @@
             "source_ami": "ami-704ab610",
             "instance_type": "r3.2xlarge",
             "ssh_username": "ubuntu",
-            "ami_name": "dbsilo-redis {{timestamp}}",
+            "ami_name": "redis {{timestamp}}",
             "ami_regions": [
                 "us-west-2"
             ],
@@ -24,7 +24,7 @@
                 }
             ],
             "tags": {
-                "Name": "dbsilo-redis"
+                "Name": "redis"
             }
         }
     ],

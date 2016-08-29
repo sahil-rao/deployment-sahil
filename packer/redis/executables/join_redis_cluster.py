@@ -8,8 +8,8 @@ import sys
 
 
 def run(args):
-    running_instances = navopt_redis.get_instances(args.region, args.app)
-    clients = navopt_redis.get_clients(args.navopt, running_instances, 6379)
+    running_instances = navopt_redis.get_instances(args.region, args.service)
+    clients = navopt_redis.get_clients(args.service, running_instances, 6379)
 
     master = navopt_redis.get_master(clients)
 

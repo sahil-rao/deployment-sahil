@@ -6,7 +6,7 @@ source /usr/local/bin/navoptenv.sh
 
 datestr=`date -uIseconds`
 bucket="xplain-${CLUSTER}"
-prefix="${DBSILO}/redis-backups"
+prefix="${SERVICE}/redis-backups"
 s3path="s3://${bucket}/${prefix}/dump${datestr}.rdb"
 
 # Copy redis dump file (.rdb) to s3
@@ -15,7 +15,7 @@ s3path="s3://${bucket}/${prefix}/dump${datestr}.rdb"
 if [ $? -eq 0 ]; then
    echo "`date` Redis backup succeeded"
 else
-    errorinfo="`date` DBSILO: ${DBSILO}, CLUSTER: ${CLUSTER}, INSTANCE: ${EC2_INSTANCE_ID}"
+    errorinfo="`date` service: ${SERVICE}, env: ${ENV}, INSTANCE: ${EC2_INSTANCE_ID}"
     echo "`date` Redis backup failed. Failure info: $errorinfo"
     # Send alert event to datadog
     curl -XPOST -H "Content-type: application/json" -d@- -sS "https://app.datadoghq.com/api/v1/events?api_key=${DATADOG_API_KEY}" <<EOF

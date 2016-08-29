@@ -17,7 +17,7 @@ def run(args):
     master = navopt_redis.get_master(server_clients)
     sentinel = navopt_redis.RedisClient('localhost', 26379)
 
-    master_name = 'redismaster.{}.{}'.format(args.app, args.zone)
+    master_name = '{}-master.{}'.format(args.service, args.zone)
     sentinel.sentinel_monitor(
         master_name,
         master.host,

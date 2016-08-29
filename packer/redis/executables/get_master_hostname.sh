@@ -3,5 +3,5 @@
 set -eu
 
 source /usr/local/bin/navoptenv.sh
-hostname="${SERVICE}master.${DBSILO}.${ZONE_NAME}"
+hostname="${SERVICE}-master.${ZONE_NAME}"
 echo "$hostname"

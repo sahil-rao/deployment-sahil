@@ -1,6 +1,5 @@
 #!/bin/bash
-# service: redis
-# dbsilo : DBSilo machine should be part of
+# service: What service this machine should be part of
 # role: Optional role attribute (cache or data)
 # cluster: Which cluster this machine belongs to. (alpha, staging, etc)
 # datadog_api_key: API Key for datadog
@@ -13,7 +12,7 @@ if [ "${userdata}" != "" ]; then
 	# basic settings
 	export APP=`echo ${userdata} | /usr/local/bin/jq -r '.app'`
 	export SERVICE=`echo ${userdata} | /usr/local/bin/jq -r '.service'`
-	export CLUSTER=`echo ${userdata} | /usr/local/bin/jq -r '.cluster'`
+	export ENV=`echo ${userdata} | /usr/local/bin/jq -r '.env'`
 	export ZONE_NAME=`echo ${userdata} | /usr/local/bin/jq -r '.zone_name'`
 	export REDIS_QUORUM_SIZE=`echo ${userdata} | /usr/local/bin/jq -r '.redis_quorum_size'`
 	export ROLE=`echo ${userdata} | /usr/local/bin/jq -r '.role'`
