@@ -15,7 +15,7 @@ module "logging" {
     elasticsearch_security_groups = ["${module.sg.elasticsearch_security_groups}"]
     elasticsearch_iam_instance_profile = "${module.iam.elasticsearch_instance_profile}"
     elasticsearch_version = "v1"
-    elasticsearch_ami_id = "ami-062efa66"
+    elasticsearch_ami_id = "ami-23d00643"
     #elasticsearch_instance_type = "m3.xlarge"
     elasticsearch_instance_type = "t2.micro"
     elasticsearch_min_size = 0
@@ -33,9 +33,8 @@ module "logging" {
     redis_service = "redis-log"
     redis_security_groups = ["${module.sg.redis_security_groups}"]
     redis_iam_instance_profile = "${module.iam.redis_instance_profile}"
-
-    redis_version = "v4"
-    redis_ami_id = "ami-ec21f58c"
+    redis_version = "v1"
+    redis_ami_id = "ami-23d00643"
     redis_instance_type = "t2.micro"
     redis_min_size = 0
     redis_max_size = 1

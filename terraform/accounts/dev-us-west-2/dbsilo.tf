@@ -28,8 +28,8 @@ module "dbsilo1" {
     redis_name = "${var.cluster_name}-dbsilo1-redis"
     redis_iam_instance_profile = "${module.iam.redis_instance_profile}"
     redis_security_groups = ["${module.sg.redis_security_groups}"]
-    redis_version = "v17"
-    redis_ami_id = "ami-ec21f58c"
+    redis_version = "v1"
+    redis_ami_id = "ami-4bdf092b"
     #redis_instance_type = "r3.2xlarge"
     redis_instance_type = "t2.micro"
     redis_min_size = 0
@@ -41,8 +41,8 @@ module "dbsilo1" {
     elasticsearch_name = "${var.cluster_name}-dbsilo1-elasticsearch"
     elasticsearch_iam_instance_profile = "${module.iam.elasticsearch_instance_profile}"
     elasticsearch_security_groups = ["${module.sg.elasticsearch_security_groups}"]
-    elasticsearch_version = "v10"
-    elasticsearch_ami_id = "ami-062efa66"
+    elasticsearch_version = "v1"
+    elasticsearch_ami_id = "ami-23d00643"
     #elasticsearch_instance_type = "m3.xlarge"
     elasticsearch_instance_type = "t2.micro"
     elasticsearch_min_size = 0
