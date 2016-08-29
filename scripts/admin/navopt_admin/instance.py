@@ -1,4 +1,6 @@
-import tabulate
+from .table import format_table
+import operator
+
 
 DEFAULT_FIELDS = ('instance_id', 'name', 'state', 'private_ip_address')
 DEFAULT_SORT_FIELDS = 'name'
@@ -51,19 +53,8 @@ def format_instances(instances,
     if sort_field is None:
         sort_field = DEFAULT_SORT_FIELDS
 
-    if sort_field:
-        instances.sort(key=lambda instance: instance.get_field(sort_field))
-
-    table = [
-        [instance.get_field(field) for field in fields]
-        for instance in instances
-    ]
-
-    if show_header:
-        headers = fields
-        tablefmt = 'simple'
-    else:
-        headers = ()
-        tablefmt = 'plain'
-
-    return tabulate.tabulate(table, headers=headers, tablefmt=tablefmt)
+    return format_table(instances,
+                        fields=fields,
+                        key=operator.attrgetter,
+                        sort_field=sort_field,
+                        show_header=show_header)

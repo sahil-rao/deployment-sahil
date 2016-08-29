@@ -69,15 +69,13 @@ def cli():
               flag_value=False,
               default=True,
               )
-@click.argument('dbsilo_name', required=True)
 @click.pass_context
 def list_instances(ctx,
                    type_name,
                    fields,
                    sort_field,
-                   show_header,
-                   dbsilo_name):
-    cluster = Cluster(ctx.obj['region'])
+                   show_header):
+    cluster = ctx.obj['cluster']
     instances = list(cluster.instances())
 
     print format_instances(
@@ -86,3 +84,11 @@ def list_instances(ctx,
         sort_field=sort_field,
         show_header=show_header,
     )
+
+
+@cli.command('terms')
+@click.pass_context
+def show_terms(ctx):
+    with ctx.obj['cluster'].dbsilo('dbsilo1').mongo_master() as mongo:
+        for x in mongo['xplainIO'].users.find():
+            print x

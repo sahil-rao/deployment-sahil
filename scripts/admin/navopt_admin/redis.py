@@ -22,7 +22,7 @@ class Redis(object):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self._tunnel.close()
+        self.close()
 
     def __getattr__(self, key):
         return getattr(self._conn, key)

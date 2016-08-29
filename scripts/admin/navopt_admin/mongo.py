@@ -22,6 +22,18 @@ class Mongo(object):
         self._conn.close()
         self._tunnel.close()
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+    def __getattr__(self, key):
+        return getattr(self._conn, key)
+
+    def __getitem__(self, key):
+        return self._conn[key]
+
     def mongo_version(self):
         if self._conn is None:
             return None

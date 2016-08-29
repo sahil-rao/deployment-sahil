@@ -6,6 +6,8 @@ import click
 import navopt_admin.cluster
 import navopt_admin.dbsilo
 import navopt_admin.health_check.cli
+import navopt_admin.terms
+import navopt_admin.user
 import sys
 
 
@@ -61,6 +63,14 @@ cli.add_command(
 
 cli.add_command(
     navopt_admin.health_check.cli.health_check
+)
+
+cli.add_command(
+    click.CommandCollection('terms', sources=[navopt_admin.terms.cli])
+)
+
+cli.add_command(
+    click.CommandCollection('user', sources=[navopt_admin.user.cli])
 )
 
 
