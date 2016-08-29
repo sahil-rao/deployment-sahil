@@ -111,14 +111,17 @@ class DBSilo(object):
                     app_names[self.name]),
             ])
 
-        return self.cluster.instances_by_tags('DBSilo', filters)
+        return chain(
+            self.cluster.instances_by_tags('DBSilo', filters),
+            self.cluster.instances_by_tags('Service', filters),
+        )
 
     def redis_instance_private_ips(self):
         return (instance.private_ip_address
                 for instance in self.redis_instances())
 
     def redis_master_hostname(self):
-        return 'redismaster.{}.{}.{}'.format(
+        return '{}-redis-master.{}.{}'.format(
             self.name,
             self.cluster.env,
             self.cluster.zone)

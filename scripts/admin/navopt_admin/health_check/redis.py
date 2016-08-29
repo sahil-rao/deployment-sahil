@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 from .aws import AWSNameHealthCheck
 from .base import HealthCheck, HealthCheckList
-import boto3
 import hurry.filesize
 import sys
 import termcolor
@@ -240,55 +239,3 @@ def check_redis(dbsilo):
         redis_checklist.add_check(check)
 
     return redis_checklist
-
-
-def _get_redis_hostnames(cluster, region, dbsilo):
-    alpha_names = {
-        'alpha': 'Alpha',
-        'app': 'App',
-        'dbsilo1': 'DBSilo1',
-        'dbsilo2': 'DBSilo2',
-        'dbsilo3': 'DBSilo3',
-        'dbsilo4': 'DBSilo4',
-    }
-
-    app_names = {
-        'alpha': 'ALPHA',
-        'app': 'APP',
-        'dbsilo1': 'DBSILO_1',
-        'dbsilo2': 'DBSILO_2',
-        'dbsilo3': 'DBSILO_3',
-        'dbsilo4': 'DBSILO_4',
-    }
-
-    values = [
-        '{}-{}-redis'.format(cluster, dbsilo),
-        '{}-{}-redis-*'.format(cluster, dbsilo),
-    ]
-
-    if cluster in ('alpha', 'app'):
-        values.extend([
-            'Redis {} {}'.format(
-                alpha_names[cluster],
-                alpha_names[dbsilo]),
-            'REDIS_{}_{}'.format(
-                app_names[cluster],
-                app_names[dbsilo]),
-        ])
-
-    ec2 = boto3.resource('ec2', region_name=region)
-    instances = ec2.instances.filter(Filters=[
-        {
-            'Name': 'tag:Name',
-            'Values': values,
-        },
-    ])
-
-    hostnames = []
-    for instance in instances:
-        if instance.private_ip_address:
-            hostnames.append(instance.private_ip_address)
-
-    hostnames.sort()
-
-    return hostnames
