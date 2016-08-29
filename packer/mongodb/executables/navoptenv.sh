@@ -10,6 +10,7 @@ if [ -f /etc/navoptenv.json ]; then
 	# basic settings
 	export APP=`/usr/local/bin/jq -r '.app' /etc/navoptenv.json`
 	export SERVICE=`/usr/local/bin/jq -r '.service' /etc/navoptenv.json`
+	export REPLICA_SET=`/usr/local/bin/jq -r '.replica_set' /etc/navoptenv.json`
 	export ENV=`/usr/local/bin/jq -r '.env' /etc/navoptenv.json`
 	export ZONE_NAME=`/usr/local/bin/jq -r '.zone_name' /etc/navoptenv.json`
 	export SET_SRC=`/usr/local/bin/jq -r '.source' /etc/navoptenv.json`

@@ -4,4 +4,4 @@ set -eu
 
 source /usr/local/bin/navoptenv.sh
 
-echo "${SERVICE}"
+echo "${REPLICA_SET}"

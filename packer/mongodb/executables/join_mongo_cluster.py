@@ -142,7 +142,7 @@ def get_masters(clients):
         if run_command(client.admin, 'isMaster')['ismaster']]
 
 
-def initiate(master, service, instances):
+def initiate(master, replica_set, instances):
     """
     Initiate the mongodb silo replicaset
     """
@@ -157,7 +157,7 @@ def initiate(master, service, instances):
     hosts = [instance.private_ip_address for instance in instances]
 
     config = {
-        '_id': service,
+        '_id': replica_set,
         'members': [
             {'_id': i, 'host': '{}:27017'.format(host)}
             for i, host in enumerate(hosts)
@@ -167,7 +167,7 @@ def initiate(master, service, instances):
     run_command(master.admin, 'replSetInitiate', config)
 
     report(
-        title='Created {} MongoDB replica set'.format(service),
+        title='Created {} MongoDB replica set'.format(replica_set),
         instances=instances,
     )
 
@@ -218,7 +218,7 @@ def remove_stopped_hosts(config, running_instances):
     config['members'] = members
 
 
-def reconfigure(master, service, running_instances):
+def reconfigure(master, replica_set, running_instances):
     config = repl_set_get_config(master)
 
     # Grab a copy of the original config to help track if anything has changed.
@@ -233,7 +233,7 @@ def reconfigure(master, service, running_instances):
         instances = running_instances
 
         report(
-            title='Reconfigured {} MongoDB replica set'.format(service),
+            title='Reconfigured {} MongoDB replica set'.format(replica_set),
             instances=instances,
         )
 
@@ -248,7 +248,7 @@ def run(args):
 
     if len(masters) == 0:
         master = clients[0]
-        initiate(master, args.service, running_instances)
+        initiate(master, args.replica_set, running_instances)
     elif len(masters) == 1:
         master = masters[0]
     else:
@@ -262,7 +262,7 @@ def run(args):
 
     reconfigure(
         master,
-        args.service,
+        args.replica_set,
         running_instances)
 
 
@@ -270,6 +270,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--region', required=True)
     parser.add_argument('--service', required=True)
+    parser.add_argument('--replica-set', required=True)
     args = parser.parse_args()
 
     try:
