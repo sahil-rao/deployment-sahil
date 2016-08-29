@@ -1,4 +1,5 @@
 variable "env" {}
+variable "datadog_api_key" {}
 
 ##############################################################################
 
@@ -9,6 +10,7 @@ variable "subnet_ids" {
     type = "list"
 }
 variable "dns_zone_id" {}
+variable "zone_name" {}
 
 variable "key_name" {}
 
@@ -65,21 +67,24 @@ variable "logstash_ebs_optimized" {
 ##############################################################################
 
 variable "redis_name" {}
+variable "redis_version" {}
+variable "redis_service" {}
 
 variable "redis_security_groups" {
     type = "list"
     default = []
 }
 
-variable "redis_ami" {
+variable "redis_ami_id" {
     default = ""
 }
 variable "redis_instance_type" {
     default = "t2.micro"
 }
-variable "redis_instance_count" {
-    default = 1
-}
+variable "redis_min_size" {}
+variable "redis_max_size" {}
+variable "redis_desired_capacity" {}
+variable "redis_quorum_size" {}
 variable "redis_iam_instance_profile" {
     default = ""
 }
