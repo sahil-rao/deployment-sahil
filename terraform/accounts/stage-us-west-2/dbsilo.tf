@@ -49,3 +49,14 @@ module "dbsilo1" {
     elasticsearch_desired_capacity = 3
     elasticsearch_ebs_optimized = false
 }
+
+# FIXME: Hack around navopt backoffice not knowing about the new hostnames.
+resource "aws_route53_record" "dbsilo1-redis-master" {
+    zone_id = "${data.terraform_remote_state.networking.zone_id}"
+    name = "redismaster.dbsilo1.${data.terraform_remote_state.networking.zone_name}"
+    type = "CNAME"
+    ttl = "5"
+    records = [
+        "dbsilo1-redis-master.${data.terraform_remote_state.networking.zone_name}"
+    ]
+}
