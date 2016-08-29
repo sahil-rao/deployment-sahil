@@ -14,6 +14,9 @@ variable "key_name" {}
 ###################################################################
 
 variable "mongo_name" {}
+variable "mongo_replica_set" {
+    default = ""
+}
 variable "mongo_security_groups" {
     type = "list"
 }
@@ -89,6 +92,7 @@ module "mongodb" {
 
     name = "${var.mongo_name}"
     version = "${var.mongo_version}"
+    replica_set = "${var.mongo_replica_set}"
     env = "${var.cluster_name}"
     service = "${var.dbsilo_name}-mongo"
     datadog_api_key = "${var.datadog_api_key}"
