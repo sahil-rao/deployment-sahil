@@ -5,7 +5,13 @@ module "logging" {
     env = "${var.env}"
     zone_name = "${data.terraform_remote_state.networking.zone_name}"
 
-    elasticsearch_name = "kibana-and-elasticsearch"
+    kibana_name = "logging-kibana"
+    kibana_security_groups = ["${module.sg.kibana_security_groups}"]
+    kibana_iam_instance_profile = "${module.iam.kibana_instance_profile}"
+    kibana_instance_type = "t2.micro"
+    kibana_instance_count = 1
+
+    elasticsearch_name = "logging-elastic"
     elasticsearch_security_groups = ["${module.sg.elasticsearch_security_groups}"]
     elasticsearch_iam_instance_profile = "${module.iam.elasticsearch_instance_profile}"
     elasticsearch_version = "v1"
@@ -17,13 +23,13 @@ module "logging" {
     elasticsearch_desired_capacity = 1
     elasticsearch_ebs_optimized = false
 
-    logstash_name = "logstash"
+    logstash_name = "logging-logstash"
     logstash_security_groups = ["${module.sg.logstash_security_groups}"]
     logstash_iam_instance_profile = "${module.iam.logstash_instance_profile}"
     logstash_instance_type = "t2.micro"
     logstash_instance_count = 1
 
-    redis_name = "redis-log"
+    redis_name = "logging-redis"
     redis_service = "redis-log"
     redis_security_groups = ["${module.sg.redis_security_groups}"]
     redis_iam_instance_profile = "${module.iam.redis_instance_profile}"

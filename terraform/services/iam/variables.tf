@@ -1,6 +1,7 @@
 variable "admin_name" {}
 variable "backoffice_name" {}
 variable "elasticsearch_name" {}
+variable "kibana_name" {}
 variable "logstash_name" {}
 variable "mongo_name" {}
 variable "nginx_name" {}

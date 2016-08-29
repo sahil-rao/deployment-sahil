@@ -34,6 +34,31 @@ variable "elasticsearch_ebs_optimized" {
 
 ##############################################################################
 
+variable "kibana_name" {}
+
+variable "kibana_security_groups" {
+    type = "list"
+    default = []
+}
+
+variable "kibana_ami" {
+    default = ""
+}
+variable "kibana_instance_type" {
+    default = "t2.micro"
+}
+variable "kibana_instance_count" {
+    default = 1
+}
+variable "kibana_iam_instance_profile" {
+    default = ""
+}
+variable "kibana_ebs_optimized" {
+    default = ""
+}
+
+##############################################################################
+
 variable "logstash_name" {}
 
 variable "logstash_security_groups" {
