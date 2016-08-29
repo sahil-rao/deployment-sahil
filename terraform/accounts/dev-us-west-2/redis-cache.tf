@@ -9,8 +9,8 @@ module "redis-cache" {
     security_groups = "${module.sg.redis_security_groups}"
     zone_name = "${data.terraform_remote_state.networking.dns_zone_name}"
 
-    version = "v3"
-    ami_id = "ami-ec21f58c"
+    version = "v1"
+    ami_id = "ami-23d00643"
     instance_type = "t2.micro" # "r3.2xlarge"
     ebs_optimized = false
     min_size = 0
