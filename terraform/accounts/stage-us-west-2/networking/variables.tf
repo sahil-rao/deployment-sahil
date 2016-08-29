@@ -25,6 +25,7 @@ variable "public_subnets" {
 }
 
 variable "private_subnets" {
+    type = "list"
     default = ["10.7.24.0/21", "10.7.32.0/21", "10.7.40.0/21"]
 }
 

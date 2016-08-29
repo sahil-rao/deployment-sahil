@@ -100,7 +100,7 @@ module "mongodb" {
 }
 
 module "redis" {
-    source = "../redis-asg"
+    source = "../redis"
 
     subnet_ids = ["${var.subnet_ids}"]
     zone_name = "${var.zone_name}"
@@ -111,8 +111,8 @@ module "redis" {
 
     name = "${var.redis_name}"
     version = "${var.redis_version}"
-    dbsilo_name = "${var.dbsilo_name}"
-    cluster_name = "${var.cluster_name}"
+    env = "${var.cluster_name}"
+    service = "${var.dbsilo_name}-redis"
     datadog_api_key = "${var.datadog_api_key}"
     backup_file = "${var.redis_backup_file}"
     quorum_size = "${var.redis_quorum_size}"

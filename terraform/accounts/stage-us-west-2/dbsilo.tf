@@ -27,8 +27,8 @@ module "dbsilo1" {
     redis_name = "${var.cluster_name}-dbsilo1-redis"
     redis_iam_instance_profile = "${module.iam.redis_instance_profile}"
     redis_security_groups = ["${module.sg.redis_security_groups}"]
-    redis_version = "v15"
-    redis_ami_id = "ami-4a57822a"
+    redis_version = "v16"
+    redis_ami_id = "ami-ff10c49f"
     #redis_instance_type = "r3.2xlarge"
     redis_instance_type = "t2.micro"
     redis_min_size = 3
