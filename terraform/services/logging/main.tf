@@ -22,6 +22,28 @@ module "elasticsearch" {
     ebs_optimized = "${var.elasticsearch_ebs_optimized}"
 }
 
+module "kibana" {
+    source = "../kibana"
+
+    env = "${var.env}"
+    name = "${var.kibana_name}"
+
+    region = "${var.region}"
+    vpc_id = "${var.vpc_id}"
+    vpc_cidr = "${var.vpc_cidr}"
+    subnet_ids = ["${var.subnet_ids}"]
+    dns_zone_id = "${var.dns_zone_id}"
+
+    security_groups = ["${var.kibana_security_groups}"]
+
+    ami = "${var.kibana_ami}"
+    instance_type = "${var.kibana_instance_type}"
+    instance_count = "${var.kibana_instance_count}"
+    key_name = "${var.key_name}"
+    iam_instance_profile = "${var.kibana_iam_instance_profile}"
+    ebs_optimized = "${var.kibana_ebs_optimized}"
+}
+
 module "logstash" {
     source = "../logstash"
 
