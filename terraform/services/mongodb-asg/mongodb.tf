@@ -11,6 +11,9 @@ variable "security_groups" {
 variable "name" {}
 variable "version" {}
 variable "service" {}
+variable "replica_set" {
+    default = ""
+}
 variable "env" {}
 variable "datadog_api_key" {}
 
@@ -43,6 +46,7 @@ data "template_file" "user_data" {
         app = "navopt",
         env = "${var.env}"
         service = "${var.service}"
+        replica_set = "${coalesce(var.replica_set, var.service)}"
         type = "mongo"
         zone_name = "${var.zone_name}"
         datadog_api_key = "${var.datadog_api_key}"

@@ -7,6 +7,7 @@ set -euv
     "app": "${app}",
     "env": "${env}",
     "service": "${service}",
+    "replica_set": "${replica_set}",
     "type": "${type}",
     "zone_name": "${zone_name}",
     "datadog_api_key": "${datadog_api_key}",

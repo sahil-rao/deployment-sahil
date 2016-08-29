@@ -13,6 +13,7 @@ module "dbsilo1" {
     datadog_api_key = "${var.datadog_api_key}"
 
     mongo_name = "${var.cluster_name}-dbsilo1-mongo"
+    mongo_replica_set = "mongomaster.dbsilo1.dev.xplain.io"
     mongo_iam_instance_profile = "${module.iam.mongo_instance_profile}"
     mongo_security_groups = ["${module.sg.mongo_security_groups}"]
     mongo_version = "v21"
