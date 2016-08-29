@@ -80,7 +80,7 @@ resource "aws_eip" "default" {
 
 resource "aws_route53_record" "bastion" {
     zone_id = "${var.dns_zone_id}"
-    name = "bastion"
+    name = "deployment-root"
     type = "A"
     ttl = "5"
     records = ["${aws_instance.default.private_ip}"]
