@@ -75,10 +75,7 @@ resource "aws_autoscaling_group" "default" {
     min_size = "${var.min_size}"
     max_size = "${var.max_size}"
     desired_capacity = "${var.desired_capacity}"
-    vpc_zone_identifier = [
-        "${var.subnet_ids[0]}",
-        "${var.subnet_ids[1]}"
-    ]
+    vpc_zone_identifier = ["${var.subnet_ids}"]
 
     tag {
         key = "Name"
