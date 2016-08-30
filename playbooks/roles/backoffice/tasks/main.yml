@@ -61,11 +61,6 @@
   sudo: yes
 - name: Get Analytics Service
   shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Analytics-Service.tar.gz .
-- name: Get Basestats 
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Basestats-Report.tar.gz .
-- name: Install Basestats scripts
-  shell: tar -zxf /home/ubuntu/Baaz-Basestats-Report.tar.gz chdir=/usr/lib
-  sudo: yes
 - name: Install Analytics Service
   shell: tar -zxf /home/ubuntu/Baaz-Analytics-Service.tar.gz chdir=/
   sudo: yes
