@@ -23,16 +23,18 @@ import sys
               default=None)
 @click.pass_context
 def cli(ctx, env, bastion, region, zone, assume_yes):
-    if env not in ['stage']:
+    if env not in ['dev', 'stage']:
         ctx.fail('unknown environment `{}`'.format(env))
 
     if bastion is None:
         bastion = {
+            'dev': 'navopt-dev',
             'stage': 'navopt-stage',
         }[env]
 
     if region is None:
         region = {
+            'dev': 'us-west-2',
             'stage': 'us-west-2',
         }[env]
 
