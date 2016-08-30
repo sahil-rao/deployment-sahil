@@ -10,9 +10,8 @@ class MongoCluster(object):
         self.instances = instances
 
     def master_hostname(self):
-        return '{}-master.{}.{}'.format(
+        return '{}-master.{}'.format(
             self.service,
-            self.cluster.env,
             self.cluster.zone)
 
     def master(self):

@@ -17,7 +17,7 @@ import sys
               required=True)
 @click.option('--bastion', 'bastion')
 @click.option('--region')
-@click.option('--zone', default='xplain.io')
+@click.option('--zone', default=None)
 @click.option('-y/-n', '--yes/--no', 'assume_yes',
               help='respond yes to all questions',
               default=None)
@@ -36,6 +36,12 @@ def cli(ctx, env, bastion, region, zone, assume_yes):
         region = {
             'dev': 'us-west-2',
             'stage': 'us-west-2',
+        }[env]
+
+    if zone is None:
+        zone = {
+            'dev': 'navopt-dev.cloudera.com',
+            'stage': 'stage.xplain.io',
         }[env]
 
     cluster = navopt_admin.cluster.Cluster(
