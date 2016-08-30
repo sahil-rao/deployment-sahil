@@ -238,7 +238,7 @@
     npm: path=/var/xplain{{ port }} production=yes
 
   - name: Untar Admin App
-    shell: tar -zxf /home/xplain/optimizer_admin.io.tar.gz
+    shell: tar -zxf /home/xplain/optimizer_admin.tar.gz
   - name: Remove the existing deployed code
     file: path=/var/admin state=absent
   - name: Create /var/admin
