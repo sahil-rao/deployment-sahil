@@ -36,21 +36,33 @@ class ElasticsearchClusterHealthCheck(ElasticsearchHealthCheck):
     def check_es_host(self, host):
         health = host.health()
 
-        self.host_msgs[host] = 'status:{} nodes:{}/{} cluster:{}'.format(
+        self.host_msgs[host] = 'status:{} cluster:{}'.format(
             health['status'],
-            health['number_of_nodes'],
-            health['number_of_data_nodes'],
             health['cluster_name'],
         )
 
+        status = True
+
         if health['status'] != 'green':
-            return False
+            status = False
 
-        if health['number_of_nodes'] != len(self.hosts):
-            return False
+        if health['number_of_nodes'] != len(self.hosts) or \
+                health['number_of_data_nodes'] != len(self.hosts):
 
-        return health['status'] == 'green' and \
-            self.all_equal(host.health() for host in self.hosts)
+            self.host_msgs[host] += ' nodes:{}/{}'.format(
+                health['number_of_nodes'],
+                len(self.hosts),
+            )
+            status = False
+
+        if health['unassigned_shards'] != 0:
+            self.host_msgs[host] += ' shards:{}/{}'.format(
+                health['active_shards'],
+                health['unassigned_shards'] + health['active_shards'],
+            )
+            status = False
+
+        return status and self.all_equal(host.health() for host in self.hosts)
 
 
 class ElasticsearchClusterOddCheck(ElasticsearchHealthCheck):

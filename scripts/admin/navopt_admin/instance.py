@@ -31,11 +31,31 @@ class Instance(object):
 
     @property
     def service(self):
-        return self.tag('Service')
+        if not hasattr(self, '_service'):
+            self._service = self.tag('Service')
+
+            # FIXME: Work around old-style instances.
+            if self._service is None:
+                self._service = self.name
+
+        return self._service
 
     @property
     def service_type(self):
-        return self.tag('Type')
+        if not hasattr(self, '_service_type'):
+            self._service_type = self.tag('Type')
+
+            # FIXME: Work around old-style instances.
+            if self._service_type is None and self.name is not None:
+                name = self.name.lower()
+                if 'mongo' in name:
+                    self._service_type = 'mongo'
+                elif 'elasticsearch' in name:
+                    self._service_type = 'elasticsearch'
+                elif 'redis' in name:
+                    self._service_type = 'redis'
+
+        return self._service_type
 
     def tag(self, name):
         try:

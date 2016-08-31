@@ -17,6 +17,47 @@ import operator
 @click.argument('services', nargs=-1)
 @click.pass_context
 def health_check(ctx, services):
+    if ctx.obj['env'] in ['alpha', 'prod']:
+        return _old_health_check(ctx, services)
+    else:
+        return _new_health_check(ctx, services)
+
+def _old_health_check(ctx, services):
+    cluster = ctx.obj['cluster']
+
+    if cluster.env == 'alpha':
+        dbsilos = [
+            cluster.dbsilo('dbsilo1'),
+            cluster.dbsilo('dbsilo2'),
+        ]
+    else:
+        dbsilos = [
+            cluster.dbsilo('dbsilo1'),
+            cluster.dbsilo('dbsilo2'),
+            cluster.dbsilo('dbsilo3'),
+        ]
+
+    cluster_checklist = base.HealthCheckList(
+        "navopt cluster health checklist")
+
+    try:
+        for dbsilo in dbsilos:
+            es_cluster = dbsilo.elasticsearch_cluster()
+            cluster_checklist.add_check(
+                elasticsearch.check_elasticsearch(es_cluster))
+
+            mongo_cluster = dbsilo.mongo_cluster()
+            cluster_checklist.add_check(mongo.check_mongo(mongo_cluster))
+
+            redis_cluster = dbsilo.redis_cluster()
+            cluster_checklist.add_check(redis.check_redis(redis_cluster))
+
+        cluster_checklist.execute()
+    finally:
+        cluster_checklist.close()
+
+
+def _new_health_check(ctx, services):
     cluster = ctx.obj['cluster']
 
     if services:

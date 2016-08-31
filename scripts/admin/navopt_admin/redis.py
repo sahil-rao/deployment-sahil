@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import redis
+import re
 
 
 class RedisCluster(object):
@@ -31,6 +32,23 @@ class RedisCluster(object):
             yield RedisSentinel(
                 self.cluster.bastion,
                 instance.private_ip_address)
+
+
+# FIXME: Remove once we get rid of the old-style instances
+class OldRedisCluster(RedisCluster):
+    def __init__(self, dbsilo, *args, **kwargs):
+        super(OldRedisCluster, self).__init__(*args, **kwargs)
+
+        self.dbsilo = dbsilo
+
+    def master_hostname(self):
+        env = self.cluster.env
+        if env == 'prod':
+            env = 'app'
+
+        return 'redismaster.{}.{}'.format(
+            self.dbsilo,
+            self.cluster.zone)
 
 
 class Redis(object):

@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import pymongo
+import re
 
 
 class MongoCluster(object):
@@ -25,6 +26,19 @@ class MongoCluster(object):
     def clients(self):
         for ip in self.instance_private_ips():
             yield Mongo(self.cluster.bastion, ip)
+
+
+# FIXME: Remove once we get rid of the old-style instances
+class OldMongoCluster(MongoCluster):
+    def __init__(self, dbsilo, *args, **kwargs):
+        super(OldMongoCluster, self).__init__(*args, **kwargs)
+
+        self.dbsilo = dbsilo
+
+    def master_hostname(self):
+        return 'mongomaster.{}.{}'.format(
+            self.dbsilo,
+            self.cluster.zone)
 
 
 class Mongo(object):

@@ -14,7 +14,8 @@ import sys
 @click.group()
 @click.option('--env', 'env',
               help='what environment are we inspecting',
-              required=True)
+              required=True,
+              type=click.Choice(['alpha', 'dev', 'stage', 'prod']))
 @click.option('--bastion', 'bastion')
 @click.option('--region')
 @click.option('--zone', default=None)
@@ -23,25 +24,28 @@ import sys
               default=None)
 @click.pass_context
 def cli(ctx, env, bastion, region, zone, assume_yes):
-    if env not in ['dev', 'stage']:
-        ctx.fail('unknown environment `{}`'.format(env))
-
     if bastion is None:
         bastion = {
+            'alpha': 'navopt-alpha',
             'dev': 'navopt-dev',
             'stage': 'navopt-stage',
+            'prod': 'navopt-prod',
         }[env]
 
     if region is None:
         region = {
+            'alpha': 'us-west-1',
             'dev': 'us-west-2',
             'stage': 'us-west-2',
+            'prod': 'us-west-2',
         }[env]
 
     if zone is None:
         zone = {
+            'alpha': 'alpha.xplain.io',
             'dev': 'navopt-dev.cloudera.com',
             'stage': 'stage.xplain.io',
+            'prod': 'app.xplain.io',
         }[env]
 
     cluster = navopt_admin.cluster.Cluster(

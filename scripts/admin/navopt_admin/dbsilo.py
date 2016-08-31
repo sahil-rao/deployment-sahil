@@ -1,9 +1,9 @@
 from __future__ import absolute_import
 
-from .elasticsearch import Elasticsearch, ElasticsearchCluster
+from .elasticsearch import ElasticsearchCluster
 from .instance import format_instances
-from .mongo import Mongo, MongoCluster
-from .redis import Redis, RedisCluster, RedisSentinel
+from .mongo import MongoCluster, OldMongoCluster
+from .redis import RedisCluster, OldRedisCluster
 from .util import COMMA_SEPARATED_LIST_TYPE, prompt
 from itertools import chain
 import click
@@ -26,37 +26,49 @@ class DBSilo(object):
         return self.name + '-mongo'
 
     def mongo_instances(self):
-        alpha_names = {
-            'alpha': 'Alpha',
-            'app': 'App',
-            'dbsilo1': 'DBSilo1',
-            'dbsilo2': 'DBSilo2',
-            'dbsilo3': 'DBSilo3',
-            'dbsilo4': 'DBSilo4',
-        }
-
-        app_names = {
-            'alpha': 'ALPHA',
-            'app': 'APP',
-            'dbsilo1': 'DBSILO1',
-            'dbsilo2': 'DBSILO2',
-            'dbsilo3': 'DBSILO3',
-            'dbsilo4': 'DBSILO4',
-        }
-
         filters = [
             '{}-mongo'.format(self.name),
             '{}-mongo-*'.format(self.name),
         ]
 
-        if self.cluster.env in ('alpha', 'app'):
+        # FIXME: remove after we get rid of the old-style instances
+        if self.cluster.env in ('alpha', 'prod'):
+            alpha_names = {
+                'alpha': 'Alpha',
+                'app': 'App',
+                'prod': 'App',
+                'dbsilo1': 'DBSilo1',
+                'dbsilo2': 'DBSilo2',
+                'dbsilo3': 'DBSilo3',
+                'dbsilo4': 'DBSilo4',
+            }
+
+            app_names = {
+                'alpha': 'ALPHA',
+                'app': 'APP',
+                'prod': 'App',
+                'dbsilo1': 'DBSILO1',
+                'dbsilo2': 'DBSILO2',
+                'dbsilo3': 'DBSILO3',
+                'dbsilo4': 'DBSILO4',
+            }
+
+            # FIXME: remove after we get rid of the old instances
+            env = self.cluster.env
+            if env == 'prod':
+                env = 'app'
+
             filters.extend([
+                '{}-{}-mongo-*'.format(env, self.name),
                 'MongoDB {} {}'.format(
                     alpha_names[self.cluster.env],
                     alpha_names[self.name]),
                 'MONGO_{}_{}'.format(
-                    app_names[self.cluster.env],
-                    app_names[self.name]),
+                    app_names[self.cluster.env].upper(),
+                    app_names[self.name].upper()),
+                'MONGO_{}_{} - Arbiter'.format(
+                    app_names[self.cluster.env].upper(),
+                    app_names[self.name].upper()),
                 'MONGO_{}_{} - Arbiter'.format(
                     app_names[self.cluster.env],
                     app_names[self.name]),
@@ -68,40 +80,56 @@ class DBSilo(object):
         )
 
     def mongo_cluster(self):
-        return MongoCluster(
-            self.cluster,
-            self.mongo_service,
-            self.mongo_instances())
+        # FIXME: remove after we get rid of the old-style instances
+        if self.cluster.env in ('alpha', 'prod'):
+            return OldMongoCluster(
+                self.name,
+                self.cluster,
+                self.mongo_service,
+                list(self.mongo_instances()))
+        else:
+            return MongoCluster(
+                self.cluster,
+                self.mongo_service,
+                list(self.mongo_instances()))
 
     @property
     def redis_service(self):
         return self.name + '-redis'
 
     def redis_instances(self):
-        alpha_names = {
-            'alpha': 'Alpha',
-            'app': 'App',
-            'dbsilo1': 'DBSilo1',
-            'dbsilo2': 'DBSilo2',
-            'dbsilo3': 'DBSilo3',
-            'dbsilo4': 'DBSilo4',
-        }
-
-        app_names = {
-            'alpha': 'ALPHA',
-            'app': 'APP',
-            'dbsilo1': 'DBSILO_1',
-            'dbsilo2': 'DBSILO_2',
-            'dbsilo3': 'DBSILO_3',
-            'dbsilo4': 'DBSILO_4',
-        }
-
         filters = [
             '{}-redis'.format(self.name),
         ]
 
-        if self.cluster.env in ('alpha', 'app'):
+        if self.cluster.env in ('alpha', 'prod'):
+            alpha_names = {
+                'alpha': 'Alpha',
+                'app': 'App',
+                'prod': 'App',
+                'dbsilo1': 'DBSilo1',
+                'dbsilo2': 'DBSilo2',
+                'dbsilo3': 'DBSilo3',
+                'dbsilo4': 'DBSilo4',
+            }
+
+            app_names = {
+                'alpha': 'ALPHA',
+                'app': 'APP',
+                'prod': 'APP',
+                'dbsilo1': 'DBSILO_1',
+                'dbsilo2': 'DBSILO_2',
+                'dbsilo3': 'DBSILO_3',
+                'dbsilo4': 'DBSILO_4',
+            }
+
+            # FIXME: remove after we get rid of the old instances
+            env = self.cluster.env
+            if env == 'prod':
+                env = 'app'
+
             filters.extend([
+                '{}-{}-redis-*'.format(env, self.name),
                 'Redis {} {}'.format(
                     alpha_names[self.cluster.env],
                     alpha_names[self.name]),
@@ -116,43 +144,62 @@ class DBSilo(object):
         )
 
     def redis_cluster(self):
-        return RedisCluster(
-            self.cluster,
-            self.redis_service,
-            self.redis_instances())
+        # FIXME: remove after we get rid of the old-style instances
+        if self.cluster.env in ('alpha', 'prod'):
+            return OldRedisCluster(
+                self.name,
+                self.cluster,
+                self.redis_service,
+                list(self.redis_instances()))
+        else:
+            return RedisCluster(
+                self.cluster,
+                self.redis_service,
+                list(self.redis_instances()))
 
     @property
     def elasticsearch_service(self):
         return self.name + '-elasticsearch'
 
     def elasticsearch_instances(self):
-        alpha_names = {
-            'alpha': 'Alpha',
-            'app': 'App',
-            'dbsilo1': 'DBSilo1',
-            'dbsilo2': 'DBSilo2',
-            'dbsilo3': 'DBSilo3',
-            'dbsilo4': 'DBSilo4',
-        }
-
-        app_names = {
-            'alpha': 'ALPHA',
-            'app': 'APP',
-            'dbsilo1': 'DBSILO_1',
-            'dbsilo2': 'DBSILO_2',
-            'dbsilo3': 'DBSILO_3',
-            'dbsilo4': 'DBSILO_4',
-        }
-
         filters = [
             '{}-elasticsearch'.format(self.name),
         ]
 
-        if self.cluster.env in ('alpha', 'app'):
+        # FIXME: remove after we get rid of the old instances
+        if self.cluster.env in ('alpha', 'prod'):
+            alpha_names = {
+                'alpha': 'Alpha',
+                'app': 'App',
+                'prod': 'App',
+                'dbsilo1': 'DBSilo1',
+                'dbsilo2': 'DBSilo2',
+                'dbsilo3': 'DBSilo3',
+                'dbsilo4': 'DBSilo4',
+            }
+
+            app_names = {
+                'alpha': 'ALPHA',
+                'app': 'APP',
+                'prod': 'App',
+                'dbsilo1': 'DBSILO_1',
+                'dbsilo2': 'DBSILO_2',
+                'dbsilo3': 'DBSILO_3',
+                'dbsilo4': 'DBSILO_4',
+            }
+
+            env = self.cluster.env
+            if env == 'prod':
+                env = 'app'
+
             filters.extend([
+                '{}-{}-elasticsearch-*'.format(env, self.name),
                 'Elasticsearch {} {}'.format(
                     alpha_names[self.cluster.env],
                     alpha_names[self.name]),
+                'ElasticSearch_{}_{}'.format(
+                    app_names[self.cluster.env].upper(),
+                    alpha_names[self.name].upper()),
                 'Elasticsearch_{}_{}'.format(
                     app_names[self.cluster.env],
                     app_names[self.name]),
@@ -167,7 +214,7 @@ class DBSilo(object):
         return ElasticsearchCluster(
             self.cluster,
             self.elasticsearch_service,
-            self.elasticsearch_instances())
+            list(self.elasticsearch_instances()))
 
     def __str__(self):
         return 'DBSilo({}, {})'.format(self.cluster, self.name)
