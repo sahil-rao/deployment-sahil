@@ -3,7 +3,6 @@
 import argparse
 import dbsilo_redis
 import dd
-import redis
 import sys
 
 
@@ -18,7 +17,11 @@ def run(args):
     sentinel = dbsilo_redis.RedisClient('localhost', 26379)
 
     master_name = 'redismaster.{}.{}'.format(args.dbsilo, args.zone)
-    sentinel.sentinel_monitor(master_name, master.host, master.port, 2)
+    sentinel.sentinel_monitor(
+        master_name,
+        master.host,
+        master.port,
+        args.quorum_size)
     sentinel.sentinel_set(master_name, 'down-after-milliseconds', 30000)
     sentinel.sentinel_set(master_name, 'parallel-syncs', 1)
     sentinel.sentinel_set(master_name, 'failover-timeout', 180000)
@@ -29,6 +32,7 @@ def main():
     parser.add_argument('--region', required=True)
     parser.add_argument('--dbsilo', required=True)
     parser.add_argument('--zone', required=True)
+    parser.add_argument('--quorum-size', required=True)
     args = parser.parse_args()
 
     try:
