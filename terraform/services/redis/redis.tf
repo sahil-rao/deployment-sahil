@@ -43,10 +43,6 @@ resource "aws_launch_configuration" "default" {
     security_groups = ["${split(",", var.security_groups)}"]
     user_data = "${template_file.user_data.rendered}"
 
-    root_block_device {
-        volume_size = 60
-    }
-
     lifecycle {
         create_before_destroy = true
     }
