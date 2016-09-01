@@ -33,3 +33,7 @@ variable "datadog_api_key" {
 variable "key_name" {
     default = "navopt-stage-us-west-2"
 }
+
+variable "thunderhead_vpc_cidr" {
+    default = "10.32.0.0/16"
+}
