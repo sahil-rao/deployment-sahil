@@ -133,8 +133,8 @@ module "dbsilo4" {
     cluster_name = "${var.cluster_name}"
     datadog_api_key = "${var.datadog_api_key}"
 
-    mongo_blue_name_prefix = "${var.cluster_name}-dbsilo4-mongo-blue-v2"
-    mongo_blue_ami_id = "ami-a699ddc6"
+    mongo_blue_name_prefix = "${var.cluster_name}-dbsilo4-mongo-blue-v4"
+    mongo_blue_ami_id = "ami-1a5e1f7a"
     mongo_blue_instance_type = "m4.xlarge"
     mongo_blue_min_size = 0
     mongo_blue_max_size = 0
@@ -143,16 +143,16 @@ module "dbsilo4" {
     mongo_green_name_prefix = "${var.cluster_name}-dbsilo4-mongo-green-v3"
     mongo_green_ami_id = "ami-a699ddc6"
     mongo_green_instance_type = "m4.xlarge"
-    mongo_green_min_size = 1
-    mongo_green_max_size = 3
-    mongo_green_desired_capacity = 3
+    mongo_green_min_size = 0
+    mongo_green_max_size = 0
+    mongo_green_desired_capacity = 0
 
     redis_blue_name_prefix = "${var.cluster_name}-dbsilo4-redis-blue-v4"
     redis_blue_ami_id = "ami-8b3671eb"
     redis_blue_instance_type = "r3.2xlarge"
-    redis_blue_min_size = 1
-    redis_blue_max_size = 3
-    redis_blue_desired_capacity = 3
+    redis_blue_min_size = 0
+    redis_blue_max_size = 0
+    redis_blue_desired_capacity = 0
     redis_blue_backup_file = ""
 
     redis_green_name_prefix = "${var.cluster_name}-dbsilo4-redis-green-v3"
@@ -167,9 +167,9 @@ module "dbsilo4" {
     elasticsearch_blue_name_prefix = "${var.cluster_name}-dbsilo4-elasticsearch-blue-v3"
     elasticsearch_blue_ami_id = "ami-01a7e361"
     elasticsearch_blue_instance_type = "m3.xlarge"
-    elasticsearch_blue_min_size = 3
-    elasticsearch_blue_max_size = 3
-    elasticsearch_blue_desired_capacity = 3
+    elasticsearch_blue_min_size = 0
+    elasticsearch_blue_max_size = 0
+    elasticsearch_blue_desired_capacity = 0
 
     elasticsearch_green_name_prefix = "${var.cluster_name}-dbsilo4-elasticsearch-green-v2"
     elasticsearch_green_ami_id = "ami-01a7e361"
