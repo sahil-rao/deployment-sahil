@@ -7,6 +7,7 @@ module "sg" {
 
     admin_name = "admin"
     backoffice_name = "backoffice"
+    deployment_root_name = "deployment-root"
     elasticsearch_name = "elasticsearch"
     logstash_name = "logstash"
     mongo_name = "mongo"

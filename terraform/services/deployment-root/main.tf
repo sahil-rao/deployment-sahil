@@ -14,8 +14,8 @@ variable "dns_zone_id" {}
 
 ###################################################################
 
-variable "security_group_name" {
-    default = ""
+variable "security_groups" {
+    type = "list"
 }
 
 ###################################################################
@@ -36,56 +36,6 @@ variable "iam_instance_profile" {
 
 ###################################################################
 
-resource "aws_security_group" "default" {
-    name = "${coalesce(var.security_group_name, var.name)}"
-    vpc_id = "${var.vpc_id}"
-
-    ingress {
-        from_port = 22
-        to_port = 22
-        protocol = "tcp"
-        cidr_blocks = ["${var.public_cidr}"]
-    }
-
-    ingress {
-        from_port = 80
-        to_port = 80
-        protocol = "tcp"
-        cidr_blocks = ["${var.public_cidr}"]
-    }
-
-    ingress {
-        from_port = 8080
-        to_port = 8080
-        protocol = "tcp"
-        cidr_blocks = ["${var.public_cidr}"]
-    }
-
-    ingress {
-        from_port = 443
-        to_port = 443
-        protocol = "tcp"
-        cidr_blocks = ["${var.public_cidr}"]
-    }
-
-    egress {
-        from_port = 0
-        to_port = 0
-        protocol = "-1"
-        cidr_blocks = ["0.0.0.0/0"]
-    }
-
-    lifecycle {
-        create_before_destroy = true
-    }
-
-    tags {
-        Terraform = "managed"
-    }
-}
-
-###################################################################
-
 module "ubuntu" {
     source = "../../modules/tf_aws_ubuntu_ami"
     region = "${var.region}"
@@ -100,7 +50,7 @@ resource "aws_instance" "default" {
     # FIXME: uses this ami in production:
     # Deployment-Root (ami-c1d5a5f1)
     ami = "${coalesce(var.ami, module.ubuntu.ami_id)}"
-    vpc_security_group_ids = ["${aws_security_group.default.id}"]
+    vpc_security_group_ids = ["${var.security_groups}"]
     subnet_id = "${element(var.subnet_ids, count.index)}"
     key_name = "${var.key_name}"
 

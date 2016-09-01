@@ -4,6 +4,7 @@ variable "public_cidr" {}
 
 variable "admin_name" {}
 variable "backoffice_name" {}
+variable "deployment_root_name" {}
 variable "elasticsearch_name" {}
 variable "logstash_name" {}
 variable "mongo_name" {}
