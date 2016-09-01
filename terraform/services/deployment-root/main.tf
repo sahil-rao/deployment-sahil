@@ -133,3 +133,9 @@ resource "aws_route53_record" "bastion" {
     ttl = "5"
     records = ["${aws_instance.default.private_ip}"]
 }
+
+###################################################################
+
+output "eip" {
+    value = "${aws_eip.default.public_ip}"
+}
