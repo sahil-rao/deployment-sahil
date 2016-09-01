@@ -6,10 +6,14 @@ variable "name" {}
 
 variable "vpc_id" {}
 variable "vpc_cidr" {}
-variable "subnet_ids" {}
+variable "subnet_ids" {
+    type = "list"
+}
 variable "public_cidr" {}
 variable "dns_zone_id" {}
-variable "security_groups" {}
+variable "security_groups" {
+    type = "list"
+}
 variable "iam_instance_profile" {}
 
 ###################################################################
@@ -37,8 +41,8 @@ resource "aws_instance" "admin" {
     # bitnami-nodejs-4.4.4-0-linux-ubuntu-14.04.3-x86_64-hvm-ebs (ami-5b85783b)
     ami = "${coalesce(var.ami, module.bitnami_nodejs.ami_id)}"
 
-    vpc_security_group_ids = ["${split(",", var.security_groups)}"]
-    subnet_id = "${element(split(",", var.subnet_ids), 0)}"
+    vpc_security_group_ids = ["${var.security_groups}"]
+    subnet_id = "${element(var.subnet_ids, count.index)}"
     key_name = "${var.key_name}"
 
     iam_instance_profile = "${var.iam_instance_profile}"

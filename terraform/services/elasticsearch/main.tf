@@ -53,7 +53,7 @@ resource "aws_instance" "default" {
     # Redis v11 (ami-ee16f98e)
     ami = "${coalesce(var.ami, module.ubuntu.ami_id)}"
     vpc_security_group_ids = ["${var.security_groups}"]
-    subnet_id = "${element(split(",", var.subnet_ids), count.index)}"
+    subnet_id = "${element(var.subnet_ids, count.index)}"
     key_name = "${var.key_name}"
 
     iam_instance_profile = "${var.iam_instance_profile}"
