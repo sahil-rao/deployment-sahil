@@ -21,6 +21,9 @@ variable "zone_name" {}
 
 variable "datadog_api_key" {}
 variable "quorum_size" {}
+variable "backups_enabled" {
+    default = false
+}
 
 ###################################################################
 
@@ -33,8 +36,9 @@ data "template_file" "user_data" {
         service = "${var.service}"
         zone_name = "${var.zone_name}"
         datadog_api_key = "${var.datadog_api_key}"
-        backup_file = "${var.backup_file}"
+        redis_backup_file = "${var.backup_file}"
         redis_quorum_size = "${var.quorum_size}"
+        redis_backups_enabled = "${var.backups_enabled}"
     }
 }
 
