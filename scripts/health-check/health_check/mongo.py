@@ -32,6 +32,12 @@ class Mongo(Tunnel):
 
         return super(Mongo, self).close()
 
+    def mongo_version(self):
+        if self.mconn is None:
+            return None
+
+        return self.mconn.server_info()['version']
+
     def server_status(self):
         if self.mconn is None:
             return {}
@@ -163,6 +169,17 @@ class MongoHealthCheck(HealthCheck):
         return True
 
 
+class MongoVersionCheck(MongoHealthCheck):
+    description = "Mongo versions match"
+
+    def check_mongo_host(self, host):
+        version = host.mongo_version()
+
+        self.host_msgs[host] = 'version: {}'.format(version)
+
+        return self._all_equal(host.mongo_version() for host in self.hosts)
+
+
 class MongoClusterAgreeOnMasterCheck(MongoHealthCheck):
     description = "Mongo nodes agree on the same master"
 
@@ -215,7 +232,6 @@ class MongoClusterConfigurationCheck(MongoHealthCheck):
                 len(self.hosts):
             return False
 
-        initial = None
         for h in self.hosts:
             if h == host:
                 continue
@@ -263,6 +279,7 @@ class MongoClusterHeartbeatCheck(MongoHealthCheck):
 
         return any(heartbeat < 65000 for heartbeat in heartbeats)
 
+
 class MongoReplicaDelayCheck(MongoHealthCheck):
     description = "Check replicas are not behind master"
 
@@ -273,22 +290,22 @@ class MongoReplicaDelayCheck(MongoHealthCheck):
             return True
 
         try:
-            primary_optime = host.primary_repl_status['optimeDate']
-        except KeyError:
-            self.host_msgs[host] = 'primary missing optime'
-            return False
-
-        try:
             current_optime = host.current_repl_status['optimeDate']
         except KeyError:
             self.host_msgs[host] = 'current missing optime'
             return False
 
-        lag = max(0, (primary_optime - current_optime).seconds)
+        try:
+            primary_optime = host.primary_repl_status['optimeDate']
+        except KeyError:
+            self.host_msgs[host] = 'primary missing optime'
+            return False
+
+        lag = (primary_optime - current_optime).total_seconds()
 
         self.host_msgs[host] = 'lag: {}'.format(lag)
 
-        return lag < 10000
+        return abs(lag) < 10.0
 
 
 def check_mongodb(bastion, cluster, region, dbsilo):
@@ -311,6 +328,7 @@ def check_mongodb(bastion, cluster, region, dbsilo):
         pool.join()
 
     for health_check in (
+            MongoVersionCheck(mongodb_servers),
             MongoClusterAgreeOnMasterCheck(mongodb_servers),
             MongoClusterConfigurationCheck(mongodb_servers),
             MongoClusterConfigVersionsCheck(mongodb_servers),
