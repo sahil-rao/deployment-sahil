@@ -9,7 +9,7 @@ from pymongo import MongoClient
 from boto.route53.record import ResourceRecordSets
 import boto
 
-SUFFIX = 'xplain.io'
+SUFFIX = os.getenv('ZONE_NAME', 'xplain.io')
 AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-west-1')
 AUTOREMOVAL_DELAY_SECONDS = 10800   # 3 hours
 

@@ -12,6 +12,7 @@ if [ "${userdata}" != "" ]; then
 	export SERVICE=`echo ${userdata} | /usr/local/bin/jq -r '.service'`
 	export DBSILO=`echo ${userdata} | /usr/local/bin/jq -r '.dbsilo'`
 	export CLUSTER=`echo ${userdata} | /usr/local/bin/jq -r '.cluster'`
+	export ZONE_NAME=`echo ${userdata} | /usr/local/bin/jq -r '.zone_name'`
 	export ROLE=`echo ${userdata} | /usr/local/bin/jq -r '.role'`
 	export DATADOG_API_KEY=`echo ${userdata} | /usr/local/bin/jq -r '.datadog_api_key'`
 	export BACKUP_FILE=`echo ${userdata} | /usr/local/bin/jq -r '.backup_file'`

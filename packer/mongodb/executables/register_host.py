@@ -8,7 +8,7 @@ from boto.route53.record import ResourceRecordSets
 import boto.ec2.autoscale
 
 
-SUFFIX = 'xplain.io'
+SUFFIX = os.getenv('ZONE_NAME', 'xplain.io')
 AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-west-1')
 
 
