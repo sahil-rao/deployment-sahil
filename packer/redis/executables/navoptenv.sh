@@ -11,8 +11,8 @@ userdata=`cat /etc/navoptenv.json`
 
 if [ "${userdata}" != "" ]; then
 	# basic settings
+	export APP=`echo ${userdata} | /usr/local/bin/jq -r '.app'`
 	export SERVICE=`echo ${userdata} | /usr/local/bin/jq -r '.service'`
-	export DBSILO=`echo ${userdata} | /usr/local/bin/jq -r '.dbsilo'`
 	export CLUSTER=`echo ${userdata} | /usr/local/bin/jq -r '.cluster'`
 	export ZONE_NAME=`echo ${userdata} | /usr/local/bin/jq -r '.zone_name'`
 	export REDIS_QUORUM_SIZE=`echo ${userdata} | /usr/local/bin/jq -r '.redis_quorum_size'`

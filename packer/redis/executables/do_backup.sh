@@ -20,11 +20,11 @@ else
     # Send alert event to datadog
     curl -XPOST -H "Content-type: application/json" -d@- -sS "https://app.datadoghq.com/api/v1/events?api_key=${DATADOG_API_KEY}" <<EOF
 {
-	"title": "[NavOpt] [$CLUSTER] $DBSILO Redis Backup Failed",
+	"title": "[$APP] [$ENV] $SERVICE backup failed",
 	"text": "$errorinfo",
 	"priority": "normal",
 	"alert_type": "error",
-	"tags": ["account:navopt", "dbsilo:$DBSILO", "cluster:$CLUSTER", "service:redis"]
+	"tags": ["app:$APP", "env:$ENV", "service:$SERVICE"]
 }
 EOF
 fi

@@ -1,23 +1,23 @@
 #!/usr/bin/python
 
 import argparse
-import dbsilo_redis
+import navopt_redis
 import dd
 import logging
 import sys
 
 
 def run(args):
-    running_instances = dbsilo_redis.get_instances(args.region, args.dbsilo)
-    server_clients = dbsilo_redis.get_clients(
-        args.dbsilo,
+    running_instances = navopt_redis.get_instances(args.region, args.service)
+    server_clients = navopt_redis.get_clients(
+        args.service,
         running_instances,
         6379)
 
-    master = dbsilo_redis.get_master(server_clients)
-    sentinel = dbsilo_redis.RedisClient('localhost', 26379)
+    master = navopt_redis.get_master(server_clients)
+    sentinel = navopt_redis.RedisClient('localhost', 26379)
 
-    master_name = 'redismaster.{}.{}'.format(args.dbsilo, args.zone)
+    master_name = 'redismaster.{}.{}'.format(args.app, args.zone)
     sentinel.sentinel_monitor(
         master_name,
         master.host,
@@ -33,7 +33,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--region', required=True)
-    parser.add_argument('--dbsilo', required=True)
+    parser.add_argument('--service', required=True)
     parser.add_argument('--zone', required=True)
     parser.add_argument('--quorum-size', required=True)
     args = parser.parse_args()

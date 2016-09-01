@@ -1,17 +1,17 @@
 #!/usr/bin/python
 
 import argparse
-import dbsilo_redis
+import navopt_redis
 import dd
 import logging
 import sys
 
 
 def run(args):
-    running_instances = dbsilo_redis.get_instances(args.region, args.dbsilo)
-    clients = dbsilo_redis.get_clients(args.dbsilo, running_instances, 6379)
+    running_instances = navopt_redis.get_instances(args.region, args.app)
+    clients = navopt_redis.get_clients(args.navopt, running_instances, 6379)
 
-    master = dbsilo_redis.get_master(clients)
+    master = navopt_redis.get_master(clients)
 
     print 'primary:', master
 
@@ -28,7 +28,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--region', required=True)
-    parser.add_argument('--dbsilo', required=True)
+    parser.add_argument('--service', required=True)
     args = parser.parse_args()
 
     try:
