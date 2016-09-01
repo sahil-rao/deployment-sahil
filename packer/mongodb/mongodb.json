@@ -33,6 +33,11 @@
     "provisioners": [
         {
             "type": "file",
+            "source": "../executables",
+            "destination": "/tmp"
+        },
+        {
+            "type": "file",
             "source": "executables",
             "destination": "/tmp"
         },

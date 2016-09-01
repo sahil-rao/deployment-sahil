@@ -1,21 +1,18 @@
-import sys
-import socket
-import re
-import os
 from datetime import datetime as dt
-
-from boto.route53.record import ResourceRecordSets
+import argparse
 import boto.ec2.autoscale
-
-
-SUFFIX = os.getenv('ZONE_NAME', 'xplain.io')
-AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-west-1')
+import boto.route53
+import re
+import socket
+import sys
 
 
 def get_new_service_num(route53_zone, db_silo_name, service_name):
     """
-    If there exists a record like mongo3.dbsilo1.alpha.xplain.io, returns the next number (4)
+    If there exists a record like mongo3.dbsilo1.alpha.xplain.io, returns the
+    next number (4)
     """
+
     # Match records belonging to the service for particular dbsilo and cluster
     match_regex = "(?<={0})\d+(?=\.{1}\.{2}\.?)" \
                   .format(service_name, db_silo_name, route53_zone.name)
@@ -33,7 +30,8 @@ def get_new_service_num(route53_zone, db_silo_name, service_name):
 
 def record_exists(route53_zone, db_silo_name, service_name, ip):
     """
-    Check if a record exists matching the service pattern with the current host's ip
+    Check if a record exists matching the service pattern with the current
+    host's ip
     """
     # Match records belonging to the service for particular dbsilo and cluster
     match_regex = "{0}\d+\.{1}\.{2}\.?" \
@@ -49,8 +47,8 @@ def record_exists(route53_zone, db_silo_name, service_name, ip):
 
 def upsert_record(route53_zone, record_name, ip):
     """
-    Creates record with record_name and ip; updates record if it already exists with different ip
-    Does nothing if record already exists with same ip
+    Creates record with record_name and ip; updates record if it already exists
+    with different ip Does nothing if record already exists with same ip
     """
     record = route53_zone.get_a(record_name)
 
@@ -62,11 +60,10 @@ def upsert_record(route53_zone, record_name, ip):
         pass
 
 
-def register_host(cluster_name, db_silo_name, service_name, is_master=False):
-
-    zone_name = "{0}.{1}".format(cluster_name, SUFFIX)
+def register_host(region, db_silo_name, service_name, zone_name,
+                  is_master=False):
     my_ip = socket.gethostbyname(socket.gethostname())
-    conn = boto.route53.connect_to_region(AWS_REGION)
+    conn = boto.route53.connect_to_region(region)
     route53_zone = conn.get_zone(zone_name)
 
     if is_master:
@@ -76,15 +73,33 @@ def register_host(cluster_name, db_silo_name, service_name, is_master=False):
         upsert_record(route53_zone, record_name, my_ip)
 
     if not record_exists(route53_zone, db_silo_name, service_name, my_ip):
-        service_num = get_new_service_num(route53_zone, db_silo_name, service_name)
+        service_num = get_new_service_num(
+            route53_zone,
+            db_silo_name,
+            service_name)
+
         record_name = "{0}{1}.{2}.{3}".format(service_name, service_num,
                                               db_silo_name, zone_name)
         print str(dt.now()), "Registering host as", record_name
         upsert_record(route53_zone, record_name, my_ip)
 
 
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--region', required=True)
+    parser.add_argument('--dbsilo', required=True)
+    parser.add_argument('--service', required=True)
+    parser.add_argument('--zone', required=True)
+    parser.add_argument('--master', action='store_true', default=False)
+    args = parser.parse_args()
 
-if len(sys.argv) > 4 and sys.argv[4] == 'master':
-    register_host(sys.argv[1], sys.argv[2], sys.argv[3], True)
-else:
-    register_host(sys.argv[1], sys.argv[2], sys.argv[3])
+    register_host(
+        region=args.region,
+        db_silo_name=args.dbsilo,
+        service_name=args.service,
+        zone_name=args.zone,
+        is_master=args.master)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
