@@ -38,14 +38,6 @@ variable "virtual_gateway_id" {
     default = "vgw-b4e63faa"
 }
 
-variable "cluster_name" {
-    default = "stage"
-}
-
-variable "datadog_api_key" {
-    default = "450d437e4234a90b04a15396bd2a83b8"
-}
-
-variable "key_name" {
-    default = "Baaz-Deployment"
+variable "zone_name" {
+    default = "stage.navopt"
 }

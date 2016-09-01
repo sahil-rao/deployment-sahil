@@ -4,7 +4,7 @@ provider "aws" {
 }
 
 module "networking" {
-    source = "../../../services/networking"
+    source = "../../../modules/networking"
 
     region = "${var.region}"
     availability_zones = "${var.availability_zones}"
@@ -16,4 +16,11 @@ module "networking" {
     private_subnets = "${var.private_subnets}"
 
     virtual_gateway_id = "${var.virtual_gateway_id}"
+}
+
+module "dns" {
+    source = "../../../modules/dns"
+
+    vpc_id = "${module.networking.vpc_id}"
+    zone_name = "${var.zone_name}"
 }
