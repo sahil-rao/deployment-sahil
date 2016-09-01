@@ -53,6 +53,9 @@ variable "redis_quorum_size" {}
 variable "redis_ebs_optimized" {
     default = true
 }
+variable "redis_backups_enabled" {
+    default = "true"
+}
 
 ###################################################################
 
@@ -123,6 +126,7 @@ module "redis" {
     max_size = "${var.redis_max_size}"
     desired_capacity = "${var.redis_desired_capacity}"
     ebs_optimized = "${var.redis_ebs_optimized}"
+    backups_enabled = "${var.redis_backups_enabled}"
 }
 
 module "elasticsearch" {

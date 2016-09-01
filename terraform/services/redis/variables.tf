@@ -44,3 +44,6 @@ variable "datadog_api_key" {}
 variable "quorum_size" {
     default = 1
 }
+variable "backups_enabled" {
+    default = "false"
+}
