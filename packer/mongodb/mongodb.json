@@ -12,7 +12,6 @@
             "ssh_username": "ubuntu",
             "ami_name": "dbsilo-mongodb {{timestamp}}",
             "ami_regions": [
-                "us-west-1",
                 "us-west-2"
             ],
             "launch_block_device_mappings": [
