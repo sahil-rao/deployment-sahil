@@ -3,6 +3,7 @@
 import argparse
 import dbsilo_redis
 import dd
+import logging
 import sys
 
 
@@ -23,6 +24,8 @@ def run(args):
 
 
 def main():
+    logging.basicConfig()
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--region', required=True)
     parser.add_argument('--dbsilo', required=True)

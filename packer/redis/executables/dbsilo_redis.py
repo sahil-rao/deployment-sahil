@@ -1,5 +1,6 @@
 import boto3
 import dd
+import logging
 import redis
 
 
@@ -75,11 +76,17 @@ def get_clients(dbsilo, instances, port):
 def get_all_masters(clients):
     masters = []
     for client in clients:
-        info = client.info()
-
-        # Only consider masters really masters if they have any slaves.
-        if info['role'] == 'master' and info['connected_slaves'] != 0:
-            masters.append(client)
+        try:
+            info = client.info()
+        except redis.exceptions.ConnectionError:
+            logging.exception(
+                'failed to connect to %s:%s, skipping',
+                client.host,
+                client.port)
+        else:
+            # Only consider masters really masters if they have any slaves.
+            if info['role'] == 'master' and info['connected_slaves'] != 0:
+                masters.append(client)
 
     return masters
 
