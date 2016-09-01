@@ -1,14 +1,27 @@
 #!/bin/bash
 
-set -ev
+set -euv
 
 # Ubuntu 14.04, m3.xlarge (hvm)
 
 # AWS EC2 instances sometimes have stale APT caches when starting up... so we wait for AWS to do its magic and refresh them
 sleep 10s
+apt-get clean; apt-get update
+apt-get -y install xfsprogs
+
+# Set up mongo volume
+if [ -b /dev/xvdf ]; then
+	(echo n; echo p; echo 1; echo ; echo ; echo w;) | fdisk /dev/xvdf
+	mkfs.xfs /dev/xvdf1
+	echo "/dev/xvdf1      /var/lib/mongodb xfs noatime,noexec,nodiratime 0 0" >> /etc/fstab
+	mkdir -m 000 /var/lib/mongodb
+	mount /var/lib/mongodb
+else
+	echo "ebs volume not attached" 1>&2
+	exit 1
+fi
 
 # Install basics
-apt-get clean; apt-get update
 apt-get -y install emacs ntp monit git python-pip python-dev logrotate
 pip install awscli boto j2cli 
 wget -qO /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64; chmod +x /usr/local/bin/jq
