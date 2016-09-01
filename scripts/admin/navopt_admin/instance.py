@@ -43,7 +43,7 @@ class Instance(object):
         except KeyError:
             value = None
 
-            for tag in self.tags:
+            for tag in self.tags or ():
                 if tag['Key'] == name:
                     value = tag['Value']
 
