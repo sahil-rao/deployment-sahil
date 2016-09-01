@@ -10,6 +10,7 @@ variable "dbsilo_name" {}
 variable "cluster_name" {}
 variable "datadog_api_key" {}
 variable "backup_file" {}
+variable "quorum_size" {}
 
 ###################################################################
 
@@ -39,6 +40,7 @@ data "template_file" "user_data" {
         zone_name = "${var.zone_name}"
         datadog_api_key = "${var.datadog_api_key}"
         backup_file = "${var.backup_file}"
+        redis_quorum_size = "${var.quorum_size}"
     }
 }
 
