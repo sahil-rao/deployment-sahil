@@ -27,7 +27,7 @@ class Mongo(Tunnel):
             self.mconn = None
 
     def close(self):
-        if hasattr(self, 'mconn'):
+        if hasattr(self, 'mconn') and self.mconn:
             self.mconn.close()
 
         return super(Mongo, self).close()
@@ -157,17 +157,6 @@ class MongoHealthCheck(HealthCheck):
     def check_mongo_host(self, host):
         raise NotImplementedError
 
-    def _all_equal(self, items):
-        # Make sure everyone agrees on the count
-        initial = None
-        for item in items:
-            if initial is None:
-                initial = item
-            elif initial != item:
-                return False
-
-        return True
-
 
 class MongoVersionCheck(MongoHealthCheck):
     description = "Mongo versions match"
@@ -177,7 +166,8 @@ class MongoVersionCheck(MongoHealthCheck):
 
         self.host_msgs[host] = 'version: {}'.format(version)
 
-        return self._all_equal(host.mongo_version() for host in self.hosts)
+        return version and \
+            self.all_equal(host.mongo_version() for host in self.hosts)
 
 
 class MongoClusterAgreeOnMasterCheck(MongoHealthCheck):
@@ -217,7 +207,7 @@ class MongoClusterConfigurationCheck(MongoHealthCheck):
             **kwargs)
 
         return \
-            self._all_equal(host.members() for host in self.hosts) and \
+            self.all_equal(host.members() for host in self.hosts) and \
             result
 
     def check_mongo_host(self, host):
@@ -251,7 +241,7 @@ class MongoClusterConfigVersionsCheck(MongoHealthCheck):
             **kwargs)
 
         return \
-            self._all_equal(host.config_versions() for host in self.hosts) and \
+            self.all_equal(host.config_versions() for host in self.hosts) and \
             result
 
     def check_mongo_host(self, host):

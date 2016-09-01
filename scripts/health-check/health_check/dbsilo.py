@@ -1,11 +1,12 @@
 import health_check.base
+import health_check.elasticsearch
 import health_check.mongo
 import health_check.redis
 
 
 def check_dbsilo(bastion, fqdn, cluster, region, dbsilo, services=None):
     if services is None:
-        services = ('mongo', 'redis')
+        services = ('mongo', 'redis', 'elasticsearch')
 
     dbsilo_checklist = health_check.base.HealthCheckList(
             description=dbsilo.upper() + " Health Checklist")
@@ -21,6 +22,15 @@ def check_dbsilo(bastion, fqdn, cluster, region, dbsilo, services=None):
     if 'redis' in services:
         dbsilo_checklist.add_check(
                 health_check.redis.check_redis(
+                    bastion,
+                    fqdn,
+                    cluster,
+                    region,
+                    dbsilo))
+
+    if 'elasticsearch' in services or 'es' in services:
+        dbsilo_checklist.add_check(
+                health_check.elasticsearch.check_elasticsearch(
                     bastion,
                     fqdn,
                     cluster,
