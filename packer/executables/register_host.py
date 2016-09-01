@@ -54,9 +54,14 @@ def upsert_record(route53_zone, record_name, ip):
     """
 
     # Only upsert the dns record if it doesn't resolve to us.
-    record_ip = socket.gethostbyname(record_name)
-    if ip == record_ip:
-        return
+    try:
+        record_ip = socket.gethostbyname(record_name)
+    except socket.error:
+        # Ignore if we can't connect to the host
+        pass
+    else:
+        if ip == record_ip:
+            return
 
     print str(dt.now()), "Registering host as", record_name
     record = route53_zone.get_a(record_name)

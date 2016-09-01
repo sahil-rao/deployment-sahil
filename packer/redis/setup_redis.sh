@@ -21,6 +21,9 @@ echo "never" > /sys/kernel/mm/transparent_hugepage/enabled
 touch /var/log/register_host.log; chown redis.redis /var/log/register_host.log
 touch /var/log/do_backup.log; chown redis.redis /var/log/do_backup.log
 
+# Setup the basics
+pip install boto3 datadog redis
+
 # Move files uploaded by packer file provisioner
 cp /tmp/executables/* /usr/local/bin/
 mkdir -p /etc/redis/local
@@ -28,3 +31,4 @@ cp /tmp/etc/redis/local/redis.conf /tmp/etc/redis/local/sentinel.conf /etc/redis
 chown -R redis.redis /etc/redis/local
 cp /tmp/etc/init/redis-server.conf /tmp/etc/init/redis-sentinel.conf /etc/init/
 cp /tmp/etc/logrotate.d/redis /etc/logrotate.d/redis
+cp /tmp/etc/cron.d/redis /etc/cron.d/redis

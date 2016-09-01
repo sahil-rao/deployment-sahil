@@ -2,20 +2,122 @@
 
 import argparse
 import boto3
+import copy
 import dd
 import pprint
 import pymongo
 import sys
 
 
-def get_clients(hostnames):
+TERMINATED_STATES = ('shutting-down', 'terminating', 'terminated')
+
+
+def report(title, text='', master=None, instances=(), **kwargs):
+    print title
+
+    lines = []
+
+    for instance in instances:
+        host = instance.private_ip_address
+
+        line = ' * {} state:{}'.format(host, instance.state['Name'])
+
+        if master and host == master.address[0]:
+            line += ' (master)'
+
+        lines.append(line)
+
+    instances = '\n'.join(lines)
+
+    if text:
+        text = '{}\n{}'.format(text, instances)
+    else:
+        text = instances
+
+    print text
+
+    dd.create_event(
+        title=title,
+        text=text,
+        **kwargs)
+
+
+class Error(Exception):
+    def __init__(self, title, text='', alert_type='error', **kwargs):
+        super(Error, self).__init__()
+
+        self.title = title
+        self.text = text
+        self.alert_type = alert_type
+        self.kwargs = kwargs
+
+    def __str__(self):
+        return self.text
+
+    def report(self):
+        report(
+            title='Failed joining MongoDB cluster: {}'.format(self.title),
+            text=self.text,
+            alert_type=self.alert_type,
+            **self.kwargs)
+
+
+def run_command(database, *args, **kwargs):
+    resp = database.command(*args, **kwargs)
+
+    if resp['ok'] != 1:
+        raise Error(
+            title='Failed to run replSetGetConfig',
+            text=pprint.pformat(resp),
+        )
+
+    return resp
+
+
+def get_instances(region, dbsilo):
+    """
+    Find all the dbsilo mongo instances and split them up into a
+    list of running and terminated hostnames
+    """
+
+    dbsilo_tag = '{}-mongo'.format(dbsilo)
+
+    # Discover all the instances in the mongo cluster
+    ec2 = boto3.resource('ec2', region_name=region)
+    instances = list(ec2.instances.filter(Filters=[
+        {
+            'Name': 'tag:DBSilo',
+            'Values': [dbsilo_tag],
+        },
+    ]))
+
+    if not instances:
+        raise Error(
+            title='no instances',
+            text='no instances found for tag `{}`'.format(dbsilo_tag))
+
+    running_instances = []
+
+    for instance in instances:
+        print 'found: {} ({})'.format(
+            instance.private_ip_address,
+            instance.state['Name']
+        )
+
+        if instance.state['Name'] not in TERMINATED_STATES:
+            running_instances.append(instance)
+
+    return running_instances
+
+
+def get_clients(dbsilo, instances):
     clients = []
-    for hostname in hostnames:
-        print 'connecting to', hostname
+    for instance in instances:
+        host = instance.private_ip_address
 
         try:
             client = pymongo.MongoClient(
-                host=hostname,
+                host=host,
                 connectTimeoutMS=1000,
                 serverSelectionTimeoutMS=1000,
                 connect=True)
@@ -23,111 +125,147 @@ def get_clients(hostnames):
             # Make sure the server is up.
             client.server_info()
         except pymongo.errors.ServerSelectionTimeoutError:
-            print >> sys.stderr, 'failed to connect to', hostname
+            print >> sys.stderr, 'failed to connect to', host
         else:
             clients.append(client)
+
+    if not clients:
+        raise Error(
+            title='All {} databases offline'.format(dbsilo),
+            instances=instances,
+        )
 
     return clients
 
 
-def initiate(master, dbsilo, hostnames):
+def get_masters(clients):
+    return [
+        client for client in clients
+        if run_command(client.admin, 'isMaster')['ismaster']]
+
+
+def initiate(master, dbsilo, instances):
+    """
+    Initiate the mongodb silo replicaset
+    """
+
+    # FIXME: This doesn't handle cases where the replicaset is already
+    # initialized.
+
+    print 'Initiating replicaset on {}:{}'.format(
+        master.address[0],
+        master.address[1])
+
+    hosts = [instance.private_ip_address for instance in instances]
+
     config = {
         '_id': dbsilo,
         'members': [
-            {'_id': i, 'host': '{}:27017'.format(hostname)}
-            for i, hostname in enumerate(hostnames)
+            {'_id': i, 'host': '{}:27017'.format(host)}
+            for i, host in enumerate(hosts)
         ],
     }
-    resp = master.admin.command('replSetInitiate', config)
 
-    if resp['ok'] != 1:
-        print >> sys.stderr, 'Failed to run replSetInitiate'
-        pprint.pprint(resp, sys.stderr)
+    run_command(master.admin, 'replSetInitiate', config)
 
-        dd.create_event(
-            title='Failed to create MongoDB replica set',
-            text='Failed to create replica set on {}:{}\n{}'.format(
-                master.address[0],
-                master.address[1],
-                pprint.pformat(resp),
-            ),
-            alert_type='error',
-            hosts=[master.address[0]],
-        )
-
-        return 1
-
-    print 'created replica set'
-
-    dd.create_event(
-        title='Created MongoDB replica set',
-        text='Created MongoDB {} Repica Set on {}\n{}'.format(
-            dbsilo,
-            master.address[0],
-            master.address[1],
-            '\n'.join(' * {}'.format(host) for host in hostnames),
-        ),
+    report(
+        title='Created {} MongoDB replica set'.format(dbsilo),
+        instances=instances,
     )
 
 
-def reconfigure(master, hostnames):
-    # Otherwise, Add any missing nodes to the set.
-    resp = master.admin.command('replSetGetConfig')
-    if resp['ok'] != 1:
-        print >> sys.stderr, 'Failed to run replSetGetConfig'
-        pprint.pprint(resp, sys.stderr)
-        return 1
+def repl_set_get_config(master):
+    return run_command(master.admin, 'replSetGetConfig')['config']
 
-    config = resp['config']
-    members = config['members']
 
-    rs_hosts = set(member['host'] for member in members)
-    current_hosts = set('{}:27017'.format(hostname) for hostname in hostnames)
+def repl_set_reconfig(master, config):
+    config['version'] += 1
+    run_command(master.admin, 'replSetReconfig', config)
 
-    add_hosts = []
 
-    for host in current_hosts:
-        if host not in rs_hosts:
-            add_hosts.append(host)
+def add_new_hosts(config, running_instances):
+    # Grab the current hostnames in the replicaset so we can determine what we
+    # need to add and remove.
+    current_hosts = set(member['host'] for member in config['members'])
 
-    if add_hosts:
-        print 'Adding new hosts:', ' '.join(add_hosts)
+    # If we have new hosts, their id needs to be greater than all the other ids.
+    max_id = max(member['_id'] for member in config['members'])
 
-        max_id = max(member['_id'] for member in members)
+    for instance in running_instances:
+        host = '{}:27017'.format(instance.private_ip_address)
 
-        for host in add_hosts:
+        if host not in current_hosts:
+            print 'Adding new host:', host
+
             max_id += 1
             config['members'].append({'_id': max_id, 'host': host})
 
-        config['version'] += 1
 
-        resp = master.admin.command('replSetReconfig', config)
-        if resp['ok'] != 1:
-            print >> sys.stderr, 'Failed to run replSetReconfig'
-            pprint.pprint(resp, sys.stderr)
+def remove_stopped_hosts(config, running_instances):
+    # Remove any stopped hosts
+    members = []
 
-            dd.create_event(
-                title='Failed to reconfigure MongoDB replica set',
-                text='Failed to reconfigure replica set on {}:{}\n{}'.format(
-                    master.address[0],
-                    master.address[1],
-                    pprint.pformat(resp),
-                ),
-                alert_type='error',
-                hosts=[master.address[0]],
-            )
+    running_hosts = set(
+        '{}:27017'.format(instance.private_ip_address)
+        for instance in running_instances)
 
-            return 1
+    for member in config['members']:
+        host = member['host']
 
-        dd.create_event(
-            title='Reconfigured MongoDB replica set',
-            text='Reconfigured replica set on {}:{}\n{}'.format(
-                master.address[0],
-                master.address[1],
-                '\n'.join(' * {}'.format(host) for host in hostnames),
-            ),
-            hosts=[master.address[0]] + hostnames,
+        if host not in running_hosts:
+            print 'Removing stopped host:', host
+        else:
+            members.append(member)
+
+    config['members'] = members
+
+
+def reconfigure(master, dbsilo, running_instances):
+    config = repl_set_get_config(master)
+
+    # Grab a copy of the original config to help track if anything has changed.
+    original_config = copy.deepcopy(config)
+
+    add_new_hosts(config, running_instances)
+    remove_stopped_hosts(config, running_instances)
+
+    if config != original_config:
+        repl_set_reconfig(master, config)
+
+        instances = running_instances
+
+        report(
+            title='Reconfigured {} MongoDB replica set'.format(dbsilo),
+            instances=instances,
         )
+
+
+def run(args):
+    running_instances = get_instances(args.region, args.dbsilo)
+
+    clients = get_clients(args.dbsilo, running_instances)
+
+    # Find all the instances that think they are masters
+    masters = get_masters(clients)
+
+    if len(masters) == 0:
+        master = clients[0]
+        initiate(master, args.dbsilo, running_instances)
+    elif len(masters) == 1:
+        master = masters[0]
+    else:
+        raise Error(
+            title='Multiple MongoDB Masters',
+            text='\n'.join(
+                ' * {}:{}'.format(*master.address)
+                for master in masters
+            ),
+        )
+
+    reconfigure(
+        master,
+        args.dbsilo,
+        running_instances)
 
 
 def main():
@@ -136,60 +274,10 @@ def main():
     parser.add_argument('--dbsilo', required=True)
     args = parser.parse_args()
 
-    dbsilo_tag = '{}-mongo'.format(args.dbsilo)
-
-    # Discover all the instances in the mongo cluster
-    ec2 = boto3.resource('ec2', region_name=args.region)
-    instances = list(ec2.instances.filter(Filters=[
-        {
-            'Name': 'instance-state-name',
-            'Values': ['running'],
-        },
-        {
-            'Name': 'tag:DBSilo',
-            'Values': [dbsilo_tag],
-        },
-    ]))
-
-    hostnames = sorted(instance.private_ip_address for instance in instances)
-    print 'found instances:', ' '.join(hostnames)
-
-    if len(hostnames) == 0:
-        print >> sys.stderr, 'error: no instances found for tag', dbsilo_tag
-        return 1
-        pass
-
-    clients = get_clients(hostnames)
-
-    # Find master
-    masters = [
-        client for client in clients
-        if client['admin'].command('isMaster')['ismaster']]
-
-    if len(masters) == 0:
-        print 'No master found, electing', clients[0].address
-        return initiate(clients[0], args.dbsilo, hostnames)
-
-    elif len(masters) == 1:
-        return reconfigure(masters[0], hostnames)
-
-    else:
-        print >> sys.stderr, \
-            'error, multiple masters!', \
-            ' '.join(str(master.address) for master in masters)
-
-        dd.create_event(
-            title='Multiple MongoDB Masters',
-            text='Multiple MongoDB Masters:\n{}'.format(
-                '\n'.join(
-                    ' * {}:{}'.format(*master.address)
-                    for master in masters
-                ),
-            ),
-            alert_type='error',
-            hosts=[master.address[0] for master in masters],
-        )
-
+    try:
+        return run(args)
+    except Error as err:
+        err.report()
         return 1
 
 

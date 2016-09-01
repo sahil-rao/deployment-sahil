@@ -41,3 +41,53 @@ def create_event(**kwargs):
         kwargs['tags'] = _tags
 
     return datadog.api.Event.create(**kwargs)
+
+
+def report(title, text='', master=None, instances=(), **kwargs):
+    print title
+
+    lines = []
+
+    for instance in instances:
+        host = instance.private_ip_address
+
+        line = ' * {} state:{}'.format(host, instance.state['Name'])
+
+        if master and host == master.address[0]:
+            line += ' (master)'
+
+        lines.append(line)
+
+    instances = '\n'.join(lines)
+
+    if text:
+        text = '{}\n{}'.format(text, instances)
+    else:
+        text = instances
+
+    print text
+
+    return create_event(
+        title=title,
+        text=text,
+        **kwargs)
+
+
+class Error(Exception):
+    def __init__(self, title, text='', alert_type='error', **kwargs):
+        super(Error, self).__init__()
+
+        self.title = title
+        self.text = text
+        self.alert_type = alert_type
+        self.kwargs = kwargs
+
+    def __str__(self):
+        return self.text
+
+    def report(self):
+        report(
+            title='Failed joining Redis cluster: {}'.format(self.title),
+            text=self.text,
+            alert_type=self.alert_type,
+            **self.kwargs)

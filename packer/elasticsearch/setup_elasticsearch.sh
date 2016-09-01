@@ -35,10 +35,7 @@ cp /tmp/executables/* /usr/local/bin/
 cp /tmp/etc/init.d/elasticsearch /etc/init.d/
 cp /tmp/etc/logrotate.d/elasticsearch /etc/logrotate.d/elasticsearch
 cp /tmp/templates/elasticsearch.j2 /usr/share/elasticsearch/
+cp /tmp/etc/cron.d/elasticsearch /etc/cron.d/elasticsearch
 
 # Elasticsearch service to start on boot
 update-rc.d elasticsearch defaults 95 10
-
-# Set up crontabs for Route53 registration and backups
-(crontab -l || true; echo "* * * * * /bin/bash /usr/local/bin/register_host.sh >>/var/log/register_host.log 2>&1") 2>&1 | grep -v "no crontab" | sort | uniq | crontab -
-(crontab -l || true; echo "*/30 * * * * /bin/bash /usr/local/bin/take_snapshot.sh >>/var/log/take_snapshot.log 2>&1") 2>&1 | grep -v "no crontab" | sort | uniq | crontab -
