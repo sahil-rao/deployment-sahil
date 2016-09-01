@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ev
+set -euv
 
 /bin/cat <<EOF > /etc/navoptenv.json
 {
@@ -22,4 +22,4 @@ use_mount: no
 tags: navopt, ${cluster}, dbsilo, redis
 EOF
 /bin/chown dd-agent /etc/dd-agent/datadog.conf
-/usr/sbin/service datadog-agent start
+/usr/sbin/service datadog-agent restart
