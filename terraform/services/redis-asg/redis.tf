@@ -1,4 +1,5 @@
 variable "subnet_ids" {}
+variable "zone_name" {}
 variable "security_groups" {}
 
 ###################################################################
@@ -35,6 +36,7 @@ resource "template_file" "user_data" {
         dbsilo = "${var.dbsilo_name}"
         service = "redis"
         cluster = "${var.cluster_name}"
+        zone_name = "${var.zone_name}"
         datadog_api_key = "${var.datadog_api_key}"
         backup_file = "${var.backup_file}"
     }
@@ -63,7 +65,7 @@ resource "aws_launch_configuration" "default" {
 }
 
 resource "aws_autoscaling_group" "default" {
-    name = "${aws_launch_configuration.default.name}"
+    name = "${var.name}"
 
     launch_configuration = "${aws_launch_configuration.default.name}"
     min_size = "${var.min_size}"

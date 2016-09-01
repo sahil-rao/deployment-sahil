@@ -7,6 +7,7 @@ set -euv
     "dbsilo": "${dbsilo}",
     "service": "${service}",
     "cluster": "${cluster}",
+    "zone_name": "${zone_name}",
     "datadog_api_key": "${datadog_api_key}",
     "sg_name": "${sg_name}"
 }
