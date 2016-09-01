@@ -1,9 +1,11 @@
 {
     "builders": [
         {
+            "type": "amazon-ebs",
+            "ami_description": "Packer generated AMI",
+            "ami_name": "{{ user `name` }}-{{ timestamp }}",
             "access_key": "",
             "secret_key": "",
-            "type": "amazon-ebs",
             "region": "us-west-1",
             "source_ami": "ami-06116566",
             "instance_type": "m4.xlarge",
@@ -12,7 +14,20 @@
             "ami_regions": [
                 "us-west-1",
                 "us-west-2"
-            ]
+            ],
+            "launch_block_device_mappings": [
+                {
+                    "device_name": "/dev/xvdf",
+                    "encrypted": true,
+                    "volume_size": 256,
+                    "volume_type": "io1",
+                    "iops": 1000,
+                    "delete_on_termination": false
+                }
+            ],
+            "tags": {
+                "Service": "mongodb"
+            }
         }
     ],
     "provisioners": [

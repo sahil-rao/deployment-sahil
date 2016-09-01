@@ -9,6 +9,13 @@ else
     errorinfo="`date` DBSILO: ${DBSILO}, CLUSTER: ${CLUSTER}, INSTANCE: ${EC2_INSTANCE_ID}"
     echo "`date` MongoDB backup failed. Failure info: $errorinfo"
     # Send alert event to datadog
-    errorjson="{\"title\": \"MongoDB Backup Failed\", \"text\": \"$errorinfo\", \"priority\": \"normal\", \"alert_type\": \"error\"}"
-    curl -XPOST -H "Content-type: application/json" -d "$errorjson" -sS "https://app.datadoghq.com/api/v1/events?api_key=${DATADOG_API_KEY}"
+    curl -XPOST -H "Content-type: application/json" -d@- -sS "https://app.datadoghq.com/api/v1/events?api_key=${DATADOG_API_KEY}" <<EOF
+{
+	"title": "[NavOpt] [$CLUSTER] $DBSILO MongoDB Backup Failed",
+	"text": "$errorinfo",
+	"priority": "normal",
+	"alert_type": "error",
+	"tags": ["account:navopt", "dbsilo:$DBSILO", "cluster:$CLUSTER", "service:mongodb"]
+}
+EOF
 fi
