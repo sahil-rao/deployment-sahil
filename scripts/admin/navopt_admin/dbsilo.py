@@ -255,7 +255,7 @@ def register(ctx, dbsilo_name, capacity):
             return
 
         msg = 'are you sure you want to apply? [yes/no]: '
-        if not prompt(msg, ctx.obj['YES']):
+        if not prompt(msg, ctx.obj['yes']):
             ctx.fail('dbsilo unchanged')
 
         redis_master.hmset(dbsilo_info_key, proposed_dbsilo_info_data)
