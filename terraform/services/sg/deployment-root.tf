@@ -30,6 +30,14 @@ resource "aws_security_group" "deployment-root" {
         cidr_blocks = ["${var.public_cidr}"]
     }
 
+    # FIXME: hack for harshil
+    ingress {
+        from_port = 8982
+        to_port = 8982
+        protocol = "tcp"
+        cidr_blocks = ["${var.vpc_cidrs}"]
+    }
+
     ingress {
         from_port = 8
         to_port = 0
