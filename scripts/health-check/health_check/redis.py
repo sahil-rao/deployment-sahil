@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from .base import HealthCheck, HealthCheckList
-from .disk import DiskUsageCheck
+# from .disk import DiskUsageCheck
 from .tunnel import Tunnel
 import boto3
 import functools
@@ -50,7 +50,8 @@ class Redis(Tunnel):
         # Add the current host to the sentinel list.
         sentinels.add('{}:{}'.format(self.host, self.port))
 
-        sentinels.update(sentinel['name']
+        sentinels.update(
+            sentinel['name']
             for sentinel in self.rconn.sentinel_sentinels(self.master))
 
         return sentinels
@@ -70,7 +71,6 @@ class RedisHealthCheck(HealthCheck):
 
     def check_redis_host(self, host):
         raise NotImplementedError
-
 
 
 class RedisNoBlockedClientsCheck(RedisHealthCheck):
@@ -187,7 +187,6 @@ class RedisSameSentinelsCheck(RedisHealthCheck):
         self.host_msgs[host] = 'sentinels: {}'.format(
             ','.join(sorted(sentinels)))
 
-        initial = None
         for h in self.hosts:
             if h == host:
                 continue
@@ -280,7 +279,7 @@ def check_redis(bastion, cluster, region, dbsilo):
             RedisSentinelQuorumCheck(redis_sentinels),
             RedisSentinelMastersCheck(redis_sentinels),
 
-            DiskUsageCheck(bastion, hosts=redis_hostnames),
+            # DiskUsageCheck(bastion, hosts=redis_hostnames),
             ):
         redis_checklist.add_check(check)
 

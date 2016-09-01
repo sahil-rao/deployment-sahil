@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 from .base import HealthCheck, HealthCheckList
-from .disk import DiskUsageCheck
+# from .disk import DiskUsageCheck
 from .tunnel import Tunnel
 import boto3
 import datetime
@@ -334,7 +334,7 @@ def check_mongodb(bastion, cluster, region, dbsilo):
             MongoClusterConfigVersionsCheck(mongodb_servers),
             MongoClusterHeartbeatCheck(mongodb_servers),
             MongoReplicaDelayCheck(mongodb_servers),
-            DiskUsageCheck(bastion, mongodb_hostnames),
+            # DiskUsageCheck(bastion, mongodb_hostnames),
             ):
         mongodb_checklist.add_check(health_check)
 
