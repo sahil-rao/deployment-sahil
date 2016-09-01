@@ -4,10 +4,15 @@ set -eu
 
 source /usr/local/bin/navoptenv.sh
 
+if [ "$REDIS_BACKUPS_ENABLED" != "true" ]; then
+	echo "backups not enabled"
+	exit
+fi
+
 datestr=`date -uIseconds`
-bucket="xplain-${CLUSTER}"
-prefix="${SERVICE}/redis-backups"
-s3path="s3://${bucket}/${prefix}/dump${datestr}.rdb"
+bucket="navopt-backups-${ENV}"
+prefix="redis-backups/${SERVICE}"
+s3path="s3://${bucket}/${prefix}/dump-${datestr}.rdb"
 
 # Copy redis dump file (.rdb) to s3
 /usr/local/bin/aws s3 cp /var/lib/redis/dump.rdb $s3path
