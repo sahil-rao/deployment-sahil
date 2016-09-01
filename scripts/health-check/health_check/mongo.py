@@ -1,13 +1,17 @@
 from __future__ import absolute_import
 
 from .base import HealthCheck, HealthCheckList
+from .aws import AWSNameHealthCheck
 # from .disk import DiskUsageCheck
 from .tunnel import Tunnel
+from . import ssh
 import boto3
 import datetime
 import functools
 import multiprocessing.pool
+import pipes
 import pymongo
+import re
 import sys
 import termcolor
 
@@ -173,10 +177,16 @@ class MongoVersionCheck(MongoHealthCheck):
 class MongoClusterAgreeOnMasterCheck(MongoHealthCheck):
     description = "Mongo nodes agree on the same master"
 
+    def __init__(self, cluster, dbsilo, *args, **kwargs):
+        super(MongoClusterAgreeOnMasterCheck, self).__init__(*args, **kwargs)
+
+        self.cluster = cluster
+        self.dbsilo = dbsilo
+
     def check_mongo_host(self, host):
         if host.is_master():
             self.host_msgs[host] = '(current primary)'
-            return True
+            return self.check_master_hostname(host)
 
         primary = host.primary_repl_status.get('name')
         if primary is None:
@@ -190,6 +200,34 @@ class MongoClusterAgreeOnMasterCheck(MongoHealthCheck):
                 return False
 
         return True
+
+    def check_master_hostname(self, host):
+        with ssh.connect(host.bastion) as client:
+            master_hostname = 'mongomaster.{}.{}.xplain.io'.format(
+                self.dbsilo,
+                self.cluster,
+            )
+            command = 'host {}'.format(pipes.quote(master_hostname))
+
+            stdin, stdout, stderr = client.exec_command(command)
+
+            if stdout.channel.recv_exit_status() != 0:
+                print >> sys.stderr, stdout.read()
+                print >> sys.stderr, stderr.read()
+                return False
+
+            stdout = stdout.read().strip()
+            m = re.match('.* has address (.*)$', stdout)
+            if not m:
+                self.host_msgs[host] += ' failed to parse: ' + stdout
+                return False
+
+            found_host = m.group(1)
+            if host.host != found_host:
+                self.host_msgs[host] += ' master is on {}'.format(found_host)
+                return False
+            else:
+                return True
 
 
 class MongoClusterConfigurationCheck(MongoHealthCheck):
@@ -256,18 +294,20 @@ class MongoClusterHeartbeatCheck(MongoHealthCheck):
     description = "Last heartbeat received is recent"
 
     def check_mongo_host(self, host):
-        now = datetime.datetime.now()
+        now = datetime.datetime.utcnow()
         heartbeats = []
         for member in host.repl_status.get('members', []):
             # Ignore ourselves
             if member.get('self'):
                 continue
 
-            heartbeats.append((now - member['lastHeartbeat']).seconds)
+            heartbeats.append(
+                abs((now - member['lastHeartbeat']).total_seconds())
+            )
 
         self.host_msgs[host] = 'heartbeats: {}'.format(heartbeats)
 
-        return any(heartbeat < 65000 for heartbeat in heartbeats)
+        return any(heartbeat < 10.0 for heartbeat in heartbeats)
 
 
 class MongoReplicaDelayCheck(MongoHealthCheck):
@@ -300,7 +340,8 @@ class MongoReplicaDelayCheck(MongoHealthCheck):
 
 def check_mongodb(bastion, cluster, region, dbsilo):
     mongodb_checklist = HealthCheckList("MongoDB Cluster Health Checklist")
-    mongodb_hostnames = _get_mongodb_hostnames(cluster, region, dbsilo)
+    mongodb_instances = _get_mongodb_instances(cluster, region, dbsilo)
+    mongodb_hostnames = _get_mongodb_hostnames(mongodb_instances)
 
     if not mongodb_hostnames:
         print >> sys.stderr, \
@@ -318,8 +359,9 @@ def check_mongodb(bastion, cluster, region, dbsilo):
         pool.join()
 
     for health_check in (
+            AWSNameHealthCheck(mongodb_instances),
             MongoVersionCheck(mongodb_servers),
-            MongoClusterAgreeOnMasterCheck(mongodb_servers),
+            MongoClusterAgreeOnMasterCheck(cluster, dbsilo, mongodb_servers),
             MongoClusterConfigurationCheck(mongodb_servers),
             MongoClusterConfigVersionsCheck(mongodb_servers),
             MongoClusterHeartbeatCheck(mongodb_servers),
@@ -331,7 +373,7 @@ def check_mongodb(bastion, cluster, region, dbsilo):
     return mongodb_checklist
 
 
-def _get_mongodb_hostnames(cluster, region, dbsilo):
+def _get_mongodb_instances(cluster, region, dbsilo):
     alpha_names = {
         'alpha': 'Alpha',
         'app': 'App',
@@ -369,19 +411,26 @@ def _get_mongodb_hostnames(cluster, region, dbsilo):
         ])
 
     ec2 = boto3.resource('ec2', region_name=region)
-    instances = ec2.instances.filter(Filters=[
+    instances = list(ec2.instances.filter(Filters=[
         {
             'Name': 'tag:Name',
             'Values': values,
-        },
-    ])
+        }
+    ]))
 
+    # Filter out terminated instances.
+    instances = [
+        instance for instance in instances
+        if instance.state['Name'] != 'terminated']
+
+    return sorted(instances, key=lambda instance: instance.private_ip_address)
+
+
+def _get_mongodb_hostnames(instances):
     hostnames = []
     for instance in instances:
         if instance.private_ip_address:
             hostnames.append(instance.private_ip_address)
-
-    hostnames.sort()
 
     return hostnames
 
