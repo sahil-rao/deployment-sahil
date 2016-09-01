@@ -32,10 +32,9 @@ class Cluster(object):
         return self._bastion
 
     def instances(self, Filters=()):
-        return (
-            Instance(instance)
-            for instance in self._ec2.instances.filter(Filters=Filters)
-        )
+        for instance in self._ec2.instances.filter(Filters=Filters):
+            if instance.state['Name'] != 'terminated':
+                yield Instance(instance)
 
     def instances_by_tags(self, tag, values):
         return self.instances(Filters=[
