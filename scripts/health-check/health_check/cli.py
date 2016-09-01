@@ -26,10 +26,11 @@ def get_backoffice_servers():
 @click.command()
 @click.option('-b', '--bastion', default=None)
 @click.option('-s', '--services', default=None)
+@click.option('-f', '--fqdn', default='xplain.io')
 @click.argument('cluster')
 @click.argument('region')
 @click.argument('dbsilo', nargs=-1)
-def cli(bastion, services, cluster, region, dbsilo):
+def cli(bastion, services, fqdn, cluster, region, dbsilo):
     bastion = health_check.ssh.get_config(bastion)['hostname']
 
     cluster_checklist = health_check.base.HealthCheckList(
@@ -39,6 +40,7 @@ def cli(bastion, services, cluster, region, dbsilo):
         for silo in dbsilo:
             cluster_checklist.add_check(health_check.dbsilo.check_dbsilo(
                 bastion,
+                fqdn,
                 cluster,
                 region,
                 silo,

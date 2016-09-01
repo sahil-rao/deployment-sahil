@@ -27,7 +27,7 @@ class Mongo(Tunnel):
             self.mconn = None
 
     def close(self):
-        if self.mconn:
+        if hasattr(self, 'mconn'):
             self.mconn.close()
 
         return super(Mongo, self).close()
@@ -360,25 +360,29 @@ def _get_mongodb_hostnames(cluster, region, dbsilo):
         'dbsilo4': 'DBSILO4',
     }
 
+    values = [
+        '{}-{}-mongo'.format(cluster, dbsilo),
+        '{}-{}-mongo-*'.format(cluster, dbsilo),
+    ]
+
+    if cluster in ('alpha', 'app'):
+        values.extend([
+            'MongoDB {} {}'.format(
+                alpha_names[cluster],
+                alpha_names[dbsilo]),
+            'MONGO_{}_{}'.format(
+                app_names[cluster],
+                app_names[dbsilo]),
+            'MONGO_{}_{} - Arbiter'.format(
+                app_names[cluster],
+                app_names[dbsilo]),
+        ])
+
     ec2 = boto3.resource('ec2', region_name=region)
     instances = ec2.instances.filter(Filters=[
         {
             'Name': 'tag:Name',
-            'Values': [
-                'MongoDB {} {}'.format(
-                    alpha_names[cluster],
-                    alpha_names[dbsilo]),
-                'MONGO_{}_{}'.format(
-                    app_names[cluster],
-                    app_names[dbsilo]),
-                'MONGO_{}_{} - Arbiter'.format(
-                    app_names[cluster],
-                    app_names[dbsilo]),
-                '{}-{}-mongo-green'.format(cluster, dbsilo),
-                '{}-{}-mongo-blue'.format(cluster, dbsilo),
-                '{}-{}-mongo-green-*'.format(cluster, dbsilo),
-                '{}-{}-mongo-blue-*'.format(cluster, dbsilo),
-            ],
+            'Values': values,
         },
     ])
 

@@ -15,6 +15,7 @@ import termcolor
 class Redis(Tunnel):
     def __init__(self, bastion, hostname, port, master):
         super(Redis, self).__init__(bastion, hostname, port)
+
         self.master = master
 
         if self.tunnel:
@@ -239,7 +240,7 @@ class RedisSentinelQuorumCheck(RedisHealthCheck):
         return result
 
 
-def check_redis(bastion, cluster, region, dbsilo):
+def check_redis(bastion, fqdn, cluster, region, dbsilo):
     redis_checklist = HealthCheckList("Redis Cluster Health Checklist")
     redis_hostnames = _get_redis_hostnames(cluster, region, dbsilo)
 
@@ -251,7 +252,7 @@ def check_redis(bastion, cluster, region, dbsilo):
 
     pool = multiprocessing.pool.ThreadPool(5)
 
-    redis_master = 'redismaster.{}.{}.xplain.io'.format(dbsilo, cluster)
+    redis_master = 'redismaster.{}.{}.{}'.format(dbsilo, cluster, fqdn)
 
     try:
         redis_servers = pool.map(
@@ -305,22 +306,26 @@ def _get_redis_hostnames(cluster, region, dbsilo):
         'dbsilo4': 'DBSILO_4',
     }
 
+    values = [
+        '{}-{}-redis'.format(cluster, dbsilo),
+        '{}-{}-redis-*'.format(cluster, dbsilo),
+    ]
+
+    if cluster in ('alpha', 'app'):
+        values.extend([
+            'Redis {} {}'.format(
+                alpha_names[cluster],
+                alpha_names[dbsilo]),
+            'REDIS_{}_{}'.format(
+                app_names[cluster],
+                app_names[dbsilo]),
+        ])
+
     ec2 = boto3.resource('ec2', region_name=region)
     instances = ec2.instances.filter(Filters=[
         {
             'Name': 'tag:Name',
-            'Values': [
-                'Redis {} {}'.format(
-                    alpha_names[cluster],
-                    alpha_names[dbsilo]),
-                'REDIS_{}_{}'.format(
-                    app_names[cluster],
-                    app_names[dbsilo]),
-                '{}-{}-redis-green'.format(cluster, dbsilo),
-                '{}-{}-redis-blue'.format(cluster, dbsilo),
-                '{}-{}-redis-green-*'.format(cluster, dbsilo),
-                '{}-{}-redis-blue-*'.format(cluster, dbsilo),
-            ],
+            'Values': values,
         },
     ])
 

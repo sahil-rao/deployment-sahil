@@ -3,7 +3,7 @@ import health_check.mongo
 import health_check.redis
 
 
-def check_dbsilo(bastion, cluster, region, dbsilo, services=None):
+def check_dbsilo(bastion, fqdn, cluster, region, dbsilo, services=None):
     if services is None:
         services = ('mongo', 'redis')
 
@@ -22,6 +22,7 @@ def check_dbsilo(bastion, cluster, region, dbsilo, services=None):
         dbsilo_checklist.add_check(
                 health_check.redis.check_redis(
                     bastion,
+                    fqdn,
                     cluster,
                     region,
                     dbsilo))

@@ -1,6 +1,5 @@
 from . import ssh
 import sshtunnel
-import time
 import pipes
 
 
@@ -37,7 +36,6 @@ class Tunnel(object):
 
     def __str__(self):
         return '{}:{}'.format(self.host, self.port)
-
 
     def __repr__(self):
         return '{}({!r}, {!r}, {!r})'.format(
