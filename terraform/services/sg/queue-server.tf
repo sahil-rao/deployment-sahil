@@ -6,7 +6,7 @@ resource "aws_security_group" "queue_server" {
         from_port = 22
         to_port = 22
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     # Port mapper daemon
@@ -14,14 +14,14 @@ resource "aws_security_group" "queue_server" {
         from_port = 4369
         to_port = 4370
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     ingress {
         from_port = 5672
         to_port = 5672
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     # management port
@@ -29,28 +29,28 @@ resource "aws_security_group" "queue_server" {
         from_port = 15672
         to_port = 15672
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     ingress {
         from_port = 25672
         to_port = 25672
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     ingress {
         from_port = 35197
         to_port = 35197
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     ingress {
         from_port = 8
         to_port = 0
         protocol = "icmp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     egress {
