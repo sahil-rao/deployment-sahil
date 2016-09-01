@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ev
+set -euv
 
 /bin/cat <<EOF > /etc/navoptenv.json
 {
@@ -24,8 +24,4 @@ EOF
 /bin/chown dd-agent /etc/dd-agent/datadog.conf
 /usr/sbin/service datadog-agent start
 
-# Create elasticsearch volume
-mkfs -t ext3 /dev/xvdf
-/bin/mount -t ext3 /dev/xvdf /mnt
-
-service elasticsearch start
+service elasticsearch restart
