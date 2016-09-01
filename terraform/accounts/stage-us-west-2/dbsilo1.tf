@@ -15,13 +15,13 @@ module "dbsilo1" {
     mongo_name = "${var.cluster_name}-dbsilo1-mongo"
     mongo_iam_instance_profile = "${module.iam.mongo_instance_profile}"
     mongo_security_groups = "${module.sg.mongo_security_groups}"
-    mongo_version = "v4"
-    mongo_ami_id = "ami-68a66808"
+    mongo_version = "v6"
+    mongo_ami_id = "ami-d8ce07b8"
     #mongo_instance_type = "m4.xlarge"
     mongo_instance_type = "t2.micro"
     mongo_min_size = 0
     mongo_max_size = 3
-    mongo_desired_capacity = 1
+    mongo_desired_capacity = 3
     mongo_ebs_optimized = false
 
     redis_name = "${var.cluster_name}-dbsilo1-redis"
@@ -33,7 +33,7 @@ module "dbsilo1" {
     redis_instance_type = "t2.micro"
     redis_min_size = 0
     redis_max_size = 3
-    redis_desired_capacity = 1
+    redis_desired_capacity = 0
     redis_ebs_optimized = false
 
     elasticsearch_name = "${var.cluster_name}-dbsilo1-elasticsearch"
@@ -45,6 +45,6 @@ module "dbsilo1" {
     elasticsearch_instance_type = "t2.micro"
     elasticsearch_min_size = 0
     elasticsearch_max_size = 3
-    elasticsearch_desired_capacity = 3
+    elasticsearch_desired_capacity = 0
     elasticsearch_ebs_optimized = false
 }
