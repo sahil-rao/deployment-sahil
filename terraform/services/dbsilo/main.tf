@@ -89,8 +89,8 @@ module "mongodb" {
 
     name = "${var.mongo_name}"
     version = "${var.mongo_version}"
-    dbsilo_name = "${var.dbsilo_name}"
-    cluster_name = "${var.cluster_name}"
+    env = "${var.cluster_name}"
+    service = "${var.dbsilo_name}-mongo"
     datadog_api_key = "${var.datadog_api_key}"
     snapshot_id = "${var.mongo_snapshot_id}"
 
@@ -141,8 +141,8 @@ module "elasticsearch" {
 
     name = "${var.elasticsearch_name}"
     version = "${var.elasticsearch_version}"
-    dbsilo_name = "${var.dbsilo_name}"
-    cluster_name = "${var.cluster_name}"
+    env = "${var.cluster_name}"
+    service = "${var.dbsilo_name}-elasticsearch"
     datadog_api_key = "${var.datadog_api_key}"
 
     ami_id = "${var.elasticsearch_ami_id}"

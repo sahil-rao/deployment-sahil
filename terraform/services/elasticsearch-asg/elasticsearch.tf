@@ -10,8 +10,8 @@ variable "security_groups" {
 
 variable "name" {}
 variable "version" {}
-variable "dbsilo_name" {}
-variable "cluster_name" {}
+variable "env" {}
+variable "service" {}
 variable "datadog_api_key" {}
 
 ###################################################################
@@ -36,9 +36,10 @@ data "template_file" "user_data" {
     template = "${file("${path.module}/user-data.sh")}"
 
     vars {
-        dbsilo = "${var.dbsilo_name}"
-        service = "elasticsearch"
-        cluster = "${var.cluster_name}"
+        app = "navopt"
+        env = "${var.env}"
+        service = "${var.service}"
+        type = "elasticsearch"
         zone_name = "${var.zone_name}"
         datadog_api_key = "${var.datadog_api_key}"
         sg_name = "${join(",", var.security_groups)}"
@@ -77,8 +78,14 @@ resource "aws_autoscaling_group" "default" {
     }
 
     tag {
-        key = "DBSilo"
-        value = "${var.dbsilo_name}-elasticsearch"
+        key = "Service"
+        value = "${var.service}"
+        propagate_at_launch = true
+    }
+
+    tag {
+        key = "Type"
+        value = "elasticsearch"
         propagate_at_launch = true
     }
 

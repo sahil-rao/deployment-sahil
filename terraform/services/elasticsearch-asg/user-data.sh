@@ -4,9 +4,10 @@ set -euv
 
 /bin/cat <<EOF > /etc/navoptenv.json
 {
-    "dbsilo": "${dbsilo}",
+    "app": "${app}",
+    "env": "${env}",
     "service": "${service}",
-    "cluster": "${cluster}",
+    "type": "${type}",
     "zone_name": "${zone_name}",
     "datadog_api_key": "${datadog_api_key}",
     "sg_name": "${sg_name}"
@@ -20,7 +21,7 @@ dd_url: https://app.datadoghq.com
 api_key: ${datadog_api_key}
 use_mount: no
 
-tags: navopt, ${cluster}, dbsilo, redis
+tags: app:${app}, env:${env}, service:${service}, type:${type}
 EOF
 /bin/chown dd-agent /etc/dd-agent/datadog.conf
 /usr/sbin/service datadog-agent start

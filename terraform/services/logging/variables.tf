@@ -17,26 +17,19 @@ variable "key_name" {}
 ##############################################################################
 
 variable "elasticsearch_name" {}
-
 variable "elasticsearch_security_groups" {
     type = "list"
-    default = []
 }
+variable "elasticsearch_iam_instance_profile" {}
 
-variable "elasticsearch_ami" {
-    default = ""
-}
-variable "elasticsearch_instance_type" {
-    default = "t2.micro"
-}
-variable "elasticsearch_instance_count" {
-    default = 1
-}
-variable "elasticsearch_iam_instance_profile" {
-    default = ""
-}
+variable "elasticsearch_version" {}
+variable "elasticsearch_ami_id" {}
+variable "elasticsearch_instance_type" {}
+variable "elasticsearch_min_size" {}
+variable "elasticsearch_max_size" {}
+variable "elasticsearch_desired_capacity" {}
 variable "elasticsearch_ebs_optimized" {
-    default = ""
+    default = true
 }
 
 ##############################################################################
