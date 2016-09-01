@@ -5,7 +5,7 @@
 - name: NTP installed
   apt: name=ntp update_cache=yes state=present
   sudo: yes
-- name: Remove everything from under the /mnt/volumne1 directory
+- name: Remove everything from under the /mnt/volume1 directory
   shell: rm -rf /mnt/volume1/*
   sudo: yes
 - name: Save configuration file
