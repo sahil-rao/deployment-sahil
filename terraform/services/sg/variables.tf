@@ -1,5 +1,7 @@
 variable "vpc_id" {}
-variable "vpc_cidr" {}
+variable "vpc_cidrs" {
+    type = "list"
+}
 variable "public_cidr" {}
 
 variable "admin_name" {}

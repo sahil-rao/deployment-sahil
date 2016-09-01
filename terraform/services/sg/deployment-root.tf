@@ -34,7 +34,7 @@ resource "aws_security_group" "deployment-root" {
         from_port = 8
         to_port = 0
         protocol = "icmp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     egress {

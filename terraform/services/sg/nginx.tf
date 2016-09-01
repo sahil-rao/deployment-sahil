@@ -6,7 +6,7 @@ resource "aws_security_group" "nginx" {
         from_port = 22
         to_port = 22
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     ingress {
@@ -27,7 +27,7 @@ resource "aws_security_group" "nginx" {
         from_port = 8
         to_port = 0
         protocol = "icmp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     egress {

@@ -6,28 +6,28 @@ resource "aws_security_group" "redis" {
         from_port = 22
         to_port = 22
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     ingress {
         from_port = 6379
         to_port = 6379
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     ingress {
         from_port = 26379
         to_port = 26379
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     ingress {
         from_port = 8
         to_port = 0
         protocol = "icmp"
-        cidr_blocks = ["${var.vpc_cidr}"]
+        cidr_blocks = ["${var.vpc_cidrs}"]
     }
 
     egress {
