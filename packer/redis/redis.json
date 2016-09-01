@@ -1,30 +1,39 @@
 {
+    "variables": {
+        "env": null,
+        "encrypted": null,
+        "volume_size": null,
+        "volume_type": null,
+        "iops": "0",
+        "delete_on_termination": "false"
+    },
     "builders": [
         {
             "type": "amazon-ebs",
             "ami_description": "Packer generated AMI",
+            "ami_name": "redis-{{ user `env` }}-{{ timestamp }}",
             "access_key": "",
             "secret_key": "",
             "region": "us-west-2",
             "source_ami": "ami-704ab610",
             "instance_type": "r3.2xlarge",
             "ssh_username": "ubuntu",
-            "ami_name": "redis {{timestamp}}",
             "ami_regions": [
                 "us-west-2"
             ],
             "launch_block_device_mappings": [
                 {
                     "device_name": "/dev/xvdf",
-                    "encrypted": true,
-                    "volume_size": 60,
-                    "volume_type": "io1",
-                    "iops": 1000,
-                    "delete_on_termination": false
+                    "encrypted": "{{ user `encrypted` }}",
+                    "volume_size": "{{ user `volume_size` }}",
+                    "volume_type": "{{ user `volume_type` }}",
+                    "iops": "{{ user `iops` }}",
+                    "delete_on_termination": "{{ user `delete_on_termination` }}"
                 }
             ],
             "tags": {
-                "Name": "redis"
+                "Name": "redis",
+                "Env": "{{ user `env` }}"
             }
         }
     ],

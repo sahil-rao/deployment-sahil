@@ -1,29 +1,39 @@
 {
+    "variables": {
+        "env": null,
+        "encrypted": null,
+        "volume_size": null,
+        "volume_type": null,
+        "iops": "0",
+        "delete_on_termination": "false"
+    },
     "builders": [
         {
             "type": "amazon-ebs",
             "ami_description": "Packer generated AMI",
+            "ami_name": "elasticsearch-{{ user `env` }}-{{ timestamp }}",
             "access_key": "",
             "secret_key": "",
             "region": "us-west-2",
             "source_ami": "ami-704ab610",
             "instance_type": "m3.xlarge",
             "ssh_username": "ubuntu",
-            "ami_name": "elasticsearch {{timestamp}}",
             "ami_regions": [
                 "us-west-2"
             ],
             "launch_block_device_mappings": [
                 {
                     "device_name": "/dev/xvdf",
-                    "encrypted": true,
-                    "volume_size": 100,
-                    "volume_type": "gp2",
-                    "delete_on_termination": false
+                    "encrypted": "{{ user `encrypted` }}",
+                    "volume_size": "{{ user `volume_size` }}",
+                    "volume_type": "{{ user `volume_type` }}",
+                    "iops": "{{ user `iops` }}",
+                    "delete_on_termination": "{{ user `delete_on_termination` }}"
                 }
             ],
             "tags": {
-                "Name": "elasticsearch"
+                "Name": "elasticsearch",
+                "Env": "{{ user `env` }}"
             }
         }
     ],
