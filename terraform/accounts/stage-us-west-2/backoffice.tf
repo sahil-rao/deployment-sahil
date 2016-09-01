@@ -11,7 +11,7 @@ module "backoffice" {
     dns_zone_id = "${data.terraform_remote_state.networking.zone_id}"
     security_groups = "${module.sg.backoffice_security_groups}"
 
-    instance_type = "t2.micro"
+    instance_type = "t2.medium"
     instance_count = 1
 
     iam_instance_profile = "${module.iam.backoffice_instance_profile}"
