@@ -9,7 +9,7 @@
             "source_ami": "ami-704ab610",
             "instance_type": "m3.xlarge",
             "ssh_username": "ubuntu",
-            "ami_name": "dbsilo-elasticsearch {{timestamp}}",
+            "ami_name": "elasticsearch {{timestamp}}",
             "ami_regions": [
                 "us-west-2"
             ],
@@ -23,7 +23,7 @@
                 }
             ],
             "tags": {
-                "Name": "dbsilo-elasticsearch"
+                "Name": "elasticsearch"
             }
         }
     ],

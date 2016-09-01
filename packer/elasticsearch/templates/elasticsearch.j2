@@ -15,7 +15,7 @@
 # Use a descriptive name for your cluster:
 #
 
-cluster.name: elasticsearch-{{ CLUSTER }}-{{ DBSILO }}
+cluster.name: elasticsearch-{{ SERVICE }}-{{ ENV }}
 
 #
 # ------------------------------------ Node ------------------------------------
@@ -100,9 +100,9 @@ cloud.aws.region: {{ AWS_DEFAULT_REGION }}
 
 repositories:
     s3:
-        bucket: "xplain-{{ CLUSTER }}"
+        bucket: "navopt-backups-{{ ENV }}"
         region: "{{ AWS_DEFAULT_REGION }}"
-        base_path: "{{ DBSILO }}/elasticsearch-backups/"
+        base_path: "/elasticsearch-backups/{{ SERVICE }}"
 
 
 

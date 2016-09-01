@@ -83,19 +83,17 @@ def reconfigure_replicaset(client, member_id_to_remove):
     client['admin'].command('replSetReconfig', config)
 
 
-def get_running_hostnames(region, dbsilo):
+def get_running_hostnames(region, service):
     """
-    Find all the running dbsilo mongo instances
+    Find all the running mongo instances in the service
     """
-
-    dbsilo_tag = '{}-mongo'.format(dbsilo)
 
     # Discover all the instances in the mongo cluster
     ec2 = boto3.resource('ec2', region_name=region)
     instances = list(ec2.instances.filter(Filters=[
         {
-            'Name': 'tag:DBSilo',
-            'Values': [dbsilo_tag],
+            'Name': 'tag:Service',
+            'Values': [service],
         },
     ]))
 
@@ -126,7 +124,7 @@ def run(args):
     if not unreachable_members:
         return 0
 
-    running_hostnames = get_running_hostnames(args.region, args.dbsilo)
+    running_hostnames = get_running_hostnames(args.region, args.service)
 
     # Check if any of the members are terminated instances. If so, filter them
     # out now.
@@ -203,7 +201,7 @@ def run(args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--region', required=True)
-    parser.add_argument('--dbsilo', required=True)
+    parser.add_argument('--service', required=True)
     parser.add_argument('--delay', type=int, default=AUTOREMOVAL_DELAY_SECONDS)
     args = parser.parse_args()
 

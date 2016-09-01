@@ -33,7 +33,3 @@ else
 }
 EOF
 fi
-
-# Ensure that all files with the prefix will expire in 14 days
-expire_policy_json='{"Rules":[{"Status":"Enabled","Prefix":'"\"${prefix}"\"',"Expiration":{"Days":14}}]}'
-/usr/local/bin/aws s3api put-bucket-lifecycle --bucket $bucket --lifecycle-configuration $expire_policy_json

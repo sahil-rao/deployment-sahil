@@ -74,27 +74,25 @@ def run_command(database, *args, **kwargs):
     return resp
 
 
-def get_instances(region, dbsilo):
+def get_instances(region, service):
     """
-    Find all the dbsilo mongo instances and split them up into a
+    Find all the service mongo instances and split them up into a
     list of running and terminated hostnames
     """
-
-    dbsilo_tag = '{}-mongo'.format(dbsilo)
 
     # Discover all the instances in the mongo cluster
     ec2 = boto3.resource('ec2', region_name=region)
     instances = list(ec2.instances.filter(Filters=[
         {
-            'Name': 'tag:DBSilo',
-            'Values': [dbsilo_tag],
+            'Name': 'tag:Service',
+            'Values': [service],
         },
     ]))
 
     if not instances:
         raise Error(
             title='no instances',
-            text='no instances found for tag `{}`'.format(dbsilo_tag))
+            text='no instances found for tag `{}`'.format(service))
 
     running_instances = []
 
@@ -110,7 +108,7 @@ def get_instances(region, dbsilo):
     return running_instances
 
 
-def get_clients(dbsilo, instances):
+def get_clients(service, instances):
     clients = []
     for instance in instances:
         host = instance.private_ip_address
@@ -131,7 +129,7 @@ def get_clients(dbsilo, instances):
 
     if not clients:
         raise Error(
-            title='All {} databases offline'.format(dbsilo),
+            title='All {} databases offline'.format(service),
             instances=instances,
         )
 
@@ -144,7 +142,7 @@ def get_masters(clients):
         if run_command(client.admin, 'isMaster')['ismaster']]
 
 
-def initiate(master, dbsilo, instances):
+def initiate(master, service, instances):
     """
     Initiate the mongodb silo replicaset
     """
@@ -159,7 +157,7 @@ def initiate(master, dbsilo, instances):
     hosts = [instance.private_ip_address for instance in instances]
 
     config = {
-        '_id': dbsilo,
+        '_id': service,
         'members': [
             {'_id': i, 'host': '{}:27017'.format(host)}
             for i, host in enumerate(hosts)
@@ -169,7 +167,7 @@ def initiate(master, dbsilo, instances):
     run_command(master.admin, 'replSetInitiate', config)
 
     report(
-        title='Created {} MongoDB replica set'.format(dbsilo),
+        title='Created {} MongoDB replica set'.format(service),
         instances=instances,
     )
 
@@ -220,7 +218,7 @@ def remove_stopped_hosts(config, running_instances):
     config['members'] = members
 
 
-def reconfigure(master, dbsilo, running_instances):
+def reconfigure(master, service, running_instances):
     config = repl_set_get_config(master)
 
     # Grab a copy of the original config to help track if anything has changed.
@@ -235,22 +233,22 @@ def reconfigure(master, dbsilo, running_instances):
         instances = running_instances
 
         report(
-            title='Reconfigured {} MongoDB replica set'.format(dbsilo),
+            title='Reconfigured {} MongoDB replica set'.format(service),
             instances=instances,
         )
 
 
 def run(args):
-    running_instances = get_instances(args.region, args.dbsilo)
+    running_instances = get_instances(args.region, args.service)
 
-    clients = get_clients(args.dbsilo, running_instances)
+    clients = get_clients(args.service, running_instances)
 
     # Find all the instances that think they are masters
     masters = get_masters(clients)
 
     if len(masters) == 0:
         master = clients[0]
-        initiate(master, args.dbsilo, running_instances)
+        initiate(master, args.service, running_instances)
     elif len(masters) == 1:
         master = masters[0]
     else:
@@ -264,14 +262,14 @@ def run(args):
 
     reconfigure(
         master,
-        args.dbsilo,
+        args.service,
         running_instances)
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--region', required=True)
-    parser.add_argument('--dbsilo', required=True)
+    parser.add_argument('--service', required=True)
     args = parser.parse_args()
 
     try:

@@ -30,6 +30,7 @@ def _connect():
         'app:navopt',
         'env:{}'.format(env['env']),
         'service:{}'.format(env['service']),
+        'type:{}'.format(env['type']),
     ]
 
 
@@ -86,7 +87,7 @@ class Error(Exception):
 
     def report(self):
         report(
-            title='Failed joining Redis cluster: {}'.format(self.title),
+            title=self.title,
             text=self.text,
             alert_type=self.alert_type,
             **self.kwargs)

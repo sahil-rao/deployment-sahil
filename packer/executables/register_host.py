@@ -11,11 +11,12 @@ import sys
 
 def get_new_service_num(route53_zone, service_name):
     """
-    If there exists a record like mongo3.dbsilo1.alpha.xplain.io, returns the
-    next number (4)
+    If there exists a record like dbsilo-mongo-master.alpha.xplain.io, returns
+    the next number (4)
     """
 
-    # Match records belonging to the service for particular dbsilo and cluster
+    # Match records belonging to the service for particular service and
+    # environment.
     match_regex = "(?<={})\d+(?=\.{}\.?)" \
                   .format(service_name, route53_zone.name)
 
@@ -35,7 +36,8 @@ def record_exists(route53_zone, service_name, ip):
     Check if a record exists matching the service pattern with the current
     host's ip
     """
-    # Match records belonging to the service for particular dbsilo and cluster
+    # Match records belonging to the service for particular service and
+    # environment.
     match_regex = "{}\d+\.{}\.?".format(service_name, route53_zone.name)
 
     for record in route53_zone.get_records():
