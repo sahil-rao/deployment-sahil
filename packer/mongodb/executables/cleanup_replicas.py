@@ -1,5 +1,5 @@
 import datetime
-import socket 
+import socket
 import os
 import sys
 import re
@@ -73,14 +73,14 @@ def cleanup_route53(cluster_name, db_silo_name, service_name, member_hostname):
         route53_zone.delete_record(record)
 
 
-try:        
+try:
     if len(sys.argv) < 3:
         print "{0} : Insufficent parameter".format(sys.argv[0])
         sys.exit(2)
 
-    cluster_name = sys.argv[1] 
-    db_silo_name = sys.argv[2] 
-    service_name = sys.argv[3] 
+    cluster_name = sys.argv[1]
+    db_silo_name = sys.argv[2]
+    service_name = sys.argv[3]
 
     client = MongoClient()
 
@@ -95,7 +95,7 @@ try:
             if time_since_last_heartbeat.seconds > AUTOREMOVAL_DELAY_SECONDS:
                 print str(datetime.datetime.now()), "Removing", str(member['name']), "from route53 records"
                 cleanup_route53(cluster_name, db_silo_name, service_name, member['name'])
-                print str(datetime.datetime.now()), "Removing", str(member['name']), "from MongoDB replica set"            
+                print str(datetime.datetime.now()), "Removing", str(member['name']), "from MongoDB replica set"
                 reconfigure_replicaset(client, member["_id"])
                 # Exit code 3 signals that a replica set member was removed
                 sys.exit(3)
