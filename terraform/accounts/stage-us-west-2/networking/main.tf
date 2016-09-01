@@ -4,7 +4,7 @@ provider "aws" {
 }
 
 module "networking" {
-    source = "../../services/networking"
+    source = "../../../services/networking"
 
     region = "${var.region}"
     availability_zones = "${var.availability_zones}"
