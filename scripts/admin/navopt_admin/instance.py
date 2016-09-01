@@ -2,13 +2,21 @@ from .table import format_table
 import operator
 
 
-DEFAULT_FIELDS = ('instance_id', 'name', 'state', 'private_ip_address')
+DEFAULT_FIELDS = (
+    'instance_id',
+    'name',
+    'service',
+    'service_type',
+    'state',
+    'private_ip_address',
+)
 DEFAULT_SORT_FIELDS = 'name'
 
 
 class Instance(object):
     def __init__(self, instance):
         self._instance = instance
+        self._tags = {}
 
     def __getattr__(self, key):
         return getattr(self._instance, key)
@@ -19,11 +27,29 @@ class Instance(object):
 
     @property
     def name(self):
-        for tag in self.tags:
-            if tag['Key'] == 'Name':
-                return tag['Value']
+        return self.tag('Name')
 
-        return None
+    @property
+    def service(self):
+        return self.tag('Service')
+
+    @property
+    def service_type(self):
+        return self.tag('Type')
+
+    def tag(self, name):
+        try:
+            value = self._tags[name]
+        except KeyError:
+            value = None
+
+            for tag in self.tags:
+                if tag['Key'] == name:
+                    value = tag['Value']
+
+            self._tags[name] = value
+
+        return value
 
     def get_field(self, key):
         try:

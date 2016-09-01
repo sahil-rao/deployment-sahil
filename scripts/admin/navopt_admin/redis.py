@@ -3,6 +3,37 @@ from __future__ import absolute_import
 import redis
 
 
+class RedisCluster(object):
+    def __init__(self, cluster, service, instances):
+        self.cluster = cluster
+        self.service = service
+        self.instances = instances
+
+    def master_hostname(self):
+        return '{}-master.{}.{}'.format(
+            self.service,
+            self.cluster.env,
+            self.cluster.zone)
+
+    def master(self):
+        master_hostname = self.master_hostname()
+        return Redis(self.cluster.bastion, master_hostname)
+
+    def instance_private_ips(self):
+        for instance in self.instances:
+            yield instance.private_ip_address
+
+    def clients(self):
+        for ip in self.instance_private_ips():
+            yield Redis(self.cluster.bastion, ip)
+
+    def sentinel_clients(self):
+        for instance in self.instances:
+            yield RedisSentinel(
+                self.cluster.bastion,
+                instance.private_ip_address)
+
+
 class Redis(object):
     def __init__(self, bastion, host, port=6379):
         self.host = host

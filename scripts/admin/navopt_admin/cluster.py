@@ -31,18 +31,36 @@ class Cluster(object):
 
         return self._bastion
 
-    def instances(self, Filters=()):
-        for instance in self._ec2.instances.filter(Filters=Filters):
+    def instances(self, filters=()):
+        for instance in self._ec2.instances.filter(Filters=filters):
             if instance.state['Name'] != 'terminated':
                 yield Instance(instance)
 
-    def instances_by_tags(self, tag, values):
-        return self.instances(Filters=[
+    def instances_by_tags(self, tags):
+        return self.instances(filters=[
+            {
+                'Name': 'tag:{}'.format(tag),
+                'Values': values,
+            }
+            for tag, values in tags
+        ])
+
+    def instances_by_tag(self, tag, values):
+        return self.instances(filters=[
             {
                 'Name': 'tag:{}'.format(tag),
                 'Values': values,
             }
         ])
+
+    def instances_by_name(self, names):
+        return self.instances_by_tag('Name', names)
+
+    def instances_by_services(self, services):
+        return self.instances_by_tag('Service', services)
+
+    def instances_by_types(self, types):
+        return self.instances_by_tag('Type', types)
 
     def dbsilo(self, dbsilo_name):
         return DBSilo(

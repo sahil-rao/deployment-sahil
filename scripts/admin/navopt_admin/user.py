@@ -16,7 +16,9 @@ def cli():
 @cli.command()
 @click.pass_context
 def list(ctx):
-    with ctx.obj['cluster'].dbsilo('dbsilo1').mongo_master() as mongo:
+    mongo_cluster = ctx.obj['cluster'].dbsilo('dbsilo1').mongo_cluster()
+
+    with mongo_cluster.master() as mongo:
         print format_table(
             mongo['xplainIO'].users.find(),
             fields=DEFAULT_FIELDS,
@@ -29,7 +31,9 @@ def list(ctx):
 @click.argument('email')
 @click.pass_context
 def accept_terms(ctx, email):
-    with ctx.obj['cluster'].dbsilo('dbsilo1').mongo_master() as mongo:
+    mongo_cluster = ctx.obj['cluster'].dbsilo('dbsilo1').mongo_cluster()
+
+    with mongo_cluster.master() as mongo:
         db = mongo['xplainIO']
         user = db.users.find_one({'email': email})
         if user is None:

@@ -163,7 +163,7 @@ class RedisSameSentinelsCheck(RedisSentinelHealthCheck):
 class RedisSentinelQuorumCheck(RedisSentinelHealthCheck):
 
     description = \
-        "Redis sentinel is >= 3, >= quorum, is odd, " \
+        "Redis sentinel is >= quorum, is odd, " \
         "and matches other sentinels"
 
     def check_redis_host(self, host):
@@ -175,10 +175,6 @@ class RedisSentinelQuorumCheck(RedisSentinelHealthCheck):
             'sentinels: {} quorum: {}'.format(sentinels, quorum)
 
         result = True
-
-        if sentinels < 3:
-            self.host_msgs[host] += ' (under sized)'
-            result = False
 
         if sentinels < quorum:
             self.host_msgs[host] += ' (under quorum)'
@@ -205,23 +201,23 @@ class RedisSentinelQuorumCheck(RedisSentinelHealthCheck):
         return result
 
 
-def check_redis(dbsilo):
-    redis_checklist = HealthCheckList("Redis Cluster Health Checklist")
+def check_redis(redis_cluster):
+    redis_servers = list(redis_cluster.clients())
+    redis_sentinels = list(redis_cluster.sentinel_clients())
 
-    redis_instances = list(dbsilo.redis_instances())
-    redis_servers = list(dbsilo.redis_clients())
-    redis_sentinels = list(dbsilo.redis_sentinel_clients())
+    redis_checklist = HealthCheckList(
+        "{} health checklist".format(redis_cluster.service))
 
     if not redis_servers:
         print >> sys.stderr, \
             termcolor.colored('WARNING:', 'yellow'), \
-            'no redis servers found in', dbsilo
+            'no redis servers found in', redis_cluster.service
         return redis_checklist
 
-    master_hostname = dbsilo.redis_master_hostname()
+    master_hostname = redis_cluster.master_hostname()
 
     for check in (
-            AWSNameHealthCheck(redis_instances),
+            AWSNameHealthCheck(redis_cluster.instances),
 
             RedisNoBlockedClientsCheck(redis_servers),
             RedisNoBlockedClientsCheck(redis_servers),

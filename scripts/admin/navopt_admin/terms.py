@@ -51,7 +51,8 @@ def update(ctx, filename):
     with open(filename) as f:
         text = f.read().strip()
 
-    with ctx.obj['cluster'].dbsilo('dbsilo1').mongo_master() as mongo:
+    dbsilo = ctx.obj['cluster'].dbsilo('dbsilo1')
+    with dbsilo.mongo_cluster().master() as mongo:
         db = mongo['xplainIO']
 
         terms = db.terms_and_conditions.find().sort('version', -1).limit(1)

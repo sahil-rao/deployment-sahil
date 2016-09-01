@@ -2,46 +2,52 @@
 
 from __future__ import absolute_import
 
-import click
 from . import base
-from . import dbsilo
-
-
-# TODO: Make this function real
-def get_backoffice_servers():
-    return [
-        "172.31.5.184",
-        "172.31.13.245",
-        "172.31.13.244",
-        "172.31.13.243",
-        "172.31.13.242",
-        "172.31.7.45",
-        "172.31.7.46",
-        "172.31.7.48",
-        "172.31.7.50"
-    ]
+from . import elasticsearch
+from . import mongo
+from . import redis
+from ..elasticsearch import ElasticsearchCluster
+from ..mongo import MongoCluster
+from ..redis import RedisCluster
+import click
+import operator
 
 
 @click.command('health-check')
-@click.option('-s', '--services', default=None)
-@click.argument('dbsilos', nargs=-1)
+@click.argument('services', nargs=-1)
 @click.pass_context
-def health_check(ctx, services, dbsilos):
-    cluster_checklist = base.HealthCheckList(
-        "NavOpt Cluster Health Checklist")
+def health_check(ctx, services):
+    cluster = ctx.obj['cluster']
 
-    if not dbsilos:
-        ctx.fail('no dbsilos specified')
+    if services:
+        instances = list(cluster.instances_by_services(services))
+    else:
+        instances = list(cluster.instances())
+
+    instances.sort(key=operator.attrgetter('name'))
+
+    services = {}
+    for instance in instances:
+        key = (instance.service, instance.service_type)
+        services.setdefault(key, []).append(instance)
+
+    cluster_checklist = base.HealthCheckList(
+        "navopt cluster health checklist")
 
     try:
-        for dbsilo_name in dbsilos:
-            cluster_checklist.add_check(dbsilo.check_dbsilo(
-                ctx.obj['cluster'].dbsilo(dbsilo_name),
-                services=services))
+        for (service, service_type), instances in sorted(services.iteritems()):
+            if service_type == 'elasticsearch':
+                es_cluster = ElasticsearchCluster(cluster, service, instances)
+                cluster_checklist.add_check(
+                    elasticsearch.check_elasticsearch(es_cluster))
 
-    #    backoffice_checklist = HealthCheckList("Backoffice Health Checklist")
-    #    backoffice_checklist.add_check(DiskUsageCheck(get_backoffice_servers()))
-    #    cluster_checklist.add_check(backoffice_checklist)
+            elif service_type == 'mongo':
+                mongo_cluster = MongoCluster(cluster, service, instances)
+                cluster_checklist.add_check(mongo.check_mongo(mongo_cluster))
+
+            elif service_type == 'redis':
+                redis_cluster = RedisCluster(cluster, service, instances)
+                cluster_checklist.add_check(redis.check_redis(redis_cluster))
 
         cluster_checklist.execute()
     finally:

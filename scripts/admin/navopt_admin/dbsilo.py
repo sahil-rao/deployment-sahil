@@ -1,9 +1,9 @@
 from __future__ import absolute_import
 
-from .elasticsearch import Elasticsearch
+from .elasticsearch import Elasticsearch, ElasticsearchCluster
 from .instance import format_instances
-from .mongo import Mongo
-from .redis import Redis, RedisSentinel
+from .mongo import Mongo, MongoCluster
+from .redis import Redis, RedisCluster, RedisSentinel
 from .util import COMMA_SEPARATED_LIST_TYPE, prompt
 from itertools import chain
 import click
@@ -20,6 +20,10 @@ class DBSilo(object):
             self.mongo_instances(),
             self.redis_instances(),
             self.elasticsearch_instances())
+
+    @property
+    def mongo_service(self):
+        return self.name + '-mongo'
 
     def mongo_instances(self):
         alpha_names = {
@@ -58,25 +62,20 @@ class DBSilo(object):
                     app_names[self.name]),
             ])
 
-        return self.cluster.instances_by_tags('DBSilo', filters)
+        return chain(
+            self.cluster.instances_by_name(filters),
+            self.cluster.instances_by_services([self.mongo_service]),
+        )
 
-    def mongo_instance_private_ips(self):
-        return (instance.private_ip_address
-                for instance in self.mongo_instances())
+    def mongo_cluster(self):
+        return MongoCluster(
+            self.cluster,
+            self.mongo_service,
+            self.mongo_instances())
 
-    def mongo_master_hostname(self):
-        return 'mongomaster.{}.{}.{}'.format(
-            self.name,
-            self.cluster.env,
-            self.cluster.zone)
-
-    def mongo_master(self):
-        master_hostname = self.mongo_master_hostname()
-        return Mongo(self.cluster.bastion, master_hostname)
-
-    def mongo_clients(self):
-        for ip in self.mongo_instance_private_ips():
-            yield Mongo(self.cluster.bastion, ip)
+    @property
+    def redis_service(self):
+        return self.name + '-redis'
 
     def redis_instances(self):
         alpha_names = {
@@ -112,31 +111,19 @@ class DBSilo(object):
             ])
 
         return chain(
-            self.cluster.instances_by_tags('DBSilo', filters),
-            self.cluster.instances_by_tags('Service', filters),
+            self.cluster.instances_by_name(filters),
+            self.cluster.instances_by_services([self.redis_service]),
         )
 
-    def redis_instance_private_ips(self):
-        return (instance.private_ip_address
-                for instance in self.redis_instances())
+    def redis_cluster(self):
+        return RedisCluster(
+            self.cluster,
+            self.redis_service,
+            self.redis_instances())
 
-    def redis_master_hostname(self):
-        return '{}-redis-master.{}.{}'.format(
-            self.name,
-            self.cluster.env,
-            self.cluster.zone)
-
-    def redis_master(self):
-        master_hostname = self.redis_master_hostname()
-        return Redis(self.cluster.bastion, master_hostname)
-
-    def redis_clients(self):
-        for ip in self.redis_instance_private_ips():
-            yield Redis(self.cluster.bastion, ip)
-
-    def redis_sentinel_clients(self):
-        for ip in self.redis_instance_private_ips():
-            yield RedisSentinel(self.cluster.bastion, ip)
+    @property
+    def elasticsearch_service(self):
+        return self.name + '-elasticsearch'
 
     def elasticsearch_instances(self):
         alpha_names = {
@@ -171,15 +158,16 @@ class DBSilo(object):
                     app_names[self.name]),
             ])
 
-        return self.cluster.instances_by_tags('DBSilo', filters)
+        return chain(
+            self.cluster.instances_by_name(filters),
+            self.cluster.instances_by_services([self.elasticsearch_service]),
+        )
 
-    def elasticsearch_instance_private_ips(self):
-        return (instance.private_ip_address
-                for instance in self.elasticsearch_instances())
-
-    def elasticsearch_clients(self):
-        for ip in self.elasticsearch_instance_private_ips():
-            yield Elasticsearch(self.cluster.bastion, ip)
+    def elasticsearch_cluster(self):
+        return ElasticsearchCluster(
+            self.cluster,
+            self.elasticsearch_service,
+            self.elasticsearch_instances())
 
     def __str__(self):
         return 'DBSilo({}, {})'.format(self.cluster, self.name)
@@ -224,10 +212,13 @@ def list_instances(ctx,
 @click.pass_context
 def register(ctx, dbsilo_name, capacity):
     dbsilo = ctx.obj['cluster'].dbsilo(dbsilo_name)
+    mongo_cluster = dbsilo.mongo_cluster()
+    redis_cluster = dbsilo.redis_cluster()
+    elasticsearch_cluster = dbsilo.elasticsearch_cluster()
 
-    mongo_ips = sorted(dbsilo.mongo_instance_private_ips())
-    redis_ips = sorted(dbsilo.redis_instance_private_ips())
-    elasticsearch_ips = sorted(dbsilo.elasticsearch_instance_private_ips())
+    mongo_ips = sorted(mongo_cluster.instance_private_ips())
+    redis_ips = sorted(redis_cluster.instance_private_ips())
+    elasticsearch_ips = sorted(elasticsearch_cluster.instance_private_ips())
 
     proposed_dbsilo_info_data = {
         'mongo': ','.join(mongo_ips),
@@ -237,7 +228,7 @@ def register(ctx, dbsilo_name, capacity):
         'name': dbsilo_name,
     }
 
-    with dbsilo.redis_master() as redis_master:
+    with redis_cluster.master() as redis_master:
         dbsilo_info_metakey = 'dbsilo:metakey:info'
         dbsilo_info_key = 'dbsilo:{}:info'.format(dbsilo_name)
         dbsilo_tenants_metakey = 'dbsilo:metakey:tenants'

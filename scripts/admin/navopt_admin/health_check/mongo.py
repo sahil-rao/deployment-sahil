@@ -2,7 +2,6 @@ from __future__ import absolute_import
 
 from .aws import AWSNameHealthCheck
 from .base import HealthCheck, HealthCheckList
-import boto3
 import datetime
 import pipes
 import re
@@ -37,10 +36,10 @@ class MongoVersionCheck(MongoHealthCheck):
 class MongoClusterAgreeOnMasterCheck(MongoHealthCheck):
     description = "Mongo nodes agree on the same master"
 
-    def __init__(self, dbsilo, *args, **kwargs):
+    def __init__(self, mongo_cluster, *args, **kwargs):
         super(MongoClusterAgreeOnMasterCheck, self).__init__(*args, **kwargs)
 
-        self.dbsilo = dbsilo
+        self.mongo_cluster = mongo_cluster
 
     def check_mongo_host(self, host):
         if host.is_master():
@@ -61,9 +60,10 @@ class MongoClusterAgreeOnMasterCheck(MongoHealthCheck):
         return True
 
     def check_master_hostname(self, host):
-        master_hostname = self.dbsilo.mongo_master_hostname()
+        master_hostname = self.mongo_cluster.master_hostname()
         command = 'host {}'.format(pipes.quote(master_hostname))
-        stdout = self.dbsilo.cluster.bastion.check_output(command).strip()
+        bastion = self.mongo_cluster.cluster.bastion
+        stdout = bastion.check_output(command).strip()
 
         m = re.match('.* has address (.*)$', stdout)
         if not m:
@@ -186,81 +186,30 @@ class MongoReplicaDelayCheck(MongoHealthCheck):
         return abs(lag) < 10.0
 
 
-def check_mongodb(dbsilo):
-    mongodb_checklist = HealthCheckList("MongoDB Cluster Health Checklist")
+def check_mongo(mongo_cluster):
+    mongodb_checklist = HealthCheckList(
+        "{} health checklist".format(mongo_cluster.service)
+    )
 
-    mongodb_instances = list(dbsilo.mongo_instances())
-    mongodb_servers = list(dbsilo.mongo_clients())
+    mongo_clients = list(mongo_cluster.clients())
 
-    if not mongodb_servers:
+    if not mongo_clients:
         print >> sys.stderr, \
             termcolor.colored('WARNING:', 'yellow'), \
-            'no mongodb servers found in', dbsilo
+            'no mongodb server found in', mongo_cluster.service
+
         return mongodb_checklist
 
     for health_check in (
-            AWSNameHealthCheck(mongodb_instances),
+            AWSNameHealthCheck(mongo_cluster.instances),
 
-            MongoVersionCheck(mongodb_servers),
-            MongoClusterAgreeOnMasterCheck(dbsilo, mongodb_servers),
-            MongoClusterConfigurationCheck(mongodb_servers),
-            MongoClusterConfigVersionsCheck(mongodb_servers),
-            MongoClusterHeartbeatCheck(mongodb_servers),
-            MongoReplicaDelayCheck(mongodb_servers),
+            MongoVersionCheck(mongo_clients),
+            MongoClusterAgreeOnMasterCheck(mongo_cluster, mongo_clients),
+            MongoClusterConfigurationCheck(mongo_clients),
+            MongoClusterConfigVersionsCheck(mongo_clients),
+            MongoClusterHeartbeatCheck(mongo_clients),
+            MongoReplicaDelayCheck(mongo_clients),
             ):
         mongodb_checklist.add_check(health_check)
 
     return mongodb_checklist
-
-
-def _get_mongodb_instances(cluster, region, dbsilo):
-    alpha_names = {
-        'alpha': 'Alpha',
-        'app': 'App',
-        'dbsilo1': 'DBSilo1',
-        'dbsilo2': 'DBSilo2',
-        'dbsilo3': 'DBSilo3',
-        'dbsilo4': 'DBSilo4',
-    }
-
-    app_names = {
-        'alpha': 'ALPHA',
-        'app': 'APP',
-        'dbsilo1': 'DBSILO1',
-        'dbsilo2': 'DBSILO2',
-        'dbsilo3': 'DBSILO3',
-        'dbsilo4': 'DBSILO4',
-    }
-
-    values = [
-        '{}-{}-mongo'.format(cluster, dbsilo),
-        '{}-{}-mongo-*'.format(cluster, dbsilo),
-    ]
-
-    if cluster in ('alpha', 'app'):
-        values.extend([
-            'MongoDB {} {}'.format(
-                alpha_names[cluster],
-                alpha_names[dbsilo]),
-            'MONGO_{}_{}'.format(
-                app_names[cluster],
-                app_names[dbsilo]),
-            'MONGO_{}_{} - Arbiter'.format(
-                app_names[cluster],
-                app_names[dbsilo]),
-        ])
-
-    ec2 = boto3.resource('ec2', region_name=region)
-    instances = list(ec2.instances.filter(Filters=[
-        {
-            'Name': 'tag:Name',
-            'Values': values,
-        }
-    ]))
-
-    # Filter out terminated instances.
-    instances = [
-        instance for instance in instances
-        if instance.state['Name'] != 'terminated']
-
-    return sorted(instances, key=lambda instance: instance.private_ip_address)

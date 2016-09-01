@@ -78,21 +78,21 @@ class ElasticsearchClusterNodesCheck(ElasticsearchHealthCheck):
             self.all_equal(h.nodes() for h in self.hosts)
 
 
-def check_elasticsearch(dbsilo):
-    es_checklist = HealthCheckList("Elasticsearch Cluster Health Checklist")
+def check_elasticsearch(es_cluster):
+    es_checklist = HealthCheckList(
+        "{} cluster health checklist".format(es_cluster.service))
 
-    es_instances = list(dbsilo.elasticsearch_instances())
-    es_servers = list(dbsilo.elasticsearch_clients())
+    es_servers = list(es_cluster.clients())
 
     if not es_servers:
         print >> sys.stderr, \
             termcolor.colored('WARNING:', 'yellow'), \
-            'no elasticsearch servers found in', dbsilo
+            'no elasticsearch servers found in', es_cluster.service
 
         return es_checklist
 
     for check in (
-            AWSNameHealthCheck(es_instances),
+            AWSNameHealthCheck(es_cluster.instances),
 
             ElasticsearchVersionCheck(es_servers),
             ElasticsearchClusterHealthCheck(es_servers),
