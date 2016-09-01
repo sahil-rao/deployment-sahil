@@ -12,7 +12,20 @@
             "ami_regions": [
                 "us-west-1",
                 "us-west-2"
-            ]
+            ],
+            "launch_block_device_mappings": [
+                {
+                    "device_name": "/dev/xvdf",
+                    "encrypted": true,
+                    "volume_size": 60,
+                    "volume_type": "io1",
+                    "iops": 1000,
+                    "delete_on_termination": false
+                }
+            ],
+            "tags": {
+                "Service": "redis"
+            }
         }
     ],
     "provisioners": [

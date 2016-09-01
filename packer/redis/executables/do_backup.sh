@@ -16,10 +16,17 @@ else
     errorinfo="`date` DBSILO: ${DBSILO}, CLUSTER: ${CLUSTER}, INSTANCE: ${EC2_INSTANCE_ID}"
     echo "`date` Redis backup failed. Failure info: $errorinfo"
     # Send alert event to datadog
-    errorjson="{\"title\": \"Redis Backup Failed\", \"text\": \"$errorinfo\", \"priority\": \"normal\", \"alert_type\": \"error\"}"
-    curl -XPOST -H "Content-type: application/json" -d "$errorjson" -sS "https://app.datadoghq.com/api/v1/events?api_key=${DATADOG_API_KEY}"
+    curl -XPOST -H "Content-type: application/json" -d@- -sS "https://app.datadoghq.com/api/v1/events?api_key=${DATADOG_API_KEY}" <<EOF
+{
+	"title": "[NavOpt] [$CLUSTER] $DBSILO Redis Backup Failed",
+	"text": "$errorinfo",
+	"priority": "normal",
+	"alert_type": "error",
+	"tags": ["account:navopt", "dbsilo:$DBSILO", "cluster:$CLUSTER", "service:redis"]
+}
+EOF
 fi
 
-# Ensure that all files with the prefix will expire in 3 days
-expire_policy_json='{"Rules":[{"Status":"Enabled","Prefix":'"\"${prefix}"\"',"Expiration":{"Days":3}}]}'
+# Ensure that all files with the prefix will expire in 14 days
+expire_policy_json='{"Rules":[{"Status":"Enabled","Prefix":'"\"${prefix}"\"',"Expiration":{"Days":14}}]}'
 /usr/local/bin/aws s3api put-bucket-lifecycle --bucket $bucket --lifecycle-configuration $expire_policy_json
