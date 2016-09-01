@@ -6,7 +6,9 @@ variable "name" {}
 
 variable "vpc_id" {}
 variable "vpc_cidr" {}
-variable "subnet_ids" {}
+variable "subnet_ids" {
+    type = "list"
+}
 variable "public_cidr" {}
 variable "dns_zone_id" {}
 
@@ -99,7 +101,7 @@ resource "aws_instance" "default" {
     # Deployment-Root (ami-c1d5a5f1)
     ami = "${coalesce(var.ami, module.ubuntu.ami_id)}"
     vpc_security_group_ids = ["${aws_security_group.default.id}"]
-    subnet_id = "${element(split(",", var.subnet_ids), 0)}"
+    subnet_id = "${element(var.subnet_ids, count.index)}"
     key_name = "${var.key_name}"
 
     # FIXME: Should this have an IAM role?

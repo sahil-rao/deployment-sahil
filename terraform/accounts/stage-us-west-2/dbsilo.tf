@@ -14,7 +14,7 @@ module "dbsilo1" {
 
     mongo_name = "${var.cluster_name}-dbsilo1-mongo"
     mongo_iam_instance_profile = "${module.iam.mongo_instance_profile}"
-    mongo_security_groups = "${module.sg.mongo_security_groups}"
+    mongo_security_groups = ["${module.sg.mongo_security_groups}"]
     mongo_version = "v18"
     mongo_ami_id = "ami-201fca40"
     #mongo_instance_type = "m4.xlarge"
@@ -26,7 +26,7 @@ module "dbsilo1" {
 
     redis_name = "${var.cluster_name}-dbsilo1-redis"
     redis_iam_instance_profile = "${module.iam.redis_instance_profile}"
-    redis_security_groups = "${module.sg.redis_security_groups}"
+    redis_security_groups = ["${module.sg.redis_security_groups}"]
     redis_version = "v15"
     redis_ami_id = "ami-4a57822a"
     #redis_instance_type = "r3.2xlarge"
@@ -39,7 +39,7 @@ module "dbsilo1" {
 
     elasticsearch_name = "${var.cluster_name}-dbsilo1-elasticsearch"
     elasticsearch_iam_instance_profile = "${module.iam.elasticsearch_instance_profile}"
-    elasticsearch_security_groups = "${module.sg.elasticsearch_security_groups}"
+    elasticsearch_security_groups = ["${module.sg.elasticsearch_security_groups}"]
     elasticsearch_version = "v9"
     elasticsearch_ami_id = "ami-8419cce4"
     #elasticsearch_instance_type = "m3.xlarge"

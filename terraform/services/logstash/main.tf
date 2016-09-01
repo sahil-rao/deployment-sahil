@@ -49,7 +49,7 @@ module "ubuntu" {
 resource "aws_instance" "logstash" {
     ami = "${coalesce(var.ami, module.ubuntu.ami_id)}"
     vpc_security_group_ids = ["${var.security_groups}"]
-    subnet_id = "${element(split(",", var.subnet_ids), count.index)}"
+    subnet_id = "${element(var.subnet_ids, count.index)}"
     key_name = "${var.key_name}"
 
     # FIXME: Does this need an IAM role?
