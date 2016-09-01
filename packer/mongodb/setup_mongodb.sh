@@ -22,3 +22,4 @@ cp /tmp/executables/* /usr/local/bin/
 cp /tmp/etc/mongod.conf /etc/mongod.conf
 cp /tmp/etc/init/mongod.conf /etc/init/mongod.conf
 cp /tmp/etc/logrotate.d/mongodb /etc/logrotate.d/mongodb
+cp /tmp/etc/cron.d/mongodb /etc/cron.d/mongodb

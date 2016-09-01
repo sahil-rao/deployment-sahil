@@ -1,0 +1,8 @@
+# Set up DNS registration crontab now that we've been identified as a master or slave.
+* * * * * /bin/bash /usr/local/bin/register_host.sh >>/var/log/register_host.log 2>&1
+
+# Set up hourly backup crontab
+*/30 * * * * /bin/bash /usr/local/bin/do_backup.sh >>/var/log/do_backup.log 2>&1
+
+# Set up cluster cleanup (in case of unreachable/unhealthy slave)
+*/15 * * * * /bin/bash /usr/local/bin/cleanup_replicas.sh
