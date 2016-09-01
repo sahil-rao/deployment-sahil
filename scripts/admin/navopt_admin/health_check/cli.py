@@ -3,9 +3,8 @@
 from __future__ import absolute_import
 
 import click
-import health_check.base
-import health_check.dbsilo
-from . import ssh
+from . import base
+from . import dbsilo
 
 
 # TODO: Make this function real
@@ -23,27 +22,21 @@ def get_backoffice_servers():
     ]
 
 
-@click.command()
-@click.option('-b', '--bastion', default=None)
+@click.command('health-check')
 @click.option('-s', '--services', default=None)
-@click.option('-f', '--fqdn', default='xplain.io')
-@click.argument('cluster')
-@click.argument('region')
-@click.argument('dbsilo', nargs=-1)
-def cli(bastion, services, fqdn, cluster, region, dbsilo):
-    bastion = health_check.ssh.get_config(bastion)['hostname']
-
-    cluster_checklist = health_check.base.HealthCheckList(
+@click.argument('dbsilos', nargs=-1)
+@click.pass_context
+def health_check(ctx, services, dbsilos):
+    cluster_checklist = base.HealthCheckList(
         "NavOpt Cluster Health Checklist")
 
+    if not dbsilos:
+        ctx.fail('no dbsilos specified')
+
     try:
-        for silo in dbsilo:
-            cluster_checklist.add_check(health_check.dbsilo.check_dbsilo(
-                bastion,
-                fqdn,
-                cluster,
-                region,
-                silo,
+        for dbsilo_name in dbsilos:
+            cluster_checklist.add_check(dbsilo.check_dbsilo(
+                ctx.obj['cluster'].dbsilo(dbsilo_name),
                 services=services))
 
     #    backoffice_checklist = HealthCheckList("Backoffice Health Checklist")

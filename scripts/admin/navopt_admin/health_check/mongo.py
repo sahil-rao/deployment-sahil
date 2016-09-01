@@ -1,149 +1,13 @@
 from __future__ import absolute_import
 
-from .base import HealthCheck, HealthCheckList
 from .aws import AWSNameHealthCheck
-# from .disk import DiskUsageCheck
-from .tunnel import Tunnel
-from . import ssh
+from .base import HealthCheck, HealthCheckList
 import boto3
 import datetime
-import functools
-import multiprocessing.pool
 import pipes
-import pymongo
 import re
 import sys
 import termcolor
-
-
-class Mongo(Tunnel):
-    def __init__(self, bastion, host, port):
-        super(Mongo, self).__init__(bastion, host, port)
-
-        if self.tunnel:
-            self.mconn = pymongo.MongoClient(
-                port=self.tunnel.local_bind_port,
-                socketTimeoutMS=10000,
-                connectTimeoutMS=10000,
-                serverSelectionTimeoutMS=10000,
-            )
-        else:
-            self.mconn = None
-
-    def close(self):
-        if hasattr(self, 'mconn') and self.mconn:
-            self.mconn.close()
-
-        return super(Mongo, self).close()
-
-    def mongo_version(self):
-        if self.mconn is None:
-            return None
-
-        return self.mconn.server_info()['version']
-
-    def server_status(self):
-        if self.mconn is None:
-            return {}
-
-        if not hasattr(self, '_server_status'):
-            try:
-                self._server_status = self.mconn.admin.command('serverStatus')
-            except pymongo.errors.PyMongoError:
-                self._server_status = {}
-
-        return self._server_status
-
-    @property
-    def repl_status(self):
-        if self.mconn is None:
-            return {}
-
-        if not hasattr(self, '_repl_status'):
-            try:
-                self._repl_status = self.mconn.admin.command('replSetGetStatus')
-            except pymongo.errors.PyMongoError:
-                self._repl_status = {}
-
-        return self._repl_status
-
-    @property
-    def primary_repl_status(self):
-        for member in self.repl_status.get('members', []):
-            if member['state'] == 1:
-                return member
-
-        return {}
-
-    @property
-    def current_repl_status(self):
-        for member in self.repl_status.get('members', []):
-            if member.get('self'):
-                return member
-
-        return {}
-
-    def is_master(self):
-        return self.current_repl_status.get('state') == 1
-
-    def is_replica(self):
-        return self.current_repl_status.get('state') == 2
-
-    def is_arbiter(self):
-        return self.current_repl_status.get('state') == 7
-
-    def members(self):
-        primaries = []
-        secondaries = []
-        arbiters = []
-        others = []
-
-        for member in self.repl_status.get('members', []):
-            name = member['name']
-
-            if member['state'] == 1:
-                primaries.append(name)
-            elif member['state'] == 2:
-                secondaries.append(name)
-            elif member['state'] == 7:
-                arbiters.append(name)
-            else:
-                others.append(name)
-
-        return (
-            sorted(primaries),
-            sorted(secondaries),
-            sorted(arbiters),
-            sorted(others),
-        )
-
-    def member_states(self):
-        num_primaries = 0
-        num_secondaries = 0
-        num_arbiters = 0
-        num_otherstate = 0
-
-        for member in self.repl_status.get('members', []):
-            if member['state'] == 1:
-                num_primaries += 1
-            elif member['state'] == 2:
-                num_secondaries += 1
-            elif member['state'] == 7:
-                num_secondaries += 1
-            else:
-                num_otherstate += 1
-
-        return num_primaries, num_secondaries, num_arbiters, num_otherstate
-
-    def config_versions(self):
-        config_versions = set()
-        for member in self.repl_status.get('members', []):
-            try:
-                config_versions.add(member['configVersion'])
-            except KeyError:
-                pass
-
-        return config_versions
 
 
 class MongoHealthCheck(HealthCheck):
@@ -152,10 +16,6 @@ class MongoHealthCheck(HealthCheck):
             host.close()
 
     def check_host(self, host):
-        if not host.mconn:
-            self.host_msgs[host] = 'cannot connect to MongoDB'
-            return False
-
         return self.check_mongo_host(host)
 
     def check_mongo_host(self, host):
@@ -177,10 +37,9 @@ class MongoVersionCheck(MongoHealthCheck):
 class MongoClusterAgreeOnMasterCheck(MongoHealthCheck):
     description = "Mongo nodes agree on the same master"
 
-    def __init__(self, cluster, dbsilo, *args, **kwargs):
+    def __init__(self, dbsilo, *args, **kwargs):
         super(MongoClusterAgreeOnMasterCheck, self).__init__(*args, **kwargs)
 
-        self.cluster = cluster
         self.dbsilo = dbsilo
 
     def check_mongo_host(self, host):
@@ -202,32 +61,21 @@ class MongoClusterAgreeOnMasterCheck(MongoHealthCheck):
         return True
 
     def check_master_hostname(self, host):
-        with ssh.connect(host.bastion) as client:
-            master_hostname = 'mongomaster.{}.{}.xplain.io'.format(
-                self.dbsilo,
-                self.cluster,
-            )
-            command = 'host {}'.format(pipes.quote(master_hostname))
+        master_hostname = self.dbsilo.mongo_master_hostname()
+        command = 'host {}'.format(pipes.quote(master_hostname))
+        stdout = self.dbsilo.cluster.bastion.check_output(command).strip()
 
-            stdin, stdout, stderr = client.exec_command(command)
+        m = re.match('.* has address (.*)$', stdout)
+        if not m:
+            self.host_msgs[host] += ' failed to parse: ' + stdout
+            return False
 
-            if stdout.channel.recv_exit_status() != 0:
-                print >> sys.stderr, stdout.read()
-                print >> sys.stderr, stderr.read()
-                return False
-
-            stdout = stdout.read().strip()
-            m = re.match('.* has address (.*)$', stdout)
-            if not m:
-                self.host_msgs[host] += ' failed to parse: ' + stdout
-                return False
-
-            found_host = m.group(1)
-            if host.host != found_host:
-                self.host_msgs[host] += ' master is on {}'.format(found_host)
-                return False
-            else:
-                return True
+        found_host = m.group(1)
+        if host.host != found_host:
+            self.host_msgs[host] += ' master is on {}'.format(found_host)
+            return False
+        else:
+            return True
 
 
 class MongoClusterConfigurationCheck(MongoHealthCheck):
@@ -338,35 +186,27 @@ class MongoReplicaDelayCheck(MongoHealthCheck):
         return abs(lag) < 10.0
 
 
-def check_mongodb(bastion, cluster, region, dbsilo):
+def check_mongodb(dbsilo):
     mongodb_checklist = HealthCheckList("MongoDB Cluster Health Checklist")
-    mongodb_instances = _get_mongodb_instances(cluster, region, dbsilo)
-    mongodb_hostnames = _get_mongodb_hostnames(mongodb_instances)
 
-    if not mongodb_hostnames:
+    mongodb_instances = list(dbsilo.mongo_instances())
+    mongodb_servers = list(dbsilo.mongo_clients())
+
+    if not mongodb_servers:
         print >> sys.stderr, \
             termcolor.colored('WARNING:', 'yellow'), \
-            'no mongo servers found in', cluster, region, dbsilo
+            'no mongodb servers found in', dbsilo
         return mongodb_checklist
-
-    pool = multiprocessing.pool.ThreadPool(5)
-    try:
-        mongodb_servers = pool.map(
-            functools.partial(_create_mongo, bastion, 27017),
-            mongodb_hostnames)
-    finally:
-        pool.close()
-        pool.join()
 
     for health_check in (
             AWSNameHealthCheck(mongodb_instances),
+
             MongoVersionCheck(mongodb_servers),
-            MongoClusterAgreeOnMasterCheck(cluster, dbsilo, mongodb_servers),
+            MongoClusterAgreeOnMasterCheck(dbsilo, mongodb_servers),
             MongoClusterConfigurationCheck(mongodb_servers),
             MongoClusterConfigVersionsCheck(mongodb_servers),
             MongoClusterHeartbeatCheck(mongodb_servers),
             MongoReplicaDelayCheck(mongodb_servers),
-            # DiskUsageCheck(bastion, mongodb_hostnames),
             ):
         mongodb_checklist.add_check(health_check)
 
@@ -424,16 +264,3 @@ def _get_mongodb_instances(cluster, region, dbsilo):
         if instance.state['Name'] != 'terminated']
 
     return sorted(instances, key=lambda instance: instance.private_ip_address)
-
-
-def _get_mongodb_hostnames(instances):
-    hostnames = []
-    for instance in instances:
-        if instance.private_ip_address:
-            hostnames.append(instance.private_ip_address)
-
-    return hostnames
-
-
-def _create_mongo(bastion, port, host):
-    return Mongo(bastion, host, port)

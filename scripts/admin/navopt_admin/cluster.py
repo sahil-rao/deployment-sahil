@@ -15,6 +15,7 @@ class Cluster(object):
         self.region = region
         self.zone = zone
 
+        assert bastion is not None
         self._bastion_name = bastion
         self._bastion = None
 
@@ -49,6 +50,9 @@ class Cluster(object):
             self,
             dbsilo_name,
         )
+
+    def __str__(self):
+        return 'Cluster({}, {}, {})'.format(self.env, self.region, self.zone)
 
 
 @click.group()

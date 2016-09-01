@@ -5,6 +5,7 @@ from __future__ import absolute_import
 import click
 import navopt_admin.cluster
 import navopt_admin.dbsilo
+import navopt_admin.health_check.cli
 import sys
 
 
@@ -37,6 +38,7 @@ def cli(ctx, env, bastion, region, zone, assume_yes):
         env=env,
         region=region,
         zone=zone,
+        bastion=bastion,
     )
 
     ctx.obj = {
@@ -55,6 +57,10 @@ cli.add_command(
 
 cli.add_command(
     click.CommandCollection('dbsilo', sources=[navopt_admin.dbsilo.cli])
+)
+
+cli.add_command(
+    navopt_admin.health_check.cli.health_check
 )
 
 

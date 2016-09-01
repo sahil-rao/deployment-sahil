@@ -1,7 +1,9 @@
 from __future__ import absolute_import
 
-from .redis import Redis
+from .elasticsearch import Elasticsearch
 from .instance import format_instances
+from .mongo import Mongo
+from .redis import Redis, RedisSentinel
 from .util import COMMA_SEPARATED_LIST_TYPE, prompt
 from itertools import chain
 import click
@@ -9,9 +11,9 @@ import pprint
 
 
 class DBSilo(object):
-    def __init__(self, cluster, dbsilo_name):
-        self._cluster = cluster
-        self._dbsilo_name = dbsilo_name
+    def __init__(self, cluster, name):
+        self.cluster = cluster
+        self.name = name
 
     def instances(self, Filters=()):
         return chain(
@@ -20,45 +22,164 @@ class DBSilo(object):
             self.elasticsearch_instances())
 
     def mongo_instances(self):
-        return self._cluster.instances_by_tags(
-            'DBSilo',
-            ['{}-mongo'.format(self._dbsilo_name)],
-        )
+        alpha_names = {
+            'alpha': 'Alpha',
+            'app': 'App',
+            'dbsilo1': 'DBSilo1',
+            'dbsilo2': 'DBSilo2',
+            'dbsilo3': 'DBSilo3',
+            'dbsilo4': 'DBSilo4',
+        }
+
+        app_names = {
+            'alpha': 'ALPHA',
+            'app': 'APP',
+            'dbsilo1': 'DBSILO1',
+            'dbsilo2': 'DBSILO2',
+            'dbsilo3': 'DBSILO3',
+            'dbsilo4': 'DBSILO4',
+        }
+
+        filters = [
+            '{}-mongo'.format(self.name),
+            '{}-mongo-*'.format(self.name),
+        ]
+
+        if self.cluster.env in ('alpha', 'app'):
+            filters.extend([
+                'MongoDB {} {}'.format(
+                    alpha_names[self.cluster.env],
+                    alpha_names[self.name]),
+                'MONGO_{}_{}'.format(
+                    app_names[self.cluster.env],
+                    app_names[self.name]),
+                'MONGO_{}_{} - Arbiter'.format(
+                    app_names[self.cluster.env],
+                    app_names[self.name]),
+            ])
+
+        return self.cluster.instances_by_tags('DBSilo', filters)
 
     def mongo_instance_private_ips(self):
         return (instance.private_ip_address
                 for instance in self.mongo_instances())
 
+    def mongo_master_hostname(self):
+        return 'mongomaster.{}.{}.{}'.format(
+            self.name,
+            self.cluster.env,
+            self.cluster.zone)
+
+    def mongo_master(self):
+        master_hostname = self.mongo_master_hostname()
+        return Mongo(self.cluster.bastion, master_hostname)
+
+    def mongo_clients(self):
+        for ip in self.mongo_instance_private_ips():
+            yield Mongo(self.cluster.bastion, ip)
+
     def redis_instances(self):
-        return self._cluster.instances_by_tags(
-            'DBSilo',
-            ['{}-redis'.format(self._dbsilo_name)],
-        )
+        alpha_names = {
+            'alpha': 'Alpha',
+            'app': 'App',
+            'dbsilo1': 'DBSilo1',
+            'dbsilo2': 'DBSilo2',
+            'dbsilo3': 'DBSilo3',
+            'dbsilo4': 'DBSilo4',
+        }
+
+        app_names = {
+            'alpha': 'ALPHA',
+            'app': 'APP',
+            'dbsilo1': 'DBSILO_1',
+            'dbsilo2': 'DBSILO_2',
+            'dbsilo3': 'DBSILO_3',
+            'dbsilo4': 'DBSILO_4',
+        }
+
+        filters = [
+            '{}-redis'.format(self.name),
+        ]
+
+        if self.cluster.env in ('alpha', 'app'):
+            filters.extend([
+                'Redis {} {}'.format(
+                    alpha_names[self.cluster.env],
+                    alpha_names[self.name]),
+                'REDIS_{}_{}'.format(
+                    app_names[self.cluster.env],
+                    app_names[self.name]),
+            ])
+
+        return self.cluster.instances_by_tags('DBSilo', filters)
 
     def redis_instance_private_ips(self):
         return (instance.private_ip_address
                 for instance in self.redis_instances())
 
+    def redis_master_hostname(self):
+        return 'redismaster.{}.{}.{}'.format(
+            self.name,
+            self.cluster.env,
+            self.cluster.zone)
+
+    def redis_master(self):
+        master_hostname = self.redis_master_hostname()
+        return Redis(self.cluster.bastion, master_hostname)
+
+    def redis_clients(self):
+        for ip in self.redis_instance_private_ips():
+            yield Redis(self.cluster.bastion, ip)
+
+    def redis_sentinel_clients(self):
+        for ip in self.redis_instance_private_ips():
+            yield RedisSentinel(self.cluster.bastion, ip)
+
     def elasticsearch_instances(self):
-        return self._cluster.instances_by_tags(
-            'DBSilo',
-            ['{}-elasticsearch'.format(self._dbsilo_name)],
-        )
+        alpha_names = {
+            'alpha': 'Alpha',
+            'app': 'App',
+            'dbsilo1': 'DBSilo1',
+            'dbsilo2': 'DBSilo2',
+            'dbsilo3': 'DBSilo3',
+            'dbsilo4': 'DBSilo4',
+        }
+
+        app_names = {
+            'alpha': 'ALPHA',
+            'app': 'APP',
+            'dbsilo1': 'DBSILO_1',
+            'dbsilo2': 'DBSILO_2',
+            'dbsilo3': 'DBSILO_3',
+            'dbsilo4': 'DBSILO_4',
+        }
+
+        filters = [
+            '{}-elasticsearch'.format(self.name),
+        ]
+
+        if self.cluster.env in ('alpha', 'app'):
+            filters.extend([
+                'Elasticsearch {} {}'.format(
+                    alpha_names[self.cluster.env],
+                    alpha_names[self.name]),
+                'Elasticsearch_{}_{}'.format(
+                    app_names[self.cluster.env],
+                    app_names[self.name]),
+            ])
+
+        return self.cluster.instances_by_tags('DBSilo', filters)
 
     def elasticsearch_instance_private_ips(self):
         return (instance.private_ip_address
                 for instance in self.elasticsearch_instances())
 
-    def redis_master(self):
-        if self._cluster.bastion is None:
-            raise Exception('bastion is not configured')
+    def elasticsearch_clients(self):
+        for ip in self.elasticsearch_instance_private_ips():
+            yield Elasticsearch(self.cluster.bastion, ip)
 
-        master_hostname = 'redismaster.{}.{}.{}'.format(
-            self._dbsilo_name,
-            self._cluster.env,
-            self._cluster.zone)
-
-        return Redis(self._cluster.bastion, master_hostname)
+    def __str__(self):
+        return 'DBSilo({}, {})'.format(self.cluster, self.name)
 
 
 @click.group()

@@ -87,6 +87,16 @@ class Bastion(object):
 
             subprocess.check_call(cmd, stdout=DEVNULL, stderr=DEVNULL)
 
+    def check_output(self, *args):
+        cmd = [
+            'ssh',
+            '-S', self._control_socket,
+            'x',
+        ]
+        cmd.extend(args)
+
+        return subprocess.check_output(cmd)
+
 
 class Tunnel(object):
     def __init__(self, bastion, forwards, local_host, local_port):

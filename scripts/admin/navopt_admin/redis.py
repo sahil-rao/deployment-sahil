@@ -1,12 +1,14 @@
 from __future__ import absolute_import
 
-from .ssh import Tunnel
 import redis
 
 
 class Redis(object):
-    def __init__(self, bastion, hostname, port=6379):
-        self._tunnel = bastion.tunnel(hostname, port)
+    def __init__(self, bastion, host, port=6379):
+        self.host = host
+        self.port = port
+
+        self._tunnel = bastion.tunnel(host, port)
 
         self._conn = redis.StrictRedis(
             host=self._tunnel.local_host,
@@ -24,6 +26,9 @@ class Redis(object):
 
     def __getattr__(self, key):
         return getattr(self._conn, key)
+
+    def __str__(self):
+        return '{}:{}'.format(self.host, self.port)
 
 #    def info(self):
 #        return
@@ -58,3 +63,8 @@ class Redis(object):
 #            for sentinel in self.rconn.sentinel_sentinels(self._master_name))
 #
 #        return sentinels
+
+
+class RedisSentinel(Redis):
+    def __init__(self, bastion, host, port=26379):
+        super(RedisSentinel, self).__init__(bastion, host, port)
