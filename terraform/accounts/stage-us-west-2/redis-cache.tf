@@ -15,5 +15,5 @@ module "redis-cache" {
 
     key_name = "${var.key_name}"
 
-    instance_type = "t2.micro"
+    instance_type = "t2.medium"
 }

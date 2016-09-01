@@ -43,6 +43,7 @@ variable "redis_desired_capacity" {}
 variable "redis_backup_file" {
     default = ""
 }
+variable "redis_quorum_size" {}
 variable "redis_ebs_optimized" {
     default = true
 }
@@ -106,6 +107,7 @@ module "redis" {
     cluster_name = "${var.cluster_name}"
     datadog_api_key = "${var.datadog_api_key}"
     backup_file = "${var.redis_backup_file}"
+    quorum_size = "${var.redis_quorum_size}"
 
     ami_id = "${var.redis_ami_id}"
     instance_type = "${var.redis_instance_type}"

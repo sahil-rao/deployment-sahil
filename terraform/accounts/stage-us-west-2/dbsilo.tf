@@ -28,13 +28,14 @@ module "dbsilo1" {
     redis_iam_instance_profile = "${module.iam.redis_instance_profile}"
     redis_security_groups = "${module.sg.redis_security_groups}"
     redis_version = "v13"
-    redis_ami_id = "ami-af30fbcf"
+    redis_ami_id = "ami-f30fbcf"
     #redis_instance_type = "r3.2xlarge"
     redis_instance_type = "t2.micro"
     redis_min_size = 0
-    redis_max_size = 3
-    redis_desired_capacity = 3
+    redis_max_size = 5
+    redis_desired_capacity = 5
     redis_ebs_optimized = false
+    redis_quorum_size = 2
 
     elasticsearch_name = "${var.cluster_name}-dbsilo1-elasticsearch"
     elasticsearch_iam_instance_profile = "${module.iam.elasticsearch_instance_profile}"

@@ -9,7 +9,8 @@ set -euv
     "cluster": "${cluster}",
     "zone_name": "${zone_name}",
     "datadog_api_key": "${datadog_api_key}",
-    "backup_file": "${backup_file}"
+    "backup_file": "${backup_file}",
+    "redis_quorum_size": "${redis_quorum_size}"
 }
 EOF
 
