@@ -40,6 +40,12 @@ resource "aws_autoscaling_group" "default" {
         propagate_at_launch = true
     }
 
+    tag {
+        key = "Type"
+        value = "redis"
+        propagate_at_launch = true
+    }
+
     lifecycle {
         create_before_destroy = true
     }

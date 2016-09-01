@@ -8,8 +8,14 @@ module "logging" {
     elasticsearch_name = "kibana-and-elasticsearch"
     elasticsearch_security_groups = ["${module.sg.elasticsearch_security_groups}"]
     elasticsearch_iam_instance_profile = "${module.iam.elasticsearch_instance_profile}"
+    elasticsearch_version = "v1"
+    elasticsearch_ami_id = "ami-062efa66"
+    #elasticsearch_instance_type = "m3.xlarge"
     elasticsearch_instance_type = "t2.micro"
-    elasticsearch_instance_count = 1
+    elasticsearch_min_size = 0
+    elasticsearch_max_size = 1
+    elasticsearch_desired_capacity = 1
+    elasticsearch_ebs_optimized = false
 
     logstash_name = "logstash"
     logstash_security_groups = ["${module.sg.logstash_security_groups}"]
@@ -23,7 +29,7 @@ module "logging" {
     redis_iam_instance_profile = "${module.iam.redis_instance_profile}"
 
     redis_version = "v4"
-    redis_ami_id = "ami-ff10c49f"
+    redis_ami_id = "ami-ec21f58c"
     redis_instance_type = "t2.micro"
     redis_min_size = 0
     redis_max_size = 1

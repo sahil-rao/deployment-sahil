@@ -1,22 +1,24 @@
 module "elasticsearch" {
-    source = "../elasticsearch"
+    source = "../elasticsearch-asg"
 
-    env = "${var.env}"
-    name = "${var.elasticsearch_name}"
-
-    region = "${var.region}"
-    vpc_id = "${var.vpc_id}"
-    vpc_cidr = "${var.vpc_cidr}"
     subnet_ids = ["${var.subnet_ids}"]
-    dns_zone_id = "${var.dns_zone_id}"
-
+    zone_name = "${var.zone_name}"
     security_groups = ["${var.elasticsearch_security_groups}"]
 
-    ami = "${var.elasticsearch_ami}"
-    instance_type = "${var.elasticsearch_instance_type}"
-    instance_count = "${var.elasticsearch_instance_count}"
     key_name = "${var.key_name}"
     iam_instance_profile = "${var.elasticsearch_iam_instance_profile}"
+
+    name = "${var.elasticsearch_name}"
+    version = "${var.elasticsearch_version}"
+    env = "${var.env}"
+    service = "${var.elasticsearch_name}"
+    datadog_api_key = "${var.datadog_api_key}"
+
+    ami_id = "${var.elasticsearch_ami_id}"
+    instance_type = "${var.elasticsearch_instance_type}"
+    min_size = "${var.elasticsearch_min_size}"
+    max_size = "${var.elasticsearch_max_size}"
+    desired_capacity = "${var.elasticsearch_desired_capacity}"
     ebs_optimized = "${var.elasticsearch_ebs_optimized}"
 }
 

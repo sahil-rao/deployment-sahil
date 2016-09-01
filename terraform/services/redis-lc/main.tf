@@ -31,9 +31,10 @@ data "template_file" "user_data" {
     template = "${file("${path.module}/user-data.sh")}"
 
     vars {
-        application = "navopt"
+        app = "navopt"
         env = "${var.env}"
         service = "${var.service}"
+        type = "redis"
         zone_name = "${var.zone_name}"
         datadog_api_key = "${var.datadog_api_key}"
         redis_backup_file = "${var.backup_file}"

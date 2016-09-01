@@ -73,9 +73,10 @@ resource "aws_instance" "default" {
     }
 
     tags {
-        Cluster = "${var.env}"
-        Environment = "${var.env}"
         Name = "${var.name}"
+        Env = "${var.env}"
+        Service = "${var.name}"
+        Type = "elasticsearch"
     }
 }
 
