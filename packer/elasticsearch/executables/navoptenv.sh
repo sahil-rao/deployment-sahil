@@ -4,6 +4,8 @@
 # cluster: Which cluster this machine belongs to. (alpha, staging, etc)
 # datadog_api_key: API Key for datadog
 
+set -eu
+
 userdata=`cat /etc/navoptenv.json`
 
 if [ "${userdata}" != "" ]; then
@@ -19,4 +21,3 @@ fi
 export EC2_AVAILABILITY_ZONE=`curl --silent http://169.254.169.254/latest/meta-data/placement/availability-zone`
 export AWS_DEFAULT_REGION="`echo \"$EC2_AVAILABILITY_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`"
 export EC2_INSTANCE_ID=`curl --silent http://169.254.169.254/latest/meta-data/instance-id`
-

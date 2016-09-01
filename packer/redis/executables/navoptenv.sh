@@ -5,6 +5,8 @@
 # cluster: Which cluster this machine belongs to. (alpha, staging, etc)
 # datadog_api_key: API Key for datadog
 
+set -eu
+
 userdata=`cat /etc/navoptenv.json`
 
 if [ "${userdata}" != "" ]; then
