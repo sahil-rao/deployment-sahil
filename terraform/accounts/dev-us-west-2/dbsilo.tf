@@ -18,7 +18,7 @@ module "dbsilo1" {
     mongo_iam_instance_profile = "${module.iam.mongo_instance_profile}"
     mongo_security_groups = ["${module.sg.mongo_security_groups}"]
     mongo_version = "v1"
-    mongo_ami_id = "ami-03d10763"
+    mongo_ami_id = "ami-4bc0162b"
     #mongo_instance_type = "m4.xlarge"
     mongo_instance_type = "t2.micro"
     mongo_min_size = 0
