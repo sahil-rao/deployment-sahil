@@ -6,14 +6,17 @@ variable "name" {}
 variable "region" {}
 variable "vpc_id" {}
 variable "vpc_cidr" {}
-variable "subnet_ids" {}
+variable "subnet_ids" {
+    type = "list"
+}
 variable "dns_zone_id" {}
 
 ##############################################################################
 
 variable "key_name" {}
 variable "security_groups" {
-    default = ""
+    type = "list"
+    default = []
 }
 variable "ami" {
     default = ""
@@ -45,8 +48,8 @@ module "ubuntu" {
 
 resource "aws_instance" "logstash" {
     ami = "${coalesce(var.ami, module.ubuntu.ami_id)}"
-    vpc_security_group_ids = ["${split(",", var.security_groups)}"]
-    subnet_id = "${element(split(",", var.subnet_ids), 0)}"
+    vpc_security_group_ids = ["${var.security_groups}"]
+    subnet_id = "${element(split(",", var.subnet_ids), count.index)}"
     key_name = "${var.key_name}"
 
     # FIXME: Does this need an IAM role?

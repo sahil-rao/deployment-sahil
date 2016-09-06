@@ -5,7 +5,9 @@ variable "env" {}
 variable "region" {}
 variable "vpc_id" {}
 variable "vpc_cidr" {}
-variable "subnet_ids" {}
+variable "subnet_ids" {
+    type = "list"
+}
 variable "dns_zone_id" {}
 
 variable "key_name" {}
@@ -15,7 +17,8 @@ variable "key_name" {}
 variable "elasticsearch_name" {}
 
 variable "elasticsearch_security_groups" {
-    default = ""
+    type = "list"
+    default = []
 }
 
 variable "elasticsearch_ami" {
@@ -39,7 +42,8 @@ variable "elasticsearch_ebs_optimized" {
 variable "logstash_name" {}
 
 variable "logstash_security_groups" {
-    default = ""
+    type = "list"
+    default = []
 }
 
 variable "logstash_ami" {
@@ -63,7 +67,8 @@ variable "logstash_ebs_optimized" {
 variable "redis_name" {}
 
 variable "redis_security_groups" {
-    default = ""
+    type = "list"
+    default = []
 }
 
 variable "redis_ami" {

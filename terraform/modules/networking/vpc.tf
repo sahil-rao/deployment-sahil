@@ -15,10 +15,14 @@ variable "vpc_cidr" {}
 variable "vpc_name" {}
 
 # A comma delimited string with private subnets CIDR
-variable "private_subnets" {}
+variable "private_subnets" {
+    type = "list"
+}
 
 # A comma delimited string of public subnets CIDR
-variable "public_subnets" {}
+variable "public_subnets" {
+    type = "list"
+}
 
 # What is your virtual gateway
 variable "virtual_gateway_id" {}
@@ -28,7 +32,9 @@ variable "virtual_gateway_id" {}
 # reason is for each subnet, we lookup the same index in availability_zones list.
 # example: availability_zones = "us-west-1a,us-west-1b,us-west-1c,us-west-1a"
 # Note the repeated us-west-1a, since us-west-1 has only 3 AZs but we have 4 subnets
-variable "availability_zones" {}
+variable "availability_zones" {
+    type = "list"
+}
 
 ########################################
 #Create resources specified in variables
@@ -67,9 +73,9 @@ resource "aws_internet_gateway" "internet_gateway" {
 # Public Subnets
 resource "aws_subnet" "public" {
     vpc_id = "${aws_vpc.vpc.id}"
-    cidr_block = "${element(split(",", var.public_subnets), count.index)}"
-    availability_zone = "${element(split(",", var.availability_zones), count.index)}"
-    count = "${length(compact(split(",", var.public_subnets)))}"
+    cidr_block = "${element(var.public_subnets, count.index)}"
+    availability_zone = "${element(var.availability_zones, count.index)}"
+    count = "${length(var.public_subnets)}"
     map_public_ip_on_launch = true
 
     lifecycle {
@@ -77,36 +83,36 @@ resource "aws_subnet" "public" {
     }
 
     tags {
-        Name = "${format("%s.external.%s", var.vpc_name, element(split(",", var.availability_zones), count.index))}"
+        Name = "${format("%s.external.%s", var.vpc_name, element(var.availability_zones, count.index))}"
     }
 }
 
 # Private Subnets
 resource "aws_subnet" "private" {
     vpc_id = "${aws_vpc.vpc.id}"
-    cidr_block = "${element(split(",", var.private_subnets), count.index)}"
-    availability_zone = "${element(split(",", var.availability_zones), count.index)}"
-    count = "${length(compact(split(",", var.private_subnets)))}"
+    cidr_block = "${element(var.private_subnets, count.index)}"
+    availability_zone = "${element(var.availability_zones, count.index)}"
+    count = "${length(var.private_subnets)}"
 
     lifecycle {
         prevent_destroy = true
     }
 
     tags {
-        Name = "${format("%s.internal.%s", var.vpc_name, element(split(",", var.availability_zones), count.index))}"
+        Name = "${format("%s.internal.%s", var.vpc_name, element(var.availability_zones, count.index))}"
     }
 }
 
 # Create an EIP for each NAT gateway, since each gateway lives in it's own
 # availability zone.
 resource "aws_eip" "nat" {
-    count = "${length(split(",", var.public_subnets))}"
+    count = "${length(var.public_subnets)}"
     vpc = true
 }
 
 # Setup NAT gateway
 resource "aws_nat_gateway" "nat" {
-    count = "${length(split(",", var.public_subnets))}"
+    count = "${length(var.public_subnets)}"
     allocation_id = "${element(aws_eip.nat.*.id, count.index)}"
     subnet_id = "${element(aws_subnet.public.*.id, count.index)}"
     depends_on = ["aws_internet_gateway.internet_gateway"]
@@ -131,7 +137,7 @@ resource "aws_route" "public_gateway_route" {
 # for each of the private subnets, create a "private" route table
 resource "aws_route_table" "private" {
     vpc_id = "${aws_vpc.vpc.id}"
-    count = "${length(compact(split(",", var.private_subnets)))}"
+    count = "${length(var.private_subnets)}"
     propagating_vgws = ["${var.virtual_gateway_id}"]
 
     tags {
@@ -141,7 +147,7 @@ resource "aws_route_table" "private" {
 
 # add a nat gateway to each private subnet route.
 resource "aws_route" "private_nat_gateway_route" {
-    count = "${length(compact(split(",", var.private_subnets)))}"
+    count = "${length(var.private_subnets)}"
     route_table_id = "${element(aws_route_table.private.*.id, count.index)}"
     depends_on = ["aws_route_table.private"]
     destination_cidr_block = "0.0.0.0/0"
@@ -150,14 +156,14 @@ resource "aws_route" "private_nat_gateway_route" {
 
 # Associate public subnets with public route table
 resource "aws_route_table_association" "public" {
-    count = "${length(compact(split(",", var.public_subnets)))}"
+    count = "${length(var.public_subnets)}"
     subnet_id = "${element(aws_subnet.public.*.id, count.index)}"
     route_table_id = "${aws_route_table.public.id}"
 }
 
 # Associate private subnets with private route table
 resource "aws_route_table_association" "private" {
-    count = "${length(compact(split(",", var.private_subnets)))}"
+    count = "${length(var.private_subnets)}"
     subnet_id = "${element(aws_subnet.private.*.id, count.index)}"
     route_table_id = "${element(aws_route_table.private.*.id, count.index)}"
 }
@@ -171,15 +177,15 @@ output "vpc_id" {
 }
 
 output "public_subnet_ids" {
-    value = "${join(",", aws_subnet.public.*.id)}"
+    value = ["${aws_subnet.public.*.id}"]
 }
 
 output "private_subnet_ids" {
-    value = "${join(",", aws_subnet.private.*.id)}"
+    value = ["${aws_subnet.private.*.id}"]
 }
 
 output "private_route_tables" {
-    value = "${join(",", aws_route_table.private.*.id)}"
+    value = ["${aws_route_table.private.id}"]
 }
 
 output "nat_gateway_id" {

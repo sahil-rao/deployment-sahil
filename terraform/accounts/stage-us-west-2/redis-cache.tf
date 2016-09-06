@@ -1,3 +1,4 @@
+/*
 module "redis-cache" {
     source = "../../services/redis"
 
@@ -17,3 +18,4 @@ module "redis-cache" {
 
     instance_type = "t2.medium"
 }
+*/
