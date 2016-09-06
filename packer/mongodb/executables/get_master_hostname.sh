@@ -1,5 +1,5 @@
 #!/bin/bash
 
 source /usr/local/bin/navoptenv.sh
-hostname="${SERVICE}master.${DBSILO}.${CLUSTER}.${ZONE_NAME}"
+hostname="${SERVICE}master.${DBSILO}.${ZONE_NAME}"
 echo "$hostname"

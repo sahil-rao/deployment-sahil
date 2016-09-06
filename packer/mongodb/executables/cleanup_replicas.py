@@ -4,9 +4,7 @@ import os
 import sys
 import re
 import traceback
-from pprint import pprint
 from pymongo import MongoClient
-from boto.route53.record import ResourceRecordSets
 import boto
 
 SUFFIX = os.getenv('ZONE_NAME', 'xplain.io')
@@ -16,7 +14,8 @@ AUTOREMOVAL_DELAY_SECONDS = 10800   # 3 hours
 
 def get_record(route53_zone, db_silo_name, service_name, ip):
     """
-    Check if a record exists matching the service pattern with the current host's ip
+    Check if a record exists matching the service pattern with the current
+    host's ip
     """
 
     # Match records belonging to the service for particular dbsilo and cluster
@@ -57,7 +56,7 @@ def cleanup_route53(cluster_name, db_silo_name, service_name, member_hostname):
     """
 
     hname, port = member_hostname.split(":")
-    if hname == None:
+    if hname is None:
         return
 
     hostip = socket.gethostbyname(hname)
@@ -91,17 +90,44 @@ try:
     rs_status = client["admin"].command("replSetGetStatus")
     for member in rs_status['members']:
         if member['stateStr'] == "(not reachable/healthy)":
-            time_since_last_heartbeat = datetime.datetime.utcnow() - member["lastHeartbeatRecv"]
+            time_since_last_heartbeat = datetime.datetime.utcnow() - \
+                member["lastHeartbeatRecv"]
+
             if time_since_last_heartbeat.seconds > AUTOREMOVAL_DELAY_SECONDS:
-                print str(datetime.datetime.now()), "Removing", str(member['name']), "from route53 records"
-                cleanup_route53(cluster_name, db_silo_name, service_name, member['name'])
-                print str(datetime.datetime.now()), "Removing", str(member['name']), "from MongoDB replica set"
+                print \
+                    str(datetime.datetime.now()), \
+                    "Removing", \
+                    str(member['name']), \
+                    "from route53 records"
+
+                cleanup_route53(
+                    cluster_name,
+                    db_silo_name,
+                    service_name,
+                    member['name'])
+
+                print \
+                    str(datetime.datetime.now()), \
+                    "Removing", \
+                    str(member['name']), \
+                    "from MongoDB replica set"
+
                 reconfigure_replicaset(client, member["_id"])
                 # Exit code 3 signals that a replica set member was removed
                 sys.exit(3)
-            # Exit code 4 signals a replica set member was detected unhealthy, but not removed
-            print str(datetime.datetime.now()), "Unhealthy Replica set member detected but not removed"
-            print str(datetime.datetime.now()), "Auto-removal scheduled in", str(AUTOREMOVAL_DELAY_SECONDS - time_since_last_heartbeat.seconds), "seconds"
+
+            # Exit code 4 signals a replica set member was detected unhealthy,
+            # but not removed
+            print \
+                str(datetime.datetime.now()), \
+                "Unhealthy Replica set member detected but not removed"
+
+            print \
+                str(datetime.datetime.now()), \
+                "Auto-removal scheduled in", \
+                AUTOREMOVAL_DELAY_SECONDS - time_since_last_heartbeat.seconds, \
+                "seconds"
+
             sys.exit(4)
 except Exception as e:
     print str(datetime.datetime.now()), "Failed to cleanup replica set"
@@ -109,5 +135,3 @@ except Exception as e:
     sys.exit(1)
 
 sys.exit(0)
-
-

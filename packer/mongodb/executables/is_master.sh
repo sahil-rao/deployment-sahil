@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eu
+
 is_master=`mongo --eval "db.isMaster().ismaster" --quiet`
 if [ "$is_master" == "true" ]; then
     echo "yes"
