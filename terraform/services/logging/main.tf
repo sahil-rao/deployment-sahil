@@ -1,9 +1,3 @@
-variable "elasticsearch_name" {}
-variable "logstash_name" {}
-variable "redis_name" {}
-
-###################################################################
-
 module "elasticsearch" {
     source = "../elasticsearch"
 
@@ -13,10 +7,10 @@ module "elasticsearch" {
     region = "${var.region}"
     vpc_id = "${var.vpc_id}"
     vpc_cidr = "${var.vpc_cidr}"
-    subnet_ids = "${var.subnet_ids}"
+    subnet_ids = ["${var.subnet_ids}"]
     dns_zone_id = "${var.dns_zone_id}"
 
-    security_groups = "${var.elasticsearch_security_groups}"
+    security_groups = ["${var.elasticsearch_security_groups}"]
 
     ami = "${var.elasticsearch_ami}"
     instance_type = "${var.elasticsearch_instance_type}"
@@ -35,10 +29,10 @@ module "logstash" {
     region = "${var.region}"
     vpc_id = "${var.vpc_id}"
     vpc_cidr = "${var.vpc_cidr}"
-    subnet_ids = "${var.subnet_ids}"
+    subnet_ids = ["${var.subnet_ids}"]
     dns_zone_id = "${var.dns_zone_id}"
 
-    security_groups = "${var.logstash_security_groups}"
+    security_groups = ["${var.logstash_security_groups}"]
 
     ami = "${var.logstash_ami}"
     instance_type = "${var.logstash_instance_type}"
@@ -57,10 +51,10 @@ module "redis-log" {
     region = "${var.region}"
     vpc_id = "${var.vpc_id}"
     vpc_cidr = "${var.vpc_cidr}"
-    subnet_ids = "${var.subnet_ids}"
+    subnet_ids = ["${var.subnet_ids}"]
     dns_zone_id = "${var.dns_zone_id}"
 
-    security_groups = "${var.redis_security_groups}"
+    security_groups = ["${var.redis_security_groups}"]
 
     ami = "${var.redis_ami}"
     instance_type = "${var.redis_instance_type}"

@@ -7,15 +7,15 @@ output "backoffice_security_groups" {
 }
 
 output "elasticsearch_security_groups" {
-    value = "${aws_security_group.elasticsearch.id}"
+    value = ["${aws_security_group.elasticsearch.id}"]
 }
 
 output "logstash_security_groups" {
-    value = "${aws_security_group.logstash.id}"
+    value = ["${aws_security_group.logstash.id}"]
 }
 
 output "mongo_security_groups" {
-    value = "${aws_security_group.mongo.id}"
+    value = ["${aws_security_group.mongo.id}"]
 }
 
 output "nginx_security_groups" {
@@ -31,5 +31,5 @@ output "queue_server_security_groups" {
 }
 
 output "redis_security_groups" {
-    value = "${aws_security_group.redis.id}"
+    value = ["${aws_security_group.redis.id}"]
 }

@@ -15,23 +15,17 @@ variable "vpc_cidr" {
 }
 
 variable "availability_zones" {
-    default = "us-west-2a,us-west-2b,us-west-2c"
+    type = "list"
+    default = ["us-west-2a", "us-west-2b", "us-west-2c"]
 }
 
 variable "public_subnets" {
-    default = "10.7.0.0/21,10.7.8.0/21,10.7.16.0/21"
-}
-
-variable "public_subnets_count" {
-    default = 3
+    type = "list"
+    default = ["10.7.0.0/21", "10.7.8.0/21", "10.7.16.0/21"]
 }
 
 variable "private_subnets" {
-    default = "10.7.24.0/21,10.7.32.0/21,10.7.40.0/21"
-}
-
-variable "private_subnets_count" {
-    default = 3
+    default = ["10.7.24.0/21", "10.7.32.0/21", "10.7.40.0/21"]
 }
 
 variable "virtual_gateway_id" {

@@ -1,6 +1,8 @@
 variable "vpc_id" {}
 variable "vpc_cidr" {}
-variable "subnet_ids" {}
+variable "subnet_ids" {
+    type = "list"
+}
 variable "zone_name" {}
 
 variable "dbsilo_name" {}
@@ -12,7 +14,9 @@ variable "key_name" {}
 ###################################################################
 
 variable "mongo_name" {}
-variable "mongo_security_groups" {}
+variable "mongo_security_groups" {
+    type = "list"
+}
 variable "mongo_iam_instance_profile" {}
 
 variable "mongo_version" {}
@@ -31,7 +35,9 @@ variable "mongo_ebs_optimized" {
 ###################################################################
 
 variable "redis_name" {}
-variable "redis_security_groups" {}
+variable "redis_security_groups" {
+    type = "list"
+}
 variable "redis_iam_instance_profile" {}
 
 variable "redis_version" {}
@@ -51,7 +57,9 @@ variable "redis_ebs_optimized" {
 ###################################################################
 
 variable "elasticsearch_name" {}
-variable "elasticsearch_security_groups" {}
+variable "elasticsearch_security_groups" {
+    type = "list"
+}
 variable "elasticsearch_iam_instance_profile" {}
 
 variable "elasticsearch_version" {}
@@ -69,9 +77,9 @@ variable "elasticsearch_ebs_optimized" {
 module "mongodb" {
     source = "../mongodb-asg"
 
-    subnet_ids = "${var.subnet_ids}"
+    subnet_ids = ["${var.subnet_ids}"]
     zone_name = "${var.zone_name}"
-    security_groups = "${var.mongo_security_groups}"
+    security_groups = ["${var.mongo_security_groups}"]
 
     key_name = "${var.key_name}"
     iam_instance_profile = "${var.mongo_iam_instance_profile}"
@@ -94,9 +102,9 @@ module "mongodb" {
 module "redis" {
     source = "../redis-asg"
 
-    subnet_ids = "${var.subnet_ids}"
+    subnet_ids = ["${var.subnet_ids}"]
     zone_name = "${var.zone_name}"
-    security_groups = "${var.redis_security_groups}"
+    security_groups = ["${var.redis_security_groups}"]
 
     key_name = "${var.key_name}"
     iam_instance_profile = "${var.redis_iam_instance_profile}"
@@ -120,9 +128,9 @@ module "redis" {
 module "elasticsearch" {
     source = "../elasticsearch-asg"
 
-    subnet_ids = "${var.subnet_ids}"
+    subnet_ids = ["${var.subnet_ids}"]
     zone_name = "${var.zone_name}"
-    security_groups = "${var.elasticsearch_security_groups}"
+    security_groups = ["${var.elasticsearch_security_groups}"]
 
     key_name = "${var.key_name}"
     iam_instance_profile = "${var.elasticsearch_iam_instance_profile}"

@@ -1,6 +1,10 @@
-variable "subnet_ids" {}
+variable "subnet_ids" {
+    type = "list"
+}
 variable "zone_name" {}
-variable "security_groups" {}
+variable "security_groups" {
+    type = "list"
+}
 
 ###################################################################
 
@@ -55,7 +59,7 @@ resource "aws_launch_configuration" "default" {
     ebs_optimized = "${var.ebs_optimized}"
     enable_monitoring = false
     key_name = "${var.key_name}"
-    security_groups = ["${split(",", var.security_groups)}"]
+    security_groups = ["${var.security_groups}"]
     user_data = "${data.template_file.user_data.rendered}"
 
     lifecycle {
@@ -71,8 +75,8 @@ resource "aws_autoscaling_group" "default" {
     max_size = "${var.max_size}"
     desired_capacity = "${var.desired_capacity}"
     vpc_zone_identifier = [
-        "${element(split(",", var.subnet_ids), 0)}",
-        "${element(split(",", var.subnet_ids), 1)}"
+        "${var.subnet_ids[0]}",
+        "${var.subnet_ids[1]}"
     ]
 
     tag {
