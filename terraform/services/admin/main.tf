@@ -73,3 +73,9 @@ resource "aws_route53_record" "admin" {
     ttl = "5"
     records = ["${aws_instance.admin.private_ip}"]
 }
+
+###################################################################
+
+output "eip" {
+    value = "${aws_eip.admin.public_ip}"
+}

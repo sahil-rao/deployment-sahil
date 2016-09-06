@@ -82,3 +82,9 @@ resource "aws_route53_record" "default" {
     ttl = "5"
     records = ["${element(aws_instance.default.*.private_ip, count.index)}"]
 }
+
+###################################################################
+
+output "eip" {
+    value = "${aws_eip.default.public_ip}"
+}

@@ -23,18 +23,31 @@ resource "aws_iam_role_policy" "backoffice" {
 {
   "Version": "2012-10-17",
   "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": "s3:*",
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-          "route53:*"
-      ],
-      "Resource": "*"
-    }
+      {
+          "Effect": "Allow",
+          "Action": [
+              "ec2:DescribeInstances",
+              "ec2:DescribeTags"
+          ],
+          "Resource": "*"
+      },
+      {
+          "Effect": "Allow",
+          "Action": "s3:*",
+          "Resource": "${var.s3_navopt_bucket_arn}/xplain-servicelogs"
+      },
+      {
+          "Effect": "Allow",
+          "Action": "s3:*",
+          "Resource": "*"
+      },
+      {
+          "Effect": "Allow",
+          "Action": [
+              "route53:*"
+          ],
+          "Resource": "*"
+      }
   ]
 }
 EOF
