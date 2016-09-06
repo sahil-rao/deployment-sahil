@@ -7,7 +7,7 @@ module "redis-cache" {
 
     subnet_ids = "${data.terraform_remote_state.networking.private_subnet_ids}"
     security_groups = "${module.sg.redis_security_groups}"
-    zone_name = "${data.terraform_remote_state.networking.zone_name}"
+    zone_name = "${data.terraform_remote_state.networking.dns_zone_name}"
 
     version = "v3"
     ami_id = "ami-ec21f58c"
