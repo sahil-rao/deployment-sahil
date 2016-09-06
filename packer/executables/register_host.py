@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 from datetime import datetime as dt
 import argparse
 import boto.ec2.autoscale
@@ -50,14 +52,19 @@ def upsert_record(route53_zone, record_name, ip):
     Creates record with record_name and ip; updates record if it already exists
     with different ip Does nothing if record already exists with same ip
     """
+
+    # Only upsert the dns record if it doesn't resolve to us.
+    record_ip = socket.gethostbyname(record_name)
+    if ip == record_ip:
+        return
+
+    print str(dt.now()), "Registering host as", record_name
     record = route53_zone.get_a(record_name)
 
     if record and ip not in record.resource_records:
         route53_zone.update_a(record_name, ip)
     elif not record:
         route53_zone.add_a(record_name, ip)
-    else:
-        pass
 
 
 def register_host(region, db_silo_name, service_name, zone_name,
@@ -69,7 +76,6 @@ def register_host(region, db_silo_name, service_name, zone_name,
     if is_master:
         record_name = "{0}{1}.{2}.{3}".format(service_name, 'master',
                                               db_silo_name, zone_name)
-        print str(dt.now()), "Registering host as", record_name
         upsert_record(route53_zone, record_name, my_ip)
 
     if not record_exists(route53_zone, db_silo_name, service_name, my_ip):
@@ -80,7 +86,6 @@ def register_host(region, db_silo_name, service_name, zone_name,
 
         record_name = "{0}{1}.{2}.{3}".format(service_name, service_num,
                                               db_silo_name, zone_name)
-        print str(dt.now()), "Registering host as", record_name
         upsert_record(route53_zone, record_name, my_ip)
 
 

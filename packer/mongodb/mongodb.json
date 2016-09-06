@@ -47,7 +47,22 @@
         },
         {
             "type": "shell",
+            "script": "../scripts/setup_ubuntu.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/setup_volume.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }} /dev/xvdf /var/lib/mongodb"
+        },
+        {
+            "type": "shell",
             "script": "setup_mongodb.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/setup_datadog.sh",
             "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
         }
     ]

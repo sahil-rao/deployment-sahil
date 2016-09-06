@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -eu
+
 REPOSITORY_NAME="s3_repo"
 SNAPSHOT_PREFIX="curator-gen-"
 myip=`/sbin/ifconfig eth0 | grep "inet addr" | awk -F: '{print $2}' | awk '{print $1}'`

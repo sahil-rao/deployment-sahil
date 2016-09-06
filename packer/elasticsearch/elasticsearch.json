@@ -50,7 +50,22 @@
         },
         {
             "type": "shell",
+            "script": "../scripts/setup_ubuntu.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/setup_volume.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }} /dev/xvdf /var/lib/elasticsearch"
+        },
+        {
+            "type": "shell",
             "script": "setup_elasticsearch.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/setup_datadog.sh",
             "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
         }
     ]

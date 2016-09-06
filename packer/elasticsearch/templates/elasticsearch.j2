@@ -33,7 +33,7 @@ cluster.name: elasticsearch-{{ CLUSTER }}-{{ DBSILO }}
 # Path to directory where to store the data (separate multiple locations by comma):
 #
 
-path.data: /mnt
+path.data: /var/lib/elasticsearch
 
 #
 # Path to log files:
@@ -66,7 +66,7 @@ bootstrap.mlockall: true
 # <http://www.elastic.co/guide/en/elasticsearch/reference/current/modules-network.html>
 #
 
-network.host: _ec2:privateIpv4_
+network.host: ["_local_", "_ec2:privateIpv4_"]
 
 # --------------------------------- Discovery ----------------------------------
 #
