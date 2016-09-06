@@ -47,8 +47,12 @@
   sudo: yes
 - name: Install apache2-utils
   apt: name=apache2-utils state=present
+  sudo: yes
 - name: Install S3 CMD
   apt: name=s3cmd state=present
+  sudo: yes
+- name: Install Python Pip
+  apt: name=python-pip state=present
   sudo: yes
 - name: Install requests python library
   pip: name=requests state=latest
