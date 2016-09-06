@@ -174,6 +174,13 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
             if 'dataType' in column_entry and 'primaryKey' in column_entry and 'foreignKey' in column_entry:
                 mongoconn.db.entities.update({'eid':eid}, {'$set': column_entry})
 
+        if 'partitionColumn' in column_entry and column_entry['partitionColumn'] is True:
+            redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN_PARTITION")
+            redis_conn.setRelationship(table_entity.eid, column_entity.eid,
+                                       'TABLE_COLUMN_PARTITION',
+                                       {'weight': 1,
+                                        'columnName': column_entity.columnName,
+                                        'tableName': column_entity.tableName})
 
     """
     Create relationships.
