@@ -3,7 +3,7 @@ module "logging" {
 
     region = "${var.region}"
     env = "${var.env}"
-    zone_name = "${data.terraform_remote_state.networking.dns_zone_name}"
+    zone_name = "${var.dns_zone_name}"
 
     kibana_name = "logging-kibana"
     kibana_security_groups = ["${module.sg.kibana_security_groups}"]
@@ -14,13 +14,12 @@ module "logging" {
     elasticsearch_name = "logging-elastic"
     elasticsearch_security_groups = ["${module.sg.elasticsearch_security_groups}"]
     elasticsearch_iam_instance_profile = "${module.iam.elasticsearch_instance_profile}"
-    elasticsearch_version = "v1"
-    elasticsearch_ami_id = "ami-062efa66"
-    #elasticsearch_instance_type = "m3.xlarge"
-    elasticsearch_instance_type = "t2.micro"
-    elasticsearch_min_size = 0
-    elasticsearch_max_size = 1
-    elasticsearch_desired_capacity = 1
+    elasticsearch_version = "${var.logging_elasticsearch_version}"
+    elasticsearch_ami_id = "${var.logging_elasticsearch_ami}"
+    elasticsearch_instance_type = "${var.logging_elasticsearch_instance_type}"
+    elasticsearch_min_size = "${var.logging_elasticsearch_min_size}"
+    elasticsearch_max_size = "${var.logging_elasticsearch_max_size}"
+    elasticsearch_desired_capacity = "${var.logging_elasticsearch_desired_capacity}"
     elasticsearch_ebs_optimized = false
 
     logstash_name = "logging-logstash"
@@ -34,18 +33,17 @@ module "logging" {
     redis_security_groups = ["${module.sg.redis_security_groups}"]
     redis_iam_instance_profile = "${module.iam.redis_instance_profile}"
 
-    redis_version = "v4"
-    redis_ami_id = "ami-ec21f58c"
-    redis_instance_type = "t2.micro"
-    redis_min_size = 0
-    redis_max_size = 1
-    redis_desired_capacity = 1
-    redis_quorum_size = 1
+    redis_version = "${var.logging_redis_version}"
+    redis_ami_id = "${var.logging_redis_ami}"
+    redis_instance_type = "${var.logging_redis_instance_type}"
+    redis_min_size = "${var.logging_redis_min_size}"
+    redis_max_size = "${var.logging_redis_max_size}"
+    redis_desired_capacity = "${var.logging_redis_desired_capacity}"
+    redis_quorum_size = "${var.logging_redis_quorum_size}"
 
-    vpc_id = "${data.terraform_remote_state.networking.vpc_id}"
-    vpc_cidr = "${data.terraform_remote_state.networking.vpc_cidr}"
-    subnet_ids = ["${data.terraform_remote_state.networking.private_subnet_ids}"]
-    dns_zone_id = "${data.terraform_remote_state.networking.dns_zone_id}"
+    vpc_id = "${var.vpc_id}"
+    subnet_ids = ["${var.private_subnet_ids}"]
+    dns_zone_id = "${var.dns_zone_id}"
 
     key_name = "${var.key_name}"
 

@@ -1,12 +1,9 @@
 module "sg" {
     source = "../../services/sg"
 
-    vpc_id = "${data.terraform_remote_state.networking.vpc_id}"
-    vpc_cidrs = [
-        "${data.terraform_remote_state.networking.vpc_cidr}",
-        "${var.thunderhead_vpc_cidr}"
-    ]
-    public_cidr = "${module.cloudera-exit-cidr.cidr}"
+    vpc_id = "${var.vpc_id}"
+    private_cidrs = ["${var.private_cidrs}"]
+    public_cidrs = ["${var.public_cidrs}"]
 
     admin_name = "admin"
     backoffice_name = "backoffice"

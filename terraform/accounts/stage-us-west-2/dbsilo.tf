@@ -2,7 +2,6 @@ module "dbsilo1" {
     source = "../../services/dbsilo"
 
     vpc_id = "${data.terraform_remote_state.networking.vpc_id}"
-    vpc_cidr = "${data.terraform_remote_state.networking.vpc_cidr}"
     subnet_ids = ["${data.terraform_remote_state.networking.private_subnet_ids}"]
     zone_name = "${data.terraform_remote_state.networking.dns_zone_name}"
 
@@ -13,8 +12,8 @@ module "dbsilo1" {
     datadog_api_key = "${var.datadog_api_key}"
 
     mongo_name = "${var.cluster_name}-dbsilo1-mongo"
-    mongo_iam_instance_profile = "${module.iam.mongo_instance_profile}"
-    mongo_security_groups = ["${module.sg.mongo_security_groups}"]
+    mongo_iam_instance_profile = "${module.common.mongo_instance_profile}"
+    mongo_security_groups = ["${module.common.mongo_security_groups}"]
     mongo_version = "v21"
     mongo_ami_id = "ami-7c2bff1c"
     #mongo_instance_type = "m4.xlarge"
@@ -25,8 +24,8 @@ module "dbsilo1" {
     mongo_ebs_optimized = false
 
     redis_name = "${var.cluster_name}-dbsilo1-redis"
-    redis_iam_instance_profile = "${module.iam.redis_instance_profile}"
-    redis_security_groups = ["${module.sg.redis_security_groups}"]
+    redis_iam_instance_profile = "${module.common.redis_instance_profile}"
+    redis_security_groups = ["${module.common.redis_security_groups}"]
     redis_version = "v17"
     redis_ami_id = "ami-ec21f58c"
     #redis_instance_type = "r3.2xlarge"
@@ -38,8 +37,8 @@ module "dbsilo1" {
     redis_quorum_size = 2
 
     elasticsearch_name = "${var.cluster_name}-dbsilo1-elasticsearch"
-    elasticsearch_iam_instance_profile = "${module.iam.elasticsearch_instance_profile}"
-    elasticsearch_security_groups = ["${module.sg.elasticsearch_security_groups}"]
+    elasticsearch_iam_instance_profile = "${module.common.elasticsearch_instance_profile}"
+    elasticsearch_security_groups = ["${module.common.elasticsearch_security_groups}"]
     elasticsearch_version = "v10"
     elasticsearch_ami_id = "ami-062efa66"
     #elasticsearch_instance_type = "m3.xlarge"

@@ -6,21 +6,21 @@ resource "aws_security_group" "mongo" {
         from_port = 22
         to_port = 22
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     ingress {
         from_port = 27017
         to_port = 27017
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     ingress {
         from_port = 28017
         to_port = 28017
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     # Allow Mongo to be pinged.
@@ -28,7 +28,7 @@ resource "aws_security_group" "mongo" {
         from_port = 8
         to_port = 0
         protocol = "icmp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     egress {

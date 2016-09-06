@@ -6,28 +6,28 @@ resource "aws_security_group" "admin" {
         from_port = 22
         to_port = 22
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     ingress {
         from_port = 443
         to_port = 443
         protocol = "tcp"
-        cidr_blocks = ["${var.public_cidr}"]
+        cidr_blocks = ["${var.public_cidrs}"]
     }
 
     ingress {
         from_port = 3000
         to_port = 3000
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     ingress {
         from_port = 8
         to_port = 0
         protocol = "icmp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     egress {

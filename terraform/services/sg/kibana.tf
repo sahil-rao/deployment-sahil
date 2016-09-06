@@ -6,21 +6,21 @@ resource "aws_security_group" "kibana" {
         from_port = 22
         to_port = 22
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     ingress {
         from_port = 5601
         to_port = 5601
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     ingress {
         from_port = 8
         to_port = 0
         protocol = "icmp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     egress {

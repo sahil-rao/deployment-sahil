@@ -30,7 +30,6 @@ module "kibana" {
 
     region = "${var.region}"
     vpc_id = "${var.vpc_id}"
-    vpc_cidr = "${var.vpc_cidr}"
     subnet_ids = ["${var.subnet_ids}"]
     dns_zone_id = "${var.dns_zone_id}"
 
@@ -52,7 +51,6 @@ module "logstash" {
 
     region = "${var.region}"
     vpc_id = "${var.vpc_id}"
-    vpc_cidr = "${var.vpc_cidr}"
     subnet_ids = ["${var.subnet_ids}"]
     dns_zone_id = "${var.dns_zone_id}"
 

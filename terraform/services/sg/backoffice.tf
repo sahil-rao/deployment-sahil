@@ -6,21 +6,21 @@ resource "aws_security_group" "backoffice" {
         from_port = 26379
         to_port = 26379
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     ingress {
         from_port = 22
         to_port = 22
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     ingress {
         from_port = 6379
         to_port = 6379
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     # FIXME: why?
@@ -28,7 +28,7 @@ resource "aws_security_group" "backoffice" {
         from_port = 7432
         to_port = 7432
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     # FIXME: why?
@@ -36,7 +36,7 @@ resource "aws_security_group" "backoffice" {
         from_port = 7180
         to_port = 7183
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     # FIXME: why?
@@ -44,7 +44,7 @@ resource "aws_security_group" "backoffice" {
         from_port = 5601
         to_port = 5601
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     # FIXME: why?
@@ -52,7 +52,7 @@ resource "aws_security_group" "backoffice" {
         from_port = 9300
         to_port = 9300
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     # FIXME: why?
@@ -60,14 +60,14 @@ resource "aws_security_group" "backoffice" {
         from_port = 9200
         to_port = 9200
         protocol = "tcp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     ingress {
         from_port = 8
         to_port = 0
         protocol = "icmp"
-        cidr_blocks = ["${var.vpc_cidrs}"]
+        cidr_blocks = ["${var.private_cidrs}"]
     }
 
     egress {
