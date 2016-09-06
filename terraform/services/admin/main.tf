@@ -5,11 +5,9 @@ variable "name" {}
 ###################################################################
 
 variable "vpc_id" {}
-variable "vpc_cidr" {}
 variable "subnet_ids" {
     type = "list"
 }
-variable "public_cidr" {}
 variable "dns_zone_id" {}
 variable "security_groups" {
     type = "list"

@@ -1,8 +1,10 @@
 variable "vpc_id" {}
-variable "vpc_cidrs" {
+variable "private_cidrs" {
     type = "list"
 }
-variable "public_cidr" {}
+variable "public_cidrs" {
+    type = "list"
+}
 
 variable "admin_name" {}
 variable "backoffice_name" {}
