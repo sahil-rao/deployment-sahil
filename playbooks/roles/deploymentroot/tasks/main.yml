@@ -87,9 +87,9 @@
 - name: Get xplain_dashboard
   shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}xplain_dashboard.tar.gz /home/ubuntu/ 
 - name: Untar xplain_admin
-  shell: tar -zxf /home/ubuntu/xplain_admin.tar.gz -C /home/ubuntu
+  unarchive: src=/home/ubuntu/xplain_admin.tar.gz dest=/home/ubuntu copy=no
 - name: Untar xplain_dashboard
-  shell: tar -zxf /home/ubuntu/xplain_dashboard.tar.gz -C /home/ubuntu
+  unarchive: src=/home/ubuntu/xplain_dashboard.tar.gz dest=/home/ubuntu copy=no
 - name: Remove the existing deployed code (xplain_admin)
   file: path=/var/xplain_admin state=absent
   sudo: yes
