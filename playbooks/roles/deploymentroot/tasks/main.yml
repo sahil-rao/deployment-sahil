@@ -108,12 +108,13 @@
 - name: Template out javascript for xplain_dashboard
   template: src=/home/ubuntu/build/UI/xplain_dashboard/js2/index.js dest=/var/www/js2/index.js
   sudo: yes
+
 ########DEPLOY AND CONFIGURE########
 - name: Copy nginx conf file
-  template: src=/home/ubuntu/build/UI/xplain_dashboard/nginx.conf dest=/etc/nginx/nginx.conf
+  template: src=nginx.conf dest=/etc/nginx/nginx.conf
   sudo: yes
 - name: Copy different nginx conf file if staging (No SSL)
-  template: src=/home/ubuntu/build/UI/xplain_dashboard/nginx.conf.staging dest=/etc/nginx/nginx.conf
+  template: src=nginx.conf.staging dest=/etc/nginx/nginx.conf
   when: clusterName == 'xplain-staging'
   sudo: yes
 - name: Copy node upstart script
