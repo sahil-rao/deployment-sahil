@@ -47,6 +47,14 @@ resource "aws_security_group" "backoffice" {
         cidr_blocks = ["${var.private_cidrs}"]
     }
 
+    # FIXME: hack for harshil
+    ingress {
+        from_port = 8982
+        to_port = 8982
+        protocol = "tcp"
+        cidr_blocks = ["${var.private_cidrs}"]
+    }
+
     # FIXME: why?
     ingress {
         from_port = 9300
