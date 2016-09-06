@@ -15,8 +15,8 @@ module "dbsilo1" {
     mongo_name = "${var.cluster_name}-dbsilo1-mongo"
     mongo_iam_instance_profile = "${module.iam.mongo_instance_profile}"
     mongo_security_groups = ["${module.sg.mongo_security_groups}"]
-    mongo_version = "v1"
-    mongo_ami_id = "ami-03d10763"
+    mongo_version = "v21"
+    mongo_ami_id = "ami-7c2bff1c"
     #mongo_instance_type = "m4.xlarge"
     mongo_instance_type = "t2.micro"
     mongo_min_size = 0
@@ -52,7 +52,7 @@ module "dbsilo1" {
 
 # FIXME: Hack around navopt backoffice not knowing about the new hostnames.
 resource "aws_route53_record" "dbsilo1-redis-master" {
-    zone_id = "${data.terraform_remote_state.networking.dns_zone_name}"
+    zone_id = "${data.terraform_remote_state.networking.dns_zone_id}"
     name = "redismaster.dbsilo1.${data.terraform_remote_state.networking.dns_zone_name}"
     type = "CNAME"
     ttl = "5"

@@ -45,7 +45,7 @@ module "logging" {
     vpc_id = "${data.terraform_remote_state.networking.vpc_id}"
     vpc_cidr = "${data.terraform_remote_state.networking.vpc_cidr}"
     subnet_ids = ["${data.terraform_remote_state.networking.private_subnet_ids}"]
-    dns_zone_id = "${data.terraform_remote_state.networking.dns_zone_name}"
+    dns_zone_id = "${data.terraform_remote_state.networking.dns_zone_id}"
 
     key_name = "${var.key_name}"
 
