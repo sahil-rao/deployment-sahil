@@ -3,7 +3,7 @@ provider "aws" {
     region = "${var.region}"
 }
 
-resource "terraform_remote_state" "networking" {
+data "terraform_remote_state" "networking" {
     backend = "s3"
     config {
         profile = "${var.profile}"

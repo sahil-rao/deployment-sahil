@@ -27,6 +27,13 @@ resource "aws_iam_role_policy" "backoffice" {
       "Effect": "Allow",
       "Action": "s3:*",
       "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+          "route53:*"
+      ],
+      "Resource": "*"
     }
   ]
 }
