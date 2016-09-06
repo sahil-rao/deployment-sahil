@@ -1,16 +1,16 @@
 {
     "builders": [
         {
+            "type": "amazon-ebs",
+            "ami_description": "Packer generated AMI",
             "access_key": "",
             "secret_key": "",
-            "type": "amazon-ebs",
-            "region": "us-west-1",
-            "source_ami": "ami-06116566",
+            "region": "us-west-2",
+            "source_ami": "ami-704ab610",
             "instance_type": "m3.xlarge",
             "ssh_username": "ubuntu",
             "ami_name": "dbsilo-elasticsearch {{timestamp}}",
             "ami_regions": [
-                "us-west-1",
                 "us-west-2"
             ],
             "launch_block_device_mappings": [
@@ -23,7 +23,7 @@
                 }
             ],
             "tags": {
-                "Service": "elasticsearch"
+                "Name": "dbsilo-elasticsearch"
             }
         }
     ],
