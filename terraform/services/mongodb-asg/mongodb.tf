@@ -32,7 +32,7 @@ variable "snapshot_id" {}
 
 ###################################################################
 
-resource "template_file" "user_data" {
+data "template_file" "user_data" {
     template = "${file("${path.module}/user-data.sh")}"
 
     vars {
@@ -42,10 +42,6 @@ resource "template_file" "user_data" {
         zone_name = "${var.zone_name}"
         datadog_api_key = "${var.datadog_api_key}"
         snapshot_id = "${var.snapshot_id}"
-    }
-
-    lifecycle {
-        create_before_destroy = true
     }
 }
 
@@ -60,7 +56,7 @@ resource "aws_launch_configuration" "default" {
     enable_monitoring = false
     key_name = "${var.key_name}"
     security_groups = ["${split(",", var.security_groups)}"]
-    user_data = "${template_file.user_data.rendered}"
+    user_data = "${data.template_file.user_data.rendered}"
 
     lifecycle {
         create_before_destroy = true

@@ -9,5 +9,5 @@ variable "storagetype" {
 }
 
 output "ami_id" {
-    value = "${lookup(var.all_amis, format(\"%s-%s-%s-%s-%s\", var.region, var.distribution, var.architecture, var.virttype, var.storagetype))}"
+    value = "${lookup(var.all_amis, format("%s-%s-%s-%s-%s", var.region, var.distribution, var.architecture, var.virttype, var.storagetype))}"
 }

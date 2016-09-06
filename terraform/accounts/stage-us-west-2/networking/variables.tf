@@ -39,5 +39,5 @@ variable "virtual_gateway_id" {
 }
 
 variable "zone_name" {
-    default = "stage.navopt"
+    default = "stage.xplain.io"
 }
