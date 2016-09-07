@@ -14,15 +14,21 @@ def connect(hostname):
 def get_config(hostname):
     config_file = os.path.expanduser('~/.ssh/config')
 
+    d = {'hostname': hostname}
+
     if os.path.exists(config_file):
         with open(config_file) as f:
             config = paramiko.SSHConfig()
             config.parse(f)
             o = config.lookup(hostname)
-            return {
-                    'hostname': o['hostname'],
-                    'username': o['user'],
-                    'key_filename': o['identityfile']
-            }
-    else:
-        return {'hostname': hostname}
+
+            for dst_key, src_key in (
+                    ('hostname', 'hostname'),
+                    ('username', 'user'),
+                    ('key_filename', 'identityfile')):
+                try:
+                    d[dst_key] = o[src_key]
+                except KeyError:
+                    pass
+
+    return d
