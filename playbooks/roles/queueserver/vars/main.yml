@@ -13,7 +13,7 @@ rabbitmq_mnesia_folder: "{{rabbitmq_cookie_dir}}/mnesia"
 rabbitmq_port: 5672
 
 rabbitmq_auth_config:
-  erlang_cookie: "TAMOGTPFFVUCXYWJQNXB"
+  erlang_cookie: "{{ erlang_cookie }}"
 
 # If the system is running out of an Amazon Web Services
 # cloudformation stack, this group name can used to pull out
