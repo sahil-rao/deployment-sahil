@@ -62,10 +62,6 @@
   sudo: yes
 - name: Get the npm modules.
   npm: path=/var/admin
-### Ansibleception
-- name: Copy ansible folders
-  copy: src=/etc/ansible dest=/etc/ owner=bitnami mode=755
-  sudo: yes
 - name: Create create deployement dir
   file: path=/boot/build state=directory owner=bitnami mode=755
   sudo: yes
