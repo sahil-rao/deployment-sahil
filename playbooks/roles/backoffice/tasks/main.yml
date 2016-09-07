@@ -232,7 +232,7 @@
   file: path=/var/www state=directory
   sudo: yes
 - name: Update version number for dashboard page
-  local_action: template src=/var/www/index_template.j2 dest=/var/www/index.html
+  template: src=index_template.j2 dest=/var/www/index.html
   sudo: yes
 - name: Restart nginx
   service: name=nginx state=reloaded

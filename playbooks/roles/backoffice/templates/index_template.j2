@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>Cluster Root</title>
+<link rel="stylesheet" type="text/css" href="index.css">
+<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src="js2/index.js"></script>
+</head>
+
+<body>
+<header>
+  <span> Cloudera Optimizer Cluster Operations Center </span>
+  <br> Cluster: {{ clusterName }} Version: <i>{{ '%s' % BuildVersion if BuildVersion else 'master'}}</i>
+</header>
+<ul id="nav">
+   <li><a href="admin">Administrator Page</a></li>
+   <li><a href="monit">Monit</a></li>
+   <li><a href="rabbitmq1">Rabbit #1</a></li>
+   <li><a href="rabbitmq2">Rabbit #2</a></li>
+   <li><a href="MMS">Mongo Monitoring Service</a></li>
+   <li><a href="logs">Logs</a></li>
+</ul>
+<div id="container">
+   <div id="control">
+   <button id="ansible-date">Get dates</button><br>
+   <button id="ansible-restartmath">Restart math service</button><br>
+   <button id="ansible-restartcompileservice">Restart compile service</button><br>
+   <button id="ansible-restartcompileserver">Restart compiler</button><br>
+   <button id="ansible-restartfp">Restart fp service</button><br>
+   <button id="ansible-restartnode">Restart nodejs</button><br>
+   <button id="ansible-restartapp">Restart app service</button><br>
+   <button id="ansible-restartadv">Restart advanalytics</button><br>
+   </div>
+   <div id="output">
+   <b>Ansible Output:</b>
+   </div>
+</div>
+</body>
+</html>
