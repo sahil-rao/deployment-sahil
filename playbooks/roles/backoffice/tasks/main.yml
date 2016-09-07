@@ -186,6 +186,18 @@
 - name: Install python datadog package
   pip: name=datadog
   sudo: yes
+- name: Install boto
+  pip: name=boto
+  sudo: yes
+- name: Install pika
+  pip: name=pika version=0.9.8
+  sudo: yes
+- name: Install networkx
+  pip: name=networkx
+  sudo: yes
+- name: Install sqlparse
+  pip: name=sqlparse
+  sudo: yes
 #REDIS SENTINEL DEPLOYMENT
 #- name: Install Redis APT Package
 #  apt: name=redis-server update_cache=yes
