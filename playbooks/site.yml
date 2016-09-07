@@ -58,11 +58,6 @@
   - role: elasticsearch
     sudo: true
 
-- hosts: tag_Name_DeploymentRoot
-  roles:
-  - role: s3cmd
-  - role: deploymentroot
-
 - hosts: tag_Name_RedisSentinel
   roles:
   - role: redis_sentinel
