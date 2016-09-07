@@ -1,0 +1,377 @@
+#!/usr/bin/env python
+
+import argparse
+import getpass
+import os
+import shutil
+import subprocess
+import sys
+
+# List out the services and their artifacts.
+SERVICES = {
+    'UI': [
+        'xplain.io.tar.gz',
+        'optimizer_api.io.tar.gz',
+        'xplain_dashboard.tar.gz',
+        'optimizer_admin.io.tar.gz',
+    ],
+    'analytics': [
+        'Baaz-Analytics.tar.gz',
+    ],
+    'compiler': [
+        'Baaz-Compiler.tar.gz',
+    ],
+    'deployment': [
+        'Baaz-DataAcquisition-Service.tar.gz',
+        'Baaz-Compile-Service.tar.gz',
+        'Baaz-Analytics-Service.tar.gz',
+    ],
+    'documentation': [],
+    'graph': [
+        'flightpath-deployment.tar.gz',
+    ],
+}
+DEFAULT_BUCKET = 'baaz-deployment'
+DEFAULT_GITHUB_PROJECT = 'git@github.com:baazdata'
+DEFAULT_CLUSTER = 'navopt-dev'
+
+
+def run_command(args, cmd):
+    if args.verbose:
+        print '+', ' '.join(cmd)
+
+    if not args.dry_run:
+        subprocess.check_call(cmd)
+
+
+def checkout_repo(args, service):
+    """
+    Check out the service repo into a cache.
+    """
+
+    repo_base = args.repo
+    if not repo_base.endswith('/'):
+        repo_base += '/'
+
+    repo_url = '{}{}.git'.format(repo_base, service)
+    repo_dir = os.path.join('.gitcache', service)
+
+    if os.path.exists(repo_dir):
+        print '--- updating', repo_url
+
+        cmd = [
+            'git',
+            '-C', repo_dir,
+            'remote',
+            'set-url',
+            'origin',
+            repo_url,
+        ]
+        run_command(args, cmd)
+
+        cmd = [
+            'git',
+            '-C', repo_dir,
+            'remote',
+            'update',
+            'origin',
+        ]
+        run_command(args, cmd)
+    else:
+        print '--- cloning', repo_url
+
+        cmd = [
+            'git',
+            'clone',
+            '--mirror',
+            repo_url,
+            repo_dir,
+        ]
+        run_command(args, cmd)
+
+
+def build_documentation(args):
+    checkout_repo(args, 'documentation')
+
+    cmd_git = [
+        'git',
+        '-C',
+        '.gitcache/documentation',
+        'archive',
+        args.branch,
+        'NavOptHelp',
+    ]
+
+    dst = os.path.join('target', 'NavOptHelp')
+    if os.path.exists(dst):
+        shutil.rmtree(dst)
+
+    cmd_tar = [
+        'tar',
+        '-x',
+        '-C',
+        'target',
+    ]
+    if args.verbose:
+        print '+', ' '.join(cmd_git), '|', ' '.join(cmd_tar)
+
+    if not args.dry_run:
+        p_git = subprocess.Popen(cmd_git, stdout=subprocess.PIPE)
+        p_tar = subprocess.Popen(cmd_tar, stdin=p_git.stdout)
+        p_git.stdout.close()
+        stdout, stderr = p_tar.communicate()
+        p_git.wait()
+
+        if p_git.returncode != 0:
+            raise subprocess.CalledProcessError(p_git.returncode, cmd_git[0])
+
+        if p_tar.returncode != 0:
+            raise subprocess.CalledProcessError(p_tar.returncode, cmd_tar[0])
+
+
+def build_service(args, service):
+    """
+    Build the service in a docker container.
+    """
+
+    checkout_repo(args, service)
+
+    print '--- building', service
+
+    cmd = [
+        'docker',
+        'build',
+        '-t',
+        'build-navopt',
+        'scripts',
+    ]
+    run_command(args, cmd)
+
+    # Run the docker build.
+    cmd = [
+        'docker',
+        'run',
+        '-v', os.path.expanduser('~/.m2:/root/.m2'),
+        '-v', '{}/.gitcache:/gitcache'.format(os.getcwd()),
+        '-v', '{}/target:/target'.format(os.getcwd()),
+        '-v', '{}/scripts:/scripts'.format(os.getcwd()),
+        '-t', 'build-navopt',
+        '/scripts/build-{}.sh'.format(service),
+        args.branch,
+    ]
+    run_command(args, cmd)
+
+
+def build_services(args):
+    if not args.build:
+        return
+
+    for service in args.services:
+        if service == 'documentation':
+            build_documentation(args)
+        else:
+            build_service(args, service)
+
+
+def upload_service(args, service, target_bucket):
+    """
+    Upload the service tarballs.
+    """
+
+    for tarball in SERVICES[service]:
+        src = os.path.join('target', tarball)
+
+        if not args.dry_run and not os.path.exists(src):
+            raise Exception('`{}` does not exist'.format(src))
+
+        dst = 's3://{}/{}'.format(target_bucket, tarball)
+
+        print '--- uploading', src, 'to', dst
+        cmd = [
+            'aws',
+            's3',
+            'cp',
+            src,
+            dst,
+        ]
+        run_command(args, cmd)
+
+
+def upload_documentation(args):
+    """
+    Upload the documentation
+    """
+
+    src = 'target/NavOptHelp/'
+    dst = 's3://xplain-public/{}/documentation/NavOptHelp/'.format(args.cluster)
+
+    print '--- uploading', src, 'to', dst
+    cmd = [
+        'aws',
+        's3',
+        'sync',
+        '--delete',
+        '--acl', 'public-read',
+        src,
+        dst,
+    ]
+    run_command(args, cmd)
+
+
+def prompt(msg, assume_yes=None):
+    if assume_yes is not None:
+        return assume_yes
+
+    while True:
+        response = raw_input(msg).lower()
+        if response in ('yes', 'y'):
+            return True
+        elif response in ('no', 'n'):
+            return False
+
+
+def upload_services(args, target_bucket):
+    if not args.upload or args.assume_yes is False:
+        return
+
+    if args.assume_yes is None:
+        print
+        print '-' * 78
+        print
+        print \
+            'Are you sure you want to upload the following services?', \
+            ' '.join(sorted(args.services))
+
+        if not prompt('[yes/no]: ', args.assume_yes):
+            return
+
+    for service in args.services:
+        if service == 'documentation':
+            upload_documentation(args)
+        else:
+            upload_service(args, service, target_bucket)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-v', '--verbose',
+        default=False,
+        action='store_true',
+        help='Print extra debug info')
+    parser.add_argument(
+        '-n', '--no',
+        default=None,
+        dest='assume_yes',
+        action='store_false',
+        help='Answer yes to any questions')
+    parser.add_argument(
+        '-y', '--yes',
+        default=None,
+        dest='assume_yes',
+        action='store_true',
+        help='Answer yes to any questions')
+    parser.add_argument(
+        '--dry-run',
+        default=False,
+        action='store_true',
+        help='Do not actually run any commands')
+    parser.add_argument(
+        '--repo',
+        default=DEFAULT_GITHUB_PROJECT,
+        help='github project to clone from (default {})'.format(
+            DEFAULT_GITHUB_PROJECT,
+        ))
+    parser.add_argument(
+        '--release',
+        default=False,
+        action='store_true',
+        help='build a release candidate')
+    parser.add_argument(
+        '--branch',
+        default='master',
+        help='which branch to build (default master)')
+    parser.add_argument(
+        '--target-branch',
+        default=None,
+        help='which branch to build (defaults to `--branch` value)')
+    parser.add_argument(
+        '--bucket',
+        default=DEFAULT_BUCKET,
+        help='upload artifacts to this bucket (default {}'.format(
+            DEFAULT_BUCKET))
+    parser.add_argument(
+        '--target-path',
+        help='upload artifacts to this bucket (default $USERNAME-$BRANCH)')
+    parser.add_argument(
+        '--no-build',
+        dest='build',
+        default=True,
+        action='store_false',
+        help='do not build artifacts')
+    parser.add_argument(
+        '--no-upload',
+        dest='upload',
+        default=True,
+        action='store_false',
+        help='do not upload artifacts to S3')
+    parser.add_argument(
+        '--cluster',
+        default=DEFAULT_CLUSTER,
+        help='The name of the cluster (default {})'.format(DEFAULT_CLUSTER))
+    parser.add_argument(
+        'services',
+        default=SERVICES.keys(),
+        nargs='*',
+        help='which services to build')
+    args = parser.parse_args()
+
+    ############################################################################
+    # Validate arguments
+
+    if not args.branch:
+        print >> sys.stderr, 'build branch is empty'
+        return 1
+
+    # Use the build branch if the target branch is not specified.
+    target_branch = args.target_branch
+    if target_branch is None:
+        target_branch = args.branch
+
+    if not target_branch:
+        print >> sys.stderr, 'target branch is empty'
+        return 1
+
+    target_path = args.target_path
+    if target_path is None:
+        target_path = '{}/{}'.format(getpass.getuser(), target_branch)
+
+    if not target_path:
+        print >> sys.stderr, 'target path is empty'
+        return 1
+
+    target_bucket = args.bucket
+    if not args.release:
+        target_bucket = os.path.join(target_bucket, target_path)
+
+    # Make sure services are known
+    for service in args.services:
+        if service not in SERVICES:
+            print >> sys.stderr, 'unknown service:', service
+            return 1
+
+    ############################################################################
+    # Do the build
+
+    if not os.path.exists('.gitcache'):
+        os.makedirs('.gitcache')
+
+    if not os.path.exists('target'):
+        os.makedirs('target')
+
+    build_services(args)
+    upload_services(args, target_bucket)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
