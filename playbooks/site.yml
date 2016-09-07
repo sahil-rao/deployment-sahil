@@ -9,6 +9,7 @@
 
 - hosts: tag_Name_Backoffice
   roles:
+  - role: s3cmd
   - role: backoffice
 
 - hosts: tag_Name_Webserver1
@@ -21,6 +22,7 @@
 
 - hosts: tag_Name_NodeJS
   roles:
+  - role: s3cmd
   - role: nodejsserver
 
 - hosts: tag_Name_APIServer
@@ -29,6 +31,7 @@
 
 - hosts: tag_Name_AdminServer
   roles:
+  - role: s3cmd
   - role: admin
 
 - hosts: tag_Name_ExecServer
@@ -60,6 +63,7 @@
 
 - hosts: tag_Name_DeploymentRoot
   roles:
+  - role: s3cmd
   - role: deploymentroot
 
 - hosts: tag_Name_RedisSentinel
