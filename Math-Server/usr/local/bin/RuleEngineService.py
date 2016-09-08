@@ -120,6 +120,7 @@ def callback(ch, method, properties, body):
                                     'create_db_if_not_exist': False})
     msg_dict['client'] = client
     msg_dict['mongoconn'] = mongoconn
+    msg_dict['rule_results'] = {}
     target_platform = None
     if 'target_platform' in msg_dict:
         target_platform = target_platform
@@ -157,9 +158,9 @@ def callback(ch, method, properties, body):
                     rule_mod = importlib.import_module(rule_config.get(rule_id, "Import"))
                     rule_function = getattr(rule_mod, rule_config.get(rule_id, "Function"))
                     try:
-                        msg_dict[rule_name] = rule_function(tenant, msg_dict)
+                        msg_dict['rule_results'][rule_name] = rule_function(tenant, msg_dict)
                     except:
-                        msg_dict[rule_name] = None
+                        msg_dict['rule_results'][rule_name] = None
                         clog.exception("Rule Failed for " + rule_name)
 
                 methodToCall = getattr(mod, workflow_config.get(section, "Function"))
