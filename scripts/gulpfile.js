@@ -57,10 +57,10 @@ gulp.task('pull-latest', ['purge-ui'], function(){
 gulp.task('webpack-build', function(cb){
   console.log("Compiling code");
   var dir = gulpConfig.uiDir+'xplain.io/';
-  fs.copySync(dir+'src/index.html', dir+'build/index.html');
+  fs.copySync(dir+'src/index.html', dir+'public/build/index.html');
   return gulp.src(dir+'src/main.js')
     .pipe(webpack(require('./webpack.config.js')(dir) ))
-    .pipe(gulp.dest(dir+'build/'));
+    .pipe(gulp.dest(dir+'public/build/'));
 });
 
 /*
