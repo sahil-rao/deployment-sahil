@@ -61,6 +61,17 @@ class HealthCheck(object):
     def close(self):
         pass
 
+    def all_equal(self, items):
+        # Make sure everyone agrees on the count
+        initial = None
+        for item in items:
+            if initial is None:
+                initial = item
+            elif initial != item:
+                return False
+
+        return True
+
 
 def _check_host(health_check, *args, **kwargs):
     return health_check.check_host(*args, **kwargs)
