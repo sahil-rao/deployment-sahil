@@ -9,14 +9,17 @@ var gulp = require('gulp'),
     buffer = require('vinyl-buffer'),
     tar = require('gulp-tar'),
     Ssh = require('gulp-ssh'),
+    AWS = require("aws-sdk"),
     args = require('yargs').argv,
     Git = require("nodegit"),
     prompt = require("prompt"),
     Q = require('q'),
+    shell = require('gulp-shell'),
     gulpSequence = require('gulp-sequence'), //Remove this once we upgrade to gulp 4.0
     gzip = require('gulp-gzip');
 
 var branch = args.branch || 'master';
+var xplainDir = args.xplainDir || null;
 
 gulp.task('purge-ui', function(){
   console.log("Cleaning UI directory");
@@ -56,7 +59,7 @@ gulp.task('pull-latest', ['purge-ui'], function(){
 
 gulp.task('webpack-build', function(cb){
   console.log("Compiling code");
-  var dir = gulpConfig.uiDir+'xplain.io/';
+  var dir = xplainDir || gulpConfig.uiDir+'xplain.io/';
   fs.copySync(dir+'src/index.html', dir+'public/build/index.html');
   return gulp.src(dir+'src/main.js')
     .pipe(webpack(require('./webpack.config.js')(dir) ))
@@ -69,10 +72,11 @@ Build main application
 gulp.task('app-build', ["webpack-build"], function(){
   console.log("Building app");
   var dir = gulpConfig.uiDir;
+
   try{
     var dest = fsj.dir(dir+'/tmp/xplain.io/xplain.io', {empty:true});
     fsj.copy(dir+'/xplain.io', dest.path(), {
-      overwrite:true,
+      overwrite: true,
       matching: ['!node_modules/**']
     });
     fs.removeSync(dir+'/tmp/xplain.io/xplain.io/node_modules');
@@ -154,8 +158,18 @@ gulp.task('test-build', function(){
 
 });
 
+gulp.task("push-app-aws", shell.task([
+  's3cmd sync '+gulpConfig.uiDir+'xplain.io.tar.gz s3://'+gulpConfig.s3Bucket+'/'
+]));
+gulp.task("push-admin-aws", shell.task([
+  's3cmd sync '+gulpConfig.uiDir+'optimizer_admin.tar.gz s3://'+gulpConfig.s3Bucket+'/'
+]));
+gulp.task("push-api-aws", shell.task([
+  's3cmd sync '+gulpConfig.uiDir+'optimizer_api.tar.gz s3://'+gulpConfig.s3Bucket+'/'
+]));
+
 //gulp.task('full-build', gulpSequence('pull-latest', ['app-build', 'test-build', 'api-build', 'admin-build']));
-gulp.task('full-build', gulpSequence('pull-latest', ['app-build']));
+gulp.task('full-build', gulpSequence('pull-latest', ['app-build'], ['push-app-aws']));
 
 function gitHubLogin(){
   //Fetches user input for github login
