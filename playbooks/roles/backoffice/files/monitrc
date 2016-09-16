@@ -295,6 +295,14 @@ check process elasticpub with pidfile /var/run/elasticpub.pid
     start program = "/sbin/start elasticpub" with timeout 30 seconds
     stop program = "/sbin/stop elasticpub"
 
+check process apiservice with pidfile /var/run/apiservice.pid
+    start program = "/sbin/start apiservice" with timeout 30 seconds
+    stop program = "/sbin/stop apiservice"
+
+check process navoptapiserver with pidfile /var/run/navoptapiserver.pid
+    start program = "/sbin/start navoptapiserver" with timeout 30 seconds
+    stop program = "/sbin/stop navoptapiserver"
+
 check filesystem root with path /
     if space usage > 80% then alert
     if inode usage > 80% then alert
