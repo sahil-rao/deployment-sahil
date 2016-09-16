@@ -3,6 +3,7 @@
 import time
 import datetime
 import pika
+import socket
 import uuid
 from json import *
 
@@ -773,7 +774,9 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
 
 def serve():  
     server = navopt_pb2.beta_create_NavOpt_server(NavOptApiServer())
-    server.add_insecure_port('10.7.24.144:8982')
+    ip_addr = socket.gethostbyname(socket.gethostname())
+    port = '8982'
+    server.add_insecure_port(ip_addr+":"+port)
     server.start()
     try:
         while True:

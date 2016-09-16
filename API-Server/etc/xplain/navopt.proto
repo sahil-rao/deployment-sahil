@@ -1,0 +1,410 @@
+syntax = "proto3";
+
+package navopt;
+
+import "version.proto";
+
+// For future compatibility, all rpcs must take a request and return a response
+// even if there is initially no content for these messages.
+service NavOpt {
+  // Request for get tables.
+  rpc getTenant (GetTenantRequest)
+    returns (GetTenantResponse) {}
+  // Request for get tables.
+  rpc getTopTables (GetTopTablesRequest)
+    returns (GetTopTablesResponse) {}
+  rpc getTopQueries (GetTopQueriesRequest)
+    returns (GetTopQueriesResponse) {}
+  rpc getTopColumns (GetTopColumnsRequest)
+    returns (GetTopColumnsResponse) {}
+  rpc getTopFilters (GetTopFiltersRequest)
+    returns (GetTopFiltersResponse) {}
+  rpc getTopAggs (GetTopAggsRequest)
+    returns (GetTopAggsResponse) {}
+  rpc getDesignBucket (GetDesignBucketRequest)
+    returns (GetDesignBucketResponse) {}
+  rpc getHAQR (GetHAQRRequest)
+    returns (GetHAQRResponse) {}
+  // Request a new upload.
+  rpc upload (UploadRequest)
+    returns (UploadResponse) {}
+  // Request upload status.
+  rpc uploadStatus (UploadStatusRequest)
+    returns (UploadStatusResponse) {}
+  // Request upload status.
+  rpc workloadInfo (WorkloadInfoRequest)
+    returns (WorkloadInfoResponse) {}
+  // Request upload status.
+  rpc getQueries (GetQueriesRequest)
+    returns (GetQueriesResponse) {}
+  // Request upload status.
+  rpc getQueriesDetail (GetQueriesDetailRequest)
+    returns (GetQueriesDetailResponse) {}
+   // Request upload status.
+  rpc getTables (GetTablesRequest)
+    returns (GetTablesResponse) {}
+  // Request upload status.
+  rpc getTablesDetail (GetTablesDetailRequest)
+    returns (GetTablesDetailResponse) {}
+  // Request upload status.
+  rpc getColumns (GetColumnsRequest)
+    returns (GetColumnsResponse) {}
+  // Request upload status.
+  rpc getColumnsDetail (GetColumnsDetailRequest)
+    returns (GetColumnsDetailResponse) {}
+}
+
+message GetTenantRequest {
+  string email = 1;
+}
+
+message GetTenantResponse {
+  string tenant = 1;
+}
+
+message GetTopTablesRequest {
+  string tenant = 1;
+}
+
+message TopTables {
+  int32 columnCount = 1;
+  string name = 2;
+  int32 patternCount = 3;
+  int32 workloadPercent = 4;
+  int32 total = 5;
+  string type = 6;
+  string eid = 7;
+}
+
+message GetTopTablesResponse {
+  repeated TopTables results = 1;
+}
+message GetTopQueriesRequest {
+  string tenant = 1;
+}
+
+message TopQueries {
+  bool impalaCompatible = 1;
+  bool hiveCompatible = 2;
+  int32 instanceCount = 3;
+  int32 elapsedTime = 4;
+  string customId = 5;
+  string complexity = 6;
+  string qid = 7;
+  repeated string querySignature = 8;
+}
+
+message GetTopQueriesResponse {
+  repeated TopQueries results = 1;
+}
+
+message GetTopColumnsRequest {
+  string tenant = 1;
+}
+
+message TopColumns {
+  int32 columnCount = 1;
+  string columnName = 2;
+  int32 groupbyCol = 3;
+  int32 selectCol = 4;
+  int32 filterCol = 5;
+  string tid = 6;
+  string cid = 7;
+  int32 joinCol = 8;
+  int32 orderbyCol = 9;
+  string tableType = 10;
+  string tableName = 11;
+}
+
+message GetTopColumnsResponse {
+  repeated TopColumns groupbyColumns = 1;
+    repeated TopColumns joinColumns = 2;
+  repeated TopColumns selectColumns = 3;
+  repeated TopColumns orderbyColumns = 4;
+  repeated TopColumns filterColumns = 5;
+}
+
+message GetTopFiltersRequest {
+  string tenant = 1;
+}
+
+message ValGroup {
+  string columnName = 1;
+  bool isLiteral = 2;
+  string literal = 3;
+  string op = 4;
+}
+
+message PopValue {
+  int32 count = 1;
+  repeated ValGroup group = 2;
+}
+
+message TopFilters {
+  int32 totalQueryCount = 1;
+  repeated string columns = 2;
+  repeated string qids = 3;
+  string tableName = 4;
+  string tid = 5;
+  repeated PopValue popularValues = 6;
+}
+
+message GetTopFiltersResponse {
+  repeated TopFilters results = 1;
+}
+
+message GetTopAggsRequest {
+  string tenant = 1;
+}
+
+message TopAgg {
+  string aggregateClause = 1;
+  string aggregateFunction = 2;
+  string functionType = 3;
+  string location = 4;
+  int32 totalQueryCount = 5;
+}
+
+message GetTopAggsResponse {
+  repeated TopAgg results = 1;
+}
+
+message GetDesignBucketRequest {
+  string tenant = 1;
+}
+
+message DesignBucket {
+  string bucketName = 1;
+  int32 numQueries = 2;
+  int32 numTables = 3;
+  string description  = 4;
+}
+
+message GetDesignBucketResponse {
+  repeated DesignBucket results = 1;
+}
+
+message GetHAQRRequest {
+  string tenant = 1;
+}
+
+message IncompatibleQueries {
+  string qid = 1;
+  int32 fromError = 2;
+  int32 whereError = 3;
+  int32 selectError = 4;
+  int32 orderbyError = 5;
+  int32 groupbyError = 6;
+  int32 otherError = 7;
+  repeated string fromClauses = 8;
+  repeated string whereClauses = 9;
+  repeated string selectClauses = 10;
+  repeated string orderbyClauses = 11;
+  repeated string groupbyClauses = 12;
+  repeated string otherClauses = 13;
+}
+
+message GetHAQRResponse {
+  repeated IncompatibleQueries impala = 1;
+  repeated IncompatibleQueries hive = 2;
+}
+
+message UploadStatus {
+  enum UploadState {
+    WAITING = 0;
+    IN_PROGRESS = 1;
+    PROCESSING = 2;
+    FINISHED = 3;
+    FAILED = 4;
+  }
+  UploadState state = 1;
+  string workloadId = 2;
+}
+
+message HeaderField {
+  enum ColType {
+    NONE = 0;
+    SQL_ID = 1;
+    SQL_QUERY = 2;
+  }
+  ColType coltype = 1;
+  string name = 2;
+  string tag = 3;
+  bool use = 4;
+  int32 count = 5;
+}
+
+message UploadRequest {
+  string tenant = 1;
+  string fileLocation = 2;
+  string sourcePlatform = 3;
+  string rowDelim = 4;
+  string colDelim = 5;
+  string fileName = 6;
+  string s3location = 7;
+  repeated HeaderField headerFields = 8;
+}
+
+message UploadResponse {
+  UploadStatus status = 1;
+}
+
+message UploadStatusRequest {
+  string tenant = 1;
+  string workloadId = 2;
+}
+
+message UploadStatusResponse {
+  UploadStatus status = 1;
+}
+
+message WorkloadInfoRequest {
+  string tenant = 1;
+  string workloadId = 2;
+  bool inActive = 3;
+  bool details = 4;
+}
+
+message WorkloadData {
+  uint32 queries = 1;
+  string workloadId = 2;
+  string workloadName = 3;
+  uint32 processed_queries = 4;
+  bool active = 5;
+  string source_platform = 6;
+  string tenant = 7;
+  uint64 timestamp = 8;
+  string etype = 9;
+}
+
+message WorkloadInfoResponse {
+  repeated WorkloadData results = 1;
+}
+
+message GetQueriesRequest {
+  string tenant = 1;
+  string next = 2;
+}
+
+message QueryData {
+  string qid = 1;
+  string query = 2;
+}
+
+message GetQueriesResponse {
+  repeated QueryData results = 1;
+  string next = 2;
+}
+
+message GetQueriesDetailRequest {
+  string tenant = 1;
+  string qid = 2;
+}
+
+message QueryTable {
+  string tableType = 1;
+  string tableName = 2;
+  string tid = 3;
+}
+
+message GetQueriesDetailResponse {
+  int32 orderByCount = 1;
+  int32 groupByCount = 2;
+  int32 hiveCompatible = 3;
+  repeated QueryTable table = 4;
+  repeated string querySignature = 5;
+  int32 selectCount = 6;
+  int32 unionCount = 7;
+  int32 unionAllCount = 8;
+  string StmtSignature = 9;
+  int32 instanceCount = 10;
+  int32 filterCount = 11;
+  int32 joinCount = 12;
+  string customId = 13;
+  string qid = 14;
+  string query = 15;
+  int32 impalaCompatible = 16;
+}
+
+message GetTablesRequest {
+  string tenant = 1;
+  string next = 2;
+}
+
+message TableData {
+  string tid = 1;
+  string name = 2;
+}
+
+message GetTablesResponse {
+  repeated TableData results = 1;
+  string next = 2;
+}
+
+message GetTablesDetailRequest {
+  string tenant = 1;
+  string tid = 2;
+}
+
+message TableStats {
+  string numRows = 1;
+  string avgRowLen = 2;
+  string rowRange = 3;
+  string tableName = 4;
+}
+
+message ColStats {
+  string avgColLen = 1;
+  string numNulls = 2;
+  string cid = 3;
+  string dataType = 4;
+  string numDistinct = 5;
+  string columnName = 6;
+}
+
+message GetTablesDetailResponse {
+  int32 columnCount = 1;
+  int32 createCount = 2;
+  int32 selectCount = 3;
+  int32 updateCount = 4;
+  int32 queryCount = 5;
+  int32 insertCount = 6;
+  int32 deleteCount = 7;
+  int32 joinCount = 8;
+  TableStats tableStats = 9;
+  repeated ColStats colStats = 10;
+  string name = 11;
+  string tid = 12;
+  string type = 13;
+  string table_ddl = 14;
+  string iview_ddl = 15;
+  string view_ddl = 16;
+}
+
+message GetColumnsRequest {
+  string tenant = 1;
+  string next = 2;
+}
+
+message ColumnData {
+  string cid = 1;
+  string name = 2;
+}
+
+message GetColumnsResponse {
+  repeated ColumnData results = 1;
+  string next = 2;
+}
+
+message GetColumnsDetailRequest {
+  string tenant = 1;
+  string cid = 2;
+}
+
+message GetColumnsDetailResponse {
+  string columnName = 1;
+  repeated ColStats colStats = 2;
+  string tid = 3;
+  string cid = 4;
+  string tableName = 5;
+}
