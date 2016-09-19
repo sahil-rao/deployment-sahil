@@ -158,6 +158,22 @@ gulp.task('test-build', function(){
 
 });
 
+gulp.task('vm-setup', function(){
+  return fsj.copy('/home/xplain/', '/etc/init/', {matching:'*.cfg'})
+  .then(fsj.dir('~/tmp', {empty:true}))
+  .then(fsj.move(gulpConfig.vmDest+'node_modules', '~/tmp/'))
+  .then(fsj.copy(gulpConfig.uiDir+'xplain.io/', gulpConfig.vmDest, {
+    overwrite:true,
+    matching: ['!node_modules/**']
+  }))
+  .then(fsj.move('~/tmp/node_modules', gulpConfig.vmDest))
+  .catch(function(err){
+    console.error(err);
+  });
+});
+
+gulp.task('vm-install-npm', shell.task(['npm install'], {verbose:true, cwd:gulpConfig.vmDest}));
+
 gulp.task("push-app-aws", shell.task([
   's3cmd sync '+gulpConfig.uiDir+'xplain.io.tar.gz s3://'+gulpConfig.s3Bucket+'/'
 ]));
@@ -169,7 +185,10 @@ gulp.task("push-api-aws", shell.task([
 ]));
 
 //gulp.task('full-build', gulpSequence('pull-latest', ['app-build', 'test-build', 'api-build', 'admin-build']));
-gulp.task('full-build', gulpSequence('pull-latest', ['app-build'], ['push-app-aws']));
+gulp.task('full-build', gulpSequence('pull-latest', 'app-build'));
+gulp.task('full-deploy', gulpSequence('full-build', 'push-app-aws'));
+
+gulp.task('update-vm', gulpSequence('pull-latest', 'vm-setup', 'vm-install-npm'));
 
 function gitHubLogin(){
   //Fetches user input for github login
