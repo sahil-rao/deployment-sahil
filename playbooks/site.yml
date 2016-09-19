@@ -8,6 +8,7 @@
   - role: mongodb
 
 - hosts: tag_Name_Backoffice
+  serial: 4
   roles:
   - role: backoffice
 
@@ -20,6 +21,7 @@
   - role: queueserver
 
 - hosts: tag_Name_NodeJS
+  serial: 1
   roles:
   - role: nodejsserver
 
