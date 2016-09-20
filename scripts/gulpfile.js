@@ -16,6 +16,7 @@ var gulp = require('gulp'),
     Q = require('q'),
     shell = require('gulp-shell'),
     gulpSequence = require('gulp-sequence'), //Remove this once we upgrade to gulp 4.0
+    stylish = require('jshint-stylish');
     gzip = require('gulp-gzip');
 
 var branch = args.branch || 'master';
@@ -170,6 +171,12 @@ gulp.task('vm-setup', function(){
   .catch(function(err){
     console.error(err);
   });
+});
+
+gulp.task("js-hint", function(){
+  return gulp.src([gulpConfig.uiDir+'/**/*.js',gulpConfig.uiDir+'/**/*.jsx', '!'+gulpConfig.uiDir+'xplain.io/{node_modules,node_modules/**}'])
+      .pipe(jshint({ linter: require('jshint-jsx').JSXHINT }))
+      .pipe(jshint.reporter(stylish));
 });
 
 gulp.task('vm-install-npm', shell.task(['npm install'], {verbose:true, cwd:gulpConfig.vmDest}));
