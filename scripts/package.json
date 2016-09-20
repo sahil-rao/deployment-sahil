@@ -1,5 +1,5 @@
 {
-  "name": "xplain.io",
+  "name": "deployment",
   "jshintConfig": {
     "browser": true,
     "jquery": true,
@@ -9,7 +9,7 @@
     "camelcase": false,
     "curly": true,
     "eqeqeq": true,
-    "esversion": 5,
+    "esversion": 6,
     "freeze": true,
     "funcscope": true,
     "futurehostile": true,
@@ -28,6 +28,7 @@
       "Backbone"
     ],
     "strict": false,
+    "sub": false,
     "undef": true,
     "unused": true,
     "eqnull": true

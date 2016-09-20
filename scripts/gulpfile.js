@@ -58,12 +58,12 @@ gulp.task('pull-latest', ['purge-ui'], function(){
   });
 });
 
-gulp.task('webpack-build', function(cb){
+gulp.task('webpack-build', function(){
   console.log("Compiling code");
   var dir = xplainDir || gulpConfig.uiDir+'xplain.io/';
   fs.copySync(dir+'src/index.html', dir+'public/build/index.html');
   return gulp.src(dir+'src/main.js')
-    .pipe(webpack(require('./webpack.config.js')(dir) ))
+    .pipe(webpack(require(dir+'src/webpack.config.js')))
     .pipe(gulp.dest(dir+'public/build/'));
 });
 
@@ -174,8 +174,9 @@ gulp.task('vm-setup', function(){
 });
 
 gulp.task("js-hint", function(){
-  return gulp.src([gulpConfig.uiDir+'/**/*.js',gulpConfig.uiDir+'/**/*.jsx', '!'+gulpConfig.uiDir+'xplain.io/{node_modules,node_modules/**}'])
-      .pipe(jshint({ linter: require('jshint-jsx').JSXHINT }))
+  packageJSON.jshintConfig.linter = require('jshint-jsx').JSXHINT;
+  return gulp.src([gulpConfig.uiDir+'xplain.io/**/*.js', gulpConfig.uiDir+'xplain.io/**/*.jsx', '!'+gulpConfig.uiDir+'xplain.io/public/js/libs/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/app/libraries/**/*.js','!'+gulpConfig.uiDir+'xplain.io/public/build/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/test/**/*.js'])
+      .pipe(jshint(packageJSON.jshintConfig))
       .pipe(jshint.reporter(stylish));
 });
 
@@ -245,8 +246,8 @@ function gitHubLogin(){
       return;
     }
 
-    output.user = gitUser || result.user;
-    output.pw =  gitPw || result.password;
+    output.user =  result.user;
+    output.pw =  result.password;
     deffered.resolve(output);
   });
 
