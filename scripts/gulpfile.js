@@ -193,10 +193,31 @@ gulp.task('update-vm', gulpSequence('pull-latest', 'vm-setup', 'vm-install-npm')
 function gitHubLogin(){
   //Fetches user input for github login
   var deffered = Q.defer();
+  var output = {};
   console.log("Github authentication");
+
+  if(args.gitUser){
+    console.log("Github username found in args");
+    output.user = args.gitUser;
+  }
+  if(args.gitPw){
+    console.log("Github password found in args");
+    output.pw = args.gitPw;
+  }
+  if(gulpConfig.gitUser){
+    console.log("Github username found in config");
+    output.user = gulpConfig.gitUser;
+  }
+  if(gulpConfig.gitPw){
+    console.log("Github password found in config");
+    output.pw = args.gitPw;
+  }
+  if(output.pw && output.user){
+    deffered.resolve(output);
+    return deffered.promise;
+  }
+
   prompt.start();
-  var user,
-      pw;
 
   var schema = {
     properties: {
@@ -216,9 +237,9 @@ function gitHubLogin(){
       deffered.reject(err);
       return;
     }
-    var output = {};
-    output.user = result.user;
-    output.pw = result.password;
+
+    output.user = gitUser || result.user;
+    output.pw =  gitPw || result.password;
     deffered.resolve(output);
   });
 
