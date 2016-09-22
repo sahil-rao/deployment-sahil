@@ -115,7 +115,8 @@ def callback(ch, method, properties, body):
     msg_dict["connection"] = connection1
     msg_dict["ch"] = ch
     #store the version that was passed in.
-    msg_dict['in_version'] = msg_dict['version']
+    if 'version' in msg_dict:
+        msg_dict['in_version'] = msg_dict['version']
     resp_dict = None
     client = getMongoServer(tenant)
     mongoconn = Connector.getConnector(tenant)
