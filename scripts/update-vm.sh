@@ -136,7 +136,7 @@ fi
 mkdir baaz_compiler
 rm -rf baaz_compiler/*
 #mv bin/com Baaz-Hive-Compiler/.
-cp target/Baaz-Compiler/*.jar baaz_compiler/
+cp target/Baaz-Compiler-1/*.jar baaz_compiler/
 cp target/classes/logback.xml baaz_compiler/
 tar -cvf  Baaz-Compiler.tar baaz_compiler
 gzip -f  Baaz-Compiler.tar
