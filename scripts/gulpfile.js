@@ -259,6 +259,5 @@ function gitHubLogin(){
 
 function isFixed(file) {
     // Has ESLint fixed the file contents
-    console.log("output");
     return file.eslint != null && file.eslint.fixed;
 }
