@@ -1,26 +1,24 @@
 var gulp = require('gulp'),
     gulpConfig = require('./gulp-config'),
-    jshint = require('gulp-jshint'),
-    packageJSON  = require('./package'),
     webpack = require('webpack-stream'),
-    scp = require('gulp-scp2'),
     fs = require('fs-extra'),
     fsj = require('fs-jetpack'),
-    buffer = require('vinyl-buffer'),
     tar = require('gulp-tar'),
-    Ssh = require('gulp-ssh'),
-    AWS = require("aws-sdk"),
     args = require('yargs').argv,
     Git = require("nodegit"),
-    prompt = require("prompt"),
+    prompt = require("gulp-prompt"),
     Q = require('q'),
     shell = require('gulp-shell'),
     gulpSequence = require('gulp-sequence'), //Remove this once we upgrade to gulp 4.0
-    stylish = require('jshint-stylish');
+    eslint = require('gulp-eslint'),
+    gulpIf = require('gulp-if'),
     gzip = require('gulp-gzip');
 
 var branch = args.branch || 'master';
 var xplainDir = args.xplainDir || null;
+var fixEslint = args.fix || false;
+var jshintSrc = [gulpConfig.uiDir+'xplain.io/**/*.js', gulpConfig.uiDir+'xplain.io/**/*.jsx', '!'+gulpConfig.uiDir+'xplain.io/public/js/libs/**/*.js',
+'!'+gulpConfig.uiDir+'xplain.io/node_modules/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/app/libraries/**/*.js','!'+gulpConfig.uiDir+'xplain.io/public/build/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/test/**/*.js'];
 
 gulp.task('purge-ui', function(){
   console.log("Cleaning UI directory");
@@ -173,11 +171,15 @@ gulp.task('vm-setup', function(){
   });
 });
 
-gulp.task("js-hint", function(){
-  packageJSON.jshintConfig.linter = require('jshint-jsx').JSXHINT;
-  return gulp.src([gulpConfig.uiDir+'xplain.io/**/*.js', gulpConfig.uiDir+'xplain.io/**/*.jsx', '!'+gulpConfig.uiDir+'xplain.io/public/js/libs/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/app/libraries/**/*.js','!'+gulpConfig.uiDir+'xplain.io/public/build/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/test/**/*.js'])
-      .pipe(jshint(packageJSON.jshintConfig))
-      .pipe(jshint.reporter(stylish));
+gulp.task("eslint", function(){
+  var config = {
+		configFile: gulpConfig.uiDir+'.eslintrc.json',
+    fix: fixEslint
+  };
+  return gulp.src(jshintSrc)
+		.pipe(eslint(config))
+		.pipe(eslint.format())
+    .pipe(gulpIf(isFixed, gulp.dest(gulpConfig.uiDir+'xplain.io')));
 });
 
 gulp.task('vm-install-npm', shell.task(['npm install'], {verbose:true, cwd:gulpConfig.vmDest}));
@@ -252,4 +254,11 @@ function gitHubLogin(){
   });
 
   return deffered.promise;
+}
+
+
+function isFixed(file) {
+    // Has ESLint fixed the file contents
+    console.log("output");
+    return file.eslint != null && file.eslint.fixed;
 }
