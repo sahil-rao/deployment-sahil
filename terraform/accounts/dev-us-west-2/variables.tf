@@ -10,6 +10,11 @@ variable "env" {
     default = "dev"
 }
 
+variable "all_access_cidrs" {
+    type = "list"
+    default = ["0.0.0.0/0"]
+}
+
 variable "terraform_remote_state_bucket" {
     default = "cloudera-terraform-infrastructure"
 }
