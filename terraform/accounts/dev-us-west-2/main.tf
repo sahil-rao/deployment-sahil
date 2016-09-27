@@ -38,8 +38,8 @@ module "common" {
         "${data.terraform_remote_state.networking.private_subnet_ids}",
     ]
 
-    dns_zone_id = "${data.terraform_remote_state.networking.dns_zone_id}"
-    dns_zone_name = "${data.terraform_remote_state.networking.dns_zone_name}"
+    dns_zone_id = "${data.terraform_remote_state.networking.private_zone_id}"
+    dns_zone_name = "${data.terraform_remote_state.networking.zone_name}"
 
     # Instances
     key_name = "${var.key_name}"
