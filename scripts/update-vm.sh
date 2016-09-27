@@ -70,9 +70,9 @@ fi
 
 cd /home/xplain
 #Build UI with Gulp
-gulp pull-latest --branch $BRANCH_NAME
-gulp app-build
-gulp eslint
+#gulp pull-latest --branch $BRANCH_NAME
+#gulp app-build
+#gulp eslint
 
 #start building process
 cd  /home/xplain/build
@@ -112,9 +112,9 @@ cd dist
 echo "Graph is built!"
 
 #This now gets handled by gulp script, when there is time so will admin and api
-#cd /home/xplain/build/UI
-#tar -cvf  xplain.io.tar xplain.io
-#gzip -f  xplain.io.tar
+cd /home/xplain/build/UI
+tar -cvf  xplain.io.tar xplain.io
+gzip -f  xplain.io.tar
 
 tar -cvf  optimizer_admin.tar optimizer_admin
 gzip -f  optimizer_admin.tar
