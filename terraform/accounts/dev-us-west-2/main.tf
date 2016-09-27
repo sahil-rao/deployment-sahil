@@ -35,7 +35,7 @@ module "common" {
         "${data.terraform_remote_state.networking.private_subnet_ids}",
     ]
     public_subnet_ids = [
-        "${data.terraform_remote_state.networking.public_subnet_ids}",
+        "${data.terraform_remote_state.networking.private_subnet_ids}",
     ]
 
     dns_zone_id = "${data.terraform_remote_state.networking.dns_zone_id}"
