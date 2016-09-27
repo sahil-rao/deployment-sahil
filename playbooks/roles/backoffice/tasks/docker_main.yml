@@ -1,0 +1,93 @@
+---
+- name: Create the Baaz config directory
+  file: path=/var/Baaz state=directory
+  sudo: yes
+- name: NTP installed
+  apt: name=ntp update_cache=yes state=present
+  sudo: yes
+- name: Remove everything from under the /mnt/volumne1 directory
+  shell: rm -rf /mnt/volume1/*
+  sudo: yes
+- name: copy monitrc file
+  template: src=roles/backoffice/files/config.json dest=/mnt/volume1/config.json
+  sudo: yes
+
+- name: Remove all current docker containers
+  shell: docker rm -f $(sudo docker ps -aq)
+  ignore_errors: yes
+  sudo: yes
+#Get docker images
+- name: Get pyservice
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}pyservice /mnt/volume1/pyservice
+  sudo: yes
+- name: Load pyservice
+  shell: docker load -i /mnt/volume1/pyservice
+  sudo: yes
+
+- name: Get combinedservice
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}combinedservice /mnt/volume1/combinedservice
+  sudo: yes
+- name: Load combinedservice
+  shell: docker load -i /mnt/volume1/combinedservice
+  sudo: yes
+
+- name: Kill Monit so it won't interfere with installation
+  shell: monit quit
+  sudo: yes
+
+- name: Remove any previous service that may be installed.
+  shell: update-rc.d -f baazdataacquisition remove
+  sudo: yes
+- name: Stop running upstart script
+  service: name=dataacquisitionservice state=stopped
+  sudo: yes
+- name: Stop running upstart script
+  service: name=applicationservice state=stopped
+  sudo: yes
+- name: Stop running rule engine
+  service: name=ruleengineservice state=stopped
+  ignore_errors: yes
+  sudo: yes
+
+- name: Remove any previous service that may be installed.
+  shell: update-rc.d -f baazmath remove
+  sudo: yes
+- name: Stop mathservice.
+  service: name=mathservice state=stopped
+  sudo: yes
+- name: Stop advanalytics.
+  service: name=advanalytics state=stopped
+  sudo: yes
+- name: Stop impalasimulation.
+  service: name=impalasimulation state=stopped
+  sudo: yes
+
+- name: copy logback file
+  template: src=logback.xml dest=/usr/lib/baaz_compiler/
+  sudo: yes
+- name: Stop any previous compile server that may be installed.
+  service: name=compileserver state=stopped
+  ignore_errors: yes
+  sudo: yes
+- name: Stop compileservice.
+  service: name=compileservice state=stopped
+  sudo: yes
+- name: Stop advanalytics_compiler
+  service: name=advanalytics_compiler state=stopped
+  sudo: yes
+- name: Stop compileservice_compiler
+  service: name=compileservice_compiler state=stopped
+  sudo: yes
+- name: Stop applicationservice_compiler
+  service: name=applicationservice_compiler state=stopped
+  sudo: yes
+- name: Stop elasticpub
+  service: name=elasticpub state=stopped
+  sudo: yes
+
+- name: Update version number for dashboard page
+  local_action: template src=/var/www/index_template.j2 dest=/var/www/index.html
+  sudo: yes
+- name: Restart nginx
+  local_action: command nginx -s reload
+  sudo: yes

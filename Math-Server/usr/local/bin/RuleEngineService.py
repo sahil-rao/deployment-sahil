@@ -86,8 +86,13 @@ def callback(ch, method, properties, body):
     Attempts to run the workflow in rule_workflows.cfg specified by the opcode.
     Imports and runs the rules that are needed which are put in rules.cfg.
     '''
+
+    #send stats to datadog
+    if statsd:
+        statsd.increment('ruleengine.msg.count', 1)
+
     try:
-        startTime = time.time()
+        startTime = time.clock()
         msg_dict = loads(body)
     except:
         logging.exception("Could not load the message JSON")
@@ -100,13 +105,18 @@ def callback(ch, method, properties, body):
         return
 
     tenant = msg_dict["tenant"]
-    log_dict = {'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode'], 'tag': 'ruleengine'}
+    log_dict = {'tenant': msg_dict['tenant'],
+                'opcode': msg_dict['opcode'],
+                'tag': 'ruleengine'}
     if 'uid' in msg_dict:
         log_dict['uid'] = msg_dict['uid']
     clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)
 
     msg_dict["connection"] = connection1
     msg_dict["ch"] = ch
+    #store the version that was passed in.
+    if 'version' in msg_dict:
+        msg_dict['in_version'] = msg_dict['version']
     resp_dict = None
     client = getMongoServer(tenant)
     mongoconn = Connector.getConnector(tenant)
@@ -115,6 +125,7 @@ def callback(ch, method, properties, body):
                                     'create_db_if_not_exist': False})
     msg_dict['client'] = client
     msg_dict['mongoconn'] = mongoconn
+    msg_dict['rule_results'] = {}
     target_platform = None
     if 'target_platform' in msg_dict:
         target_platform = target_platform
@@ -152,9 +163,9 @@ def callback(ch, method, properties, body):
                     rule_mod = importlib.import_module(rule_config.get(rule_id, "Import"))
                     rule_function = getattr(rule_mod, rule_config.get(rule_id, "Function"))
                     try:
-                        msg_dict[rule_name] = rule_function(tenant, msg_dict)
+                        msg_dict['rule_results'][rule_name] = rule_function(tenant, msg_dict)
                     except:
-                        msg_dict[rule_name] = None
+                        msg_dict['rule_results'][rule_name] = None
                         clog.exception("Rule Failed for " + rule_name)
 
                 methodToCall = getattr(mod, workflow_config.get(section, "Function"))
@@ -170,7 +181,7 @@ def callback(ch, method, properties, body):
     connection1.basicAck(ch, method)
     #send stats to datadog
     if statsd:
-        totalTime = ((time.time() - startTime) * 1000)
+        totalTime = (time.clock() - startTime)
         statsd.timing("ruleengine.per.msg.time", totalTime, tags=["tenant:"+tenant])
 
 connection1 = RabbitConnection(callback, ['ruleengine'], [], {}, prefetch_count=1)

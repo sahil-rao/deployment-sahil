@@ -97,7 +97,7 @@ git clone https://github.com/baazdata/UI.git --branch $1 --single-branch
 git clone https://github.com/baazdata/documentation.git
 
 #add help topics to S3
-s3cmd sync documentation/NavOptHelp/ s3://xplain-public/$clusterName/documentation/NavOptHelp/ --delete --acl-public
+aws s3 cp --recursive documentation/NavOptHelp/ s3://xplain-public/$clusterName/documentation/NavOptHelp/
 
 cd graph
 python setup.py bdist

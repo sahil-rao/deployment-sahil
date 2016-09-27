@@ -174,6 +174,13 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
             if 'dataType' in column_entry and 'primaryKey' in column_entry and 'foreignKey' in column_entry:
                 mongoconn.db.entities.update({'eid':eid}, {'$set': column_entry})
 
+        if 'partitionColumn' in column_entry and column_entry['partitionColumn'] is True:
+            redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN_PARTITION")
+            redis_conn.setRelationship(table_entity.eid, column_entity.eid,
+                                       'TABLE_COLUMN_PARTITION',
+                                       {'weight': 1,
+                                        'columnName': column_entity.columnName,
+                                        'tableName': column_entity.tableName})
 
     """
     Create relationships.
@@ -1701,10 +1708,14 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
 
 
 def callback(ch, method, properties, body):
-    startTime = time.time()
+    startTime = time.clock()
     dbAdditions = [0,0]
     tmpAdditions = [0,0]
     msg_dict = loads(body)
+
+    #send stats to datadog
+    if statsd:
+        statsd.increment('compileservice.msg.count', 1)
 
     logging.info("compiler Got message "+ str(msg_dict))
 
@@ -1932,10 +1943,10 @@ def callback(ch, method, properties, body):
 
     logging.info("Event Processing Complete")
 
-    endTime = time.time()
+    endTime = time.clock()
     #send stats to datadog
     if statsd:
-        totalTime = ((endTime - startTime) * 1000)
+        totalTime = (endTime - startTime)
         statsd.timing("compileservice.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already

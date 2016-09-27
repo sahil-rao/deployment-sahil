@@ -31,6 +31,11 @@ def getMatchingDocuments(entities):
 		else:
 			uploadStatsTempDict['queriesUploaded'] = 0
 
+                if "source_platform" in uploadStats:
+			uploadStatsTempDict['vendor_info'] = uploadStats['source_platform']
+		else:
+			uploadStatsTempDict['vendor_info'] = None
+
                 if "filename" in uploadStats:
 			uploadStatsTempDict['filename'] = uploadStats['filename'].split('/')[2]
 		else:

@@ -199,7 +199,7 @@
   - name: Stop elasticpub
     service: name=elasticpub state=stopped
     ignore_errors: True
-    
+
   - name: Start advanalytics_compiler
     service: name=advanalytics_compiler state=started
   - name: Start compileservice_compiler
@@ -213,16 +213,21 @@
     service: name=compileservice state=stopped
     ignore_errors: True
 
+  - name: Stop admin_nodejs
+    service: name=admin_nodejs state=stopped
+    ignore_errors: True
+
   - name: Untar flightpath
     shell: tar -zxf /home/xplain/flightpath-deployment.tar.gz chdir=/
   - name: Copy node upstart configuration file
     template: src=/home/xplain/nodejs.conf dest=/etc/init/nodejs.conf
   - name: Copy api upstart configuration file
     template: src=/home/xplain/api_nodejs.conf dest=/etc/init/api_nodejs.conf
-  - name: Copy xplain_admin upstart configuration file
-    copy: src=/home/xplain/xplain_admin.conf dest=/etc/init/xplain_admin.conf
+  - name: Copy admin_nodejs upstart configuration file
+    copy: src=/home/xplain/admin_nodejs.conf dest=/etc/init/admin_nodejs.conf
   - name: Copy ruleengine upstart configuration file
     copy: src=/home/xplain/ruleengineservice.conf dest=/etc/init/ruleengineservice.conf
+
   - name: Untar Baazdata App
     shell: tar -zxf /home/xplain/xplain.io.tar.gz
   - name: Remove the existing deployed code
@@ -231,6 +236,18 @@
     shell: mv /home/xplain/xplain.io /var/xplain{{ port }}
   - name: Install npm modules.
     npm: path=/var/xplain{{ port }} production=yes
+
+  - name: Untar Admin App
+    shell: tar -zxf /home/xplain/optimizer_admin.tar.gz
+  - name: Remove the existing deployed code
+    file: path=/var/admin state=absent
+  - name: Create /var/admin
+    file: path=/var/admin state=directory
+  - name: Move the new admin code
+    shell: cp -a /home/xplain/optimizer_admin/. /var/admin/
+  - name: Install npm modules.
+    npm: path=/var/admin production=yes
+
   - name: copy monitrc file
     copy: src=/home/xplain/monitrc dest=/etc/monit/monitrc
   - name: Install python logger package
