@@ -10,6 +10,11 @@ variable "env" {
     default = "stage"
 }
 
+variable "all_access_cidrs" {
+    type = "list"
+    default = []
+}
+
 variable "terraform_remote_state_bucket" {
     default = "navopt-state-stage"
 }
