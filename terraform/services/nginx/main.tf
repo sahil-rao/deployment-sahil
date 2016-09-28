@@ -83,6 +83,10 @@ resource "aws_route53_record" "default" {
 
 ###################################################################
 
-output "eip" {
+output "public_eip" {
     value = "${aws_eip.default.public_ip}"
+}
+
+output "private_eip" {
+    value = "${aws_eip.default.private_ip}"
 }
