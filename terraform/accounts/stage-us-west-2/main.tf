@@ -39,9 +39,6 @@ module "common" {
 
         "${data.terraform_remote_state.networking.public_subnet_ids}"
     ]
-    all_access_cidrs = [
-        "${var.all_access_cidrs}"
-    ]
 
     dns_zone_id = "${data.terraform_remote_state.networking.dns_zone_id}"
     dns_zone_name = "${data.terraform_remote_state.networking.dns_zone_name}"
