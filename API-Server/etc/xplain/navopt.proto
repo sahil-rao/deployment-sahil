@@ -7,6 +7,9 @@ import "version.proto";
 // For future compatibility, all rpcs must take a request and return a response
 // even if there is initially no content for these messages.
 service NavOpt {
+  // Request for get S3 URL.
+  rpc getS3url (GetS3urlRequest)
+    returns (GetS3urlResponse) {}
   // Request for get tables.
   rpc getTenant (GetTenantRequest)
     returns (GetTenantResponse) {}
@@ -52,6 +55,15 @@ service NavOpt {
   // Request upload status.
   rpc getColumnsDetail (GetColumnsDetailRequest)
     returns (GetColumnsDetailResponse) {}
+}
+
+message GetS3urlRequest {
+  string tenant = 1;
+  string fileName = 2;
+}
+
+message GetS3urlResponse {
+  string url = 1;
 }
 
 message GetTenantRequest {
@@ -283,7 +295,7 @@ message WorkloadInfoResponse {
 
 message GetQueriesRequest {
   string tenant = 1;
-  string next = 2;
+  string startingToken = 2;
 }
 
 message QueryData {
@@ -293,7 +305,7 @@ message QueryData {
 
 message GetQueriesResponse {
   repeated QueryData results = 1;
-  string next = 2;
+  string nextToken = 2;
 }
 
 message GetQueriesDetailRequest {
@@ -328,7 +340,7 @@ message GetQueriesDetailResponse {
 
 message GetTablesRequest {
   string tenant = 1;
-  string next = 2;
+  string startingToken = 2;
 }
 
 message TableData {
@@ -338,7 +350,7 @@ message TableData {
 
 message GetTablesResponse {
   repeated TableData results = 1;
-  string next = 2;
+  string nextToken = 2;
 }
 
 message GetTablesDetailRequest {
@@ -383,7 +395,7 @@ message GetTablesDetailResponse {
 
 message GetColumnsRequest {
   string tenant = 1;
-  string next = 2;
+  string startingToken = 2;
 }
 
 message ColumnData {
@@ -393,7 +405,7 @@ message ColumnData {
 
 message GetColumnsResponse {
   repeated ColumnData results = 1;
-  string next = 2;
+  string nextToken = 2;
 }
 
 message GetColumnsDetailRequest {

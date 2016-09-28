@@ -6,6 +6,8 @@ import pika
 import socket
 import uuid
 from json import *
+import botocore.session
+import ConfigParser
 
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.Provenance import getMongoServer
@@ -14,6 +16,23 @@ from flightpath.RedisConnector import *
 import navopt_pb2
 
 _ONE_DAY_IN_SECONDS = 60 * 60 * 24
+
+config = ConfigParser.RawConfigParser ()
+config.read("/var/Baaz/hosts.cfg")
+usingAWS = config.getboolean("mode", "usingAWS")
+
+bucket_location = "partner-logs"
+log_bucket_location = "xplain-servicelogs"
+
+CLUSTER_MODE = config.get("ApplicationConfig", "mode")
+CLUSTER_NAME = config.get("ApplicationConfig", "clusterName")
+
+if CLUSTER_MODE is None:
+    CLUSTER_MODE = 'production'
+
+
+if CLUSTER_NAME is not None:
+    bucket_location = CLUSTER_NAME
 
 class ApiRpcClient(object):
     def __init__(self):
@@ -71,6 +90,22 @@ class ApiRpcClient(object):
 class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
     print 'Call inside NavOptApiServer'
  
+    def getS3url(self, request, context):
+        print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant
+
+        session = botocore.session.get_session()
+        client = session.create_client('s3')
+        timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%m-%d-%Y')
+        filep = "/" + timestr + "/" + request.fileName
+        dest = "partner-logs" + "/" + request.tenant + filep
+        presigned_url = client.generate_presigned_url('put_object', Params = 
+                                     {'Bucket': bucket_location, 'Key': dest}, ExpiresIn = 300)
+ 
+        print "Api Service response", presigned_url
+        ret_response = navopt_pb2.GetS3urlResponse()
+        ret_response.url = presigned_url
+        return ret_response
+
     def getTenant(self, request, context):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.email 
@@ -121,7 +156,9 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         db.uploadSessionUIDs.update({ "uploadSession": "uploadSession" }, {'$push': { 'session': str(fileGuid) }}, upsert=True)
         userdb.activeUploadsUIDs.insert({'guid': tenant, 'upUID': fileGuid})
         fileTimestamp = time.time()
-        newFileName = filename.split('/', 2)[2] 
+        timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%m-%d-%Y')
+        #newFileName = filename.split('/', 2)[2] 
+        newFileName = timestr + "/" + filename 
         #update upload stats
         objectToInsert = {
             'tenent': tenant,
@@ -439,7 +476,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         if request.colDelim != "":
             col_delim = request.colDelim
 
-        ret_response = self.updateUploadStats(request.tenant, request.s3location, request.sourcePlatform, col_delim, row_delim)
+        ret_response = self.updateUploadStats(request.tenant, request.fileName, request.sourcePlatform, col_delim, row_delim)
         #msg_dict = {'tenant':str(request.tenant), 'opcode':'TopTables'}
         #response = api_rpc.call(dumps(msg_dict))
         #print "Api Service response", response, "Type:", type(loads(response))
@@ -526,15 +563,15 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                 data.qid = entry['eid']
 
         if 'next' in response:
-            ret.next = response['next']
+            ret.nextToken = response['next']
         return ret
 
     def getQueries(self, request, context):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant
         msg_dict = {'tenant':str(request.tenant), 'opcode':'GetQueries'}
-        if request.next != "":
-            msg_dict['next'] = request.next
+        if request.startingToken != "":
+            msg_dict['next'] = request.startingToken
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_to_query_data(loads(response))
@@ -610,15 +647,15 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                 data.tid = entry['eid']
 
         if 'next' in response:
-            ret.next = response['next']
+            ret.nextToken = response['next']
         return ret
 
     def getTables(self, request, context):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant
         msg_dict = {'tenant':str(request.tenant), 'opcode':'GetTables'}
-        if request.next != "":
-            msg_dict['next'] = request.next
+        if request.startingToken != "":
+            msg_dict['next'] = request.startingToken
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_to_table_data(loads(response))
@@ -713,15 +750,15 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                 data.cid = entry['eid']
 
         if 'next' in response:
-            ret.next = response['next']
+            ret.nextToken = response['next']
         return ret
 
     def getColumns(self, request, context):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant
         msg_dict = {'tenant':str(request.tenant), 'opcode':'GetColumns'}
-        if request.next != "":
-            msg_dict['next'] = request.next
+        if request.startingToken != "":
+            msg_dict['next'] = request.startingToken
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_to_column_data(loads(response))
