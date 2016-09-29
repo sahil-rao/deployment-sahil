@@ -43,9 +43,6 @@ class Elasticsearch(object):
     def version(self):
         return self._conn.info()['version']['number']
 
-    def health(self):
-        return self._conn.cluster.health()
-
     def nodes(self):
         nodes = self._conn.nodes.info()['nodes']
 
