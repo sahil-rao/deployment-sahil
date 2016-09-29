@@ -5,7 +5,7 @@
 - name: NTP installed
   apt: name=ntp update_cache=yes state=present
   sudo: yes
-- name: Remove everything from under the /mnt/volumne1 directory
+- name: Remove everything from under the /mnt/volume1 directory
   shell: rm -rf /mnt/volume1/*
   sudo: yes
 - name: Save configuration file
@@ -185,6 +185,18 @@
   sudo: yes
 - name: Install python datadog package
   pip: name=datadog
+  sudo: yes
+- name: Install boto
+  pip: name=boto
+  sudo: yes
+- name: Install pika
+  pip: name=pika version=0.9.8
+  sudo: yes
+- name: Install networkx
+  pip: name=networkx
+  sudo: yes
+- name: Install sqlparse
+  pip: name=sqlparse
   sudo: yes
 #REDIS SENTINEL DEPLOYMENT
 #- name: Install Redis APT Package
