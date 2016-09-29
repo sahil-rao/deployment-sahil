@@ -2,18 +2,9 @@
 # This Playbook would deploy the whole Baazdata cluster with replication and sharding.
 # Before running this playbook, make sure old scripts have been stopped with scripts/stop-old-scripts.yml
 
-- hosts: tag_Name_MongoDBServer
-  roles:
-  - role: common
-  - role: mongodb
-
 - hosts: tag_Name_Backoffice
   roles:
   - role: backoffice
-
-- hosts: tag_Name_Webserver1
-  roles:
-  - role: webserver
 
 - hosts: tag_Name_QueueServer
   roles:
@@ -39,32 +30,9 @@
   roles:
   - role: nginx
 
-- hosts: tag_Name_Foundation
-  roles:
-  - role: foundation
-
-- hosts: tag_Name_Redis
-  roles:
-  - role: redis
-    sudo: true
-
 - hosts: tag_Name_RedisCache
   roles:
   - role: redis
-    sudo: true
-
-- hosts: tag_Name_ElasticSearch
-  roles:
-  - role: elasticsearch
-    sudo: true
-
-- hosts: tag_Name_DeploymentRoot
-  roles:
-  - role: deploymentroot
-
-- hosts: tag_Name_RedisSentinel
-  roles:
-  - role: redis_sentinel
     sudo: true
 
 - hosts: tag_Name_KibanaAndElasticsearch
