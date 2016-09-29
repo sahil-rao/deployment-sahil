@@ -3,6 +3,7 @@ from .util import prompt
 import bcrypt
 import click
 import getpass
+import uuid
 
 
 DEFAULT_FIELDS = (
@@ -71,6 +72,7 @@ def create_user(ctx, signed_terms, level, user_type, email):
         'signed_terms': signed_terms,
         'level': level,
         'type': user_type,
+        'organizations': [str(uuid.uuid4())],
     }
 
     with mongo_cluster.master() as mongo:
