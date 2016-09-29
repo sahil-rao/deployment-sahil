@@ -44,6 +44,10 @@ module "common" {
     # Instances
     key_name = "${var.key_name}"
 
+    api_elb_tls_cert_arn = "${data.terraform_remote_state.networking.account_tls_cert_arn}"
+    api_elb_dns_name = "navoptapi"
+    api_elb_internal = "true"
+
     logging_elasticsearch_version = "v1"
     logging_elasticsearch_ami = "ami-23d00643"
 
