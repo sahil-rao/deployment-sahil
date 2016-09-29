@@ -3,7 +3,6 @@ from .util import prompt
 import bcrypt
 import click
 import getpass
-import uuid
 
 
 DEFAULT_FIELDS = (
@@ -46,71 +45,71 @@ def list(ctx):
         )
 
 
-@cli.command('create')
-@click.option('--signed/--no-signed', 'signed_terms', default=False)
-@click.option('--level',
-              default=1,
-              type=click.Choice([1, 2, 3]))
-@click.option('--type',
-              'user_type',
-              default='local',
-              type=click.Choice(['local', 'social']))
-@click.argument('email')
-@click.pass_context
-def create_user(ctx, signed_terms, level, user_type, email):
-    mongo_cluster = ctx.obj['cluster'].dbsilo('dbsilo1').mongo_cluster()
-
-    password = getpass.getpass('password: ')
-    confirm_password = getpass.getpass('confirm_password: ')
-
-    if password != confirm_password:
-        ctx.fail('password does not match')
-
-    user = {
-        'email': email,
-        'password': bcrypt.hashpw(password, bcrypt.gensalt(10, '2a')),
-        'signed_terms': signed_terms,
-        'level': level,
-        'type': user_type,
-        'organizations': [str(uuid.uuid4())],
-    }
-
-    with mongo_cluster.master() as mongo:
-        db = mongo['xplainIO']
-
-        user_record = db.users.find_one({'email': email})
-        if user_record is None:
-            db.users.insert_one(user)
-            print 'created', email
-        else:
-            msg = 'user exists, are you sure you want to update it? [yes/no] '
-            if not prompt(msg, ctx.obj['yes']):
-                ctx.fail('{} not updated'.format(email))
-            else:
-                user_record.update(user)
-                db.users.update({'_id': user_record['_id']}, user)
-                print 'updated', email
-
-
-@cli.command('delete')
-@click.argument('email')
-@click.pass_context
-def delete_user(ctx, email):
-    mongo_cluster = ctx.obj['cluster'].dbsilo('dbsilo1').mongo_cluster()
-
-    with mongo_cluster.master() as mongo:
-        db = mongo['xplainIO']
-
-        user_record = db.users.find_one({'email': email})
-        if user_record is None:
-            ctx.fail('`{}` does not exist'.format(email))
-
-        msg = 'Are you sure you want to delete this user? [yes/no] '
-        if not prompt(msg, ctx.obj['yes']):
-            ctx.fail('{} not deleted'.format(email))
-        else:
-            db.users.delete_one({'_id': user_record['_id']})
-            print 'deleted', email
+# @cli.command('create')
+# @click.option('--signed/--no-signed', 'signed_terms', default=False)
+# @click.option('--level',
+#               default=1,
+#               type=click.Choice([1, 2, 3]))
+# @click.option('--type',
+#               'user_type',
+#               default='local',
+#               type=click.Choice(['local', 'social']))
+# @click.argument('email')
+# @click.pass_context
+# def create_user(ctx, signed_terms, level, user_type, email):
+#     mongo_cluster = ctx.obj['cluster'].dbsilo('dbsilo1').mongo_cluster()
+#
+#     password = getpass.getpass('password: ')
+#     confirm_password = getpass.getpass('confirm_password: ')
+#
+#     if password != confirm_password:
+#         ctx.fail('password does not match')
+#
+#     user = {
+#         'email': email,
+#         'password': bcrypt.hashpw(password, bcrypt.gensalt(10, '2a')),
+#         'signed_terms': signed_terms,
+#         'level': level,
+#         'type': user_type,
+#         'organizations': [str(uuid.uuid4())],
+#     }
+#
+#     with mongo_cluster.master() as mongo:
+#         db = mongo['xplainIO']
+#
+#         user_record = db.users.find_one({'email': email})
+#         if user_record is None:
+#             db.users.insert_one(user)
+#             print 'created', email
+#         else:
+#             msg = 'user exists, are you sure you want to update it? [yes/no] '
+#             if not prompt(msg, ctx.obj['yes']):
+#                 ctx.fail('{} not updated'.format(email))
+#             else:
+#                 user_record.update(user)
+#                 db.users.update({'_id': user_record['_id']}, user)
+#                 print 'updated', email
+#
+#
+# @cli.command('delete')
+# @click.argument('email')
+# @click.pass_context
+# def delete_user(ctx, email):
+#     mongo_cluster = ctx.obj['cluster'].dbsilo('dbsilo1').mongo_cluster()
+#
+#     with mongo_cluster.master() as mongo:
+#         db = mongo['xplainIO']
+#
+#         user_record = db.users.find_one({'email': email})
+#         if user_record is None:
+#             ctx.fail('`{}` does not exist'.format(email))
+#
+#         msg = 'Are you sure you want to delete this user? [yes/no] '
+#         if not prompt(msg, ctx.obj['yes']):
+#             ctx.fail('{} not deleted'.format(email))
+#         else:
+#             db.users.delete_one({'_id': user_record['_id']})
+#             print 'deleted', email
 
 
 @cli.command('list-admin')
