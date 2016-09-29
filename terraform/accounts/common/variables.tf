@@ -31,6 +31,11 @@ variable "admin_instance_type" {
     default = "t2.micro"
 }
 
+# API Service
+variable "api_elb_tls_cert_arn" {}
+variable "api_elb_dns_name" {}
+variable "api_elb_internal" {}
+
 # Logging Elasticsearch
 variable "logging_elasticsearch_version" {}
 variable "logging_elasticsearch_ami" {}
