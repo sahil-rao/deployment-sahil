@@ -24,6 +24,9 @@
 - name: Copy the service files
   shell: tar -zxf /home/ubuntu/Baaz-DataAcquisition-Service.tar.gz chdir=/
   sudo: yes
+- name: Install monit
+  apt: name=monit state=present
+  sudo: yes
 - name: Kill Monit so it won't interfere with installation
   shell: monit quit
   sudo: yes
@@ -127,6 +130,9 @@
 #- name: Start hive server
 #  action: service name=hive state=started
 #  sudo: yes
+- name: Install Pip
+  apt: name=python-pip state=present
+  sudo: yes
 - name: Install Elasticsearch
   pip: name=elasticsearch
   sudo: yes
@@ -140,7 +146,10 @@
   pip: name=httplib2
   sudo: yes
 - name: install graphviz
-  apt: name=graphviz update_cache=yes
+  apt: name=graphviz update_cache=yes state=present
+  sudo: yes
+- name: install python-dev
+  apt: name=python-dev state=present
   sudo: yes
 - name: install libgraphviz-dev
   apt: name=libgraphviz-dev update_cache=yes
@@ -223,11 +232,17 @@
 #- name: Start sentinel
 #  service: name=redis-sentinel state=started
 #  sudo: yes
+- name: install nginx
+  apt: name=nginx state=present
+  sudo: yes
+- name: Create /var/www
+  file: path=/var/www state=directory
+  sudo: yes
 - name: Update version number for dashboard page
-  local_action: template src=/var/www/index_template.j2 dest=/var/www/index.html
+  template: src=index_template.j2 dest=/var/www/index.html
   sudo: yes
 - name: Restart nginx
-  local_action: command nginx -s reload
+  service: name=nginx state=reloaded
   sudo: yes
 - name: Start monit service
   shell: monit 
