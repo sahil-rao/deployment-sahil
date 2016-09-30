@@ -9,6 +9,30 @@
 
 - hosts: tag_Name_QueueServer
   roles:
+  - role: mtpereira.erlang
+    become: yes
+  - role: Stouts.rabbitmq
+    rabbitmq_vhosts:
+    - xplain
+    rabbitmq_plugins:
+    - rabbitmq_management
+    rabbitmq_users:
+    - user: "{{ rabbitmq_username }}"
+      password: "{{ rabbitmq_password }}"
+      vhost: xplain
+      configure_priv: .*
+      read_priv: .*
+      write_priv: .*
+      state: present
+    - user: "{{ rabbitmq_username }}"
+      password: "{{ rabbitmq_password }}"
+      vhost: xplain
+      configure_priv: .*
+      read_priv: .*
+      write_priv: .*
+      tags: administrator
+      state: present
+    become: yes
   - role: queueserver
 
 - hosts: tag_Name_NodeJS
