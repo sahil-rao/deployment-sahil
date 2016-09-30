@@ -46,6 +46,9 @@ module "common" {
     # Instances
     key_name = "${var.key_name}"
 
+    api_elb_dns_name = "navoptapi"
+    api_elb_internal = "true"
+
     logging_elasticsearch_version = "v1"
     logging_elasticsearch_ami = "ami-062efa66"
     logging_elasticsearch_instance_type = "t2.micro" # "m3.xlarge"
