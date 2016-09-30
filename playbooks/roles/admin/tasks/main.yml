@@ -80,7 +80,7 @@
   shell: /opt/bitnami/ctlscript.sh stop
   sudo: yes
 - name: Create username/password for nginx
-  command: htpasswd -b -c /etc/nginx/.htpasswd xplain {{NginxPW}}
+  command: htpasswd -b -c /etc/nginx/.htpasswd xplain {{ admin_nginx_password }}
   sudo: yes
 - name: Create node admin upstart script
   template: src=admin_nodejs.conf dest=/etc/init/admin_nodejs.conf
