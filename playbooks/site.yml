@@ -38,6 +38,11 @@
   - role: redis
     sudo: true
 
+- hosts: tag_Name_Kibana
+  roles:
+  - role: kibana
+    sudo: true
+
 - hosts: tag_Name_KibanaAndElasticsearch
   roles:
   - role: elasticlog
