@@ -32,7 +32,6 @@ variable "admin_instance_type" {
 }
 
 # API Service
-variable "api_elb_tls_cert_arn" {}
 variable "api_elb_dns_name" {}
 variable "api_elb_internal" {}
 

@@ -2,7 +2,6 @@ variable "subnet_ids" { type = "list" }
 variable "zone_id" {}
 
 variable "api_elb_security_groups" { type = "list" }
-variable "api_elb_tls_cert_arn" {}
 variable "api_elb_internal" {}
 variable "api_elb_dns_name" {}
 
@@ -15,10 +14,9 @@ resource "aws_elb" "api" {
 
     listener {
       instance_port = 8982
-      instance_protocol = "http"
+      instance_protocol = "tcp"
       lb_port = 8982
-      lb_protocol = "https"
-      ssl_certificate_id = "${var.api_elb_tls_cert_arn}"
+      lb_protocol = "tcp"
     }
 
     connection_draining = true
