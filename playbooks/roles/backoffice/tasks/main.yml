@@ -232,18 +232,6 @@
 #- name: Start sentinel
 #  service: name=redis-sentinel state=started
 #  sudo: yes
-- name: install nginx
-  apt: name=nginx state=present
-  sudo: yes
-- name: Create /var/www
-  file: path=/var/www state=directory
-  sudo: yes
-- name: Update version number for dashboard page
-  template: src=index_template.j2 dest=/var/www/index.html
-  sudo: yes
-- name: Restart nginx
-  service: name=nginx state=reloaded
-  sudo: yes
 - name: Start monit service
   shell: monit 
   sudo: yes
