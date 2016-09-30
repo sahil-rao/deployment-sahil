@@ -92,10 +92,14 @@
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
   sudo: yes
 - name: Get xplain cert
-  template: src=/etc/nginx/ssl/xplain_san_cert.crt dest=/etc/nginx/ssl/
+  copy:
+    content: "{{ admin_ssl_cert }}"
+    dest: /etc/nginx/ssl/xplain_san_cert.crt
   sudo: yes
 - name: Get Cloudera Key
-  template: src=/etc/nginx/ssl/san_cloudera_com.key dest=/etc/nginx/ssl/
+  copy:
+    content: "{{ admin_ssl_key }}"
+    dest: /etc/nginx/ssl/san_cloudera_com.key
   sudo: yes
 - name: Start admin nodejs
   service: name=admin_nodejs state=started
