@@ -52,6 +52,9 @@
 - name: Save configuration file
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
   sudo: yes
+- name: Save google analytics configuration file
+  template: src=ga.cfg dest=/var/Baaz/ga.cfg
+  sudo: yes
 - name: Start nodejs
   service: name=nodejs state=started
   sudo: yes
