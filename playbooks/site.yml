@@ -3,12 +3,18 @@
 # Before running this playbook, make sure old scripts have been stopped with scripts/stop-old-scripts.yml
 
 - hosts: tag_Name_Backoffice
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: s3cmd
   - role: java
   - role: backoffice
 
 - hosts: tag_Name_QueueServer
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: mtpereira.erlang
     become: yes
@@ -37,38 +43,62 @@
   - role: queueserver
 
 - hosts: tag_Name_NodeJS
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: s3cmd
   - role: nodejsserver
 
 - hosts: tag_Name_APIServer
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: api
 
 - hosts: tag_Name_AdminServer
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: s3cmd
   - role: admin
 
 - hosts: tag_Name_ExecServer
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: exec
 
 - hosts: tag_Name_Nginx
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: nginx
 
 - hosts: tag_Name_RedisCache
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: redis
     sudo: true
 
 - hosts: tag_Name_Kibana
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: kibana
     sudo: true
 
 - hosts: tag_Name_KibanaAndElasticsearch
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: elasticlog
     sudo: true
@@ -76,17 +106,26 @@
     sudo: true
 
 - hosts: tag_Name_LogstashServer
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: java
   - role: logstash
     sudo: true
 
 - hosts: tag_Name_RedisLog
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: redislog
     sudo: true
 
 - hosts: tag_Name_Bastion
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: dashboard_server
     tags: ['dasbboard']
@@ -99,11 +138,17 @@
     sudo: true
 
 - hosts: tag_Name_Datadog
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: Datadog.datadog
     sudo: true
 
 - hosts: tag_Name_Docker
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: angstwad.docker_ubuntu
     sudo: true
