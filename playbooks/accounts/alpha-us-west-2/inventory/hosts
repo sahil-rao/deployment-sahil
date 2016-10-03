@@ -139,7 +139,7 @@ express_session_secret={{ vault_admin_express_session_secret }}
 172.31.13.242
 
 [tag_Name_Bastion]
-localhost
+alpha-root.xplain.io
 
 [tag_Name_RedisLog]
 172.31.2.218
