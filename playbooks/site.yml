@@ -5,6 +5,7 @@
 - hosts: tag_Name_Backoffice
   roles:
   - role: s3cmd
+  - role: java
   - role: backoffice
 
 - hosts: tag_Name_QueueServer
@@ -76,6 +77,7 @@
 
 - hosts: tag_Name_LogstashServer
   roles:
+  - role: java
   - role: logstash
     sudo: true
 
