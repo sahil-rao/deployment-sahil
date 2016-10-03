@@ -1,34 +1,66 @@
-import datetime
-import socket 
-import os
-import sys
-import re
-import traceback
-from pprint import pprint
+#!/usr/bin/python
+
 from pymongo import MongoClient
-from boto.route53.record import ResourceRecordSets
-import boto
+import argparse
+import boto3
+import calendar
+import datetime
+import dd
+import sys
 
-SUFFIX = 'xplain.io'
-AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'us-west-1')
+
 AUTOREMOVAL_DELAY_SECONDS = 10800   # 3 hours
+TERMINATED_STATES = ('shutting-down', 'terminating', 'terminated')
 
 
-def get_record(route53_zone, db_silo_name, service_name, ip):
-    """
-    Check if a record exists matching the service pattern with the current host's ip
-    """
+def report(title, text='', master=None, instances=(), **kwargs):
+    print title
 
-    # Match records belonging to the service for particular dbsilo and cluster
-    match_regex = "{0}\d+\.{1}\.{2}\.?" \
-                  .format(service_name, db_silo_name, route53_zone.name)
+    lines = []
 
-    for record in route53_zone.get_records():
-        match = re.match(match_regex, record.name)
-        if match and ip in record.resource_records:
-            return record
+    for instance in instances:
+        host = instance.private_ip_address
 
-    return None
+        line = ' * {} state:{}'.format(host, instance.state['Name'])
+
+        if master and host == master.address[0]:
+            line += ' (master)'
+
+        lines.append(line)
+
+    instances = '\n'.join(lines)
+
+    if text:
+        text = '{}\n{}'.format(text, instances)
+    else:
+        text = instances
+
+    print text
+
+    dd.create_event(
+        title=title,
+        text=text,
+        **kwargs)
+
+
+class Error(Exception):
+    def __init__(self, title, text, alert_type='error', **kwargs):
+        super(Error, self).__init__()
+
+        self.title = title
+        self.text = text
+        self.alert_type = alert_type
+        self.kwargs = kwargs
+
+    def __str__(self):
+        return self.text
+
+    def report(self):
+        report(
+            title='Failed joining MongoDB cluster: {}'.format(self.title),
+            text=self.text,
+            alert_type=self.alert_type,
+            **self.kwargs)
 
 
 def reconfigure_replicaset(client, member_id_to_remove):
@@ -51,63 +83,134 @@ def reconfigure_replicaset(client, member_id_to_remove):
     client['admin'].command('replSetReconfig', config)
 
 
-def cleanup_route53(cluster_name, db_silo_name, service_name, member_hostname):
+def get_running_hostnames(region, service):
     """
-    Remove route53 record that matches member hostname
+    Find all the running mongo instances in the service
     """
 
-    hname, port = member_hostname.split(":")
-    if hname == None:
-        return
+    # Discover all the instances in the mongo cluster
+    ec2 = boto3.resource('ec2', region_name=region)
+    instances = list(ec2.instances.filter(Filters=[
+        {
+            'Name': 'tag:Service',
+            'Values': [service],
+        },
+    ]))
 
-    hostip = socket.gethostbyname(hname)
-    if hostip is None:
-        return
+    running_hostnames = set()
+    for instance in instances:
+        print instance.private_ip_address, instance.state
 
-    zone_name = "{0}.{1}".format(cluster_name, SUFFIX)
-    conn = boto.route53.connect_to_region(AWS_REGION)
-    route53_zone = conn.get_zone(zone_name)
-    record = get_record(route53_zone, db_silo_name, service_name, hostip)
+        if instance.state['Name'] not in TERMINATED_STATES:
+            running_hostnames.add(instance.private_ip_address)
 
-    if record is not None:
-        route53_zone.delete_record(record)
+    return running_hostnames
 
 
-try:        
-    if len(sys.argv) < 3:
-        print "{0} : Insufficent parameter".format(sys.argv[0])
-        sys.exit(2)
-
-    cluster_name = sys.argv[1] 
-    db_silo_name = sys.argv[2] 
-    service_name = sys.argv[3] 
-
+def run(args):
     client = MongoClient()
 
+    # Only run if we're a master
     resp = client['admin'].command('isMaster')
     if resp['ok'] != 1 or not resp['ismaster']:
-        sys.exit(0)
+        return 0
 
     rs_status = client["admin"].command("replSetGetStatus")
-    for member in rs_status['members']:
-        if member['stateStr'] == "(not reachable/healthy)":
-            time_since_last_heartbeat = datetime.datetime.utcnow() - member["lastHeartbeatRecv"]
-            if time_since_last_heartbeat.seconds > AUTOREMOVAL_DELAY_SECONDS:
-                print str(datetime.datetime.now()), "Removing", str(member['name']), "from route53 records"
-                cleanup_route53(cluster_name, db_silo_name, service_name, member['name'])
-                print str(datetime.datetime.now()), "Removing", str(member['name']), "from MongoDB replica set"            
-                reconfigure_replicaset(client, member["_id"])
-                # Exit code 3 signals that a replica set member was removed
-                sys.exit(3)
-            # Exit code 4 signals a replica set member was detected unhealthy, but not removed
-            print str(datetime.datetime.now()), "Unhealthy Replica set member detected but not removed"
-            print str(datetime.datetime.now()), "Auto-removal scheduled in", str(AUTOREMOVAL_DELAY_SECONDS - time_since_last_heartbeat.seconds), "seconds"
-            sys.exit(4)
-except Exception as e:
-    print str(datetime.datetime.now()), "Failed to cleanup replica set"
-    traceback.print_exc()
-    sys.exit(1)
 
-sys.exit(0)
+    unreachable_members = [
+        member for member in rs_status['members']
+        if member['stateStr'] == "(not reachable/healthy)"]
+
+    if not unreachable_members:
+        return 0
+
+    running_hostnames = get_running_hostnames(args.region, args.service)
+
+    # Check if any of the members are terminated instances. If so, filter them
+    # out now.
+    unhealthy_members = []
+    stopped_members = []
+    for member in unreachable_members:
+        hostname = member['name'].split(':')[0]
+
+        if hostname in running_hostnames:
+            unhealthy_members.append(member)
+        else:
+            stopped_members.append(member)
+
+    if stopped_members:
+        for member in stopped_members:
+            print \
+                str(datetime.datetime.now()), \
+                "Removing stopped/terminated instance"
+
+            reconfigure_replicaset(client, member["_id"])
+
+        report(
+            title='Removed Stopped MongoDB {} instances'.format(hostname),
+            text='\n'.join(
+                ' * ' + member['name'] for member in stopped_members
+            ),
+        )
+
+    if not unhealthy_members:
+        return 0
+
+    for member in unhealthy_members:
+        hostname = member['name'].split(':')[0]
+
+        time_since_last_heartbeat = datetime.datetime.utcnow() - \
+            member["lastHeartbeatRecv"]
+
+        if time_since_last_heartbeat.seconds < args.delay:
+            print \
+                str(datetime.datetime.now()), \
+                "Unhealthy Replica set member detected but not removed:", \
+                hostname
+
+            print \
+                str(datetime.datetime.now()), \
+                "Auto-removal scheduled in", \
+                args.delay - time_since_last_heartbeat.seconds, \
+                "seconds"
+
+            title = 'MongoDB Unhealthy Replica'
+            text = 'Unhealthy replica: {}'.format(member['name'])
+        else:
+            print \
+                str(datetime.datetime.now()), \
+                "Removing from MongoDB replica set:", \
+                str(member['name'])
+
+            reconfigure_replicaset(client, member["_id"])
+
+            title = 'MongoDB Unhealthy Replica Removed'
+            text = 'Removed unhealthy replica: {}'.format(member['name'])
+
+    raise Error(
+        title=title,
+        text=text,
+        timestamp=calendar.timegm(
+            member["lastHeartbeatRecv"].utctimetuple()
+        ),
+    )
+
+    return 1
 
 
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--region', required=True)
+    parser.add_argument('--service', required=True)
+    parser.add_argument('--delay', type=int, default=AUTOREMOVAL_DELAY_SECONDS)
+    args = parser.parse_args()
+
+    try:
+        return run(args)
+    except Error as err:
+        err.report()
+        return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())
