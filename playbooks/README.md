@@ -12,6 +12,9 @@ just running:
 % make
 ```
 
+Next, you will need the passwords for each environment. Talk to SRE, then put
+the files into `$HOME/.navopt/$ENV/vault_pass`.
+
 # Running the scripts.
 
 For example, the following command will do a dry-run for upgrading the
