@@ -50,7 +50,7 @@ tag_Name_Backoffice
 172.31.2.108 returnURL=http://alpha.xplain.io/auth/google/return realm=https://alpha.xplain.io/ node_mode=development port=3000
 
 [tag_Name_NodeJS:vars]
-express_session_secret={{ vault_nodejs_express_session_secret }}
+express_session_secret={{ nodejs_express_session_secret }}
 
 [tag_Name_NavOptTest]
 172.31.11.53
@@ -63,7 +63,7 @@ express_session_secret={{ vault_nodejs_express_session_secret }}
 172.31.12.116 domain=alpha-dashboard.optimizer.cloudera.com realm=http://deployment.xplain.io old_domain=alpha-root.xplain.io
 
 [tag_Name_AdminServer:vars]
-express_session_secret={{ vault_admin_express_session_secret }}
+express_session_secret={{ admin_express_session_secret }}
 
 [tag_Name_RedisSentinel]
 172.31.4.140
