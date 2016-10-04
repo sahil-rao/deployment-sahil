@@ -28,6 +28,11 @@ case $ACCOUNT in
 		export AWS_PROFILE=navopt_prod
 		;;
 
+	prod|prod-us-west-2)
+		ACCOUNT=prod-us-west-2
+		export AWS_PROFILE=navopt_prod
+		;;
+
 	*)
 		echo "unknown account '$ACCOUNT'" 1>&2
 		exit 1
