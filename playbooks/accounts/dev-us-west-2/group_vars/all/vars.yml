@@ -1,4 +1,5 @@
-express_session_secret: "{{ vault_express_session_secret }}"
+nodejs_express_session_secret: "{{ vault_nodejs_express_session_secret }}"
+admin_express_session_secret: "{{ vault_admin_express_session_secret }}"
 
 rabbitmq_username: "{{ vault_rabbitmq_username }}"
 rabbitmq_password: "{{ vault_rabbitmq_password }}"
