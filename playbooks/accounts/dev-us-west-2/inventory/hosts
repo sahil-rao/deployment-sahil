@@ -76,7 +76,7 @@ returnURL=http://dev.xplain.io/auth/google/return
 realm=https://dev.xplain.io/
 node_mode=development
 port=3000
-express_session_secret={{ vault_express_session_secret }}
+express_session_secret={{ vault_nodejs_express_session_secret }}
 
 [tag_Name_QueueServer:children]
 tag_Name_queue_server
@@ -114,7 +114,7 @@ tag_Name_admin
 domain=ec2-52-43-95-113.us-west-2.compute.amazonaws.com
 realm=http://dev.xplain.io
 old_domain=dev-root.xplain.io
-express_session_secret={{ vault_express_session_secret }}
+express_session_secret={{ vault_admin_express_session_secret }}
 
 [all:children]
 tag_Name_admin
