@@ -54,6 +54,8 @@
     "del": "^2.2.0",
     "each-async": "^1.1.1",
     "eslint-plugin-react": "*",
+    "frisby": "git://github.com/vlucas/frisby.git#v2",
+    "jasmine-node": "^1.14.5",
     "fs-extra": "^0.30.0",
     "fs-jetpack": "^0.9.0",
     "gulp": "^3.9.1",
