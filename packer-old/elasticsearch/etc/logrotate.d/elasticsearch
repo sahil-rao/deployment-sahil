@@ -1,0 +1,22 @@
+/var/log/elasticsearch/*.log {
+    weekly
+    size 200M
+    missingok
+    rotate 7
+    copytruncate
+    compress
+    delaycompress
+    notifempty
+    create 644 elasticsearch elasticsearch
+}
+
+/var/log/register_host.log /var/log/do_backup.log {
+    weekly
+    size 100M
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    create 640 elasticsearch elasticsearch
+}

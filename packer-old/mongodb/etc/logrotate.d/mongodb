@@ -1,0 +1,25 @@
+/mnt/volume1/mongo/log/mongo.log {
+    weekly
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    create 640 mongodb mongodb
+    sharedscripts
+    postrotate
+        killall -SIGUSR1 mongod
+        find /mnt/volume1/mongo/log/ -type f -regex ".*\.\(log.[0-9].*-[0-9].*\)" -exec rm {} \;
+    endscript
+}
+
+/var/log/register_host.log /var/log/do_backup.log /var/log/cleanup_replicas.log {
+    weekly
+    size 100M
+    missingok
+    rotate 7
+    compress
+    delaycompress
+    notifempty
+    create 640 root root
+}

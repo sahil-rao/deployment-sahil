@@ -69,7 +69,7 @@
   sudo: yes
 - name: Copy different nginx conf file if staging (No SSL)
   template: src=/home/ubuntu/build/UI/xplain_dashboard/nginx.conf.staging dest=/etc/nginx/nginx.conf
-  when: clusterName == 'xplain-staging'
+  when: clusterName in ['navopt-dev', 'navopt-stage', 'xplain-staging']
   sudo: yes
 - name: Copy node upstart script
   template: src=nodejs.conf dest=/etc/init/nodejs.conf

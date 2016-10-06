@@ -1,16 +1,11 @@
 ---
 ### DEPENDENCIES ###
-- name: Install S3 CMD
-  apt: name=s3cmd state=present
-  sudo: yes
 - name: Create Log directory
   shell: mkdir -p /var/log/cloudera/navopt/nodejs
   sudo: yes
 - name: Change the permission
   shell: chown bitnami:bitnami /var/log/cloudera/navopt/nodejs
   sudo: yes
-- name: Copy s3cmd config file
-  copy: src=/home/ubuntu/.s3cfg dest=/home/bitnami/.s3cfg
 - name: NTP installed
   apt: name=ntp state=present
   sudo: yes
@@ -56,6 +51,9 @@
   sudo: yes
 - name: Save configuration file
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
+  sudo: yes
+- name: Save google analytics configuration file
+  template: src=ga.cfg dest=/var/Baaz/ga.cfg
   sudo: yes
 - name: Start nodejs
   service: name=nodejs state=started

@@ -1,0 +1,11 @@
+init_config:
+
+instances:
+  - name: ssh
+    search_string: ['ssh', 'sshd']
+
+  - name: redis-sentinel
+    search_string: ['redis-sentinel']
+
+  - name: redis-server
+    search_string: ['redis-server']
