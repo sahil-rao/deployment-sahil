@@ -20,6 +20,7 @@ resource "aws_autoscaling_group" "default" {
     min_size = "${var.min_size}"
     max_size = "${var.max_size}"
     desired_capacity = "${var.desired_capacity}"
+    termination_policies = ["OldestInstance", "ClosestToNextInstanceHour"]
     vpc_zone_identifier = ["${var.subnet_ids}"]
 
     tag {
