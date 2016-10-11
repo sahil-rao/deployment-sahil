@@ -36,6 +36,7 @@
     "passport-google": "0.3.0",
     "passport-local": "0.1.6",
     "pdfkit": "0.7.0",
+    "react-bootstrap": "*",
     "redis": "0.10.3",
     "redis-sentinel": "*",
     "socket.io": "~1.0.6",
