@@ -36,6 +36,7 @@ from rlog import RedisHandler
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 XPLAIN_LOG_FILE = "/var/log/cloudera/navopt/XplainAdvAnalyticsService.err"
+ADV_ANALYTICS_HEARTBEAT_INTERVAL = 1200
 
 config = ConfigParser.RawConfigParser ()
 config.read("/var/Baaz/hosts.cfg")
@@ -650,7 +651,7 @@ def callback(ch, method, properties, body):
         totalTime = (time.clock() - startTime)
         statsd.timing("advanalytics.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
 
-connection1 = RabbitConnection(callback, ['advanalytics'], ['elasticpub'], {}, prefetch_count=1)
+connection1 = RabbitConnection(callback, ['advanalytics'], ['elasticpub'], {}, prefetch_count=1, heartbeat_interval=ADV_ANALYTICS_HEARTBEAT_INTERVAL)
 
 logging.info("XplainAdvAnalytics going to start consuming")
 
