@@ -1,25 +1,24 @@
 var gulp = require('gulp'),
     gulpConfig = require('./gulp-config'),
-    jshint = require('gulp-jshint'),
-    packageJSON  = require('./package'),
     webpack = require('webpack-stream'),
-    scp = require('gulp-scp2'),
     fs = require('fs-extra'),
     fsj = require('fs-jetpack'),
-    buffer = require('vinyl-buffer'),
     tar = require('gulp-tar'),
-    Ssh = require('gulp-ssh'),
-    AWS = require("aws-sdk"),
     args = require('yargs').argv,
     Git = require("nodegit"),
     prompt = require("prompt"),
     Q = require('q'),
     shell = require('gulp-shell'),
     gulpSequence = require('gulp-sequence'), //Remove this once we upgrade to gulp 4.0
+    eslint = require('gulp-eslint'),
+    gulpIf = require('gulp-if'),
     gzip = require('gulp-gzip');
 
 var branch = args.branch || 'master';
 var xplainDir = args.xplainDir || null;
+var fixEslint = args.fix || false;
+var jshintSrc = [gulpConfig.uiDir+'xplain.io/**/*.js', gulpConfig.uiDir+'xplain.io/**/*.jsx', '!'+gulpConfig.uiDir+'xplain.io/public/js/libs/**/*.js',
+'!'+gulpConfig.uiDir+'xplain.io/node_modules/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/app/libraries/**/*.js','!'+gulpConfig.uiDir+'xplain.io/public/build/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/test/**/*.js'];
 
 gulp.task('purge-ui', function(){
   console.log("Cleaning UI directory");
@@ -57,12 +56,12 @@ gulp.task('pull-latest', ['purge-ui'], function(){
   });
 });
 
-gulp.task('webpack-build', function(cb){
+gulp.task('webpack-build', function(){
   console.log("Compiling code");
   var dir = xplainDir || gulpConfig.uiDir+'xplain.io/';
   fs.copySync(dir+'src/index.html', dir+'public/build/index.html');
   return gulp.src(dir+'src/main.js')
-    .pipe(webpack(require('./webpack.config.js')(dir) ))
+    .pipe(webpack(require(dir+'src/webpack.config.js')))
     .pipe(gulp.dest(dir+'public/build/'));
 });
 
@@ -158,6 +157,33 @@ gulp.task('test-build', function(){
 
 });
 
+gulp.task('vm-setup', function(){
+  return fsj.copy('/home/xplain/', '/etc/init/', {matching:'*.cfg'})
+  .then(fsj.dir('~/tmp', {empty:true}))
+  .then(fsj.move(gulpConfig.vmDest+'node_modules', '~/tmp/'))
+  .then(fsj.copy(gulpConfig.uiDir+'xplain.io/', gulpConfig.vmDest, {
+    overwrite:true,
+    matching: ['!node_modules/**']
+  }))
+  .then(fsj.move('~/tmp/node_modules', gulpConfig.vmDest))
+  .catch(function(err){
+    console.error(err);
+  });
+});
+
+gulp.task("eslint", function(){
+  var config = {
+		configFile: gulpConfig.uiDir+'.eslintrc.json',
+    fix: fixEslint
+  };
+  return gulp.src(jshintSrc)
+		.pipe(eslint(config))
+		.pipe(eslint.format())
+    .pipe(gulpIf(isFixed, gulp.dest(gulpConfig.uiDir+'xplain.io')));
+});
+
+gulp.task('vm-install-npm', shell.task(['npm install'], {verbose:true, cwd:gulpConfig.vmDest}));
+
 gulp.task("push-app-aws", shell.task([
   's3cmd sync '+gulpConfig.uiDir+'xplain.io.tar.gz s3://'+gulpConfig.s3Bucket+'/'
 ]));
@@ -169,15 +195,39 @@ gulp.task("push-api-aws", shell.task([
 ]));
 
 //gulp.task('full-build', gulpSequence('pull-latest', ['app-build', 'test-build', 'api-build', 'admin-build']));
-gulp.task('full-build', gulpSequence('pull-latest', ['app-build'], ['push-app-aws']));
+gulp.task('full-build', gulpSequence('pull-latest', 'app-build'));
+gulp.task('full-deploy', gulpSequence('full-build', 'push-app-aws'));
+
+gulp.task('update-vm', gulpSequence('pull-latest', 'vm-setup', 'vm-install-npm'));
 
 function gitHubLogin(){
   //Fetches user input for github login
   var deffered = Q.defer();
+  var output = {};
   console.log("Github authentication");
+
+  if(args.gitUser){
+    console.log("Github username found in args");
+    output.user = args.gitUser;
+  }
+  if(args.gitPw){
+    console.log("Github password found in args");
+    output.pw = args.gitPw;
+  }
+  if(gulpConfig.gitUser){
+    console.log("Github username found in config");
+    output.user = gulpConfig.gitUser;
+  }
+  if(gulpConfig.gitPw){
+    console.log("Github password found in config");
+    output.pw = args.gitPw;
+  }
+  if(output.pw && output.user){
+    deffered.resolve(output);
+    return deffered.promise;
+  }
+
   prompt.start();
-  var user,
-      pw;
 
   var schema = {
     properties: {
@@ -197,11 +247,17 @@ function gitHubLogin(){
       deffered.reject(err);
       return;
     }
-    var output = {};
-    output.user = result.user;
-    output.pw = result.password;
+
+    output.user =  result.user;
+    output.pw =  result.password;
     deffered.resolve(output);
   });
 
   return deffered.promise;
+}
+
+
+function isFixed(file) {
+    // Has ESLint fixed the file contents
+    return file.eslint != null && file.eslint.fixed;
 }

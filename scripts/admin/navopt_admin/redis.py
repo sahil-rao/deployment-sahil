@@ -1,7 +1,6 @@
 from __future__ import absolute_import
 
 import redis
-import re
 
 
 class RedisCluster(object):
@@ -59,8 +58,8 @@ class Redis(object):
         self._tunnel = bastion.tunnel(host, port)
 
         self._conn = redis.StrictRedis(
-            host=self._tunnel.local_host,
-            port=self._tunnel.local_port,
+            host=self._tunnel.host,
+            port=self._tunnel.port,
         )
 
     def close(self):

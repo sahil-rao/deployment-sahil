@@ -69,7 +69,7 @@ MAX_OPEN_FILES=65535
 LOG_DIR=/var/log/$NAME
 
 # Elasticsearch data directory
-DATA_DIR=/mnt/$CLUSTER_NAME
+DATA_DIR=/var/lib/elasticsearch/$CLUSTER_NAME
 
 # Elasticsearch configuration directory
 CONF_DIR=/etc/$NAME

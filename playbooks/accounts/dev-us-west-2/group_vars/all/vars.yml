@@ -1,0 +1,27 @@
+nodejs_express_session_secret: "{{ vault_nodejs_express_session_secret }}"
+admin_express_session_secret: "{{ vault_admin_express_session_secret }}"
+
+rabbitmq_username: "{{ vault_rabbitmq_username }}"
+rabbitmq_password: "{{ vault_rabbitmq_password }}"
+
+s3_access_key: "{{ vault_s3_access_key }}"
+s3_secret_key: "{{ vault_s3_secret_key }}"
+
+datadog_api_key: "{{ vault_datadog_api_key }}"
+
+alertEmail: "{{ vault_alertEmail }}"
+alertPassword: "{{ vault_alertPassword }}"
+
+# Disabling SAML login at the moment.
+saml_aemUrl: "{{ vault_saml_aemUrl }}"
+saml_entryPoint: "{{ vault_saml_entryPoint }}"
+saml_issuer: "{{ vault_saml_issuer }}"
+saml_cert: "{{ vault_saml_cert }}"
+
+erlang_cookie: "{{ vault_erlang_cookie }}"
+
+google_analytics_id: "{{ vault_google_analytics_id }}"
+
+admin_nginx_password: "{{ vault_admin_nginx_password }}"
+admin_ssl_cert: "{{ vault_admin_ssl_cert }}"
+admin_ssl_key: "{{ vault_admin_ssl_key }}"

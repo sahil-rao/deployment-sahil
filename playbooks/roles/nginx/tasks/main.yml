@@ -25,7 +25,7 @@
   sudo: yes
 - name: Template and copy different nginx conf file if staging (No SSL)
   template: src=nginx.conf.staging dest=/etc/nginx/sites-enabled/default
-  when: clusterName == 'xplain-staging'
+  when: clusterName in ['navopt-dev', 'navopt-stage', 'xplain-staging']
   sudo: yes
 - name: Install nginx logrotate file
   copy: src=roles/nginx/files/nginx dest=/etc/logrotate.d/nginx

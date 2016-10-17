@@ -11,68 +11,17 @@
   shell: dpkg-reconfigure --frontend noninteractive tzdata
   sudo: yes
 
-#OLD SCRIPTING BELOW, REPLACED WITH NEW SCRIPT
-# - name: Add rabbitMQ Repo 
-#   shell: echo "deb http://www.rabbitmq.com/debian/ testing main" >> /etc/apt/sources.list
-#   sudo: yes
-# - name: Set rabbitmq public key
-#   shell: wget http://www.rabbitmq.com/rabbitmq-signing-key-public.asc
-# - name: Add rabbit MQ key
-#   shell: apt-key add rabbitmq-signing-key-public.asc
-#   sudo: yes
-# - name: update APT
-#   shell: apt-key update
-#   sudo: yes
-# - name: Install Rabbit MQ
-#   apt: pkg=rabbitmq-server state=present
-#   sudo: yes
-
-#Should eventually replace this script with package manager
-- name: Copy rabbit install script
-  copy: src=roles/queueserver/scripts/installrabbit.sh dest=/home/ubuntu/installrabbit.sh owner=root group=root mode=0744
-  sudo: yes
-- name: Install Erlang and RabbitMQ from source. This will take some time.
-  command: ./installrabbit.sh chdir=/home/ubuntu/ 
-  sudo: yes
-
 # Defaulting to /var/lib/rabbitmq
 # Setting up clustering erlang cookie
 - name: create cookie directory
   file: path={{rabbitmq_cookie_dir}} owner=rabbitmq group=rabbitmq mode=0755 state=directory
+  sudo: yes
+
 - name: add rabbitmq erlang cookie
-  template: src=erlang.cookie.j2 dest={{rabbitmq_cookie_location}} owner=rabbitmq group=rabbitmq mode=0400
+  file: content={{ rabbitmq_auth_config.erlang_cookie }} dest={{rabbitmq_cookie_location}} owner=rabbitmq group=rabbitmq mode=0400
   register: erlang_cookie
   sudo: yes
 
-#Setting up user permissions
-- name: Add virtualhost 'xplain'
-  rabbitmq_vhost: name=xplain state=present
+- name: restart rabbitmq
+  service: name=rabbitmq-server state=restarted
   sudo: yes
-- name: Add user 'xplain' with password 'xplain' with full privileges
-  rabbitmq_user: user=xplain
-                 password=xplain
-                 vhost=xplain
-                 configure_priv=.*
-                 read_priv=.*
-                 write_priv=.*
-                 state=present
-  sudo: yes
-
-#Set up web UI plugin, port 15672 must be open
-- name: Adding web management plugin 
-  rabbitmq_plugin: names=rabbitmq_management state=enabled
-#login to management UI with this user/password info
-- name: Add user 'rabbitmonitor' with password 'monitor123' as administrator
-  rabbitmq_user: user=xplain
-                 password=xplain
-                 vhost=xplain
-                 configure_priv=.*
-                 read_priv=.*
-                 write_priv=.*
-                 tags=administrator
-                 state=present
-  sudo: yes
-
-
-
-

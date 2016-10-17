@@ -27,7 +27,7 @@ def cli(ctx, env, bastion, region, zone, assume_yes):
     if bastion is None:
         bastion = {
             'alpha': 'navopt-alpha',
-            'dev': 'navopt-dev',
+            'dev': None,
             'stage': 'navopt-stage',
             'prod': 'navopt-prod',
         }[env]

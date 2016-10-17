@@ -1,10 +1,5 @@
 ---
 ### DEPENDENCIES ###
-- name: Install S3 CMD
-  apt: name=s3cmd state=present update_cache=yes
-  sudo: yes
-- name: Copy s3cmd config file
-  copy: src=/home/ubuntu/.s3cfg dest=/home/bitnami/.s3cfg
 - name: NTP installed
   apt: name=ntp state=present
   sudo: yes
@@ -67,10 +62,6 @@
   sudo: yes
 - name: Get the npm modules.
   npm: path=/var/admin
-### Ansibleception
-- name: Copy ansible folders
-  copy: src=/etc/ansible dest=/etc/ owner=bitnami mode=755
-  sudo: yes
 - name: Create create deployement dir
   file: path=/boot/build state=directory owner=bitnami mode=755
   sudo: yes
@@ -85,7 +76,7 @@
   shell: /opt/bitnami/ctlscript.sh stop
   sudo: yes
 - name: Create username/password for nginx
-  command: htpasswd -b -c /etc/nginx/.htpasswd xplain {{NginxPW}}
+  command: htpasswd -b -c /etc/nginx/.htpasswd xplain {{ admin_nginx_password }}
   sudo: yes
 - name: Create node admin upstart script
   template: src=admin_nodejs.conf dest=/etc/init/admin_nodejs.conf
@@ -97,10 +88,14 @@
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
   sudo: yes
 - name: Get xplain cert
-  template: src=/etc/nginx/ssl/xplain_san_cert.crt dest=/etc/nginx/ssl/
+  copy:
+    content: "{{ admin_ssl_cert }}"
+    dest: /etc/nginx/ssl/xplain_san_cert.crt
   sudo: yes
 - name: Get Cloudera Key
-  template: src=/etc/nginx/ssl/san_cloudera_com.key dest=/etc/nginx/ssl/
+  copy:
+    content: "{{ admin_ssl_key }}"
+    dest: /etc/nginx/ssl/san_cloudera_com.key
   sudo: yes
 - name: Start admin nodejs
   service: name=admin_nodejs state=started

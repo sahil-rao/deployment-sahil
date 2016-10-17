@@ -1,0 +1,8 @@
+---
+- name: Install S3 CMD
+  apt: name=s3cmd state=present update_cache=yes
+  sudo: yes
+- name: Copy s3cmd config file
+  template:
+    src: s3cfg
+    dest: ~/.s3cfg

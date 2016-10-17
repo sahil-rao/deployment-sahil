@@ -1,4 +1,4 @@
-/mnt/volume1/mongo/log/mongo.log {
+/var/log/mongodb/*.log {
     weekly
     missingok
     rotate 7
@@ -9,7 +9,7 @@
     sharedscripts
     postrotate
         killall -SIGUSR1 mongod
-        find /mnt/volume1/mongo/log/ -type f -regex ".*\.\(log.[0-9].*-[0-9].*\)" -exec rm {} \;
+        find /var/log/mongo/log/ -type f -regex ".*\.\(log.[0-9].*-[0-9].*\)" -exec rm {} \;
     endscript
 }
 

@@ -105,13 +105,18 @@ def callback(ch, method, properties, body):
         return
 
     tenant = msg_dict["tenant"]
-    log_dict = {'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode'], 'tag': 'ruleengine'}
+    log_dict = {'tenant': msg_dict['tenant'],
+                'opcode': msg_dict['opcode'],
+                'tag': 'ruleengine'}
     if 'uid' in msg_dict:
         log_dict['uid'] = msg_dict['uid']
     clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)
 
     msg_dict["connection"] = connection1
     msg_dict["ch"] = ch
+    #store the version that was passed in.
+    if 'version' in msg_dict:
+        msg_dict['in_version'] = msg_dict['version']
     resp_dict = None
     client = getMongoServer(tenant)
     mongoconn = Connector.getConnector(tenant)
