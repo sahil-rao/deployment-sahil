@@ -15,10 +15,9 @@ module "dbsilo1" {
     mongo_replica_set = "dbsilo1"
     mongo_iam_instance_profile = "${module.common.mongo_instance_profile}"
     mongo_security_groups = ["${module.common.mongo_security_groups}"]
-    mongo_version = "v1"
+    mongo_version = "v2"
     mongo_ami_id = "ami-4bc0162b"
-    #mongo_instance_type = "m4.xlarge"
-    mongo_instance_type = "t2.micro"
+    mongo_instance_type = "m4.xlarge"
     mongo_min_size = 0
     mongo_max_size = 3
     mongo_desired_capacity = 3
@@ -27,16 +26,14 @@ module "dbsilo1" {
     redis_name = "${var.cluster_name}-dbsilo1-redis"
     redis_iam_instance_profile = "${module.common.redis_instance_profile}"
     redis_security_groups = ["${module.common.redis_security_groups}"]
-    redis_version = "v1"
+    redis_version = "v2"
     redis_ami_id = "ami-4bdf092b"
-    #redis_instance_type = "r3.2xlarge"
-    redis_instance_type = "t2.micro"
+    redis_instance_type = "r3.2xlarge"
     redis_min_size = 0
     redis_max_size = 3
     redis_desired_capacity = 3
     redis_ebs_optimized = false
     redis_quorum_size = 2
-    redis_backup_file = "s3://navopt-backups-dev/redis-backups/dbsilo1-redis/dump2016-10-04T00:05:01+0000.rdb"
 
     elasticsearch_name = "${var.cluster_name}-dbsilo1-elasticsearch"
     elasticsearch_iam_instance_profile = "${module.common.elasticsearch_instance_profile}"
@@ -68,10 +65,9 @@ module "dbsilo2" {
     mongo_replica_set = "dbsilo2"
     mongo_iam_instance_profile = "${module.common.mongo_instance_profile}"
     mongo_security_groups = ["${module.common.mongo_security_groups}"]
-    mongo_version = "v1"
+    mongo_version = "v2"
     mongo_ami_id = "ami-4bc0162b"
-    #mongo_instance_type = "m4.xlarge"
-    mongo_instance_type = "t2.micro"
+    mongo_instance_type = "m4.xlarge"
     mongo_min_size = 0
     mongo_max_size = 3
     mongo_desired_capacity = 3
@@ -80,16 +76,14 @@ module "dbsilo2" {
     redis_name = "${var.cluster_name}-dbsilo2-redis"
     redis_iam_instance_profile = "${module.common.redis_instance_profile}"
     redis_security_groups = ["${module.common.redis_security_groups}"]
-    redis_version = "v1"
+    redis_version = "v2"
     redis_ami_id = "ami-4bdf092b"
-    #redis_instance_type = "r3.2xlarge"
-    redis_instance_type = "t2.micro"
+    redis_instance_type = "r3.2xlarge"
     redis_min_size = 0
     redis_max_size = 3
     redis_desired_capacity = 3
     redis_ebs_optimized = false
     redis_quorum_size = 2
-    redis_backup_file = "s3://navopt-backups-dev/redis-backups/dbsilo2-redis/dump2016-10-04T00:05:02+0000.rdb"
 
     elasticsearch_name = "${var.cluster_name}-dbsilo2-elasticsearch"
     elasticsearch_iam_instance_profile = "${module.common.elasticsearch_instance_profile}"
