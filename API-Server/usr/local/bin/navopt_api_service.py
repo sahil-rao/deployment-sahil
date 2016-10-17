@@ -142,14 +142,13 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         return ret
 
         
-    def updateUploadStats(self, tenant, filename, sourcePlatform, col_delim=None, row_delim=None):
+    def updateUploadStats(self, tenant, filename, sourcePlatform, col_delim=None, row_delim=None, headerInfo=None):
         ret = navopt_pb2.UploadResponse()
         client = getMongoServer(tenant)
         db = client[tenant]
         userclient = getMongoServer('xplainDb')
         userdb = userclient['xplainIO']
         redis_conn = RedisConnector(tenant)
-        headerInfo = None
         #mark start of upload process
         db.uploadStats.update({ 'uid': '0' }, {'$set': { 'done': False }}, upsert=True)
         fileGuid = uuid.uuid4();
@@ -475,8 +474,27 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             row_delim = request.rowDelim
         if request.colDelim != "":
             col_delim = request.colDelim
+        if request.headerFields:
+            headerInfo = []
+            for entry in request.headerFields:
+                entry_dict = {}
+                entry = str(entry)
+                entry = entry.split("\n")
+                print "entry:", entry
+                for val in entry:
+                    if val == '':
+                        continue
+                    entry_dict[val.split(":")[0].strip()] = val.split(":")[1].strip(' "')
+                if 'coltype' in entry_dict:
+                    if entry_dict['coltype'] == 'SQL_QUERY':
+                        entry_dict['type'] = 'SQL_FULLTEXT'
+                    else: 
+                        entry_dict['type'] = entry_dict['coltype']
+                    entry_dict.pop('coltype') 
+                headerInfo.append(entry_dict)
 
-        ret_response = self.updateUploadStats(request.tenant, request.fileName, request.sourcePlatform, col_delim, row_delim)
+        print "Header:", headerInfo
+        ret_response = self.updateUploadStats(request.tenant, request.fileName, request.sourcePlatform, col_delim, row_delim, headerInfo)
         #msg_dict = {'tenant':str(request.tenant), 'opcode':'TopTables'}
         #response = api_rpc.call(dumps(msg_dict))
         #print "Api Service response", response, "Type:", type(loads(response))

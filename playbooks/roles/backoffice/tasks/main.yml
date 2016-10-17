@@ -197,6 +197,15 @@
 - name: Install python datadog package
   pip: name=datadog
   sudo: yes
+- name: Install python boto3 package
+  pip: name=boto3
+  sudo: yes
+- name: Install python protobuf package
+  pip: name=protobuf
+  sudo: yes
+- name: Install python grpcio package
+  pip: name=grpcio
+  sudo: yes
 #REDIS SENTINEL DEPLOYMENT
 #- name: Install Redis APT Package
 #  apt: name=redis-server update_cache=yes
