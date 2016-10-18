@@ -53,3 +53,12 @@ server. These can be installed with the prior command and with:
     --extra-vars "BuildVersion=erickt/master/"
 ...
 ```
+
+# Changing secrets
+
+Passwords are encrypted with [ansible-vault](http://docs.ansible.com/ansible/playbooks_vault.html).
+There is a helper script to simplify editing this file:
+
+```shell
+% ./edit-secrets dev
+```

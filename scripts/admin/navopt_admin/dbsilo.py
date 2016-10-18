@@ -258,7 +258,8 @@ def list_instances(ctx,
 @click.argument('capacity', type=int, default=1000)
 @click.pass_context
 def register(ctx, dbsilo_name, capacity):
-    dbsilo = ctx.obj['cluster'].dbsilo(dbsilo_name)
+    # Routing configuration is stored on dbsilo1
+    dbsilo = ctx.obj['cluster'].dbsilo('dbsilo1')
     mongo_cluster = dbsilo.mongo_cluster()
     redis_cluster = dbsilo.redis_cluster()
     elasticsearch_cluster = dbsilo.elasticsearch_cluster()

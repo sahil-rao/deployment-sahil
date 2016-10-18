@@ -5,5 +5,5 @@ module "s3" {
     navopt_name = "navopt-${var.env}"
     backups_name = "navopt-backups-${var.env}"
 
-    redis_expiration_days = 5
+    redis_expiration_days = "${var.s3_redis_backups_expiration_days}"
 }
