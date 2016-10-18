@@ -13,6 +13,7 @@ module "redis-lc" {
     instance_type = "${var.instance_type}"
     ebs_optimized = "${var.ebs_optimized}"
     quorum_size = "${var.quorum_size}"
+    backup_file = "${var.backup_file}"
     backups_enabled = "${var.backups_enabled}"
 
     env = "${var.env}"
