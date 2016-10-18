@@ -3,6 +3,24 @@ deployment
 
 Deployment
 
+Accessing the dev cluster:
+==========================
+
+To access the dev cluster, you must download the
+`navopt-us-west-2-dev.pem` key from 1password, and put it into `~/.ssh`
+directory. Next, add this to your `~/.ssh/config`:
+
+```
+Host *.navopt-dev.cloudera.com
+    IdentityFile ~/.ssh/navopt-us-west-2-dev.pem
+    User ubuntu
+    StrictHostKeyChecking no
+
+Host 10.34.*.*
+    IdentityFile ~/.ssh/navopt-us-west-2-dev.pem
+    User ubuntu
+    StrictHostKeyChecking no
+```
 
 RABBITMQ Notes
 ===========================
