@@ -22,7 +22,7 @@ var jshintSrc = [gulpConfig.uiDir+'xplain.io/**/*.js', gulpConfig.uiDir+'xplain.
 '!'+gulpConfig.uiDir+'xplain.io/node_modules/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/app/libraries/**/*.js','!'+gulpConfig.uiDir+'xplain.io/public/build/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/test/**/*.js',
 '!'+gulpConfig.uiDir+'xplain.io/src/cloudera-ui/**/*.js'];
 
-if(!gulpConfig.workDir) throw (new Error("No working directory forund in gulp-config. Ensure that workDir is declared."));
+if(!gulpConfig.workDir) throw (new Error("No working directory found in gulp-config. Ensure that workDir is declared."));
 
 var dirs = {
   cui : gulpConfig.workDir+'/CUI',
@@ -143,8 +143,10 @@ gulp.task('app-build', ["webpack-build"], function(){
 });
 
 gulp.task('quick-vm-update', ['webpack-build'], function(){
-  return fsj.dirAsync('/var/xplain3000/public/build', {empty:true})
-  .then(fsj.copyAsync(dirs.ui+'/xplain.io/public/build', '/var/xplain3000/public/build', {overwrite:true}))
+  return fsj.dirAsync('/var/xplain3000/public', {empty:true})
+  .then(fsj.dirAsync('/var/xplain3000/views', {empty:true}))
+  .then(fsj.copyAsync(dirs.ui+'/xplain.io/public', '/var/xplain3000/public', {overwrite:true}))
+  .then(fsj.copyAsync(dirs.ui+'/xplain.io/views', '/var/xplain3000/views', {overwrite:true}))
   .catch(function(err){
     console.error(err);
   });
