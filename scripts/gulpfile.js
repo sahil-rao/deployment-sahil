@@ -18,9 +18,9 @@ var gulp = require('gulp'),
 var branch = args.branch || 'master';
 var xplainDir = args.xplainDir || null;
 var fixEslint = args.fix || false;
-var jshintSrc = [gulpConfig.uiDir+'xplain.io/**/*.js', gulpConfig.uiDir+'xplain.io/**/*.jsx', '!'+gulpConfig.uiDir+'xplain.io/public/js/libs/**/*.js',
-'!'+gulpConfig.uiDir+'xplain.io/node_modules/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/app/libraries/**/*.js','!'+gulpConfig.uiDir+'xplain.io/public/build/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/test/**/*.js',
-'!'+gulpConfig.uiDir+'xplain.io/src/cloudera-ui/**/*.js'];
+var jshintSrc = [dirs.ui+'xplain.io/**/*.js', dirs.ui+'xplain.io/**/*.jsx', '!'+dirs.ui+'xplain.io/public/js/libs/**/*.js',
+'!'+dirs.ui+'xplain.io/node_modules/**/*.js', '!'+dirs.ui+'xplain.io/app/libraries/**/*.js','!'+dirs.ui+'xplain.io/public/build/**/*.js', '!'+dirs.ui+'xplain.io/test/**/*.js',
+'!'+dirs.ui+'xplain.io/src/cloudera-ui/**/*.js'];
 
 if(!gulpConfig.workDir) throw (new Error("No working directory found in gulp-config. Ensure that workDir is declared."));
 
@@ -176,19 +176,19 @@ gulp.task("eslint", function(){
   return gulp.src(jshintSrc)
 		.pipe(eslint(config))
 		.pipe(eslint.format())
-    .pipe(gulpIf(isFixed, gulp.dest(gulpConfig.uiDir+'xplain.io')));
+    .pipe(gulpIf(isFixed, gulp.dest(dirs.ui+'xplain.io')));
 });
 
 gulp.task('vm-install-npm', shell.task(['sudo npm install'], {verbose:true, cwd:gulpConfig.vmDir}));
 
 gulp.task("push-app-aws", shell.task([
-  's3cmd sync '+gulpConfig.uiDir+'xplain.io.tar.gz s3://'+gulpConfig.s3Bucket+'/'
+  's3cmd sync '+dirs.ui+'xplain.io.tar.gz s3://'+gulpConfig.s3Bucket+'/'
 ]));
 gulp.task("push-admin-aws", shell.task([
-  's3cmd sync '+gulpConfig.uiDir+'optimizer_admin.tar.gz s3://'+gulpConfig.s3Bucket+'/'
+  's3cmd sync '+dirs.ui+'optimizer_admin.tar.gz s3://'+gulpConfig.s3Bucket+'/'
 ]));
 gulp.task("push-api-aws", shell.task([
-  's3cmd sync '+gulpConfig.uiDir+'optimizer_api.tar.gz s3://'+gulpConfig.s3Bucket+'/'
+  's3cmd sync '+dirs.ui+'optimizer_api.tar.gz s3://'+gulpConfig.s3Bucket+'/'
 ]));
 
 //gulp.task('full-build', gulpSequence('pull-latest', ['app-build', 'test-build', 'api-build', 'admin-build']));
