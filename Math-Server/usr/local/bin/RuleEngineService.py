@@ -130,6 +130,23 @@ def callback(ch, method, properties, body):
     if 'target_platform' in msg_dict:
         target_platform = target_platform
 
+    """
+    If the eid is not valid, don't process the message.
+    """
+    if 'entityid' in msg_dict:
+        entityid = msg_dict['entityid']
+
+        try:
+            q_entity = mongoconn.getEntity(entityid)
+        except:
+            q_entity = None
+
+        if q_entity is None:
+            clog.error("No entity: %s found for tenant: %s" % (entityid, tenant))
+            mongoconn.close()
+            connection1.basicAck(ch, method)
+            return
+
     '''
     Checks if Import, Function, RuleIds, and version are present.
     Checks to see if workflow hass been run before.
