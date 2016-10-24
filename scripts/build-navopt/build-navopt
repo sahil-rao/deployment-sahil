@@ -31,7 +31,7 @@ SERVICES = {
         'flightpath-deployment.tar.gz',
     ],
 }
-DEFAULT_BUCKET = 'baaz-deployment'
+DEFAULT_BUCKET = 'navopt-dev-deployment-bucket'
 DEFAULT_GITHUB_PROJECT = 'git@github.com:baazdata'
 DEFAULT_CLUSTER = 'navopt-dev'
 DEFAULT_AWS_PROFILE = "navopt_prod"
