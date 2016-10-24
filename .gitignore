@@ -2,3 +2,5 @@
 *#
 *.terraform
 *.DS_Store
+*.tar.gz
+*.idea
