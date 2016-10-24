@@ -31,10 +31,23 @@ SERVICES = {
         'flightpath-deployment.tar.gz',
     ],
 }
+
+# List services that go in Docker images.
+DOCKER_IMAGES = {
+    'pyservices': [
+        'deployment',
+        'graph',
+        'analytics'
+    ],
+    'javaservices': [
+        'compiler'
+    ]
+}
 DEFAULT_BUCKET = 'baaz-deployment'
 DEFAULT_GITHUB_PROJECT = 'git@github.com:baazdata'
 DEFAULT_CLUSTER = 'navopt-dev'
 DEFAULT_AWS_PROFILE = "navopt_prod"
+
 
 
 def run_command(args, cmd, **kwargs):
@@ -254,6 +267,28 @@ def upload_services(args, target_bucket):
         else:
             upload_service(args, service, target_bucket)
 
+def build_docker_image(args, image):
+    # Ensure all build artifacts are in place.
+    for service in args.services:
+        for file in SERVICES[service]:
+            shutil.copy('target/{}'.format(file),
+                        '{0}/{1}'.format(image,file))
+    print 'Building {} Docker image'.format(image)
+
+    cmd = [
+        'docker',
+        'build',
+        '-t',
+        'navopt/{}'.format(image),
+        image,
+    ]
+    run_command(args, cmd)
+
+def build_docker_images(args,ecr_endpoint):
+    for image in args.build_docker_image:
+        build_docker_image(args,image)
+
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -332,6 +367,16 @@ def main():
         default=SERVICES.keys(),
         nargs='*',
         help='which services to build')
+    parser.add_argument(
+        '--build-docker-image',
+        nargs=1,
+        choices=DOCKER_IMAGES.keys(),
+        help='Build specified Docker images. Comma-separated.')
+    parser.add_argument(
+        '--ecr-endpoint',
+        default='fill in with endpoint',
+        nargs=1,
+        help='ECR url to push Docker images.')
     args = parser.parse_args()
 
     ############################################################################
@@ -377,8 +422,19 @@ def main():
     if not os.path.exists('target'):
         os.makedirs('target')
 
+    # We need to build all Python services for the pyservices image
+    # and all Java services for the javaservices image.
+    if args.build_docker_image:
+        for image in args.build_docker_image:
+            args.services += DOCKER_IMAGES[image]
+            # Remove duplicate entries
+            args.services = set(list(args.services))
+
+
     build_services(args)
-    upload_services(args, target_bucket)
+    #upload_services(args, target_bucket)
+    if args.build_docker_image:
+        build_docker_images(args,'endpoint')
 
 
 if __name__ == '__main__':
