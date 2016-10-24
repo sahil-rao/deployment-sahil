@@ -10,6 +10,8 @@ RUN apt-get update && \
     apt-get install -y python python-pip graphviz libgraphviz-dev pkg-config \
                        ntp python-dev monit
 
+RUN pip install -U pip
+
 RUN pip install thrift==0.9.3 boto pika==0.9.8 networkx sqlparse \
                 elasticsearch httplib2 pygraphviz redis \
                 python-logstash binaryornot pymongo rlog mock \
