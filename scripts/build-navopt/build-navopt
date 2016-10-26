@@ -60,7 +60,6 @@ DEFAULT_CLUSTER = 'navopt-dev'
 DEFAULT_AWS_PROFILE = "navopt_prod"
 
 
-
 def run_command(args, cmd, **kwargs):
     if args.verbose:
         print '+', ' '.join(cmd)
@@ -320,8 +319,6 @@ def push_docker_image(args, image):
 
         if not prompt('[yes/no]: ', args.assume_yes):
             return
-
-        #aws ecr get-login --region us-west-2
 
     # Log into AWS Region.
     # The aws command returns the 'docker login' command.
