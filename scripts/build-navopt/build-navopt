@@ -306,7 +306,7 @@ def build_docker_images(args):
 
 
 def push_docker_image(args, image):
-    if not args.push:
+    if not args.registry_endpoint:
         return
 
     if args.assume_yes is None:
@@ -442,12 +442,6 @@ def main():
         dest='registry_endpoint',
         help='Push built Docker images to a Registry. Possible values: {}.'.format(
             ', '.join(DOCKER_REGISTRY_ENDPOINTS.keys())))
-    parser.add_argument(
-        '--no-push',
-        dest='push',
-        default=True,
-        action='store_false',
-        help='do not push Docker images')
     args = parser.parse_args()
 
     ############################################################################
