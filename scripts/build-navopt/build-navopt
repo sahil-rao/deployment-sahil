@@ -433,6 +433,7 @@ def main():
     parser.add_argument(
         '--build-docker-image',
         nargs=1,
+        default=['all'],
         dest='docker_images',
         help='Build specified Docker images. Comma-separated. Possible values: {}, all'.format(
             ', '.join(DOCKER_IMAGES.keys())))
