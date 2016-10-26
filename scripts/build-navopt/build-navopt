@@ -34,14 +34,25 @@ SERVICES = {
 
 # List services that go in Docker images.
 DOCKER_IMAGES = {
-    'pyservices': [
+    'navopt-pyservices': [
         'deployment',
         'graph',
         'analytics'
     ],
-    'javaservices': [
+    'navopt-javaservices': [
         'compiler'
     ]
+}
+
+DOCKER_REGISTRY_ENDPOINTS = {
+    'dev': {
+        'endpoint': '128669107540.dkr.ecr.us-west-2.amazonaws.com',
+        'region': 'us-west-2'
+    },
+    'prod': {
+        'endpoint': 'tbd',
+        'region': 'tbd'
+    }
 }
 DEFAULT_BUCKET = 'navopt-dev-deployment-bucket'
 DEFAULT_GITHUB_PROJECT = 'git@github.com:baazdata'
@@ -267,27 +278,82 @@ def upload_services(args, target_bucket):
         else:
             upload_service(args, service, target_bucket)
 
+
 def build_docker_image(args, image):
-    # Ensure all build artifacts are in place.
+    # Ensure all build artifacts are in place, else
+    # the Docker image build will fail.
     for service in args.services:
-        for file in SERVICES[service]:
-            shutil.copy('target/{}'.format(file),
-                        '{0}/{1}'.format(image,file))
+        for artifact in SERVICES[service]:
+            shutil.copy('target/{}'.format(artifact),
+                        '{0}/{1}'.format(image,artifact))
+    print '*'*70
     print 'Building {} Docker image'.format(image)
+    print '*'*70
 
     cmd = [
         'docker',
         'build',
         '-t',
-        'navopt/{}'.format(image),
+        image,
         image,
     ]
     run_command(args, cmd)
 
-def build_docker_images(args,ecr_endpoint):
-    for image in args.build_docker_image:
-        build_docker_image(args,image)
 
+def build_docker_images(args):
+    for image in args.docker_images:
+        build_docker_image(args, image)
+        push_docker_image(args, image)
+
+
+def push_docker_image(args, image):
+    if not args.push:
+        return
+
+    if args.assume_yes is None:
+        print
+        print '-' * 78
+        print
+        print \
+            'Are you sure you want to push the following image?', \
+            image
+
+        if not prompt('[yes/no]: ', args.assume_yes):
+            return
+
+        #aws ecr get-login --region us-west-2
+
+    # Log into AWS Region.
+    # The aws command returns the 'docker login' command.
+    # It does not actually run it, so we capture the output
+    # of 'aws login' and feed that to run_command().
+    env = dict(os.environ, AWS_PROFILE=args.aws_profile)
+    cmd = [
+        'aws',
+        'ecr',
+        'get-login',
+        '--region',
+        DOCKER_REGISTRY_ENDPOINTS[args.registry_endpoint]['region']
+    ]
+    docker_login_cmd = subprocess.check_output(cmd, env=env).strip().split(' ')
+    run_command(args, docker_login_cmd, env=env)
+
+    # Tag the image
+    cmd = [
+        'docker',
+        'tag',
+        '{0}'.format(image),
+        '{0}/{1}:latest'.format(DOCKER_REGISTRY_ENDPOINTS[args.registry_endpoint]['endpoint'], image),
+    ]
+    run_command(args, cmd)
+
+    # Push the image
+    cmd = [
+        'docker',
+        'push',
+        '{0}/{1}'.format(DOCKER_REGISTRY_ENDPOINTS[args.registry_endpoint]['endpoint'], image),
+    ]
+    run_command(args, cmd)
 
 
 def main():
@@ -370,13 +436,21 @@ def main():
     parser.add_argument(
         '--build-docker-image',
         nargs=1,
-        choices=DOCKER_IMAGES.keys(),
-        help='Build specified Docker images. Comma-separated.')
+        dest='docker_images',
+        help='Build specified Docker images. Comma-separated. Possible values: {}, all'.format(
+            ', '.join(DOCKER_IMAGES.keys())))
     parser.add_argument(
-        '--ecr-endpoint',
-        default='fill in with endpoint',
-        nargs=1,
-        help='ECR url to push Docker images.')
+        '--push-docker-image',
+        default=False,
+        dest='registry_endpoint',
+        help='Push built Docker images to a Registry. Possible values: {}.'.format(
+            ', '.join(DOCKER_REGISTRY_ENDPOINTS.keys())))
+    parser.add_argument(
+        '--no-push',
+        dest='push',
+        default=True,
+        action='store_false',
+        help='do not push Docker images')
     args = parser.parse_args()
 
     ############################################################################
@@ -413,6 +487,13 @@ def main():
             print >> sys.stderr, 'unknown service:', service
             return 1
 
+    # Make sure images are known
+    if 'all' not in args.docker_images:
+        for image in args.docker_images[0].split(','):
+            if image not in DOCKER_IMAGES.keys():
+                print >> sys.stderr, 'unknown Docker image:', image
+                return 1
+
     ############################################################################
     # Do the build
 
@@ -422,19 +503,26 @@ def main():
     if not os.path.exists('target'):
         os.makedirs('target')
 
-    # We need to build all Python services for the pyservices image
-    # and all Java services for the javaservices image.
-    if args.build_docker_image:
-        for image in args.build_docker_image:
-            args.services += DOCKER_IMAGES[image]
-            # Remove duplicate entries
-            args.services = set(list(args.services))
+    if args.docker_images:
+        # Convert human-friendly list to Python list
+        args.docker_images = args.docker_images[0].split(',')
+
+        # Are we building all the images?
+        if 'all' in args.docker_images:
+            args.docker_images = DOCKER_IMAGES.keys()
+
+        # Ensure appropriate packages are built for each image.
+        for image in args.docker_images:
+            for service in DOCKER_IMAGES[image]:
+                args.services.append(service)
+        # Remove duplicate services.
+        args.services = list(set(args.services))
 
 
     build_services(args)
-    #upload_services(args, target_bucket)
-    if args.build_docker_image:
-        build_docker_images(args,'endpoint')
+    upload_services(args, target_bucket)
+    if args.docker_images:
+        build_docker_images(args)
 
 
 if __name__ == '__main__':
