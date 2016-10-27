@@ -49,9 +49,13 @@ DOCKER_REGISTRY_ENDPOINTS = {
         'endpoint': '128669107540.dkr.ecr.us-west-2.amazonaws.com',
         'region': 'us-west-2'
     },
+    'alpha': {
+        'endpoint': '892272719698.dkr.ecr.us-west-1.amazonaws.com',
+        'region': 'us-west-1'
+    },
     'prod': {
-        'endpoint': 'tbd',
-        'region': 'tbd'
+        'endpoint': '892272719698.dkr.ecr.us-west-2.amazonaws.com',
+        'region': 'us-west-2'
     }
 }
 DEFAULT_BUCKET = 'navopt-dev-deployment-bucket'
@@ -486,6 +490,12 @@ def main():
                 print >> sys.stderr, 'unknown Docker image:', image
                 return 1
 
+    # Only push to supported registries
+    if args.registry_endpoint not in DOCKER_REGISTRY_ENDPOINTS.keys():
+        print >> sys.stderr, 'unknown Docker registry:', args.registry_endpoint
+        print >> sys.stderr, 'Supported values are: {}'.format(DOCKER_REGISTRY_ENDPOINTS.keys())
+        return 1
+
     ############################################################################
     # Do the build
 
@@ -509,7 +519,6 @@ def main():
                 args.services.append(service)
         # Remove duplicate services.
         args.services = list(set(args.services))
-
 
     build_services(args)
     upload_services(args, target_bucket)
