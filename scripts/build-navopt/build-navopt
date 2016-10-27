@@ -435,15 +435,16 @@ def main():
         nargs='*',
         help='which services to build')
     parser.add_argument(
-        '--build-docker-image',
-        nargs=1,
-        default=['all'],
+        '--build-docker-images',
+        nargs='?',
+        default=None,
+        const='all',
         dest='docker_images',
         help='Build specified Docker images. Comma-separated. Possible values: {}, all'.format(
             ', '.join(DOCKER_IMAGES.keys())))
     parser.add_argument(
         '--push-docker-image',
-        default=False,
+        default=None,
         dest='registry_endpoint',
         help='Push built Docker images to a Registry. Possible values: {}.'.format(
             ', '.join(DOCKER_REGISTRY_ENDPOINTS.keys())))
@@ -483,18 +484,27 @@ def main():
             print >> sys.stderr, 'unknown service:', service
             return 1
 
-    # Make sure images are known
-    if 'all' not in args.docker_images:
-        for image in args.docker_images[0].split(','):
+    if args.docker_images:
+        # Convert human-friendly list of Docker images
+        #  to Python list
+        if 'all' in args.docker_images:
+            args.docker_images = DOCKER_IMAGES.keys()
+        else:
+            args.docker_images = args.docker_images.split(',')
+
+        # Make sure images are known
+        for image in args.docker_images:
             if image not in DOCKER_IMAGES.keys():
                 print >> sys.stderr, 'unknown Docker image:', image
+                print >> sys.stderr, 'Supported values are: {}'.format(DOCKER_IMAGES.keys())
                 return 1
 
     # Only push to supported registries
-    if args.registry_endpoint not in DOCKER_REGISTRY_ENDPOINTS.keys():
-        print >> sys.stderr, 'unknown Docker registry:', args.registry_endpoint
-        print >> sys.stderr, 'Supported values are: {}'.format(DOCKER_REGISTRY_ENDPOINTS.keys())
-        return 1
+    if args.registry_endpoint:
+        if args.registry_endpoint not in DOCKER_REGISTRY_ENDPOINTS.keys():
+            print >> sys.stderr, 'unknown Docker registry:', args.registry_endpoint
+            print >> sys.stderr, 'Supported values are: {}'.format(DOCKER_REGISTRY_ENDPOINTS.keys())
+            return 1
 
     ############################################################################
     # Do the build
@@ -506,13 +516,6 @@ def main():
         os.makedirs('target')
 
     if args.docker_images:
-        # Convert human-friendly list to Python list
-        args.docker_images = args.docker_images[0].split(',')
-
-        # Are we building all the images?
-        if 'all' in args.docker_images:
-            args.docker_images = DOCKER_IMAGES.keys()
-
         # Ensure appropriate packages are built for each image.
         for image in args.docker_images:
             for service in DOCKER_IMAGES[image]:
