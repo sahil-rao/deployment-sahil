@@ -159,5 +159,6 @@ datadog_tag=app:navopt,env:alpha
 dnsZoneName=xplain.io
 mode=development
 redisMasterName=redismaster.dbsilo1.alpha.xplain.io
-redisMasterPattern={dbsilo}-redis-master.alpha.xplain.io
+redisMasterPattern=redismaster.{dbsilo}.alpha.xplain.io
 url=https://alpha.optimizer.cloudera.com
+s3_deployment_bucket=baaz-deployment

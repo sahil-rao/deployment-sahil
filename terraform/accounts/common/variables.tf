@@ -91,3 +91,6 @@ variable "redis_cache_quorum_size" {
 
 # Datadog
 variable "datadog_api_key" {}
+
+# S3
+variable "s3_redis_backups_expiration_days" {}

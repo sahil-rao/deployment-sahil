@@ -1,4 +1,5 @@
 var gulp = require('gulp'),
+    guppy = require('git-guppy')(gulp)
     gulpConfig = require('./gulp-config'),
     webpack = require('webpack-stream'),
     fs = require('fs-extra'),
@@ -17,13 +18,76 @@ var gulp = require('gulp'),
 var branch = args.branch || 'master';
 var xplainDir = args.xplainDir || null;
 var fixEslint = args.fix || false;
-var jshintSrc = [gulpConfig.uiDir+'xplain.io/**/*.js', gulpConfig.uiDir+'xplain.io/**/*.jsx', '!'+gulpConfig.uiDir+'xplain.io/public/js/libs/**/*.js',
-'!'+gulpConfig.uiDir+'xplain.io/node_modules/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/app/libraries/**/*.js','!'+gulpConfig.uiDir+'xplain.io/public/build/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/test/**/*.js'];
+var jshintSrc = [dirs.ui+'xplain.io/**/*.js', dirs.ui+'xplain.io/**/*.jsx', '!'+dirs.ui+'xplain.io/public/js/libs/**/*.js',
+'!'+dirs.ui+'xplain.io/node_modules/**/*.js', '!'+dirs.ui+'xplain.io/app/libraries/**/*.js','!'+dirs.ui+'xplain.io/public/build/**/*.js', '!'+dirs.ui+'xplain.io/test/**/*.js',
+'!'+dirs.ui+'xplain.io/src/cloudera-ui/**/*.js'];
+
+if(!gulpConfig.workDir) throw (new Error("No working directory found in gulp-config. Ensure that workDir is declared."));
+
+var dirs = {
+  cui : gulpConfig.workDir+'/CUI',
+  ui : gulpConfig.workDir+'/UI',
+  outputDir: gulpConfig.outputDir
+}
+
+/*
+gulp-config.json {
+  workDir: Absolute path to a working directory. This should be a static directory that nothing except for gulp should be working on.
+  gitUrls: {
+    cui: full link to CUI repo.
+    ui: full link to UI repo.
+  }
+  gitLogins:{
+    cui: {
+      user: username
+      pw: password
+    },
+    ui: {
+      ...
+    },
+    default: {
+      ...
+    }
+  }
+  outputDir: Absolute path to where you want the tarballs to be sent too
+  vmDir: Absolute path to the xplain.io folder on the VM
+}
+*/
+
+gulp.task('ensure-working-dir', function(){
+  console.log("Ensuring working directory exists.")
+  return ensureDir(gulpConfig.workDir);
+});
+gulp.task('ensure-output-dir', function(){
+  console.log("Ensuring output directory exists.")
+  return ensureDir(gulpConfig.outputDir);
+});
+
+gulp.task('purge-cui', function(){
+  console.log("Cleaning CUI directory");
+  var deferred = Q.defer();
+  fs.emptyDir(dirs.cui, function(err){
+    if(err){
+      throw err;
+    }
+    deferred.resolve();
+  });
+  return deferred.promise;
+});
+
+gulp.task('pull-cui', function(){
+  console.log("Pulling latest CUI code");
+  return pullFromGithub(gulpConfig.gitUrls.cui, dirs.cui, 'cui');
+});
+
+gulp.task('pack-cui', shell.task(['cd '+ dirs.cui, 'npm pack']));
+
+gulp.task('build-cui', gulpSequence('ensure-working-dir', 'purge-cui', 'pull-cui', 'pack-cui'));
 
 gulp.task('purge-ui', function(){
   console.log("Cleaning UI directory");
   var deferred = Q.defer();
-  fs.remove(gulpConfig.uiDir, function(err){
+  fs.emptyDir(dirs.ui, function(err){
     if(err){
       throw err;
     }
@@ -33,32 +97,14 @@ gulp.task('purge-ui', function(){
   return deferred.promise;
 });
 
-gulp.task('pull-latest', ['purge-ui'], function(){
+gulp.task('pull-app', ['purge-ui'], function(){
   console.log("Pulling latest UI code");
-
-  return gitHubLogin().then(function(input){
-    var deffered = Q.defer();
-    var opts = {
-      checkoutBranch: branch,
-      fetchOpts: {
-        callbacks: {
-          credentials: function() {
-            return Git.Cred.userpassPlaintextNew(input.user, input.pw);
-          }
-        }
-      }
-    };
-    deffered.resolve(opts);
-    return deffered.promise;
-  })
-  .then(function(opts){
-    return Git.Clone(gulpConfig.gitUrl+"UI.git", gulpConfig.uiDir, opts); //Git Clone returns a promise
-  });
+  return pullFromGithub(gulpConfig.gitUrls.ui, dirs.ui, 'ui');
 });
 
 gulp.task('webpack-build', function(){
   console.log("Compiling code");
-  var dir = xplainDir || gulpConfig.uiDir+'xplain.io/';
+  var dir = xplainDir || dirs.ui+'/xplain.io/';
   fs.copySync(dir+'src/index.html', dir+'public/build/index.html');
   return gulp.src(dir+'src/main.js')
     .pipe(webpack(require(dir+'src/webpack.config.js')))
@@ -70,7 +116,7 @@ Build main application
 */
 gulp.task('app-build', ["webpack-build"], function(){
   console.log("Building app");
-  var dir = gulpConfig.uiDir;
+  var dir = dirs.ui;
 
   try{
     var dest = fsj.dir(dir+'/tmp/xplain.io/xplain.io', {empty:true});
@@ -82,7 +128,7 @@ gulp.task('app-build', ["webpack-build"], function(){
     return gulp.src(dir+'/tmp/xplain.io/**')
         .pipe(tar('xplain.io.tar'))
         .pipe(gzip())
-        .pipe(gulp.dest(dir))
+        .pipe(gulp.dest(dirs.outputDir))
         .on('error', function(err){
           console.log(err);
         })
@@ -96,76 +142,27 @@ gulp.task('app-build', ["webpack-build"], function(){
   }
 });
 
-/*
-Build admin application
-*/
-
-gulp.task('admin-build', function(){
-  var dir = gulpConfig.uiDir;
-  try{
-    var dest = fsj.dir(dir+'/tmp/optimizer_admin/optimizer_admin', {empty:true});
-    fsj.copy(dir+'/optimizer_admin', dest.path(), {
-      overwrite:true,
-      matching: ['!node_modules/**']
-    });
-    fs.removeSync(dir+'/tmp/optimizer_admin/optimizer_admin/node_modules');
-    return gulp.src(dir+'/tmp/optimizer_admin/**')
-        .pipe(tar('optimizer_admin.tar'))
-        .pipe(gzip())
-        .pipe(gulp.dest(dir))
-        .on('error', function(err){
-          console.log(err);
-        })
-        .on('end', function(){
-          console.log("End");
-          fs.remove(dir+'/tmp/optimizer_admin');
-        });
-  }
-  catch(e){
-    console.error(e);
-  }
+gulp.task('quick-vm-update', ['webpack-build'], function(){
+  return fsj.dirAsync('/var/xplain3000/public', {empty:true})
+  .then(fsj.dirAsync('/var/xplain3000/views', {empty:true}))
+  .then(fsj.copyAsync(dirs.ui+'/xplain.io/public', '/var/xplain3000/public', {overwrite:true}))
+  .then(fsj.copyAsync(dirs.ui+'/xplain.io/views', '/var/xplain3000/views', {overwrite:true}))
+  .catch(function(err){
+    console.error(err);
+  });
 });
 
-gulp.task('api-build', function(){
-  console.log("Building api");
-  var dir = gulpConfig.uiDir;
-  try{
-    var dest = fsj.dir(dir+'/tmp/optimizer_api/optimizer_api', {empty:true});
-    fsj.copy(dir+'/optimizer_api', dest.path(), {
-      overwrite:true,
-      matching: ['!node_modules/**']
-    });
-    fs.removeSync(dir+'/tmp/optimizer_api/optimizer_api/node_modules');
-    return gulp.src(dir+'/tmp/optimizer_api/**')
-        .pipe(tar('optimizer_api.tar'))
-        .pipe(gzip())
-        .pipe(gulp.dest(dir))
-        .on('error', function(err){
-          console.log(err);
-        })
-        .on('end', function(){
-          console.log("End");
-          fs.remove(dir+'/tmp/optimizer_api');
-        });
-  }
-  catch(e){
-    console.error(e);
-  }
-});
-
-gulp.task('test-build', function(){
-
-});
-
+//Not working yet
 gulp.task('vm-setup', function(){
-  return fsj.copy('/home/xplain/', '/etc/init/', {matching:'*.cfg'})
-  .then(fsj.dir('~/tmp', {empty:true}))
-  .then(fsj.move(gulpConfig.vmDest+'node_modules', '~/tmp/'))
-  .then(fsj.copy(gulpConfig.uiDir+'xplain.io/', gulpConfig.vmDest, {
+  return fsj.copyAsync('/home/xplain/', '/etc/init/', {matching:'*.cfg', overwrite:true})
+  .then(fsj.dirAsync(dirs.ui+'/tmp', {empty:true}))/*
+  .then(fsj.moveAsync(gulpConfig.vmDir+'node_modules', dirs.ui+'/tmp/'))
+  .then(fsj.copyAsync(dirs.ui+'/xplain.io/', gulpConfig.vmDir, {
     overwrite:true,
     matching: ['!node_modules/**']
   }))
-  .then(fsj.move('~/tmp/node_modules', gulpConfig.vmDest))
+  .then(fsj.moveAsync(dirs.ui+'/tmp/node_modules', gulpConfig.vmDir))
+  */
   .catch(function(err){
     console.error(err);
   });
@@ -173,39 +170,51 @@ gulp.task('vm-setup', function(){
 
 gulp.task("eslint", function(){
   var config = {
-		configFile: gulpConfig.uiDir+'.eslintrc.json',
+		configFile: dirs.ui+'/xplain.io/.eslintrc.json',
     fix: fixEslint
   };
   return gulp.src(jshintSrc)
 		.pipe(eslint(config))
 		.pipe(eslint.format())
-    .pipe(gulpIf(isFixed, gulp.dest(gulpConfig.uiDir+'xplain.io')));
+    .pipe(gulpIf(isFixed, gulp.dest(dirs.ui+'xplain.io')));
 });
 
-gulp.task('vm-install-npm', shell.task(['npm install'], {verbose:true, cwd:gulpConfig.vmDest}));
+gulp.task('vm-install-npm', shell.task(['sudo npm install'], {verbose:true, cwd:gulpConfig.vmDir}));
 
 gulp.task("push-app-aws", shell.task([
-  's3cmd sync '+gulpConfig.uiDir+'xplain.io.tar.gz s3://'+gulpConfig.s3Bucket+'/'
+  's3cmd sync '+dirs.ui+'xplain.io.tar.gz s3://'+gulpConfig.s3Bucket+'/'
 ]));
 gulp.task("push-admin-aws", shell.task([
-  's3cmd sync '+gulpConfig.uiDir+'optimizer_admin.tar.gz s3://'+gulpConfig.s3Bucket+'/'
+  's3cmd sync '+dirs.ui+'optimizer_admin.tar.gz s3://'+gulpConfig.s3Bucket+'/'
 ]));
 gulp.task("push-api-aws", shell.task([
-  's3cmd sync '+gulpConfig.uiDir+'optimizer_api.tar.gz s3://'+gulpConfig.s3Bucket+'/'
+  's3cmd sync '+dirs.ui+'optimizer_api.tar.gz s3://'+gulpConfig.s3Bucket+'/'
 ]));
 
 //gulp.task('full-build', gulpSequence('pull-latest', ['app-build', 'test-build', 'api-build', 'admin-build']));
-gulp.task('full-build', gulpSequence('pull-latest', 'app-build'));
+gulp.task('full-build', gulpSequence('pull-app', 'app-build'));
 gulp.task('full-deploy', gulpSequence('full-build', 'push-app-aws'));
 
-gulp.task('update-vm', gulpSequence('pull-latest', 'vm-setup', 'vm-install-npm'));
+gulp.task('update-vm', gulpSequence('pull-app', 'vm-setup', 'vm-install-npm'));
 
-function gitHubLogin(){
+function gitHubLogin(repo){
   //Fetches user input for github login
   var deffered = Q.defer();
   var output = {};
-  console.log("Github authentication");
 
+  console.log("Github authentication");
+  if(gulpConfig.gitLogins){
+    output.user = gulpConfig.gitLogins[repo].user || gulpConfig.gitLogins.default.user;
+    output.pw = gulpConfig.gitLogins[repo].pw || gulpConfig.gitLogins.default.pw;
+    if(output.user){
+      console.log("Github username found in config");
+    }
+    if(output.pw){
+      console.log("Github password found in config");
+    }
+  }
+
+  //Arguments will override the authentication for all tasks.
   if(args.gitUser){
     console.log("Github username found in args");
     output.user = args.gitUser;
@@ -214,14 +223,7 @@ function gitHubLogin(){
     console.log("Github password found in args");
     output.pw = args.gitPw;
   }
-  if(gulpConfig.gitUser){
-    console.log("Github username found in config");
-    output.user = gulpConfig.gitUser;
-  }
-  if(gulpConfig.gitPw){
-    console.log("Github password found in config");
-    output.pw = args.gitPw;
-  }
+
   if(output.pw && output.user){
     deffered.resolve(output);
     return deffered.promise;
@@ -232,7 +234,7 @@ function gitHubLogin(){
   var schema = {
     properties: {
       user: {
-        message: 'Your github username',
+        message: 'Your '+ repo +' github credentials',
         required: true
       },
       password: {
@@ -248,16 +250,49 @@ function gitHubLogin(){
       return;
     }
 
-    output.user =  result.user;
-    output.pw =  result.password;
+    output.user = result.user;
+    output.pw = result.password;
     deffered.resolve(output);
   });
 
   return deffered.promise;
 }
 
+function pullFromGithub(gitURL, dir, repo){
+  return gitHubLogin(repo).then(function(input){
+    var deffered = Q.defer();
+    var opts = {
+      checkoutBranch: branch,
+      fetchOpts: {
+        callbacks: {
+          credentials: function() {
+            return Git.Cred.userpassPlaintextNew(input.user, input.pw);
+          }
+        }
+      }
+    };
+    deffered.resolve(opts);
+    return deffered.promise;
+  })
+  .then(function(opts){
+    return Git.Clone(gitURL, dir, opts).catch(function(err) { console.log(err); });; //Git Clone returns a promise
+  });
+}
 
 function isFixed(file) {
     // Has ESLint fixed the file contents
     return file.eslint != null && file.eslint.fixed;
+}
+
+function ensureDir(dir){
+  var def = Q.defer();
+  fs.ensureDir(dir, function (err) {
+    if(err){
+      console.log(err);
+      def.reject(err);
+      return;
+    }
+    def.resolve();
+  });
+  return def.promise;
 }

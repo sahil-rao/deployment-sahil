@@ -58,6 +58,8 @@ module "common" {
 
     # Datadog
     datadog_api_key = "${var.datadog_api_key}"
+
+    s3_redis_backups_expiration_days = 7
 }
 
 resource "aws_route53_record" "website" {

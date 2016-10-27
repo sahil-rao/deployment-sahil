@@ -1,6 +1,6 @@
 ---
 - name: Get Flightpath
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}flightpath-deployment.tar.gz /home/ubuntu/
+  shell: s3cmd sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}flightpath-deployment.tar.gz /home/ubuntu/
   sudo: no
 - name: Untar flightpath
   shell: tar -zxf /home/ubuntu/flightpath-deployment.tar.gz -C /

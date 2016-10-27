@@ -26,7 +26,7 @@ module "dbsilo1" {
     redis_name = "${var.cluster_name}-dbsilo1-redis"
     redis_iam_instance_profile = "${module.common.redis_instance_profile}"
     redis_security_groups = ["${module.common.redis_security_groups}"]
-    redis_version = "v2"
+    redis_version = "v3"
     redis_ami_id = "ami-4bdf092b"
     redis_instance_type = "r3.2xlarge"
     redis_min_size = 0
@@ -34,6 +34,8 @@ module "dbsilo1" {
     redis_desired_capacity = 3
     redis_ebs_optimized = false
     redis_quorum_size = 2
+    redis_backups_enabled = true
+    redis_backup_file = "s3://xplain-alpha/dbsilo1/redis-backups/dump2016-10-18T01:05:01+0000.rdb"
 
     elasticsearch_name = "${var.cluster_name}-dbsilo1-elasticsearch"
     elasticsearch_iam_instance_profile = "${module.common.elasticsearch_instance_profile}"
@@ -76,7 +78,7 @@ module "dbsilo2" {
     redis_name = "${var.cluster_name}-dbsilo2-redis"
     redis_iam_instance_profile = "${module.common.redis_instance_profile}"
     redis_security_groups = ["${module.common.redis_security_groups}"]
-    redis_version = "v2"
+    redis_version = "v3"
     redis_ami_id = "ami-4bdf092b"
     redis_instance_type = "r3.2xlarge"
     redis_min_size = 0
@@ -84,6 +86,8 @@ module "dbsilo2" {
     redis_desired_capacity = 3
     redis_ebs_optimized = false
     redis_quorum_size = 2
+    redis_backups_enabled = true
+    redis_backup_file = "s3://xplain-alpha/dbsilo2/redis-backups/dump2016-10-18T01:05:01+0000.rdb"
 
     elasticsearch_name = "${var.cluster_name}-dbsilo2-elasticsearch"
     elasticsearch_iam_instance_profile = "${module.common.elasticsearch_instance_profile}"
