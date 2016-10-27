@@ -18,14 +18,14 @@
   sudo: yes
 #Get docker images
 - name: Get pyservice
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}pyservice /mnt/volume1/pyservice
+  shell: s3cmd sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}pyservice /mnt/volume1/pyservice
   sudo: yes
 - name: Load pyservice
   shell: docker load -i /mnt/volume1/pyservice
   sudo: yes
 
 - name: Get combinedservice
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}combinedservice /mnt/volume1/combinedservice
+  shell: s3cmd sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}combinedservice /mnt/volume1/combinedservice
   sudo: yes
 - name: Load combinedservice
   shell: docker load -i /mnt/volume1/combinedservice

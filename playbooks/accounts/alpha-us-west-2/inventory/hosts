@@ -161,3 +161,4 @@ mode=development
 redisMasterName=redismaster.dbsilo1.alpha.xplain.io
 redisMasterPattern=redismaster.{dbsilo}.alpha.xplain.io
 url=https://alpha.optimizer.cloudera.com
+s3_deployment_bucket=baaz-deployment

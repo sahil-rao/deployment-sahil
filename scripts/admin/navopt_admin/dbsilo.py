@@ -259,7 +259,10 @@ def list_instances(ctx,
 @click.pass_context
 def register(ctx, dbsilo_name, capacity):
     # Routing configuration is stored on dbsilo1
-    dbsilo = ctx.obj['cluster'].dbsilo('dbsilo1')
+    master_dbsilo = ctx.obj['cluster'].dbsilo('dbsilo1')
+    master_redis_cluster = master_dbsilo.redis_cluster()
+
+    dbsilo = ctx.obj['cluster'].dbsilo(dbsilo_name)
     mongo_cluster = dbsilo.mongo_cluster()
     redis_cluster = dbsilo.redis_cluster()
     elasticsearch_cluster = dbsilo.elasticsearch_cluster()
@@ -276,7 +279,7 @@ def register(ctx, dbsilo_name, capacity):
         'name': dbsilo_name,
     }
 
-    with redis_cluster.master() as redis_master:
+    with master_redis_cluster.master() as redis_master:
         dbsilo_info_metakey = 'dbsilo:metakey:info'
         dbsilo_info_key = 'dbsilo:{}:info'.format(dbsilo_name)
         dbsilo_tenants_metakey = 'dbsilo:metakey:tenants'

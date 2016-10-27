@@ -133,3 +133,4 @@ redisMasterName=dbsilo1-redis-master.navopt-dev.cloudera.com
 redisMasterPattern={dbsilo}-redis-master.navopt-dev.cloudera.com
 url=http://ec2-52-42-226-102.us-west-2.compute.amazonaws.com/
 usingAWS=true
+s3_deployment_bucket=navopt-dev-deployment-bucket

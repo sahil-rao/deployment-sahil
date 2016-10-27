@@ -33,9 +33,9 @@
   sudo: yes
 ### UNPACK S3 TARBALLS ###
 - name: Get xplain.io App
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}xplain.io.tar.gz .
+  shell: s3cmd sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}xplain.io.tar.gz .
 - name: Get Optimizer API App
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}optimizer_api.io.tar.gz .
+  shell: s3cmd sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}optimizer_api.io.tar.gz .
 - name: Remove everything from under the /tmp directory
   shell: rm -rf /tmp/*
   sudo: yes
