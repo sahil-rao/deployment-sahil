@@ -443,7 +443,7 @@ def main():
         help='Build specified Docker images. Comma-separated. Possible values: {}, all'.format(
             ', '.join(DOCKER_IMAGES.keys())))
     parser.add_argument(
-        '--push-docker-image',
+        '--push-docker-images',
         default=None,
         dest='registry_endpoint',
         help='Push built Docker images to a Registry. Possible values: {}.'.format(
