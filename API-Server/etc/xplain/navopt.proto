@@ -22,12 +22,21 @@ service NavOpt {
     returns (GetTopColumnsResponse) {}
   rpc getTopFilters (GetTopFiltersRequest)
     returns (GetTopFiltersResponse) {}
+  // Request for top joins.
+  rpc getTopJoins (GetTopJoinsRequest)
+    returns (GetTopJoinsResponse) {}
   rpc getTopAggs (GetTopAggsRequest)
     returns (GetTopAggsResponse) {}
   rpc getDesignBucket (GetDesignBucketRequest)
     returns (GetDesignBucketResponse) {}
   rpc getHAQR (GetHAQRRequest)
     returns (GetHAQRResponse) {}
+  // Request for Compatibility Info.
+  rpc getQueryCompatible (GetQueryCompatibleRequest)
+    returns (GetQueryCompatibleResponse) {}
+  // Request for Query Risk Info.
+  rpc getQueryRisk (GetQueryRiskRequest)
+    returns (GetQueryRiskResponse) {}
   // Request a new upload.
   rpc upload (UploadRequest)
     returns (UploadResponse) {}
@@ -76,6 +85,7 @@ message GetTenantResponse {
 
 message GetTopTablesRequest {
   string tenant = 1;
+  string dbName = 2;
 }
 
 message TopTables {
@@ -93,6 +103,7 @@ message GetTopTablesResponse {
 }
 message GetTopQueriesRequest {
   string tenant = 1;
+  string dbName = 2;
 }
 
 message TopQueries {
@@ -112,6 +123,8 @@ message GetTopQueriesResponse {
 
 message GetTopColumnsRequest {
   string tenant = 1;
+  string dbName = 2;
+  string tableName = 3;
 }
 
 message TopColumns {
@@ -130,7 +143,7 @@ message TopColumns {
 
 message GetTopColumnsResponse {
   repeated TopColumns groupbyColumns = 1;
-    repeated TopColumns joinColumns = 2;
+  repeated TopColumns joinColumns = 2;
   repeated TopColumns selectColumns = 3;
   repeated TopColumns orderbyColumns = 4;
   repeated TopColumns filterColumns = 5;
@@ -138,6 +151,9 @@ message GetTopColumnsResponse {
 
 message GetTopFiltersRequest {
   string tenant = 1;
+  string dbName = 2;
+  string tableName = 3;
+  repeated string colList = 4;
 }
 
 message ValGroup {
@@ -165,6 +181,26 @@ message GetTopFiltersResponse {
   repeated TopFilters results = 1;
 }
 
+message GetTopJoinsRequest {
+  string tenant = 1;
+  string dbName = 2;
+  string tableName = 3;
+}
+
+// List of Top Joins
+message TopJoins {
+  repeated string columns = 1;
+  repeated string queryIds = 2;
+  repeated string tables = 3;
+  int32 totalQueryCount = 4;
+  int32 totalTableCount = 5;
+  string type = 6;
+}
+
+message GetTopJoinsResponse {
+  repeated TopJoins results = 1;
+}
+
 message GetTopAggsRequest {
   string tenant = 1;
 }
@@ -179,6 +215,59 @@ message TopAgg {
 
 message GetTopAggsResponse {
   repeated TopAgg results = 1;
+}
+
+message GetQueryCompatibleRequest {
+  string tenant = 1;
+  string query = 2;
+  string sourcePlatform = 3;
+  string targetPlatform = 4;
+}
+
+// Query Level incompatiblity info
+message QueryError {
+  string encounteredString = 1;
+  string errorString = 2;
+  string expectedString = 3;
+}
+
+// Query parts that have errors
+message HighLightInfo {
+  int32 column = 1;
+  int32 lineNum = 2;
+  int32 tokenRank = 3;
+  int32 offset = 4;
+}
+
+// Clause Level incompatiblity info
+message ClauseError {
+  // Details for start of query string that has error
+  HighLightInfo startLocator = 1;
+  // Details for end of query string that has error
+  HighLightInfo endLocator = 2;
+}
+
+message GetQueryCompatibleResponse {
+  string clauseName = 1;
+  string clauseString = 2;
+  ClauseError clauseError = 3;
+  QueryError queryError = 4;
+}
+
+message GetQueryRiskRequest {
+  string tenant = 1;
+  string query = 2;
+}
+
+message RiskData {
+  string risk = 1;
+  string riskAnalysis = 2;
+  string riskRecommendation = 3;
+}
+
+message GetQueryRiskResponse {
+  RiskData hiveRisk = 1;
+  RiskData impalaRisk = 2;
 }
 
 message GetDesignBucketRequest {
@@ -356,6 +445,8 @@ message GetTablesResponse {
 message GetTablesDetailRequest {
   string tenant = 1;
   string tid = 2;
+  string dbName = 3;
+  string tableName = 4;
 }
 
 message TableStats {

@@ -5,6 +5,7 @@ import datetime
 import pika
 import socket
 import uuid
+import requests
 from json import *
 import botocore.session
 import ConfigParser
@@ -195,6 +196,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant 
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopTables'}
+        if request.dbName != "":
+            msg_dict['dbname'] = request.dbName
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_tables(loads(response))
@@ -300,6 +303,10 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant 
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopColumns'}
+        if request.dbName != "":
+            msg_dict['dbname'] = request.dbName
+        if request.tableName != "":
+            msg_dict['tablename'] = request.tableName
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_columns(loads(response))
@@ -346,6 +353,12 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant 
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopAccessPatterns', 'pattern': 'filter'}
+        if request.dbName != "":
+            msg_dict['dbname'] = request.dbName
+        if request.tableName != "":
+            msg_dict['tablename'] = request.tableName
+        if request.colList != []:
+            msg_dict['columns'] = list(request.colList)
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_filters(loads(response))
@@ -403,10 +416,132 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
     def getDesignBucket(self, request, context):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant 
-        msg_dict = {'tenant':str(request.tenant), 'opcode':'DesignBucket'}
+        msg_dict = {'tenant':str(request.tenant), 'opcode':'DesignBucket', 'query':request.query,
+                    'sourcePlatform':request.sourcePlatform, 'targetPlatform':request.targetPlatform}
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_DesignBucket(loads(response))
+        #print "Got Response:", ret_response
+        api_rpc.close()
+        return ret_response
+
+    def convert_QueryCompatible(self, response):
+        ret = navopt_pb2.GetQueryCompatibleResponse()
+        if 'errorClause' in response:
+            ret.clauseName = response['errorClause']
+        if 'clauseString' in response:
+            ret.clauseString = response['clauseString']
+        if 'errorDetail' in response:
+            # ret.queryError = navopt_pb2.QueryError()
+            if 'encounteredString' in response['errorDetail']:
+                ret.queryError.encounteredString = response['errorDetail']['encounteredString']
+            if 'errorString' in response['errorDetail']:
+                ret.queryError.errorString = response['errorDetail']['errorString']
+            if 'expectedString' in response['errorDetail']:
+                ret.queryError.expectedString = response['errorDetail']['expectedString']
+        if 'clauseError' in response:
+            # ret.clauseError = navopt_pb2.ClauseError()
+            if 'startLocator' in response['clauseError']:
+                # ret.clauseError.startLocator = navopt_pb2.HighLightInfo()
+                if 'column' in response['clauseError']['startLocator']:
+                    ret.clauseError.startLocator.column = response['clauseError']['startLocator']['column']
+                if 'lineNum' in response['clauseError']['startLocator']:
+                    ret.clauseError.startLocator.lineNum = response['clauseError']['startLocator']['lineNum']
+                if 'tokenRank' in response['clauseError']['startLocator']:
+                    ret.clauseError.startLocator.tokenRank = response['clauseError']['startLocator']['tokenRank']
+                if 'offset' in response['clauseError']['startLocator']:
+                    ret.clauseError.startLocator.offset = response['clauseError']['startLocator']['offset']
+            if 'endLocator' in response['clauseError']:
+                # ret.clauseError.endLocator = navopt_pb2.HighLightInfo()
+                if 'column' in response['clauseError']['endLocator']:
+                    ret.clauseError.endLocator.column = response['clauseError']['endLocator']['column']
+                if 'lineNum' in response['clauseError']['endLocator']:
+                    ret.clauseError.endLocator.lineNum = response['clauseError']['endLocator']['lineNum']
+                if 'tokenRank' in response['clauseError']['endLocator']:
+                    ret.clauseError.endLocator.tokenRank = response['clauseError']['endLocator']['tokenRank']
+                if 'offset' in response['clauseError']['endLocator']:
+                    ret.clauseError.endLocator.offset = response['clauseError']['endLocator']['offset']
+           
+        print "Ret:", ret
+        return ret
+
+    def getQueryCompatible(self, request, context):
+        api_rpc = ApiRpcClient()
+        print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant, 'Query:', request.query 
+        msg_dict = {'tenant':str(request.tenant), 'opcode':'QueryCompatible', 'query':request.query,
+                    'targetPlatform':request.targetPlatform, 'sourcePlatform':request.sourcePlatform}
+        msg_dict['sourcePlatform'] = 'teradata'
+        msg_dict['targetPlatform'] = 'impala'
+        response = api_rpc.call(dumps(msg_dict))
+        print "Api Service response", response, "Type:", type(loads(response))
+        ret_response = self.convert_QueryCompatible(loads(response))
+        #print "Got Response:", ret_response
+        api_rpc.close()
+        return ret_response
+
+    def convert_QueryRisk(self, response):
+        ret = navopt_pb2.GetQueryRiskResponse()
+        if 'hive_risk' in response:
+            #ret.hiveRisk = navopt_pb2.RiskData()
+            if 'risk' in response['hive_risk']:
+                ret.hiveRisk.risk = response['hive_risk']['risk']
+            if 'riskAnalysis' in response['hive_risk']:
+                ret.hiveRisk.riskAnalysis = response['hive_risk']['riskAnalysis']
+            if 'riskRecommendation' in response['hive_risk']:
+                ret.hiveRisk.riskRecommendation = response['hive_risk']['riskRecommendation']
+        if 'impala_risk' in response:
+            #ret.impalaRisk = navopt_pb2.RiskData()
+            if 'risk' in response['impala_risk']:
+                ret.impalaRisk.risk = response['impala_risk']['risk']
+            if 'riskAnalysis' in response['impala_risk']:
+                ret.impalaRisk.riskAnalysis = response['impala_risk']['riskAnalysis']
+            if 'riskRecommendation' in response['impala_risk']:
+                ret.impalaRisk.riskRecommendation = response['impala_risk']['riskRecommendation']
+        return ret
+
+    def getQueryRisk(self, request, context):
+        api_rpc = ApiRpcClient()
+        # write query to a file
+        filepath ="/tmp/"
+        fileName = "riskUpload.sql"
+        with open(filepath+fileName, 'w') as fp:
+            fp.write(request.query)
+        fp.close()
+        # get s3 url
+        session = botocore.session.get_session()
+        client = session.create_client('s3')
+        timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%m-%d-%Y')
+        filep = "/" + timestr + "/" + fileName
+        dest = "partner-logs" + "/" + request.tenant + filep
+        presigned_url = client.generate_presigned_url('put_object', Params = 
+                                     {'Bucket': bucket_location, 'Key': dest}, ExpiresIn = 300)
+        #put file in bucket
+        requests.put(presigned_url, data=open(filepath+fileName).read())
+        #upload file
+        ret_response = self.updateUploadStats(request.tenant, fileName, 'teradata', None, None)
+        #check status
+        msg_dict = {'tenant':str(request.tenant), 'opcode':'GetUploadStatus'}
+        msg_dict['workloadId'] = ret_response.status.workloadId
+        count = 0
+        while count < 3:
+            response = api_rpc.call(dumps(msg_dict))
+            print "Got RESPONSE:", response
+            response = loads(response)
+            if response['status'] == 'in-progress' or response['status'] == 'waiting':
+                time.sleep(10)
+                count = count + 1
+                continue
+            if response['status'] == 'finished':
+                break
+            if response['status'] == 'failed':
+                return
+
+        #get Risk analysis
+        print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant, "uid", ret_response.status.workloadId 
+        msg_dict = {'tenant':str(request.tenant), 'opcode':'QueryRisk', 'uid':ret_response.status.workloadId, 'query':request.query}
+        response = api_rpc.call(dumps(msg_dict))
+        print "Api Service response", response, "Type:", type(loads(response))
+        ret_response = self.convert_QueryRisk(loads(response))
         #print "Got Response:", ret_response
         api_rpc.close()
         return ret_response
@@ -493,8 +628,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                     entry_dict.pop('coltype') 
                 headerInfo.append(entry_dict)
 
-        print "Header:", headerInfo
-        ret_response = self.updateUploadStats(request.tenant, request.fileName, request.sourcePlatform, col_delim, row_delim, headerInfo)
+        ret_response = self.updateUploadStats(request.tenant, request.fileName, request.sourcePlatform, col_delim, row_delim)
         #msg_dict = {'tenant':str(request.tenant), 'opcode':'TopTables'}
         #response = api_rpc.call(dumps(msg_dict))
         #print "Api Service response", response, "Type:", type(loads(response))
@@ -714,22 +848,23 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         if 'view_ddl' in response and response['view_ddl']:
             ret.view_ddl = response['view_ddl']
 
-        for entry in response['columnStats']:
-            #print "entry:", entry
-            data = navopt_pb2.ColStats()
-            if 'column_name' in entry:
-                data.columnName = entry['column_name']
-            if 'num_distinct' in entry:
-                data.numDistinct = entry['num_distinct']
-            if 'eid' in entry:
-                data.cid = entry['eid']
-            if 'data_type' in entry:
-                data.dataType = entry['data_type']
-            if 'num_nulls' in entry:
-                data.numNulls = entry['num_nulls']
-            if 'avg_col_len' in entry:
-                data.avgColLen = entry['avg_col_len']
-            ret.colStats.extend([data])
+        if 'columnStats' in response:
+            for entry in response['columnStats']:
+                #print "entry:", entry
+                data = navopt_pb2.ColStats()
+                if 'column_name' in entry:
+                    data.columnName = entry['column_name']
+                if 'num_distinct' in entry:
+                    data.numDistinct = entry['num_distinct']
+                if 'eid' in entry:
+                    data.cid = entry['eid']
+                if 'data_type' in entry:
+                    data.dataType = entry['data_type']
+                if 'num_nulls' in entry:
+                    data.numNulls = entry['num_nulls']
+                if 'avg_col_len' in entry:
+                    data.avgColLen = entry['avg_col_len']
+                ret.colStats.extend([data])
 
         if 'tableStats' in response:
             #data = navopt_pb2.TableStats()
@@ -752,6 +887,10 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         msg_dict = {'tenant':str(request.tenant), 'opcode':'GetTableDetail'}
         if request.tid != "":
             msg_dict['eid'] = request.tid
+        if request.tableName != "":
+            msg_dict['name'] = request.tableName
+        if request.dbName != "":
+            msg_dict['dbname'] = request.dbName
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_to_table_detail_data(loads(response))
