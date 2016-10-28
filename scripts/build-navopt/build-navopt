@@ -499,6 +499,19 @@ def main():
                 print >> sys.stderr, 'Supported values are: {}'.format(DOCKER_IMAGES.keys())
                 return 1
 
+        # The javaservices Docker image uses pyservices as its base
+        if 'javaservices' in args.docker_images and 'pyservices' not in args.docker_images:
+                args.docker_images.append('pyservices')
+
+        # Ensure appropriate packages are built for each image.
+        # i.e. The Docker build will fail if it's missing the build artifact for a package.
+        for image in args.docker_images:
+            for service in DOCKER_IMAGES[image]:
+                args.services.append(service)
+        # Remove duplicate services.
+        args.services = list(set(args.services))
+
+
     # Only push to supported registries
     if args.registry_endpoint:
         if args.registry_endpoint not in DOCKER_REGISTRY_ENDPOINTS.keys():
@@ -514,14 +527,6 @@ def main():
 
     if not os.path.exists('target'):
         os.makedirs('target')
-
-    if args.docker_images:
-        # Ensure appropriate packages are built for each image.
-        for image in args.docker_images:
-            for service in DOCKER_IMAGES[image]:
-                args.services.append(service)
-        # Remove duplicate services.
-        args.services = list(set(args.services))
 
     build_services(args)
     upload_services(args, target_bucket)
