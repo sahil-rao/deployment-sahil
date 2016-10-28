@@ -34,7 +34,7 @@ SERVICES = {
 DEFAULT_BUCKET = 'navopt-dev-deployment-bucket'
 DEFAULT_GITHUB_PROJECT = 'git@github.com:baazdata'
 DEFAULT_CLUSTER = 'navopt-dev'
-DEFAULT_AWS_PROFILE = "navopt_prod"
+DEFAULT_AWS_PROFILE = "navopt_dev"
 
 
 def run_command(args, cmd, **kwargs):
