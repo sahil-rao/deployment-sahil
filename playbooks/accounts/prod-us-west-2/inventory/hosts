@@ -168,4 +168,5 @@ clusterName=xplain-delta
 datadog_tag=app:navopt,env:prod
 mode=production
 redisMasterName=redismaster.dbsilo1.app.xplain.io
+redisMasterPattern=redismaster.{dbsilo}.app.xplain.io
 url=https://optimizer.cloudera.com
