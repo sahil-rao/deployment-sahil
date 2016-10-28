@@ -47,15 +47,18 @@ DOCKER_IMAGES = {
 DOCKER_REGISTRY_ENDPOINTS = {
     'dev': {
         'endpoint': '128669107540.dkr.ecr.us-west-2.amazonaws.com',
-        'region': 'us-west-2'
+        'region': 'us-west-2',
+        'aws_profile': 'navopt_dev'
     },
     'alpha': {
         'endpoint': '892272719698.dkr.ecr.us-west-1.amazonaws.com',
-        'region': 'us-west-1'
+        'region': 'us-west-1',
+        'aws_profile': 'navopt_alpha'
     },
     'prod': {
         'endpoint': '892272719698.dkr.ecr.us-west-2.amazonaws.com',
-        'region': 'us-west-2'
+        'region': 'us-west-2',
+        'aws_profile': 'navopt_prod'
     }
 }
 DEFAULT_BUCKET = 'navopt-dev-deployment-bucket'
@@ -328,7 +331,7 @@ def push_docker_image(args, image):
     # The aws command returns the 'docker login' command.
     # It does not actually run it, so we capture the output
     # of 'aws login' and feed that to run_command().
-    env = dict(os.environ, AWS_PROFILE=args.aws_profile)
+    env = dict(os.environ, AWS_PROFILE=DOCKER_REGISTRY_ENDPOINTS[args.registry_endpoint]['aws_profile'])
     cmd = [
         'aws',
         'ecr',
