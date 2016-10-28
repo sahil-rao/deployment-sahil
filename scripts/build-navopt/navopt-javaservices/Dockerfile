@@ -1,7 +1,7 @@
 #
 # Dockerfile to install compiler jars on top of python service base image.
 #
-FROM navopt/pyservices
+FROM navopt-pyservices
 MAINTAINER Samir Pujari "samir@cloudera.com"
 
 # Install Java.
