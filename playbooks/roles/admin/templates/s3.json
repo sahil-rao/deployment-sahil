@@ -1,1 +1,0 @@
-{ "accessKeyId": "{{ lookup('env','AWS_ACCESS_KEY_ID') }}", "secretAccessKey": "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') }}", "region": "us-west-1" }

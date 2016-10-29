@@ -44,9 +44,6 @@
 - name: Move the new code
   shell: mv /home/bitnami/xplain.io /var/xplain{{ port }}
   sudo: yes
-- name: Install the s3 configuration file
-  template: src=s3.json dest=/var/xplain{{ port }}/config/s3.json
-  sudo: yes
 - name: Get the npm modules.
   npm: path=/var/xplain{{ port }} production=yes
 ### DEPLOY AND CONFIGURE ###

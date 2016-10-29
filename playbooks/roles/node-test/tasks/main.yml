@@ -33,8 +33,5 @@
 - name: Move the new code
   shell: mv /home/bitnami/node_test /var/test
   sudo: yes
-- name: Install the s3 configuration file
-  template: src=s3.json dest=/var/test/config/s3.json
-  sudo: yes
 - name: Get the npm modules.
   npm: path=/var/test production=yes

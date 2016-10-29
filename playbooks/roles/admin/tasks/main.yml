@@ -56,9 +56,6 @@
 - name: Move the new node code
   shell: mv /home/bitnami/optimizer_admin/config/* /var/admin/config/
   sudo: yes
-- name: Install the s3 configuration file
-  template: src=s3.json dest=/var/admin/config/s3.json
-  sudo: yes
 - name: Return node modules
   shell: mv /var/node_modules /var/admin
   ignore_errors: yes
