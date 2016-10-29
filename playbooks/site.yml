@@ -7,7 +7,6 @@
   - "{{ inventory_dir }}/../group_vars/all/vars.yml"
   - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
-  - role: s3cmd
   - role: java
   - role: backoffice
 
@@ -47,7 +46,6 @@
   - "{{ inventory_dir }}/../group_vars/all/vars.yml"
   - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
-  - role: s3cmd
   - role: nodejsserver
 
 - hosts: tag_Name_APIServer
@@ -62,7 +60,6 @@
   - "{{ inventory_dir }}/../group_vars/all/vars.yml"
   - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
-  - role: s3cmd
   - role: admin
 
 - hosts: tag_Name_ExecServer
