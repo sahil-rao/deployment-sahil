@@ -55,13 +55,6 @@
   roles:
   - role: admin
 
-- hosts: tag_Name_ExecServer
-  vars_files:
-  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
-  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
-  roles:
-  - role: exec
-
 - hosts: tag_Name_Nginx
   vars_files:
   - "{{ inventory_dir }}/../group_vars/all/vars.yml"
