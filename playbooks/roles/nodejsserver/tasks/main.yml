@@ -9,6 +9,9 @@
 - name: NTP installed
   apt: name=ntp state=present
   sudo: yes
+- name: Install awscli
+  apt: name=awscli state=present
+  sudo: yes
 - name: Install Monit service
   apt: pkg=monit state=present
   sudo: yes
@@ -28,7 +31,8 @@
   sudo: yes
 ### UNPACK S3 TARBALLS ###
 - name: Get Baazdata App
-  shell: s3cmd sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}xplain.io.tar.gz .
+  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}xplain.io.tar.gz .
+  sudo: yes
 - name: Remove everything from under the /tmp directory
   shell: rm -rf /tmp/*
   sudo: yes

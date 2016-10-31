@@ -7,8 +7,8 @@
   sudo: yes
 - name: Install apache2-utils
   apt: name=apache2-utils state=present
-- name: Install S3 CMD
-  apt: name=s3cmd state=present
+- name: Install awscli
+  apt: name=awscli state=present
   sudo: yes
 - name: Install requests python library
   pip: name=requests state=latest
@@ -38,9 +38,9 @@
   sudo: yes
 ########UNPACK S3 TARBALLS########
 - name: Get xplain_admin
-  shell: s3cmd sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}xplain_admin.tar.gz /home/ubuntu/
+  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}xplain_admin.tar.gz /home/ubuntu/
 - name: Get xplain_dashboard
-  shell: s3cmd sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}xplain_dashboard.tar.gz /home/ubuntu/
+  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}xplain_dashboard.tar.gz /home/ubuntu/
 - name: Untar xplain_admin
   shell: tar -zxf /home/ubuntu/xplain_admin.tar.gz -C /home/ubuntu
 - name: Untar xplain_dashboard

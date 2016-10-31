@@ -133,4 +133,5 @@ isVM=false
 mode=stage
 redisMasterName=dbsilo1-redis-master.stage.xplain.io
 redisMasterPattern={dbsilo}-redis-master.stage.xplain.io
+region=us-west-2
 url=http://ec2-52-42-224-52.us-west-2.compute.amazonaws.com/
