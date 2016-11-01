@@ -18,9 +18,7 @@ var gulp = require('gulp'),
 var branch = args.branch || 'master';
 var xplainDir = args.xplainDir || null;
 var fixEslint = args.fix || false;
-var jshintSrc = [gulpConfig.uiDir+'xplain.io/**/*.js', gulpConfig.uiDir+'xplain.io/**/*.jsx', '!'+gulpConfig.uiDir+'xplain.io/public/js/libs/**/*.js',
-'!'+gulpConfig.uiDir+'xplain.io/node_modules/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/app/libraries/**/*.js','!'+gulpConfig.uiDir+'xplain.io/public/build/**/*.js', '!'+gulpConfig.uiDir+'xplain.io/test/**/*.js',
-'!'+gulpConfig.uiDir+'xplain.io/src/cloudera-ui/**/*.js'];
+
 
 if(!gulpConfig.workDir) throw (new Error("No working directory found in gulp-config. Ensure that workDir is declared."));
 
@@ -29,6 +27,10 @@ var dirs = {
   ui : gulpConfig.workDir+'/UI',
   outputDir: gulpConfig.outputDir
 }
+
+var jshintSrc = [dirs.ui+'xplain.io/**/*.js', dirs.ui+'xplain.io/**/*.jsx', '!'+dirs.ui+'xplain.io/public/js/libs/**/*.js',
+'!'+dirs.ui+'xplain.io/node_modules/**/*.js', '!'+dirs.ui+'xplain.io/app/libraries/**/*.js','!'+dirs.ui+'xplain.io/public/build/**/*.js', '!'+dirs.ui+'xplain.io/test/**/*.js',
+'!'+dirs.ui+'xplain.io/src/cloudera-ui/**/*.js'];
 
 /*
 gulp-config.json {
