@@ -37,6 +37,9 @@ service NavOpt {
   // Request for Query Risk Info.
   rpc getQueryRisk (GetQueryRiskRequest)
     returns (GetQueryRiskResponse) {}
+  // Request for Query Similarity Info.
+  rpc getSimilarQueries (GetSimilarQueriesRequest)
+    returns (GetSimilarQueriesResponse) {}
   // Request a new upload.
   rpc upload (UploadRequest)
     returns (UploadResponse) {}
@@ -285,6 +288,31 @@ message GetDesignBucketResponse {
   repeated DesignBucket results = 1;
 }
 
+message GetSimilarQueriesRequest {
+  string tenant = 1;
+  string query = 2;
+  string sourcePlatform = 3;
+}
+
+message GetSimilarQueriesResponse {
+  int32 orderByCount = 1;
+  int32 groupByCount = 2;
+  int32 hiveCompatible = 3;
+  repeated QueryTable table = 4;
+  repeated string querySignature = 5;
+  int32 selectCount = 6;
+  int32 unionCount = 7;
+  int32 unionAllCount = 8;
+  string StmtSignature = 9;
+  int32 instanceCount = 10;
+  int32 filterCount = 11;
+  int32 joinCount = 12;
+  string customId = 13;
+  string qid = 14;
+  string query = 15;
+  int32 impalaCompatible = 16;
+}
+
 message GetHAQRRequest {
   string tenant = 1;
 }
@@ -406,6 +434,7 @@ message QueryTable {
   string tableType = 1;
   string tableName = 2;
   string tid = 3;
+  string dbName = 4;
 }
 
 message GetQueriesDetailResponse {

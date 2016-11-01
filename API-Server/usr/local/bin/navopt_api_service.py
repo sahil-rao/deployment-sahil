@@ -470,8 +470,6 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant, 'Query:', request.query 
         msg_dict = {'tenant':str(request.tenant), 'opcode':'QueryCompatible', 'query':request.query,
                     'targetPlatform':request.targetPlatform, 'sourcePlatform':request.sourcePlatform}
-        msg_dict['sourcePlatform'] = 'teradata'
-        msg_dict['targetPlatform'] = 'impala'
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_QueryCompatible(loads(response))
@@ -543,6 +541,17 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_QueryRisk(loads(response))
         #print "Got Response:", ret_response
+        api_rpc.close()
+        return ret_response
+
+    def getSimilarQueries(self, request, context):
+        api_rpc = ApiRpcClient()
+        print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant
+        msg_dict = {'tenant':str(request.tenant), 'opcode':'SimilarQueries', 'query':request.query,
+                    'source_platform':request.sourcePlatform}
+        response = api_rpc.call(dumps(msg_dict))
+        print "Api Service response", response, "Type:", type(loads(response))
+        ret_response = self.convert_to_query_detail_data(loads(response), False)
         api_rpc.close()
         return ret_response
 
@@ -730,9 +739,12 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         api_rpc.close()
         return ret_response
  
-    def convert_to_query_detail_data(self, response):
-        ret = navopt_pb2.GetQueriesDetailResponse()
-  
+    def convert_to_query_detail_data(self, response, is_q_detail):
+        if is_q_detail:
+            ret = navopt_pb2.GetQueriesDetailResponse()
+        else:
+            ret = navopt_pb2.GetSimilarQueriesResponse()
+           
         if 'query' in response:
             ret.query = response['query']
         if 'qid' in response:
@@ -760,21 +772,21 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         if 'filterCount' in response:
             ret.filterCount = response['filterCount']
 
-        for entry in response['tables']:
-            #print "entry:", entry
-            data = navopt_pb2.QueryTable()
-            if 'tableName' in entry:
-                data.tableName = entry['tableName']
-            if 'tableType' in entry:
-                data.tableType = entry['tableType']
-            if 'tid' in entry:
-                data.tid = entry['tid']
-            ret.table.extend([data])
+        if 'tables' in response:
+            for entry in response['tables']:
+                data = navopt_pb2.QueryTable()
+                if 'tableName' in entry:
+                    data.tableName = entry['tableName']
+                if 'tableType' in entry:
+                    data.tableType = entry['tableType']
+                if 'tid' in entry:
+                    data.tid = entry['tid']
+                if 'dbName' in entry:
+                    data.dbName = entry['dbName']
+                ret.table.extend([data])
 
-        #for entry in response['SignatureKeywords']:
-            #print "entry:", entry
-        ret.querySignature.extend(response['SignatureKeywords'])
-        #print "Ret:", ret, "tables:", ret.results
+        if 'SignatureKeywords' in response:
+            ret.querySignature.extend(response['SignatureKeywords'])
         return ret
 
     def getQueriesDetail(self, request, context):
@@ -785,7 +797,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             msg_dict['qid'] = request.qid
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
-        ret_response = self.convert_to_query_detail_data(loads(response))
+        ret_response = self.convert_to_query_detail_data(loads(response), True)
         api_rpc.close()
         return ret_response
 
@@ -840,7 +852,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         if 'tid' in response:
             ret.tid = response['tid']
         if 'type' in response:
-            ret.tid = response['type']
+            ret.type = response['type']
         if 'table_ddl' in response and response['table_ddl']:
             ret.table_ddl = response['table_ddl']
         if 'iview_ddl' in response and response['iview_ddl']:
