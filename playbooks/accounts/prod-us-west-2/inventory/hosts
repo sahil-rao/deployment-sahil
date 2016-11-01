@@ -166,6 +166,10 @@ express_session_secret={{ admin_express_session_secret }}
 [all_servers:vars]
 clusterName=xplain-delta
 datadog_tag=app:navopt,env:prod
+dnsZoneName=xplain.io
 mode=production
 redisMasterName=redismaster.dbsilo1.app.xplain.io
+redisMasterPattern=redismaster.{dbsilo}.app.xplain.io
+region=us-west-2
 url=https://optimizer.cloudera.com
+s3_deployment_bucket=baaz-deployment

@@ -12,6 +12,9 @@
 - name: Install Monit service
   apt: pkg=monit state=present
   sudo: yes
+- name: Install awscli
+  apt: name=awscli state=present
+  sudo: yes
 - name: Stop monit
   shell: monit quit
   sudo: yes
@@ -38,7 +41,7 @@
   sudo: yes
 ### UNPACK S3 TARBALLS ###
 - name: Get Optimizer Admin
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}optimizer_admin.io.tar.gz .
+  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}optimizer_admin.io.tar.gz .
 - name: Remove everything from under the /tmp directory
   shell: rm -rf /tmp/*
   sudo: yes

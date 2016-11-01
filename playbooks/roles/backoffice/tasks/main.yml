@@ -1,4 +1,8 @@
 ---
+### DEPENDENCIES ###
+- name: Install awscli
+  apt: name=awscli state=present
+  sudo: yes
 - name: Create the Baaz config directory
   file: path=/var/Baaz state=directory
   sudo: yes
@@ -15,12 +19,12 @@
   shell: mkdir -p /var/log/cloudera/navopt
   sudo: yes
 - name: Get Flightpath
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}flightpath-deployment.tar.gz .
+  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}flightpath-deployment.tar.gz .
 - name: Untar flightpath
   shell: tar -zxf /home/ubuntu/flightpath-deployment.tar.gz chdir=/
   sudo: yes
 - name: Get Data Acquisition service
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-DataAcquisition-Service.tar.gz .
+  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}Baaz-DataAcquisition-Service.tar.gz .
 - name: Copy the service files
   shell: tar -zxf /home/ubuntu/Baaz-DataAcquisition-Service.tar.gz chdir=/
   sudo: yes
@@ -55,12 +59,12 @@
 
 #Start of Analytics module deployment.
 - name: Get Analytics Module
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Analytics.tar.gz .
+  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}Baaz-Analytics.tar.gz .
 - name: Untar Analytics
   shell: tar -zxf /home/ubuntu/Baaz-Analytics.tar.gz chdir=/
   sudo: yes
 - name: Get Analytics Service
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Analytics-Service.tar.gz .
+  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}Baaz-Analytics-Service.tar.gz .
 - name: Install Analytics Service
   shell: tar -zxf /home/ubuntu/Baaz-Analytics-Service.tar.gz chdir=/
   sudo: yes
@@ -81,7 +85,7 @@
 #   sudo: yes
 
 - name: Get Compiler Module
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Compiler.tar.gz .
+  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}Baaz-Compiler.tar.gz .
 - name: Remove the existing compiler deployed code
   file: path=/usr/lib/baaz_compiler state=absent
   sudo: yes
@@ -89,7 +93,7 @@
   shell: tar -zxf /home/ubuntu/Baaz-Compiler.tar.gz chdir=/usr/lib
   sudo: yes
 - name: Get Compiler Service
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-Compile-Service.tar.gz .
+  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}Baaz-Compile-Service.tar.gz .
 - name: Install Compiler Service
   shell: tar -zxf /home/ubuntu/Baaz-Compile-Service.tar.gz chdir=/
   sudo: yes

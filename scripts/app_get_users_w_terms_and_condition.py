@@ -22,13 +22,24 @@ def execute():
                                             'email': 1, 'archived': 1,
                                             'signed_terms_timestamp': 1})
 
+    IGNORE_DOMAINS = ['xplain.io', 'grr.la', 'zanzog.com']
+
     ret_dict = {}
     for tenant_data in userCursor:
+
+        if 'email' not in tenant_data:
+            continue
+
+        email = tenant_data['email']
+
+        found_domain = [x for x in IGNORE_DOMAINS if x in email]
+        if found_domain:
+            continue
 
         if 'signed_terms_timestamp' in tenant_data:
             event_time = tenant_data['signed_terms_timestamp']/1000
             value = datetime.datetime.fromtimestamp(event_time)
-            ret_dict[tenant_data['email']] = value.strftime('%Y-%m-%d %H:%M:%S')
+            ret_dict[email] = value.strftime('%Y-%m-%d %H:%M:%S')
             continue
 
         is_found = False
@@ -47,7 +58,7 @@ def execute():
                 if event['event'] == "user accepted terms and conditions":
                     event_time = event['timestamp']/1000
                     value = datetime.datetime.fromtimestamp(event_time)
-                    ret_dict[tenant_data['email']] = value.strftime('%Y-%m-%d %H:%M:%S')
+                    ret_dict[email] = value.strftime('%Y-%m-%d %H:%M:%S')
                     is_found = True
                     break
             if is_found:
