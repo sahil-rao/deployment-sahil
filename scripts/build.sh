@@ -93,6 +93,9 @@ git clone https://github.com/baazdata/graph.git
 #Checkout UI
 git clone https://github.com/baazdata/UI.git
 
+#Checkout UI-Tests
+git clone https://github.com/baazdata/NavOptTest.git
+
 #Checkout documentation
 git clone https://github.com/baazdata/documentation.git
 
@@ -108,6 +111,11 @@ cd dist
 s3cmd sync flightpath-*.tar.gz s3://$S3Bucket/flightpath-deployment.tar.gz
 echo "Graph is built"
 
+cd NavOptTest
+tar -cvf navopttest.tar *
+gzip navopttest.tar
+s3cmd sync navopttest.tar.gz s3://$S3BUcket/
+
 cd ../../UI/webapp/war
 tar -cvf UI.tar *
 gzip UI.tar
@@ -119,15 +127,12 @@ s3cmd sync xplain.io.tar.gz s3://$S3Bucket/
 tar -cvf optimizer_api.io.tar optimizer_api
 gzip optimizer_api.io.tar
 s3cmd sync optimizer_api.io.tar.gz s3://$S3Bucket/
-<<<<<<< HEAD
 tar -cvf optimizer_admin.io.tar optimizer_admin
 gzip optimizer_admin.io.tar
 s3cmd sync optimizer_admin.io.tar.gz s3://$S3Bucket/
 tar -cvf xplain_dashboard.tar xplain_dashboard
 gzip xplain_dashboard.tar
 s3cmd sync xplain_dashboard.tar.gz s3://$S3Bucket/
-=======
->>>>>>> master
 tar -cvf optimizer_admin.io.tar optimizer_admin
 gzip optimizer_admin.io.tar
 s3cmd sync optimizer_admin.io.tar.gz s3://$S3Bucket/

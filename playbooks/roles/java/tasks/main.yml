@@ -1,0 +1,19 @@
+---
+- name: Add JRE ppa
+  apt_repository: repo=ppa:webupd8team/java state=present
+  sudo: yes
+- name: Automatically select the Oracle License
+  shell: echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
+  sudo: yes
+- name: Install JRE
+  apt: pkg=oracle-java8-installer state=latest update-cache=yes force=yes
+  sudo: yes
+- name: Set Java 8 Env
+  apt: pkg=oracle-java8-set-default state=latest install_recommends=yes
+  sudo: yes
+- name: Change the permission of /etc/environment file
+  shell: chmod 666 /etc/environment
+  sudo: yes
+- name: update /etc/environment file with java info
+  shell: echo "JAVA_HOME=\"/usr/lib/jvm/java-7-oracle\"" >> /etc/environment
+  sudo: yes

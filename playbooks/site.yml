@@ -2,72 +2,100 @@
 # This Playbook would deploy the whole Baazdata cluster with replication and sharding.
 # Before running this playbook, make sure old scripts have been stopped with scripts/stop-old-scripts.yml
 
-- hosts: tag_Name_MongoDBServer
-  roles:
-  - role: common
-  - role: mongodb
-
 - hosts: tag_Name_Backoffice
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
+  - role: java
   - role: backoffice
 
-- hosts: tag_Name_Webserver1
-  roles:
-  - role: webserver
-
 - hosts: tag_Name_QueueServer
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
+  - role: mtpereira.erlang
+    become: yes
+  - role: Stouts.rabbitmq
+    rabbitmq_vhosts:
+    - xplain
+    rabbitmq_plugins:
+    - rabbitmq_management
+    rabbitmq_users:
+    - user: "{{ rabbitmq_username }}"
+      password: "{{ rabbitmq_password }}"
+      vhost: xplain
+      configure_priv: .*
+      read_priv: .*
+      write_priv: .*
+      state: present
+    - user: "{{ rabbitmq_username }}"
+      password: "{{ rabbitmq_password }}"
+      vhost: xplain
+      configure_priv: .*
+      read_priv: .*
+      write_priv: .*
+      tags: administrator
+      state: present
+    become: yes
   - role: queueserver
 
 - hosts: tag_Name_NodeJS
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: nodejsserver
 
 - hosts: tag_Name_APIServer
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: api
 
 - hosts: tag_Name_AdminServer
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: admin
 
 - hosts: tag_Name_ExecServer
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: exec
 
 - hosts: tag_Name_Nginx
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: nginx
 
-- hosts: tag_Name_Foundation
-  roles:
-  - role: foundation
-
-- hosts: tag_Name_Redis
-  roles:
-  - role: redis
-    sudo: true
-
 - hosts: tag_Name_RedisCache
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: redis
     sudo: true
 
-- hosts: tag_Name_ElasticSearch
+- hosts: tag_Name_Kibana
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
-  - role: elasticsearch
-    sudo: true
-
-- hosts: tag_Name_DeploymentRoot
-  roles:
-  - role: deploymentroot
-
-- hosts: tag_Name_RedisSentinel
-  roles:
-  - role: redis_sentinel
+  - role: kibana
     sudo: true
 
 - hosts: tag_Name_KibanaAndElasticsearch
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: elasticlog
     sudo: true
@@ -75,16 +103,26 @@
     sudo: true
 
 - hosts: tag_Name_LogstashServer
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
+  - role: java
   - role: logstash
     sudo: true
 
 - hosts: tag_Name_RedisLog
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: redislog
     sudo: true
 
 - hosts: tag_Name_Bastion
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: dashboard_server
     tags: ['dasbboard']
@@ -97,11 +135,17 @@
     sudo: true
 
 - hosts: tag_Name_Datadog
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: Datadog.datadog
     sudo: true
 
 - hosts: tag_Name_Docker
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
   roles:
   - role: angstwad.docker_ubuntu
     sudo: true

@@ -25,10 +25,7 @@ class Elasticsearch(object):
 
         self._tunnel = bastion.tunnel(host, port)
         self._conn = elasticsearch.Elasticsearch(
-            ['{}:{}'.format(
-                self._tunnel.local_host,
-                self._tunnel.local_port,
-            )],
+            ['{}:{}'.format(self._tunnel.host, self._tunnel.port)],
             use_ssl=False)
 
     def close(self):
@@ -45,9 +42,6 @@ class Elasticsearch(object):
 
     def version(self):
         return self._conn.info()['version']['number']
-
-    def health(self):
-        return self._conn.cluster.health()
 
     def nodes(self):
         nodes = self._conn.nodes.info()['nodes']

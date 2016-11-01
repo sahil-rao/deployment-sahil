@@ -68,6 +68,12 @@ else
  echo "All thrift dependencies met..."
 fi
 
+cd /home/xplain
+#Build UI with Gulp
+#gulp pull-latest --branch $BRANCH_NAME
+#gulp app-build
+#gulp eslint
+
 #start building process
 cd  /home/xplain/build
 
@@ -99,19 +105,13 @@ git checkout $BRANCH_NAME
 git reset --hard
 git pull
 
-#Checkout UI
-cd /home/xplain/build/UI
-git pull
-git checkout $BRANCH_NAME
-git reset --hard
-git pull
-
 cd /home/xplain/build/graph
 rm -rf build dist
 python setup.py bdist
 cd dist
 echo "Graph is built!"
 
+#This now gets handled by gulp script, when there is time so will admin and api
 cd /home/xplain/build/UI
 tar -cvf  xplain.io.tar xplain.io
 gzip -f  xplain.io.tar
@@ -136,7 +136,7 @@ fi
 mkdir baaz_compiler
 rm -rf baaz_compiler/*
 #mv bin/com Baaz-Hive-Compiler/.
-cp target/Baaz-Compiler/*.jar baaz_compiler/
+cp target/Baaz-Compiler-1/*.jar baaz_compiler/
 cp target/classes/logback.xml baaz_compiler/
 tar -cvf  Baaz-Compiler.tar baaz_compiler
 gzip -f  Baaz-Compiler.tar

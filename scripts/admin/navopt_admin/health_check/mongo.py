@@ -3,7 +3,6 @@ from __future__ import absolute_import
 from .aws import AWSNameHealthCheck
 from .base import HealthCheck, HealthCheckList
 import datetime
-import pipes
 import re
 import sys
 import termcolor
@@ -61,7 +60,7 @@ class MongoClusterAgreeOnMasterCheck(MongoHealthCheck):
 
     def check_master_hostname(self, host):
         master_hostname = self.mongo_cluster.master_hostname()
-        command = 'host {}'.format(pipes.quote(master_hostname))
+        command = ['host', master_hostname]
         bastion = self.mongo_cluster.cluster.bastion
         stdout = bastion.check_output(command).strip()
 

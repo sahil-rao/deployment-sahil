@@ -1,7 +1,5 @@
 #!/bin/sh
 
-set -e
-
 # Wait for redis to finish loading
 count=1
 while true; do

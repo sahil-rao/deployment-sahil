@@ -1,30 +1,8 @@
 ---
 #uncomment below change for impala enablement
 
-- name: Install Java repo
-  command: add-apt-repository -y ppa:webupd8team/java
-  sudo: yes
-- name: Run the update
-  command: apt-get update
-  sudo: yes
-  ignore_errors: True
-- name: Update config for java update
-  shell: echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | sudo /usr/bin/debconf-set-selections
-- name: Install java version
-  command: apt-get install -y oracle-jdk7-installer
-  sudo: yes
-- name: Set JAVA HOME
-  shell: JAVA_HOME="/usr/lib/jvm/java-7-oracle"
-  sudo: yes
-- name: Change the permission of /etc/enviornment file
-  command: chmod 666 /etc/environment
-  sudo: yes
-- name: update /etc/enviornment file with java info
-  command: echo "JAVA_HOME=\"/usr/lib/jvm/java-7-oracle\"" >> /etc/environment
-  sudo: yes
-
 - name: Get Impala Module
-  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Impala.tar.gz /mnt/
+  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}Impala.tar.gz /mnt/
   sudo: yes
 - name: Untar Impala prebuild code
   shell: tar -zxf /mnt/Impala.tar.gz chdir=/mnt/

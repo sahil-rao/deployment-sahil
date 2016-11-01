@@ -12,6 +12,6 @@ mvn package -DskipTests
 echo "--- archiving compiler..."
 mkdir baaz_compiler
 
-cp target/Baaz-Compiler/*.jar baaz_compiler/
+cp target/Baaz-Compiler-1/*.jar baaz_compiler/
 cp target/classes/logback.xml baaz_compiler/
 tar -zcvf /target/Baaz-Compiler.tar.gz baaz_compiler

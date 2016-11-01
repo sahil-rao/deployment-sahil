@@ -1,0 +1,40 @@
+---
+### DEPENDENCIES ###
+- name: Install awscli
+  apt: name=awscli state=present
+  sudo: yes
+- name: Create Log directory
+  shell: mkdir -p /var/log/cloudera/navopt/nodejs
+  sudo: yes
+- name: Change the permission
+  shell: chown bitnami:bitnami /var/log/cloudera/navopt/nodejs
+  sudo: yes
+- name: NTP installed
+  apt: name=ntp state=present
+  sudo: yes
+### SET UP ENVIRONMENT ###
+- name: Create the Baaz config directory
+  file: path=/var/Baaz state=directory mode=777
+  sudo: yes
+- name: Create /var/test
+  file: path=/var/xplain{{ port }} state=directory owner=root mode=0644
+  sudo: yes
+### UNPACK S3 TARBALLS ###
+- name: Get Baazdata App
+  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}node_test.tar.gz .
+- name: Remove everything from under the /tmp directory
+  shell: rm -rf /tmp/*
+  sudo: yes
+- name: Untar testing suite
+  shell: tar -zxf /home/bitnami/node_test.tar.gz
+- name: Remove the existing deployed code
+  file: path=/var/test state=absent
+  sudo: yes
+- name: Move the new code
+  shell: mv /home/bitnami/node_test /var/test
+  sudo: yes
+- name: Install the s3 configuration file
+  template: src=s3.json dest=/var/test/config/s3.json
+  sudo: yes
+- name: Get the npm modules.
+  npm: path=/var/test production=yes

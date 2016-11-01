@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 import logging
 import os
+import pipes
 import shutil
 import subprocess
 import tempfile
@@ -11,7 +12,24 @@ DEVNULL = open(os.devnull, 'wb')
 BASE_PORTS = 14000
 
 
-class Bastion(object):
+class BaseBastion(object):
+    def close(self):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+    def tunnel(self, remote_host, remote_port):
+        raise NotImplementedError
+
+    def check_output(self, *args):
+        raise NotImplementedError
+
+
+class Bastion(BaseBastion):
     def __init__(self, bastion, local_host='localhost'):
         self._bastion = bastion
         self._base_port = BASE_PORTS
@@ -66,12 +84,6 @@ class Bastion(object):
             else:
                 return Tunnel(self, forwards, self._local_host, local_port)
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
-
     def _ssh_cmd(self, *args):
         if self._control_socket and os.path.exists(self._control_socket):
             cmd = [
@@ -87,29 +99,48 @@ class Bastion(object):
 
             subprocess.check_call(cmd, stdout=DEVNULL, stderr=DEVNULL)
 
-    def check_output(self, *args):
-        cmd = [
+    def check_output(self, cmd):
+        ssh_cmd = [
             'ssh',
             '-S', self._control_socket,
             'x',
         ]
-        cmd.extend(args)
+        ssh_cmd.extend(pipes.quote(arg) for arg in cmd)
 
-        return subprocess.check_output(cmd)
+        return subprocess.check_output(ssh_cmd)
 
 
-class Tunnel(object):
-    def __init__(self, bastion, forwards, local_host, local_port):
-        self._bastion = bastion
-        self._forwards = forwards
-        self.local_host = local_host
-        self.local_port = local_port
-
+class BaseTunnel(object):
     def close(self):
-        self._bastion._ssh_cmd('cancel', *self._forwards)
+        pass
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
+
+
+class Tunnel(BaseTunnel):
+    def __init__(self, bastion, forwards, host, port):
+        self._bastion = bastion
+        self._forwards = forwards
+        self.host = host
+        self.port = port
+
+    def close(self):
+        self._bastion._ssh_cmd('cancel', *self._forwards)
+
+
+class NoopBastion(BaseBastion):
+    def tunnel(self, remote_host, remote_port):
+        return NoopTunnel(remote_host, remote_port)
+
+    def check_output(self, cmd):
+        return subprocess.check_output(cmd)
+
+
+class NoopTunnel(BaseTunnel):
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port

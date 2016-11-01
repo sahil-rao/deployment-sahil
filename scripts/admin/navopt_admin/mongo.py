@@ -49,8 +49,8 @@ class Mongo(object):
         self._tunnel = bastion.tunnel(host, port)
 
         self._conn = pymongo.MongoClient(
-            host=self._tunnel.local_host,
-            port=self._tunnel.local_port,
+            host=self._tunnel.host,
+            port=self._tunnel.port,
             socketTimeoutMS=10000,
             connectTimeoutMS=10000,
             serverSelectionTimeoutMS=10000,

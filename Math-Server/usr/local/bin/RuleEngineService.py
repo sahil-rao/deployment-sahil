@@ -105,13 +105,18 @@ def callback(ch, method, properties, body):
         return
 
     tenant = msg_dict["tenant"]
-    log_dict = {'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode'], 'tag': 'ruleengine'}
+    log_dict = {'tenant': msg_dict['tenant'],
+                'opcode': msg_dict['opcode'],
+                'tag': 'ruleengine'}
     if 'uid' in msg_dict:
         log_dict['uid'] = msg_dict['uid']
     clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)
 
     msg_dict["connection"] = connection1
     msg_dict["ch"] = ch
+    #store the version that was passed in.
+    if 'version' in msg_dict:
+        msg_dict['in_version'] = msg_dict['version']
     resp_dict = None
     client = getMongoServer(tenant)
     mongoconn = Connector.getConnector(tenant)
@@ -124,6 +129,23 @@ def callback(ch, method, properties, body):
     target_platform = None
     if 'target_platform' in msg_dict:
         target_platform = target_platform
+
+    """
+    If the eid is not valid, don't process the message.
+    """
+    if 'entityid' in msg_dict:
+        entityid = msg_dict['entityid']
+
+        try:
+            q_entity = mongoconn.getEntity(entityid)
+        except:
+            q_entity = None
+
+        if q_entity is None:
+            clog.error("No entity: %s found for tenant: %s" % (entityid, tenant))
+            mongoconn.close()
+            connection1.basicAck(ch, method)
+            return
 
     '''
     Checks if Import, Function, RuleIds, and version are present.

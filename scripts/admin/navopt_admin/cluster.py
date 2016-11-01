@@ -1,5 +1,5 @@
 from .dbsilo import DBSilo
-from .ssh import Bastion
+from .ssh import Bastion, NoopBastion
 from .instance import (
     Instance,
     format_instances,
@@ -15,19 +15,17 @@ class Cluster(object):
         self.region = region
         self.zone = zone
 
-        assert bastion is not None
         self._bastion_name = bastion
-        self._bastion = None
 
         self._ec2 = boto3.resource('ec2', region_name=region)
 
     @property
     def bastion(self):
-        if self._bastion is None:
+        if not hasattr(self, '_bastion'):
             if self._bastion_name is None:
-                raise Exception('bastion is not configured')
-
-            self._bastion = Bastion(self._bastion_name)
+                self._bastion = NoopBastion()
+            else:
+                self._bastion = Bastion(self._bastion_name)
 
         return self._bastion
 

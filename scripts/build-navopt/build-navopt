@@ -31,17 +31,18 @@ SERVICES = {
         'flightpath-deployment.tar.gz',
     ],
 }
-DEFAULT_BUCKET = 'baaz-deployment'
+DEFAULT_BUCKET = 'navopt-dev-deployment-bucket'
 DEFAULT_GITHUB_PROJECT = 'git@github.com:baazdata'
 DEFAULT_CLUSTER = 'navopt-dev'
+DEFAULT_AWS_PROFILE = "navopt_dev"
 
 
-def run_command(args, cmd):
+def run_command(args, cmd, **kwargs):
     if args.verbose:
         print '+', ' '.join(cmd)
 
     if not args.dry_run:
-        subprocess.check_call(cmd)
+        subprocess.check_call(cmd, **kwargs)
 
 
 def checkout_repo(args, service):
@@ -194,7 +195,8 @@ def upload_service(args, service, target_bucket):
             src,
             dst,
         ]
-        run_command(args, cmd)
+        env = dict(os.environ, AWS_PROFILE=args.aws_profile)
+        run_command(args, cmd, env=env)
 
 
 def upload_documentation(args):
@@ -215,7 +217,8 @@ def upload_documentation(args):
         src,
         dst,
     ]
-    run_command(args, cmd)
+    env = dict(os.environ, AWS_PROFILE=args.aws_profile)
+    run_command(args, cmd, env=env)
 
 
 def prompt(msg, assume_yes=None):
@@ -319,6 +322,11 @@ def main():
         '--cluster',
         default=DEFAULT_CLUSTER,
         help='The name of the cluster (default {})'.format(DEFAULT_CLUSTER))
+    parser.add_argument(
+        '--aws-profile',
+        default=DEFAULT_AWS_PROFILE,
+        help='AWS Profile for s3 bucket (default {})'.format(
+            DEFAULT_AWS_PROFILE))
     parser.add_argument(
         'services',
         default=SERVICES.keys(),
