@@ -23,7 +23,7 @@
     "mkdirp": "0.5.1",
     "mmmagic": "^0.4.4",
     "memwatch-next": "*",
-    "moment": "2.5.1",
+    "moment": "^2.15.2",
     "mongodb": "2.0.35",
     "mongoose": "4.0.6",
     "multiparty": "^3.2.2",
