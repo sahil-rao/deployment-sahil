@@ -91,12 +91,12 @@ Assuming you have Docker installed, you can build Navopt Docker images and, opti
 
 ```
 # Build pyservices Docker image and push it to the navopt_dev account
-./build-navopt --build-docker-image navopt-pyservices --push-docker-image dev --aws-profile navopt_dev
+./build-navopt --build-docker-images navopt-pyservices --push-docker-images dev
 
 # Build all Docker images and push them to the navopt_dev account
 # Note: '--no-upload' disables uploading build artifacts to S3.
-./build-navopt --build-docker-image all --push-docker-image dev --aws-profile navopt_dev --no-upload
+./build-navopt --build-docker-images --push-docker-images dev --no-upload
 
 # Build all Docker images but do not push them to ECR
-./build-navopt --build-docker-image all --no-upload
+./build-navopt --build-docker-images --no-upload
 ```
