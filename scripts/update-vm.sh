@@ -70,8 +70,7 @@ fi
 
 cd /home/xplain
 #Build UI with Gulp
-gulp pull-latest --branch $BRANCH_NAME
-gulp app-build
+gulp full-build --branch $BRANCH_NAME
 gulp eslint
 
 #start building process
