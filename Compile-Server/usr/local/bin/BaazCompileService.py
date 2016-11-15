@@ -56,6 +56,8 @@ CLUSTER_NAME = config.get("ApplicationConfig", "clusterName")
 if CLUSTER_NAME is not None:
     bucket_location = CLUSTER_NAME
 
+DBNAME_IGNORE_LIST = ['xplainio_default_db']
+
 """
 For VM there is not S3 connectivity. Save the logs with a timestamp.
 At some point we should move to using a log rotate handler in the VM.
@@ -140,6 +142,11 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
         column_entity_name = tablename.lower() + "." + columnname.lower()
         column_entity = mongoconn.getEntityByName(column_entity_name)
 
+        if 'databaseName' in column_entry and column_entry['databaseName'] not in DBNAME_IGNORE_LIST:
+            tablename = column_entry['databaseName'] + "." + tablename
+        elif 'DatabaseName' in column_entry and column_entry['DatabaseName'] not in DBNAME_IGNORE_LIST:
+            tablename = column_entry['DatabaseName'] + "." + tablename
+
         if table_entity is None:
             clog.debug("Creating table entity for {0} position 6\n".format(tablename))
             eid = IdentityService.getNewIdentity(tenant, True)
@@ -222,8 +229,14 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
         else:
             tablename = entryname
 
-        if 'DatabaseName' in tableentry and tableentry['DatabaseName']:
+        if 'databaseName' in tableentry and tableentry['databaseName']:
+            database_name = tableentry['databaseName']
+            if tableentry['databaseName'] not in DBNAME_IGNORE_LIST:
+                tablename = tableentry['databaseName'] + "." + tablename
+        elif 'DatabaseName' in tableentry and tableentry['DatabaseName'] not in DBNAME_IGNORE_LIST:
             database_name = tableentry['DatabaseName']
+            tablename = tableentry['DatabaseName'] + "." + tablename
+
         """
         Create the Table Entity first if it does not already exist.
         """
@@ -267,6 +280,10 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                 sendToElastic(connection1, redis_conn, tenant, uid,
                               database_entity, database_name, EntityType.SQL_DATABASE)
                 dbCount = dbCount + 1
+                redis_conn.createEntityProfile(database_entity.eid, "SQL_DATABASE")
+                redis_conn.incrEntityCounter(database_entity.eid, "instance_count", sort = True, incrBy=0)
+            else:
+                redis_conn.incrEntityCounter(database_entity.eid, "instance_count", sort = True, incrBy=1)
             if is_compiler:
                 redis_conn.createRelationship(database_entity.eid, table_entity.eid, "DBTABLE")
                 redis_conn.incrRelationshipCounter(database_entity.eid, table_entity.eid, "DBTABLE", "instance_count", incrBy=1)
@@ -452,10 +469,14 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
             mongoconn.addEn(eid, database_name, tenant,\
                       EntityType.SQL_DATABASE, endict, None)
             database_entity = mongoconn.getEntityByName(database_name)
+            redis_conn.createEntityProfile(database_entity.eid, "SQL_DATABASE")
+            redis_conn.incrEntityCounter(database_entity.eid, "instance_count", sort = True, incrBy=0)
             #create Elastic search index
             sendToElastic(connection1, redis_conn, tenant, uid,
                           database_entity, database_name, EntityType.SQL_DATABASE)
             dbCount = dbCount + 1
+        else:
+            redis_conn.incrEntityCounter(database_entity.eid, "instance_count", sort = True, incrBy=1)
 
     """
     Create realtion between Outmost Query and Inline view table entity
@@ -537,6 +558,11 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
         tablename = entryname
         if "databaseName" in tableentry:
             database_name = tableentry["databaseName"].lower()
+            if tableentry['databaseName'] not in DBNAME_IGNORE_LIST:
+                tablename = tableentry['databaseName'] + "." + tablename
+        elif 'DatabaseName' in tableentry and tableentry['DatabaseName'] not in DBNAME_IGNORE_LIST:
+            database_name = tableentry['DatabaseName']
+            tablename = tableentry['DatabaseName'] + "." + tablename
 
     """
     Create the Table Entity first if it does not already exist.
