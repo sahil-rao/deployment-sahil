@@ -13,6 +13,9 @@ service NavOpt {
   // Request for get tables.
   rpc getTenant (GetTenantRequest)
     returns (GetTenantResponse) {}
+  // Request for top databases.
+  rpc getTopDataBases (GetTopDataBasesRequest)
+    returns (GetTopDataBasesResponse) {}
   // Request for get tables.
   rpc getTopTables (GetTopTablesRequest)
     returns (GetTopTablesResponse) {}
@@ -86,9 +89,29 @@ message GetTenantResponse {
   string tenant = 1;
 }
 
+message GetTopDataBasesRequest {
+  string tenant = 1;
+  int32 limit = 2;
+}
+
+// Top table info for a given table
+message TopDataBases {
+  int32 instanceCount = 1;
+  string dbName = 2;
+  int32 totalTableCount = 3;
+  int32 totalQueryCount = 4;
+  int32 workloadPercent = 5;
+  string eid = 6;
+}
+
+message GetTopDataBasesResponse {
+  repeated TopDataBases results = 1;
+}
+
 message GetTopTablesRequest {
   string tenant = 1;
   string dbName = 2;
+  int32 limit = 3;
 }
 
 message TopTables {
@@ -142,6 +165,7 @@ message TopColumns {
   int32 orderbyCol = 9;
   string tableType = 10;
   string tableName = 11;
+  int32 workloadPercent = 12;
 }
 
 message GetTopColumnsResponse {
@@ -186,18 +210,22 @@ message GetTopFiltersResponse {
 
 message GetTopJoinsRequest {
   string tenant = 1;
-  string dbName = 2;
-  string tableName = 3;
+  repeated string dbTableList = 2;
+}
+
+message JoinCols {
+  repeated string columns = 1;
 }
 
 // List of Top Joins
 message TopJoins {
-  repeated string columns = 1;
+  repeated JoinCols joinCols = 1;
   repeated string queryIds = 2;
   repeated string tables = 3;
   int32 totalQueryCount = 4;
   int32 totalTableCount = 5;
-  string type = 6;
+  string joinType = 6;
+  string dbName = 7;
 }
 
 message GetTopJoinsResponse {
@@ -494,6 +522,32 @@ message ColStats {
   string columnName = 6;
 }
 
+// Joined Tables
+message JoinTables {
+  string tableName = 1;
+  string tableEid = 2;
+  int32 joinpercent = 3;
+  int32 numJoins = 4;
+  repeated string joinColumns = 5;
+}
+
+// Query List data
+message QueryList {
+  string query = 1;
+  string qid = 2;
+  int32 queryCount = 3;
+  repeated string queryChar = 4;
+  bool impalaCompatible = 5;
+  bool hiveCompatible = 6;
+  string complexity = 7;
+}
+
+// Top Join Columns
+message TopCols {
+  int32 score = 1;
+  string name = 2;
+}
+
 message GetTablesDetailResponse {
   int32 columnCount = 1;
   int32 createCount = 2;
@@ -511,6 +565,11 @@ message GetTablesDetailResponse {
   string table_ddl = 14;
   string iview_ddl = 15;
   string view_ddl = 16;
+  repeated QueryList queryList = 17;
+  repeated TopCols topJoinCols = 18;
+  repeated JoinTables joinTables = 19;
+  int32 workloadPercent = 20;
+  repeated TopCols topCols = 21;
 }
 
 message GetColumnsRequest {

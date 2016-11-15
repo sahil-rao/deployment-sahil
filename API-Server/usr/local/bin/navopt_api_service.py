@@ -138,6 +138,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                 tables.type = entry['type']
             if 'eid' in entry:
                 tables.eid = entry['eid']
+            if 'workloadPercent' in entry:
+                tables.workloadPercent = entry['workloadPercent']
             ret.results.extend([tables])
         #print "Ret:", ret, "tables:", ret.results
         return ret
@@ -179,7 +181,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             'uid': str(fileGuid),
             'header_info': headerInfo
         }
-      
+     
+        print "The msg dict:", msg_dict 
         if row_delim:
             if row_delim == "\\n":
                 row_delim = "\n"
@@ -192,12 +195,47 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         ret.status.workloadId = str(fileGuid)
         return ret
 
+    def convert_top_databases(self, response):
+        ret = navopt_pb2.GetTopDataBasesResponse()
+        for entry in response:
+            #print "entry:", entry
+            db = navopt_pb2.TopDataBases()
+            if 'instanceCount' in entry:
+                db.instanceCount = entry['instanceCount']
+            if 'dbName' in entry:
+                db.dbName = entry['dbName']
+            if 'totalTableCount' in entry:
+                db.totalTableCount = entry['totalTableCount']
+            if 'workloadPercent' in entry:
+                db.workloadPercent = entry['workloadPercent']
+            if 'totalQueryCount' in entry:
+                db.totalQueryCount = int(entry['totalQueryCount'])
+            if 'eid' in entry:
+                db.eid = entry['eid']
+            ret.results.extend([db])
+        #print "Ret:", ret, "tables:", ret.results
+        return ret
+
+    def getTopDataBases(self, request, context):
+        api_rpc = ApiRpcClient()
+        print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant 
+        msg_dict = {'tenant':str(request.tenant), 'opcode':'TopDataBases'}
+        if request.limit != 0:
+            msg_dict['limit'] = request.limit
+        response = api_rpc.call(dumps(msg_dict))
+        print "Api Service response", response, "Type:", type(loads(response))
+        ret_response = self.convert_top_databases(loads(response))
+        api_rpc.close()
+        return ret_response
+
     def getTopTables(self, request, context):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant 
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopTables'}
         if request.dbName != "":
             msg_dict['dbname'] = request.dbName
+        if request.limit != 0:
+            msg_dict['limit'] = request.limit
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_tables(loads(response))
@@ -263,6 +301,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             columns.tid = entry['tid']
         if 'cid' in entry:
             columns.cid = entry['cid']
+        if 'workloadPercent' in entry:
+            columns.workloadPercent = entry['workloadPercent']
         return columns
       
     def convert_top_columns(self, entry):
@@ -392,6 +432,48 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_aggs(loads(response))
+        #print "Got Response:", ret_response
+        api_rpc.close()
+        return ret_response
+
+    def convert_top_joins(self, response):
+        ret = navopt_pb2.GetTopJoinsResponse()
+        for entry in response:
+            join = navopt_pb2.TopJoins()
+            if 'totalQueryCount' in entry:
+                join.totalQueryCount = entry['totalQueryCount']
+            if 'totalTableCount' in entry:
+                join.totalTableCount = entry['totalTableCount']
+            if 'joinType' in entry:
+                join.joinType = entry['joinType']
+            if 'columns' in entry:
+                #join.joinCols.extend(entry['columns'])
+                #data = navopt_pb2.JoinCols()
+                for val in entry['columns']:
+                    jcol = join.joinCols.add()
+                    jcol.columns.extend(val)
+                    #join.joinCols.columns.extend(val)
+                    #data.columns.extend(val)
+                    print "The value:", val
+                #join.joinCols.extend([data])
+            if 'tables' in entry:
+                join.tables.extend(entry['tables'])
+            if 'queryIds' in entry:
+                join.queryIds.extend(entry['queryIds'])
+            ret.results.extend([join])
+        print "Ret:", ret, "tables:", ret.results
+        return ret
+
+    def getTopJoins(self, request, context):
+        api_rpc = ApiRpcClient()
+        print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant 
+        msg_dict = {'tenant':str(request.tenant), 'opcode':'TopJoins'}
+        if request.dbTableList != []:
+            msg_dict['dbTblist'] = list(request.dbTableList)
+        print "Msg Dict:", msg_dict
+        response = api_rpc.call(dumps(msg_dict))
+        print "Api Service response", response, "Type:", type(loads(response))
+        ret_response = self.convert_top_joins(loads(response))
         #print "Got Response:", ret_response
         api_rpc.close()
         return ret_response
@@ -614,12 +696,12 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant
         row_delim = None
         col_delim = None 
+        headerInfo = []
         if request.rowDelim != "":
             row_delim = request.rowDelim
         if request.colDelim != "":
             col_delim = request.colDelim
         if request.headerFields:
-            headerInfo = []
             for entry in request.headerFields:
                 entry_dict = {}
                 entry = str(entry)
@@ -637,7 +719,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                     entry_dict.pop('coltype') 
                 headerInfo.append(entry_dict)
 
-        ret_response = self.updateUploadStats(request.tenant, request.fileName, request.sourcePlatform, col_delim, row_delim)
+        ret_response = self.updateUploadStats(request.tenant, request.fileName, request.sourcePlatform, col_delim, row_delim, headerInfo)
         #msg_dict = {'tenant':str(request.tenant), 'opcode':'TopTables'}
         #response = api_rpc.call(dumps(msg_dict))
         #print "Api Service response", response, "Type:", type(loads(response))
@@ -859,6 +941,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             ret.iview_ddl = response['iview_ddl']
         if 'view_ddl' in response and response['view_ddl']:
             ret.view_ddl = response['view_ddl']
+        if 'workloadPercent' in response:
+            ret.workloadPercent = response['workloadPercent']
 
         if 'columnStats' in response:
             for entry in response['columnStats']:
@@ -890,6 +974,59 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             if 'TABLE_NAME'in response['tableStats']:
                 ret.tableStats.tableName = response['tableStats']['TABLE_NAME']
             #ret.tableStats.MergeFrom(data)
+        
+        if 'queryList' in response:
+            for entry in response['queryList']:
+                data = navopt_pb2.QueryList()
+                if 'query' in entry:
+                    data.query = entry['query']
+                if 'eid' in entry:
+                    data.qid = entry['eid']
+                if 'instanceCount' in entry:
+                    data.queryCount = entry['instanceCount']
+                if 'character' in entry:
+                    data.queryChar.extend(entry['character'])
+                if 'impalaCompatible' in entry:
+                    data.impalaCompatible = entry['impalaCompatible']
+                if 'hiveCompatible' in entry:
+                    data.hiveCompatible = entry['hiveCompatible']
+                if 'complexity' in entry:
+                    data.complexity = entry['complexity']
+                ret.queryList.extend([data])
+
+        if 'joinedTables' in response:
+            for entry in response['joinedTables']:
+                data = navopt_pb2.JoinTables()
+                if 'joinpercent' in entry:
+                    data.joinpercent = entry['joinpercent']
+                if 'tableName' in entry:
+                    data.tableName = entry['tableName']
+                if 'tableEid' in entry:
+                    data.tableEid = entry['tableEid']
+                if 'joinColumns' in entry:
+                    data.joinColumns.extend(entry['joinColumns'])
+                if 'joincount' in entry:
+                    data.numJoins = entry['joincount']
+                ret.joinTables.extend([data])
+
+        if 'topColumns' in response:
+            for entry in response['topColumns']:
+                data = navopt_pb2.TopCols()
+                if 'name' in entry:
+                    data.name = entry['name']
+                if 'score' in entry:
+                    data.score = entry['score']
+                ret.topCols.extend([data])
+
+        if 'topJoinColumns' in response:
+            for entry in response['topJoinColumns']:
+                data = navopt_pb2.TopCols()
+                if 'name' in entry:
+                    data.name = entry['name']
+                if 'score' in entry:
+                    data.score = entry['score']
+                ret.topJoinCols.extend([data])
+
         print "Ret:", ret #"tables:", ret.results
         return ret
 
