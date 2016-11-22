@@ -5,10 +5,10 @@ RUN \
 	apt-get update && \
 	apt-get upgrade -y && \
 	apt-get install -y software-properties-common && \
-	echo oracle-java7-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && \
+	echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && \
 	add-apt-repository -y ppa:webupd8team/java && \
 	apt-get update && \
-	apt-get install -y oracle-java7-installer
+	apt-get install -y oracle-java8-installer
 
 RUN apt-get -y install \
 	ant \
@@ -29,7 +29,7 @@ RUN apt-get -y install \
 	python-dev \
 	python-pip
 
-ENV JAVA_HOME /usr/lib/jvm/java-7-oracle
+ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 
 # Install thrift
 RUN \
