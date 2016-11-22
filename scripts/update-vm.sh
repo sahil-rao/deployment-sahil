@@ -69,6 +69,7 @@ else
 fi
 
 cd /home/xplain
+npm install
 #Build UI with Gulp
 gulp full-build --branch $BRANCH_NAME
 gulp eslint
