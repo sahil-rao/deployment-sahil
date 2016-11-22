@@ -8,6 +8,7 @@
     "brace": "*",
     "bootstrap-select": "1.11.2",
     "bootstrap": "3.3.7",
+    "case-sensitive-paths-webpack-plugin": "*",
     "connect": "2.12.0",
     "connect-mongo": "0.8.1",
     "cui": "git://github.mtv.cloudera.com/Starship/cloudera-ui.git",
