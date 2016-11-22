@@ -147,7 +147,9 @@ gulp.task('app-build', ["webpack-build"], function(){
 gulp.task('quick-vm-update', ['webpack-build'], function(){
   return fsj.dirAsync('/var/xplain3000/public', {empty:true})
   .then(fsj.dirAsync('/var/xplain3000/views', {empty:true}))
+  .then(fsj.dirAsync('/var/xplain3000/app', {empty:true}))
   .then(fsj.copyAsync(dirs.ui+'/xplain.io/public', '/var/xplain3000/public', {overwrite:true}))
+  .then(fsj.copyAsync(dirs.ui+'/xplain.io/app', '/var/xplain3000/app', {overwrite:true}))
   .then(fsj.copyAsync(dirs.ui+'/xplain.io/views', '/var/xplain3000/views', {overwrite:true}))
   .catch(function(err){
     console.error(err);
