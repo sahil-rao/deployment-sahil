@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='navopt.proto',
   package='navopt',
   syntax='proto3',
-  serialized_pb=_b('\n\x0cnavopt.proto\x12\x06navopt\x1a\rversion.proto\"3\n\x0fGetS3urlRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x10\n\x08\x66ileName\x18\x02 \x01(\t\"\x1f\n\x10GetS3urlResponse\x12\x0b\n\x03url\x18\x01 \x01(\t\"!\n\x10GetTenantRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\"#\n\x11GetTenantResponse\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"7\n\x16GetTopDataBasesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05limit\x18\x02 \x01(\x05\"\x8d\x01\n\x0cTopDataBases\x12\x15\n\rinstanceCount\x18\x01 \x01(\x05\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x17\n\x0ftotalTableCount\x18\x03 \x01(\x05\x12\x17\n\x0ftotalQueryCount\x18\x04 \x01(\x05\x12\x17\n\x0fworkloadPercent\x18\x05 \x01(\x05\x12\x0b\n\x03\x65id\x18\x06 \x01(\t\"@\n\x17GetTopDataBasesResponse\x12%\n\x07results\x18\x01 \x03(\x0b\x32\x14.navopt.TopDataBases\"D\n\x13GetTopTablesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\r\n\x05limit\x18\x03 \x01(\x05\"\x87\x01\n\tTopTables\x12\x13\n\x0b\x63olumnCount\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x14\n\x0cpatternCount\x18\x03 \x01(\x05\x12\x17\n\x0fworkloadPercent\x18\x04 \x01(\x05\x12\r\n\x05total\x18\x05 \x01(\x05\x12\x0c\n\x04type\x18\x06 \x01(\t\x12\x0b\n\x03\x65id\x18\x07 \x01(\t\":\n\x14GetTopTablesResponse\x12\"\n\x07results\x18\x01 \x03(\x0b\x32\x11.navopt.TopTables\"6\n\x14GetTopQueriesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\"\xb5\x01\n\nTopQueries\x12\x18\n\x10impalaCompatible\x18\x01 \x01(\x08\x12\x16\n\x0ehiveCompatible\x18\x02 \x01(\x08\x12\x15\n\rinstanceCount\x18\x03 \x01(\x05\x12\x13\n\x0b\x65lapsedTime\x18\x04 \x01(\x05\x12\x10\n\x08\x63ustomId\x18\x05 \x01(\t\x12\x12\n\ncomplexity\x18\x06 \x01(\t\x12\x0b\n\x03qid\x18\x07 \x01(\t\x12\x16\n\x0equerySignature\x18\x08 \x03(\t\"<\n\x15GetTopQueriesResponse\x12#\n\x07results\x18\x01 \x03(\x0b\x32\x12.navopt.TopQueries\"I\n\x14GetTopColumnsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x11\n\ttableName\x18\x03 \x01(\t\"\xed\x01\n\nTopColumns\x12\x13\n\x0b\x63olumnCount\x18\x01 \x01(\x05\x12\x12\n\ncolumnName\x18\x02 \x01(\t\x12\x12\n\ngroupbyCol\x18\x03 \x01(\x05\x12\x11\n\tselectCol\x18\x04 \x01(\x05\x12\x11\n\tfilterCol\x18\x05 \x01(\x05\x12\x0b\n\x03tid\x18\x06 \x01(\t\x12\x0b\n\x03\x63id\x18\x07 \x01(\t\x12\x0f\n\x07joinCol\x18\x08 \x01(\x05\x12\x12\n\norderbyCol\x18\t \x01(\x05\x12\x11\n\ttableType\x18\n \x01(\t\x12\x11\n\ttableName\x18\x0b \x01(\t\x12\x17\n\x0fworkloadPercent\x18\x0c \x01(\x05\"\xee\x01\n\x15GetTopColumnsResponse\x12*\n\x0egroupbyColumns\x18\x01 \x03(\x0b\x32\x12.navopt.TopColumns\x12\'\n\x0bjoinColumns\x18\x02 \x03(\x0b\x32\x12.navopt.TopColumns\x12)\n\rselectColumns\x18\x03 \x03(\x0b\x32\x12.navopt.TopColumns\x12*\n\x0eorderbyColumns\x18\x04 \x03(\x0b\x32\x12.navopt.TopColumns\x12)\n\rfilterColumns\x18\x05 \x03(\x0b\x32\x12.navopt.TopColumns\"Z\n\x14GetTopFiltersRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x11\n\ttableName\x18\x03 \x01(\t\x12\x0f\n\x07\x63olList\x18\x04 \x03(\t\"N\n\x08ValGroup\x12\x12\n\ncolumnName\x18\x01 \x01(\t\x12\x11\n\tisLiteral\x18\x02 \x01(\x08\x12\x0f\n\x07literal\x18\x03 \x01(\t\x12\n\n\x02op\x18\x04 \x01(\t\":\n\x08PopValue\x12\r\n\x05\x63ount\x18\x01 \x01(\x05\x12\x1f\n\x05group\x18\x02 \x03(\x0b\x32\x10.navopt.ValGroup\"\x8d\x01\n\nTopFilters\x12\x17\n\x0ftotalQueryCount\x18\x01 \x01(\x05\x12\x0f\n\x07\x63olumns\x18\x02 \x03(\t\x12\x0c\n\x04qids\x18\x03 \x03(\t\x12\x11\n\ttableName\x18\x04 \x01(\t\x12\x0b\n\x03tid\x18\x05 \x01(\t\x12\'\n\rpopularValues\x18\x06 \x03(\x0b\x32\x10.navopt.PopValue\"<\n\x15GetTopFiltersResponse\x12#\n\x07results\x18\x01 \x03(\x0b\x32\x12.navopt.TopFilters\"9\n\x12GetTopJoinsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x62TableList\x18\x02 \x03(\t\"\x1b\n\x08JoinCols\x12\x0f\n\x07\x63olumns\x18\x01 \x03(\t\"\xa4\x01\n\x08TopJoins\x12\"\n\x08joinCols\x18\x01 \x03(\x0b\x32\x10.navopt.JoinCols\x12\x10\n\x08queryIds\x18\x02 \x03(\t\x12\x0e\n\x06tables\x18\x03 \x03(\t\x12\x17\n\x0ftotalQueryCount\x18\x04 \x01(\x05\x12\x17\n\x0ftotalTableCount\x18\x05 \x01(\x05\x12\x10\n\x08joinType\x18\x06 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x07 \x01(\t\"8\n\x13GetTopJoinsResponse\x12!\n\x07results\x18\x01 \x03(\x0b\x32\x10.navopt.TopJoins\"#\n\x11GetTopAggsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"}\n\x06TopAgg\x12\x17\n\x0f\x61ggregateClause\x18\x01 \x01(\t\x12\x19\n\x11\x61ggregateFunction\x18\x02 \x01(\t\x12\x14\n\x0c\x66unctionType\x18\x03 \x01(\t\x12\x10\n\x08location\x18\x04 \x01(\t\x12\x17\n\x0ftotalQueryCount\x18\x05 \x01(\x05\"5\n\x12GetTopAggsResponse\x12\x1f\n\x07results\x18\x01 \x03(\x0b\x32\x0e.navopt.TopAgg\"j\n\x19GetQueryCompatibleRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\x12\x16\n\x0etargetPlatform\x18\x04 \x01(\t\"T\n\nQueryError\x12\x19\n\x11\x65ncounteredString\x18\x01 \x01(\t\x12\x13\n\x0b\x65rrorString\x18\x02 \x01(\t\x12\x16\n\x0e\x65xpectedString\x18\x03 \x01(\t\"S\n\rHighLightInfo\x12\x0e\n\x06\x63olumn\x18\x01 \x01(\x05\x12\x0f\n\x07lineNum\x18\x02 \x01(\x05\x12\x11\n\ttokenRank\x18\x03 \x01(\x05\x12\x0e\n\x06offset\x18\x04 \x01(\x05\"e\n\x0b\x43lauseError\x12+\n\x0cstartLocator\x18\x01 \x01(\x0b\x32\x15.navopt.HighLightInfo\x12)\n\nendLocator\x18\x02 \x01(\x0b\x32\x15.navopt.HighLightInfo\"\x98\x01\n\x1aGetQueryCompatibleResponse\x12\x12\n\nclauseName\x18\x01 \x01(\t\x12\x14\n\x0c\x63lauseString\x18\x02 \x01(\t\x12(\n\x0b\x63lauseError\x18\x03 \x01(\x0b\x32\x13.navopt.ClauseError\x12&\n\nqueryError\x18\x04 \x01(\x0b\x32\x12.navopt.QueryError\"4\n\x13GetQueryRiskRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\"J\n\x08RiskData\x12\x0c\n\x04risk\x18\x01 \x01(\t\x12\x14\n\x0criskAnalysis\x18\x02 \x01(\t\x12\x1a\n\x12riskRecommendation\x18\x03 \x01(\t\"`\n\x14GetQueryRiskResponse\x12\"\n\x08hiveRisk\x18\x01 \x01(\x0b\x32\x10.navopt.RiskData\x12$\n\nimpalaRisk\x18\x02 \x01(\x0b\x32\x10.navopt.RiskData\"(\n\x16GetDesignBucketRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"^\n\x0c\x44\x65signBucket\x12\x12\n\nbucketName\x18\x01 \x01(\t\x12\x12\n\nnumQueries\x18\x02 \x01(\x05\x12\x11\n\tnumTables\x18\x03 \x01(\x05\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t\"@\n\x17GetDesignBucketResponse\x12%\n\x07results\x18\x01 \x03(\x0b\x32\x14.navopt.DesignBucket\"Q\n\x18GetSimilarQueriesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\"\xf8\x02\n\x19GetSimilarQueriesResponse\x12\x14\n\x0corderByCount\x18\x01 \x01(\x05\x12\x14\n\x0cgroupByCount\x18\x02 \x01(\x05\x12\x16\n\x0ehiveCompatible\x18\x03 \x01(\x05\x12!\n\x05table\x18\x04 \x03(\x0b\x32\x12.navopt.QueryTable\x12\x16\n\x0equerySignature\x18\x05 \x03(\t\x12\x13\n\x0bselectCount\x18\x06 \x01(\x05\x12\x12\n\nunionCount\x18\x07 \x01(\x05\x12\x15\n\runionAllCount\x18\x08 \x01(\x05\x12\x15\n\rStmtSignature\x18\t \x01(\t\x12\x15\n\rinstanceCount\x18\n \x01(\x05\x12\x13\n\x0b\x66ilterCount\x18\x0b \x01(\x05\x12\x11\n\tjoinCount\x18\x0c \x01(\x05\x12\x10\n\x08\x63ustomId\x18\r \x01(\t\x12\x0b\n\x03qid\x18\x0e \x01(\t\x12\r\n\x05query\x18\x0f \x01(\t\x12\x18\n\x10impalaCompatible\x18\x10 \x01(\x05\" \n\x0eGetHAQRRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"\xa6\x02\n\x13IncompatibleQueries\x12\x0b\n\x03qid\x18\x01 \x01(\t\x12\x11\n\tfromError\x18\x02 \x01(\x05\x12\x12\n\nwhereError\x18\x03 \x01(\x05\x12\x13\n\x0bselectError\x18\x04 \x01(\x05\x12\x14\n\x0corderbyError\x18\x05 \x01(\x05\x12\x14\n\x0cgroupbyError\x18\x06 \x01(\x05\x12\x12\n\notherError\x18\x07 \x01(\x05\x12\x13\n\x0b\x66romClauses\x18\x08 \x03(\t\x12\x14\n\x0cwhereClauses\x18\t \x03(\t\x12\x15\n\rselectClauses\x18\n \x03(\t\x12\x16\n\x0eorderbyClauses\x18\x0b \x03(\t\x12\x16\n\x0egroupbyClauses\x18\x0c \x03(\t\x12\x14\n\x0cotherClauses\x18\r \x03(\t\"i\n\x0fGetHAQRResponse\x12+\n\x06impala\x18\x01 \x03(\x0b\x32\x1b.navopt.IncompatibleQueries\x12)\n\x04hive\x18\x02 \x03(\x0b\x32\x1b.navopt.IncompatibleQueries\"\xaa\x01\n\x0cUploadStatus\x12/\n\x05state\x18\x01 \x01(\x0e\x32 .navopt.UploadStatus.UploadState\x12\x12\n\nworkloadId\x18\x02 \x01(\t\"U\n\x0bUploadState\x12\x0b\n\x07WAITING\x10\x00\x12\x0f\n\x0bIN_PROGRESS\x10\x01\x12\x0e\n\nPROCESSING\x10\x02\x12\x0c\n\x08\x46INISHED\x10\x03\x12\n\n\x06\x46\x41ILED\x10\x04\"\xa2\x01\n\x0bHeaderField\x12,\n\x07\x63oltype\x18\x01 \x01(\x0e\x32\x1b.navopt.HeaderField.ColType\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0b\n\x03tag\x18\x03 \x01(\t\x12\x0b\n\x03use\x18\x04 \x01(\x08\x12\r\n\x05\x63ount\x18\x05 \x01(\x05\".\n\x07\x43olType\x12\x08\n\x04NONE\x10\x00\x12\n\n\x06SQL_ID\x10\x01\x12\r\n\tSQL_QUERY\x10\x02\"\xc2\x01\n\rUploadRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x14\n\x0c\x66ileLocation\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\x12\x10\n\x08rowDelim\x18\x04 \x01(\t\x12\x10\n\x08\x63olDelim\x18\x05 \x01(\t\x12\x10\n\x08\x66ileName\x18\x06 \x01(\t\x12\x12\n\ns3location\x18\x07 \x01(\t\x12)\n\x0cheaderFields\x18\x08 \x03(\x0b\x32\x13.navopt.HeaderField\"6\n\x0eUploadResponse\x12$\n\x06status\x18\x01 \x01(\x0b\x32\x14.navopt.UploadStatus\"9\n\x13UploadStatusRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x12\n\nworkloadId\x18\x02 \x01(\t\"<\n\x14UploadStatusResponse\x12$\n\x06status\x18\x01 \x01(\x0b\x32\x14.navopt.UploadStatus\"\\\n\x13WorkloadInfoRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x12\n\nworkloadId\x18\x02 \x01(\t\x12\x10\n\x08inActive\x18\x03 \x01(\x08\x12\x0f\n\x07\x64\x65tails\x18\x04 \x01(\x08\"\xbf\x01\n\x0cWorkloadData\x12\x0f\n\x07queries\x18\x01 \x01(\r\x12\x12\n\nworkloadId\x18\x02 \x01(\t\x12\x14\n\x0cworkloadName\x18\x03 \x01(\t\x12\x19\n\x11processed_queries\x18\x04 \x01(\r\x12\x0e\n\x06\x61\x63tive\x18\x05 \x01(\x08\x12\x17\n\x0fsource_platform\x18\x06 \x01(\t\x12\x0e\n\x06tenant\x18\x07 \x01(\t\x12\x11\n\ttimestamp\x18\x08 \x01(\x04\x12\r\n\x05\x65type\x18\t \x01(\t\"=\n\x14WorkloadInfoResponse\x12%\n\x07results\x18\x01 \x03(\x0b\x32\x14.navopt.WorkloadData\":\n\x11GetQueriesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x15\n\rstartingToken\x18\x02 \x01(\t\"\'\n\tQueryData\x12\x0b\n\x03qid\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\"K\n\x12GetQueriesResponse\x12\"\n\x07results\x18\x01 \x03(\x0b\x32\x11.navopt.QueryData\x12\x11\n\tnextToken\x18\x02 \x01(\t\"6\n\x17GetQueriesDetailRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0b\n\x03qid\x18\x02 \x01(\t\"O\n\nQueryTable\x12\x11\n\ttableType\x18\x01 \x01(\t\x12\x11\n\ttableName\x18\x02 \x01(\t\x12\x0b\n\x03tid\x18\x03 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x04 \x01(\t\"\xf7\x02\n\x18GetQueriesDetailResponse\x12\x14\n\x0corderByCount\x18\x01 \x01(\x05\x12\x14\n\x0cgroupByCount\x18\x02 \x01(\x05\x12\x16\n\x0ehiveCompatible\x18\x03 \x01(\x05\x12!\n\x05table\x18\x04 \x03(\x0b\x32\x12.navopt.QueryTable\x12\x16\n\x0equerySignature\x18\x05 \x03(\t\x12\x13\n\x0bselectCount\x18\x06 \x01(\x05\x12\x12\n\nunionCount\x18\x07 \x01(\x05\x12\x15\n\runionAllCount\x18\x08 \x01(\x05\x12\x15\n\rStmtSignature\x18\t \x01(\t\x12\x15\n\rinstanceCount\x18\n \x01(\x05\x12\x13\n\x0b\x66ilterCount\x18\x0b \x01(\x05\x12\x11\n\tjoinCount\x18\x0c \x01(\x05\x12\x10\n\x08\x63ustomId\x18\r \x01(\t\x12\x0b\n\x03qid\x18\x0e \x01(\t\x12\r\n\x05query\x18\x0f \x01(\t\x12\x18\n\x10impalaCompatible\x18\x10 \x01(\x05\"9\n\x10GetTablesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x15\n\rstartingToken\x18\x02 \x01(\t\"&\n\tTableData\x12\x0b\n\x03tid\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\"J\n\x11GetTablesResponse\x12\"\n\x07results\x18\x01 \x03(\x0b\x32\x11.navopt.TableData\x12\x11\n\tnextToken\x18\x02 \x01(\t\"X\n\x16GetTablesDetailRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0b\n\x03tid\x18\x02 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x03 \x01(\t\x12\x11\n\ttableName\x18\x04 \x01(\t\"U\n\nTableStats\x12\x0f\n\x07numRows\x18\x01 \x01(\t\x12\x11\n\tavgRowLen\x18\x02 \x01(\t\x12\x10\n\x08rowRange\x18\x03 \x01(\t\x12\x11\n\ttableName\x18\x04 \x01(\t\"w\n\x08\x43olStats\x12\x11\n\tavgColLen\x18\x01 \x01(\t\x12\x10\n\x08numNulls\x18\x02 \x01(\t\x12\x0b\n\x03\x63id\x18\x03 \x01(\t\x12\x10\n\x08\x64\x61taType\x18\x04 \x01(\t\x12\x13\n\x0bnumDistinct\x18\x05 \x01(\t\x12\x12\n\ncolumnName\x18\x06 \x01(\t\"m\n\nJoinTables\x12\x11\n\ttableName\x18\x01 \x01(\t\x12\x10\n\x08tableEid\x18\x02 \x01(\t\x12\x13\n\x0bjoinpercent\x18\x03 \x01(\x05\x12\x10\n\x08numJoins\x18\x04 \x01(\x05\x12\x13\n\x0bjoinColumns\x18\x05 \x03(\t\"\x94\x01\n\tQueryList\x12\r\n\x05query\x18\x01 \x01(\t\x12\x0b\n\x03qid\x18\x02 \x01(\t\x12\x12\n\nqueryCount\x18\x03 \x01(\x05\x12\x11\n\tqueryChar\x18\x04 \x03(\t\x12\x18\n\x10impalaCompatible\x18\x05 \x01(\x08\x12\x16\n\x0ehiveCompatible\x18\x06 \x01(\x08\x12\x12\n\ncomplexity\x18\x07 \x01(\t\"&\n\x07TopCols\x12\r\n\x05score\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\"\x9a\x04\n\x17GetTablesDetailResponse\x12\x13\n\x0b\x63olumnCount\x18\x01 \x01(\x05\x12\x13\n\x0b\x63reateCount\x18\x02 \x01(\x05\x12\x13\n\x0bselectCount\x18\x03 \x01(\x05\x12\x13\n\x0bupdateCount\x18\x04 \x01(\x05\x12\x12\n\nqueryCount\x18\x05 \x01(\x05\x12\x13\n\x0binsertCount\x18\x06 \x01(\x05\x12\x13\n\x0b\x64\x65leteCount\x18\x07 \x01(\x05\x12\x11\n\tjoinCount\x18\x08 \x01(\x05\x12&\n\ntableStats\x18\t \x01(\x0b\x32\x12.navopt.TableStats\x12\"\n\x08\x63olStats\x18\n \x03(\x0b\x32\x10.navopt.ColStats\x12\x0c\n\x04name\x18\x0b \x01(\t\x12\x0b\n\x03tid\x18\x0c \x01(\t\x12\x0c\n\x04type\x18\r \x01(\t\x12\x11\n\ttable_ddl\x18\x0e \x01(\t\x12\x11\n\tiview_ddl\x18\x0f \x01(\t\x12\x10\n\x08view_ddl\x18\x10 \x01(\t\x12$\n\tqueryList\x18\x11 \x03(\x0b\x32\x11.navopt.QueryList\x12$\n\x0btopJoinCols\x18\x12 \x03(\x0b\x32\x0f.navopt.TopCols\x12&\n\njoinTables\x18\x13 \x03(\x0b\x32\x12.navopt.JoinTables\x12\x17\n\x0fworkloadPercent\x18\x14 \x01(\x05\x12 \n\x07topCols\x18\x15 \x03(\x0b\x32\x0f.navopt.TopCols\":\n\x11GetColumnsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x15\n\rstartingToken\x18\x02 \x01(\t\"\'\n\nColumnData\x12\x0b\n\x03\x63id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\"L\n\x12GetColumnsResponse\x12#\n\x07results\x18\x01 \x03(\x0b\x32\x12.navopt.ColumnData\x12\x11\n\tnextToken\x18\x02 \x01(\t\"6\n\x17GetColumnsDetailRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0b\n\x03\x63id\x18\x02 \x01(\t\"\x7f\n\x18GetColumnsDetailResponse\x12\x12\n\ncolumnName\x18\x01 \x01(\t\x12\"\n\x08\x63olStats\x18\x02 \x03(\x0b\x32\x10.navopt.ColStats\x12\x0b\n\x03tid\x18\x03 \x01(\t\x12\x0b\n\x03\x63id\x18\x04 \x01(\t\x12\x11\n\ttableName\x18\x05 \x01(\t2\xfc\r\n\x06NavOpt\x12?\n\x08getS3url\x12\x17.navopt.GetS3urlRequest\x1a\x18.navopt.GetS3urlResponse\"\x00\x12\x42\n\tgetTenant\x12\x18.navopt.GetTenantRequest\x1a\x19.navopt.GetTenantResponse\"\x00\x12T\n\x0fgetTopDataBases\x12\x1e.navopt.GetTopDataBasesRequest\x1a\x1f.navopt.GetTopDataBasesResponse\"\x00\x12K\n\x0cgetTopTables\x12\x1b.navopt.GetTopTablesRequest\x1a\x1c.navopt.GetTopTablesResponse\"\x00\x12N\n\rgetTopQueries\x12\x1c.navopt.GetTopQueriesRequest\x1a\x1d.navopt.GetTopQueriesResponse\"\x00\x12N\n\rgetTopColumns\x12\x1c.navopt.GetTopColumnsRequest\x1a\x1d.navopt.GetTopColumnsResponse\"\x00\x12N\n\rgetTopFilters\x12\x1c.navopt.GetTopFiltersRequest\x1a\x1d.navopt.GetTopFiltersResponse\"\x00\x12H\n\x0bgetTopJoins\x12\x1a.navopt.GetTopJoinsRequest\x1a\x1b.navopt.GetTopJoinsResponse\"\x00\x12\x45\n\ngetTopAggs\x12\x19.navopt.GetTopAggsRequest\x1a\x1a.navopt.GetTopAggsResponse\"\x00\x12T\n\x0fgetDesignBucket\x12\x1e.navopt.GetDesignBucketRequest\x1a\x1f.navopt.GetDesignBucketResponse\"\x00\x12<\n\x07getHAQR\x12\x16.navopt.GetHAQRRequest\x1a\x17.navopt.GetHAQRResponse\"\x00\x12]\n\x12getQueryCompatible\x12!.navopt.GetQueryCompatibleRequest\x1a\".navopt.GetQueryCompatibleResponse\"\x00\x12K\n\x0cgetQueryRisk\x12\x1b.navopt.GetQueryRiskRequest\x1a\x1c.navopt.GetQueryRiskResponse\"\x00\x12Z\n\x11getSimilarQueries\x12 .navopt.GetSimilarQueriesRequest\x1a!.navopt.GetSimilarQueriesResponse\"\x00\x12\x39\n\x06upload\x12\x15.navopt.UploadRequest\x1a\x16.navopt.UploadResponse\"\x00\x12K\n\x0cuploadStatus\x12\x1b.navopt.UploadStatusRequest\x1a\x1c.navopt.UploadStatusResponse\"\x00\x12K\n\x0cworkloadInfo\x12\x1b.navopt.WorkloadInfoRequest\x1a\x1c.navopt.WorkloadInfoResponse\"\x00\x12\x45\n\ngetQueries\x12\x19.navopt.GetQueriesRequest\x1a\x1a.navopt.GetQueriesResponse\"\x00\x12W\n\x10getQueriesDetail\x12\x1f.navopt.GetQueriesDetailRequest\x1a .navopt.GetQueriesDetailResponse\"\x00\x12\x42\n\tgetTables\x12\x18.navopt.GetTablesRequest\x1a\x19.navopt.GetTablesResponse\"\x00\x12T\n\x0fgetTablesDetail\x12\x1e.navopt.GetTablesDetailRequest\x1a\x1f.navopt.GetTablesDetailResponse\"\x00\x12\x45\n\ngetColumns\x12\x19.navopt.GetColumnsRequest\x1a\x1a.navopt.GetColumnsResponse\"\x00\x12W\n\x10getColumnsDetail\x12\x1f.navopt.GetColumnsDetailRequest\x1a .navopt.GetColumnsDetailResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x0cnavopt.proto\x12\x06navopt\x1a\rversion.proto\"3\n\x0fGetS3urlRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x10\n\x08\x66ileName\x18\x02 \x01(\t\"\x1f\n\x10GetS3urlResponse\x12\x0b\n\x03url\x18\x01 \x01(\t\"!\n\x10GetTenantRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\"#\n\x11GetTenantResponse\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"7\n\x16GetTopDataBasesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05limit\x18\x02 \x01(\x05\"\x8d\x01\n\x0cTopDataBases\x12\x15\n\rinstanceCount\x18\x01 \x01(\x05\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x17\n\x0ftotalTableCount\x18\x03 \x01(\x05\x12\x17\n\x0ftotalQueryCount\x18\x04 \x01(\x05\x12\x17\n\x0fworkloadPercent\x18\x05 \x01(\x05\x12\x0b\n\x03\x65id\x18\x06 \x01(\t\"@\n\x17GetTopDataBasesResponse\x12%\n\x07results\x18\x01 \x03(\x0b\x32\x14.navopt.TopDataBases\"D\n\x13GetTopTablesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\r\n\x05limit\x18\x03 \x01(\x05\"\x87\x01\n\tTopTables\x12\x13\n\x0b\x63olumnCount\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x14\n\x0cpatternCount\x18\x03 \x01(\x05\x12\x17\n\x0fworkloadPercent\x18\x04 \x01(\x05\x12\r\n\x05total\x18\x05 \x01(\x05\x12\x0c\n\x04type\x18\x06 \x01(\t\x12\x0b\n\x03\x65id\x18\x07 \x01(\t\":\n\x14GetTopTablesResponse\x12\"\n\x07results\x18\x01 \x03(\x0b\x32\x11.navopt.TopTables\"6\n\x14GetTopQueriesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\"\xb5\x01\n\nTopQueries\x12\x18\n\x10impalaCompatible\x18\x01 \x01(\x08\x12\x16\n\x0ehiveCompatible\x18\x02 \x01(\x08\x12\x15\n\rinstanceCount\x18\x03 \x01(\x05\x12\x13\n\x0b\x65lapsedTime\x18\x04 \x01(\x05\x12\x10\n\x08\x63ustomId\x18\x05 \x01(\t\x12\x12\n\ncomplexity\x18\x06 \x01(\t\x12\x0b\n\x03qid\x18\x07 \x01(\t\x12\x16\n\x0equerySignature\x18\x08 \x03(\t\"<\n\x15GetTopQueriesResponse\x12#\n\x07results\x18\x01 \x03(\x0b\x32\x12.navopt.TopQueries\"^\n\x14GetTopColumnsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x11\n\ttableName\x18\x03 \x01(\t\x12\x13\n\x0b\x64\x62TableList\x18\x04 \x03(\t\"\xed\x01\n\nTopColumns\x12\x13\n\x0b\x63olumnCount\x18\x01 \x01(\x05\x12\x12\n\ncolumnName\x18\x02 \x01(\t\x12\x12\n\ngroupbyCol\x18\x03 \x01(\x05\x12\x11\n\tselectCol\x18\x04 \x01(\x05\x12\x11\n\tfilterCol\x18\x05 \x01(\x05\x12\x0b\n\x03tid\x18\x06 \x01(\t\x12\x0b\n\x03\x63id\x18\x07 \x01(\t\x12\x0f\n\x07joinCol\x18\x08 \x01(\x05\x12\x12\n\norderbyCol\x18\t \x01(\x05\x12\x11\n\ttableType\x18\n \x01(\t\x12\x11\n\ttableName\x18\x0b \x01(\t\x12\x17\n\x0fworkloadPercent\x18\x0c \x01(\x05\"\xee\x01\n\x15GetTopColumnsResponse\x12*\n\x0egroupbyColumns\x18\x01 \x03(\x0b\x32\x12.navopt.TopColumns\x12\'\n\x0bjoinColumns\x18\x02 \x03(\x0b\x32\x12.navopt.TopColumns\x12)\n\rselectColumns\x18\x03 \x03(\x0b\x32\x12.navopt.TopColumns\x12*\n\x0eorderbyColumns\x18\x04 \x03(\x0b\x32\x12.navopt.TopColumns\x12)\n\rfilterColumns\x18\x05 \x03(\x0b\x32\x12.navopt.TopColumns\"o\n\x14GetTopFiltersRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x11\n\ttableName\x18\x03 \x01(\t\x12\x0f\n\x07\x63olList\x18\x04 \x03(\t\x12\x13\n\x0b\x64\x62TableList\x18\x05 \x03(\t\"N\n\x08ValGroup\x12\x12\n\ncolumnName\x18\x01 \x01(\t\x12\x11\n\tisLiteral\x18\x02 \x01(\x08\x12\x0f\n\x07literal\x18\x03 \x01(\t\x12\n\n\x02op\x18\x04 \x01(\t\":\n\x08PopValue\x12\r\n\x05\x63ount\x18\x01 \x01(\x05\x12\x1f\n\x05group\x18\x02 \x03(\x0b\x32\x10.navopt.ValGroup\"\x8d\x01\n\nTopFilters\x12\x17\n\x0ftotalQueryCount\x18\x01 \x01(\x05\x12\x0f\n\x07\x63olumns\x18\x02 \x03(\t\x12\x0c\n\x04qids\x18\x03 \x03(\t\x12\x11\n\ttableName\x18\x04 \x01(\t\x12\x0b\n\x03tid\x18\x05 \x01(\t\x12\'\n\rpopularValues\x18\x06 \x03(\x0b\x32\x10.navopt.PopValue\"<\n\x15GetTopFiltersResponse\x12#\n\x07results\x18\x01 \x03(\x0b\x32\x12.navopt.TopFilters\"9\n\x12GetTopJoinsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x62TableList\x18\x02 \x03(\t\"\x1b\n\x08JoinCols\x12\x0f\n\x07\x63olumns\x18\x01 \x03(\t\"\xa4\x01\n\x08TopJoins\x12\"\n\x08joinCols\x18\x01 \x03(\x0b\x32\x10.navopt.JoinCols\x12\x10\n\x08queryIds\x18\x02 \x03(\t\x12\x0e\n\x06tables\x18\x03 \x03(\t\x12\x17\n\x0ftotalQueryCount\x18\x04 \x01(\x05\x12\x17\n\x0ftotalTableCount\x18\x05 \x01(\x05\x12\x10\n\x08joinType\x18\x06 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x07 \x01(\t\"8\n\x13GetTopJoinsResponse\x12!\n\x07results\x18\x01 \x03(\x0b\x32\x10.navopt.TopJoins\"8\n\x11GetTopAggsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x62TableList\x18\x02 \x03(\t\"F\n\x07\x41ggInfo\x12\x12\n\ncolumnName\x18\x01 \x01(\t\x12\x11\n\ttableName\x18\x02 \x01(\t\x12\x14\n\x0c\x64\x61tabaseName\x18\x03 \x01(\t\"\xa5\x01\n\x06TopAgg\x12\x17\n\x0f\x61ggregateClause\x18\x01 \x01(\t\x12\x19\n\x11\x61ggregateFunction\x18\x02 \x01(\t\x12\x14\n\x0c\x66unctionType\x18\x03 \x01(\t\x12\x10\n\x08location\x18\x04 \x01(\t\x12\x17\n\x0ftotalQueryCount\x18\x05 \x01(\x05\x12&\n\raggregateInfo\x18\x06 \x03(\x0b\x32\x0f.navopt.AggInfo\"5\n\x12GetTopAggsResponse\x12\x1f\n\x07results\x18\x01 \x03(\x0b\x32\x0e.navopt.TopAgg\"j\n\x19GetQueryCompatibleRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\x12\x16\n\x0etargetPlatform\x18\x04 \x01(\t\"T\n\nQueryError\x12\x19\n\x11\x65ncounteredString\x18\x01 \x01(\t\x12\x13\n\x0b\x65rrorString\x18\x02 \x01(\t\x12\x16\n\x0e\x65xpectedString\x18\x03 \x01(\t\"S\n\rHighLightInfo\x12\x0e\n\x06\x63olumn\x18\x01 \x01(\x05\x12\x0f\n\x07lineNum\x18\x02 \x01(\x05\x12\x11\n\ttokenRank\x18\x03 \x01(\x05\x12\x0e\n\x06offset\x18\x04 \x01(\x05\"e\n\x0b\x43lauseError\x12+\n\x0cstartLocator\x18\x01 \x01(\x0b\x32\x15.navopt.HighLightInfo\x12)\n\nendLocator\x18\x02 \x01(\x0b\x32\x15.navopt.HighLightInfo\"\x98\x01\n\x1aGetQueryCompatibleResponse\x12\x12\n\nclauseName\x18\x01 \x01(\t\x12\x14\n\x0c\x63lauseString\x18\x02 \x01(\t\x12(\n\x0b\x63lauseError\x18\x03 \x01(\x0b\x32\x13.navopt.ClauseError\x12&\n\nqueryError\x18\x04 \x01(\x0b\x32\x12.navopt.QueryError\"4\n\x13GetQueryRiskRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\"J\n\x08RiskData\x12\x0c\n\x04risk\x18\x01 \x01(\t\x12\x14\n\x0criskAnalysis\x18\x02 \x01(\t\x12\x1a\n\x12riskRecommendation\x18\x03 \x01(\t\"`\n\x14GetQueryRiskResponse\x12\"\n\x08hiveRisk\x18\x01 \x01(\x0b\x32\x10.navopt.RiskData\x12$\n\nimpalaRisk\x18\x02 \x01(\x0b\x32\x10.navopt.RiskData\"(\n\x16GetDesignBucketRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"^\n\x0c\x44\x65signBucket\x12\x12\n\nbucketName\x18\x01 \x01(\t\x12\x12\n\nnumQueries\x18\x02 \x01(\x05\x12\x11\n\tnumTables\x18\x03 \x01(\x05\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t\"@\n\x17GetDesignBucketResponse\x12%\n\x07results\x18\x01 \x03(\x0b\x32\x14.navopt.DesignBucket\"Q\n\x18GetSimilarQueriesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\"\xf8\x02\n\x19GetSimilarQueriesResponse\x12\x14\n\x0corderByCount\x18\x01 \x01(\x05\x12\x14\n\x0cgroupByCount\x18\x02 \x01(\x05\x12\x16\n\x0ehiveCompatible\x18\x03 \x01(\x05\x12!\n\x05table\x18\x04 \x03(\x0b\x32\x12.navopt.QueryTable\x12\x16\n\x0equerySignature\x18\x05 \x03(\t\x12\x13\n\x0bselectCount\x18\x06 \x01(\x05\x12\x12\n\nunionCount\x18\x07 \x01(\x05\x12\x15\n\runionAllCount\x18\x08 \x01(\x05\x12\x15\n\rStmtSignature\x18\t \x01(\t\x12\x15\n\rinstanceCount\x18\n \x01(\x05\x12\x13\n\x0b\x66ilterCount\x18\x0b \x01(\x05\x12\x11\n\tjoinCount\x18\x0c \x01(\x05\x12\x10\n\x08\x63ustomId\x18\r \x01(\t\x12\x0b\n\x03qid\x18\x0e \x01(\t\x12\r\n\x05query\x18\x0f \x01(\t\x12\x18\n\x10impalaCompatible\x18\x10 \x01(\x05\" \n\x0eGetHAQRRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"\xa6\x02\n\x13IncompatibleQueries\x12\x0b\n\x03qid\x18\x01 \x01(\t\x12\x11\n\tfromError\x18\x02 \x01(\x05\x12\x12\n\nwhereError\x18\x03 \x01(\x05\x12\x13\n\x0bselectError\x18\x04 \x01(\x05\x12\x14\n\x0corderbyError\x18\x05 \x01(\x05\x12\x14\n\x0cgroupbyError\x18\x06 \x01(\x05\x12\x12\n\notherError\x18\x07 \x01(\x05\x12\x13\n\x0b\x66romClauses\x18\x08 \x03(\t\x12\x14\n\x0cwhereClauses\x18\t \x03(\t\x12\x15\n\rselectClauses\x18\n \x03(\t\x12\x16\n\x0eorderbyClauses\x18\x0b \x03(\t\x12\x16\n\x0egroupbyClauses\x18\x0c \x03(\t\x12\x14\n\x0cotherClauses\x18\r \x03(\t\"i\n\x0fGetHAQRResponse\x12+\n\x06impala\x18\x01 \x03(\x0b\x32\x1b.navopt.IncompatibleQueries\x12)\n\x04hive\x18\x02 \x03(\x0b\x32\x1b.navopt.IncompatibleQueries\"\xaa\x01\n\x0cUploadStatus\x12/\n\x05state\x18\x01 \x01(\x0e\x32 .navopt.UploadStatus.UploadState\x12\x12\n\nworkloadId\x18\x02 \x01(\t\"U\n\x0bUploadState\x12\x0b\n\x07WAITING\x10\x00\x12\x0f\n\x0bIN_PROGRESS\x10\x01\x12\x0e\n\nPROCESSING\x10\x02\x12\x0c\n\x08\x46INISHED\x10\x03\x12\n\n\x06\x46\x41ILED\x10\x04\"\xa2\x01\n\x0bHeaderField\x12,\n\x07\x63oltype\x18\x01 \x01(\x0e\x32\x1b.navopt.HeaderField.ColType\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0b\n\x03tag\x18\x03 \x01(\t\x12\x0b\n\x03use\x18\x04 \x01(\x08\x12\r\n\x05\x63ount\x18\x05 \x01(\x05\".\n\x07\x43olType\x12\x08\n\x04NONE\x10\x00\x12\n\n\x06SQL_ID\x10\x01\x12\r\n\tSQL_QUERY\x10\x02\"\xc2\x01\n\rUploadRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x14\n\x0c\x66ileLocation\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\x12\x10\n\x08rowDelim\x18\x04 \x01(\t\x12\x10\n\x08\x63olDelim\x18\x05 \x01(\t\x12\x10\n\x08\x66ileName\x18\x06 \x01(\t\x12\x12\n\ns3location\x18\x07 \x01(\t\x12)\n\x0cheaderFields\x18\x08 \x03(\x0b\x32\x13.navopt.HeaderField\"6\n\x0eUploadResponse\x12$\n\x06status\x18\x01 \x01(\x0b\x32\x14.navopt.UploadStatus\"9\n\x13UploadStatusRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x12\n\nworkloadId\x18\x02 \x01(\t\"<\n\x14UploadStatusResponse\x12$\n\x06status\x18\x01 \x01(\x0b\x32\x14.navopt.UploadStatus\"\\\n\x13WorkloadInfoRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x12\n\nworkloadId\x18\x02 \x01(\t\x12\x10\n\x08inActive\x18\x03 \x01(\x08\x12\x0f\n\x07\x64\x65tails\x18\x04 \x01(\x08\"\xbf\x01\n\x0cWorkloadData\x12\x0f\n\x07queries\x18\x01 \x01(\r\x12\x12\n\nworkloadId\x18\x02 \x01(\t\x12\x14\n\x0cworkloadName\x18\x03 \x01(\t\x12\x19\n\x11processed_queries\x18\x04 \x01(\r\x12\x0e\n\x06\x61\x63tive\x18\x05 \x01(\x08\x12\x17\n\x0fsource_platform\x18\x06 \x01(\t\x12\x0e\n\x06tenant\x18\x07 \x01(\t\x12\x11\n\ttimestamp\x18\x08 \x01(\x04\x12\r\n\x05\x65type\x18\t \x01(\t\"=\n\x14WorkloadInfoResponse\x12%\n\x07results\x18\x01 \x03(\x0b\x32\x14.navopt.WorkloadData\":\n\x11GetQueriesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x15\n\rstartingToken\x18\x02 \x01(\t\"\'\n\tQueryData\x12\x0b\n\x03qid\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\"K\n\x12GetQueriesResponse\x12\"\n\x07results\x18\x01 \x03(\x0b\x32\x11.navopt.QueryData\x12\x11\n\tnextToken\x18\x02 \x01(\t\"6\n\x17GetQueriesDetailRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0b\n\x03qid\x18\x02 \x01(\t\"O\n\nQueryTable\x12\x11\n\ttableType\x18\x01 \x01(\t\x12\x11\n\ttableName\x18\x02 \x01(\t\x12\x0b\n\x03tid\x18\x03 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x04 \x01(\t\"\xf7\x02\n\x18GetQueriesDetailResponse\x12\x14\n\x0corderByCount\x18\x01 \x01(\x05\x12\x14\n\x0cgroupByCount\x18\x02 \x01(\x05\x12\x16\n\x0ehiveCompatible\x18\x03 \x01(\x05\x12!\n\x05table\x18\x04 \x03(\x0b\x32\x12.navopt.QueryTable\x12\x16\n\x0equerySignature\x18\x05 \x03(\t\x12\x13\n\x0bselectCount\x18\x06 \x01(\x05\x12\x12\n\nunionCount\x18\x07 \x01(\x05\x12\x15\n\runionAllCount\x18\x08 \x01(\x05\x12\x15\n\rStmtSignature\x18\t \x01(\t\x12\x15\n\rinstanceCount\x18\n \x01(\x05\x12\x13\n\x0b\x66ilterCount\x18\x0b \x01(\x05\x12\x11\n\tjoinCount\x18\x0c \x01(\x05\x12\x10\n\x08\x63ustomId\x18\r \x01(\t\x12\x0b\n\x03qid\x18\x0e \x01(\t\x12\r\n\x05query\x18\x0f \x01(\t\x12\x18\n\x10impalaCompatible\x18\x10 \x01(\x05\"9\n\x10GetTablesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x15\n\rstartingToken\x18\x02 \x01(\t\"&\n\tTableData\x12\x0b\n\x03tid\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\"J\n\x11GetTablesResponse\x12\"\n\x07results\x18\x01 \x03(\x0b\x32\x11.navopt.TableData\x12\x11\n\tnextToken\x18\x02 \x01(\t\"X\n\x16GetTablesDetailRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0b\n\x03tid\x18\x02 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x03 \x01(\t\x12\x11\n\ttableName\x18\x04 \x01(\t\"U\n\nTableStats\x12\x0f\n\x07numRows\x18\x01 \x01(\t\x12\x11\n\tavgRowLen\x18\x02 \x01(\t\x12\x10\n\x08rowRange\x18\x03 \x01(\t\x12\x11\n\ttableName\x18\x04 \x01(\t\"w\n\x08\x43olStats\x12\x11\n\tavgColLen\x18\x01 \x01(\t\x12\x10\n\x08numNulls\x18\x02 \x01(\t\x12\x0b\n\x03\x63id\x18\x03 \x01(\t\x12\x10\n\x08\x64\x61taType\x18\x04 \x01(\t\x12\x13\n\x0bnumDistinct\x18\x05 \x01(\t\x12\x12\n\ncolumnName\x18\x06 \x01(\t\"m\n\nJoinTables\x12\x11\n\ttableName\x18\x01 \x01(\t\x12\x10\n\x08tableEid\x18\x02 \x01(\t\x12\x13\n\x0bjoinpercent\x18\x03 \x01(\x05\x12\x10\n\x08numJoins\x18\x04 \x01(\x05\x12\x13\n\x0bjoinColumns\x18\x05 \x03(\t\"\x94\x01\n\tQueryList\x12\r\n\x05query\x18\x01 \x01(\t\x12\x0b\n\x03qid\x18\x02 \x01(\t\x12\x12\n\nqueryCount\x18\x03 \x01(\x05\x12\x11\n\tqueryChar\x18\x04 \x03(\t\x12\x18\n\x10impalaCompatible\x18\x05 \x01(\x08\x12\x16\n\x0ehiveCompatible\x18\x06 \x01(\x08\x12\x12\n\ncomplexity\x18\x07 \x01(\t\"&\n\x07TopCols\x12\r\n\x05score\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\"\x9a\x04\n\x17GetTablesDetailResponse\x12\x13\n\x0b\x63olumnCount\x18\x01 \x01(\x05\x12\x13\n\x0b\x63reateCount\x18\x02 \x01(\x05\x12\x13\n\x0bselectCount\x18\x03 \x01(\x05\x12\x13\n\x0bupdateCount\x18\x04 \x01(\x05\x12\x12\n\nqueryCount\x18\x05 \x01(\x05\x12\x13\n\x0binsertCount\x18\x06 \x01(\x05\x12\x13\n\x0b\x64\x65leteCount\x18\x07 \x01(\x05\x12\x11\n\tjoinCount\x18\x08 \x01(\x05\x12&\n\ntableStats\x18\t \x01(\x0b\x32\x12.navopt.TableStats\x12\"\n\x08\x63olStats\x18\n \x03(\x0b\x32\x10.navopt.ColStats\x12\x0c\n\x04name\x18\x0b \x01(\t\x12\x0b\n\x03tid\x18\x0c \x01(\t\x12\x0c\n\x04type\x18\r \x01(\t\x12\x11\n\ttable_ddl\x18\x0e \x01(\t\x12\x11\n\tiview_ddl\x18\x0f \x01(\t\x12\x10\n\x08view_ddl\x18\x10 \x01(\t\x12$\n\tqueryList\x18\x11 \x03(\x0b\x32\x11.navopt.QueryList\x12$\n\x0btopJoinCols\x18\x12 \x03(\x0b\x32\x0f.navopt.TopCols\x12&\n\njoinTables\x18\x13 \x03(\x0b\x32\x12.navopt.JoinTables\x12\x17\n\x0fworkloadPercent\x18\x14 \x01(\x05\x12 \n\x07topCols\x18\x15 \x03(\x0b\x32\x0f.navopt.TopCols\":\n\x11GetColumnsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x15\n\rstartingToken\x18\x02 \x01(\t\"\'\n\nColumnData\x12\x0b\n\x03\x63id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\"L\n\x12GetColumnsResponse\x12#\n\x07results\x18\x01 \x03(\x0b\x32\x12.navopt.ColumnData\x12\x11\n\tnextToken\x18\x02 \x01(\t\"6\n\x17GetColumnsDetailRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0b\n\x03\x63id\x18\x02 \x01(\t\"\x7f\n\x18GetColumnsDetailResponse\x12\x12\n\ncolumnName\x18\x01 \x01(\t\x12\"\n\x08\x63olStats\x18\x02 \x03(\x0b\x32\x10.navopt.ColStats\x12\x0b\n\x03tid\x18\x03 \x01(\t\x12\x0b\n\x03\x63id\x18\x04 \x01(\t\x12\x11\n\ttableName\x18\x05 \x01(\t2\xfc\r\n\x06NavOpt\x12?\n\x08getS3url\x12\x17.navopt.GetS3urlRequest\x1a\x18.navopt.GetS3urlResponse\"\x00\x12\x42\n\tgetTenant\x12\x18.navopt.GetTenantRequest\x1a\x19.navopt.GetTenantResponse\"\x00\x12T\n\x0fgetTopDataBases\x12\x1e.navopt.GetTopDataBasesRequest\x1a\x1f.navopt.GetTopDataBasesResponse\"\x00\x12K\n\x0cgetTopTables\x12\x1b.navopt.GetTopTablesRequest\x1a\x1c.navopt.GetTopTablesResponse\"\x00\x12N\n\rgetTopQueries\x12\x1c.navopt.GetTopQueriesRequest\x1a\x1d.navopt.GetTopQueriesResponse\"\x00\x12N\n\rgetTopColumns\x12\x1c.navopt.GetTopColumnsRequest\x1a\x1d.navopt.GetTopColumnsResponse\"\x00\x12N\n\rgetTopFilters\x12\x1c.navopt.GetTopFiltersRequest\x1a\x1d.navopt.GetTopFiltersResponse\"\x00\x12H\n\x0bgetTopJoins\x12\x1a.navopt.GetTopJoinsRequest\x1a\x1b.navopt.GetTopJoinsResponse\"\x00\x12\x45\n\ngetTopAggs\x12\x19.navopt.GetTopAggsRequest\x1a\x1a.navopt.GetTopAggsResponse\"\x00\x12T\n\x0fgetDesignBucket\x12\x1e.navopt.GetDesignBucketRequest\x1a\x1f.navopt.GetDesignBucketResponse\"\x00\x12<\n\x07getHAQR\x12\x16.navopt.GetHAQRRequest\x1a\x17.navopt.GetHAQRResponse\"\x00\x12]\n\x12getQueryCompatible\x12!.navopt.GetQueryCompatibleRequest\x1a\".navopt.GetQueryCompatibleResponse\"\x00\x12K\n\x0cgetQueryRisk\x12\x1b.navopt.GetQueryRiskRequest\x1a\x1c.navopt.GetQueryRiskResponse\"\x00\x12Z\n\x11getSimilarQueries\x12 .navopt.GetSimilarQueriesRequest\x1a!.navopt.GetSimilarQueriesResponse\"\x00\x12\x39\n\x06upload\x12\x15.navopt.UploadRequest\x1a\x16.navopt.UploadResponse\"\x00\x12K\n\x0cuploadStatus\x12\x1b.navopt.UploadStatusRequest\x1a\x1c.navopt.UploadStatusResponse\"\x00\x12K\n\x0cworkloadInfo\x12\x1b.navopt.WorkloadInfoRequest\x1a\x1c.navopt.WorkloadInfoResponse\"\x00\x12\x45\n\ngetQueries\x12\x19.navopt.GetQueriesRequest\x1a\x1a.navopt.GetQueriesResponse\"\x00\x12W\n\x10getQueriesDetail\x12\x1f.navopt.GetQueriesDetailRequest\x1a .navopt.GetQueriesDetailResponse\"\x00\x12\x42\n\tgetTables\x12\x18.navopt.GetTablesRequest\x1a\x19.navopt.GetTablesResponse\"\x00\x12T\n\x0fgetTablesDetail\x12\x1e.navopt.GetTablesDetailRequest\x1a\x1f.navopt.GetTablesDetailResponse\"\x00\x12\x45\n\ngetColumns\x12\x19.navopt.GetColumnsRequest\x1a\x1a.navopt.GetColumnsResponse\"\x00\x12W\n\x10getColumnsDetail\x12\x1f.navopt.GetColumnsDetailRequest\x1a .navopt.GetColumnsDetailResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[version__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -56,8 +56,8 @@ _UPLOADSTATUS_UPLOADSTATE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=4515,
-  serialized_end=4600,
+  serialized_start=4691,
+  serialized_end=4776,
 )
 _sym_db.RegisterEnumDescriptor(_UPLOADSTATUS_UPLOADSTATE)
 
@@ -82,8 +82,8 @@ _HEADERFIELD_COLTYPE = _descriptor.EnumDescriptor(
   ],
   containing_type=None,
   options=None,
-  serialized_start=4719,
-  serialized_end=4765,
+  serialized_start=4895,
+  serialized_end=4941,
 )
 _sym_db.RegisterEnumDescriptor(_HEADERFIELD_COLTYPE)
 
@@ -680,6 +680,13 @@ _GETTOPCOLUMNSREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='dbTableList', full_name='navopt.GetTopColumnsRequest.dbTableList', index=3,
+      number=4, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -693,7 +700,7 @@ _GETTOPCOLUMNSREQUEST = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=1034,
-  serialized_end=1107,
+  serialized_end=1128,
 )
 
 
@@ -800,8 +807,8 @@ _TOPCOLUMNS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1110,
-  serialized_end=1347,
+  serialized_start=1131,
+  serialized_end=1368,
 )
 
 
@@ -859,8 +866,8 @@ _GETTOPCOLUMNSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1350,
-  serialized_end=1588,
+  serialized_start=1371,
+  serialized_end=1609,
 )
 
 
@@ -899,6 +906,13 @@ _GETTOPFILTERSREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='dbTableList', full_name='navopt.GetTopFiltersRequest.dbTableList', index=4,
+      number=5, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -911,8 +925,8 @@ _GETTOPFILTERSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1590,
-  serialized_end=1680,
+  serialized_start=1611,
+  serialized_end=1722,
 )
 
 
@@ -963,8 +977,8 @@ _VALGROUP = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1682,
-  serialized_end=1760,
+  serialized_start=1724,
+  serialized_end=1802,
 )
 
 
@@ -1001,8 +1015,8 @@ _POPVALUE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1762,
-  serialized_end=1820,
+  serialized_start=1804,
+  serialized_end=1862,
 )
 
 
@@ -1067,8 +1081,8 @@ _TOPFILTERS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1823,
-  serialized_end=1964,
+  serialized_start=1865,
+  serialized_end=2006,
 )
 
 
@@ -1098,8 +1112,8 @@ _GETTOPFILTERSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=1966,
-  serialized_end=2026,
+  serialized_start=2008,
+  serialized_end=2068,
 )
 
 
@@ -1136,8 +1150,8 @@ _GETTOPJOINSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2028,
-  serialized_end=2085,
+  serialized_start=2070,
+  serialized_end=2127,
 )
 
 
@@ -1167,8 +1181,8 @@ _JOINCOLS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2087,
-  serialized_end=2114,
+  serialized_start=2129,
+  serialized_end=2156,
 )
 
 
@@ -1240,8 +1254,8 @@ _TOPJOINS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2117,
-  serialized_end=2281,
+  serialized_start=2159,
+  serialized_end=2323,
 )
 
 
@@ -1271,8 +1285,8 @@ _GETTOPJOINSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2283,
-  serialized_end=2339,
+  serialized_start=2325,
+  serialized_end=2381,
 )
 
 
@@ -1290,6 +1304,13 @@ _GETTOPAGGSREQUEST = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='dbTableList', full_name='navopt.GetTopAggsRequest.dbTableList', index=1,
+      number=2, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -1302,8 +1323,53 @@ _GETTOPAGGSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2341,
-  serialized_end=2376,
+  serialized_start=2383,
+  serialized_end=2439,
+)
+
+
+_AGGINFO = _descriptor.Descriptor(
+  name='AggInfo',
+  full_name='navopt.AggInfo',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='columnName', full_name='navopt.AggInfo.columnName', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='tableName', full_name='navopt.AggInfo.tableName', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='databaseName', full_name='navopt.AggInfo.databaseName', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=2441,
+  serialized_end=2511,
 )
 
 
@@ -1349,6 +1415,13 @@ _TOPAGG = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
+    _descriptor.FieldDescriptor(
+      name='aggregateInfo', full_name='navopt.TopAgg.aggregateInfo', index=5,
+      number=6, type=11, cpp_type=10, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
   ],
   extensions=[
   ],
@@ -1361,8 +1434,8 @@ _TOPAGG = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2378,
-  serialized_end=2503,
+  serialized_start=2514,
+  serialized_end=2679,
 )
 
 
@@ -1392,8 +1465,8 @@ _GETTOPAGGSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2505,
-  serialized_end=2558,
+  serialized_start=2681,
+  serialized_end=2734,
 )
 
 
@@ -1444,8 +1517,8 @@ _GETQUERYCOMPATIBLEREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2560,
-  serialized_end=2666,
+  serialized_start=2736,
+  serialized_end=2842,
 )
 
 
@@ -1489,8 +1562,8 @@ _QUERYERROR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2668,
-  serialized_end=2752,
+  serialized_start=2844,
+  serialized_end=2928,
 )
 
 
@@ -1541,8 +1614,8 @@ _HIGHLIGHTINFO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2754,
-  serialized_end=2837,
+  serialized_start=2930,
+  serialized_end=3013,
 )
 
 
@@ -1579,8 +1652,8 @@ _CLAUSEERROR = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2839,
-  serialized_end=2940,
+  serialized_start=3015,
+  serialized_end=3116,
 )
 
 
@@ -1631,8 +1704,8 @@ _GETQUERYCOMPATIBLERESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=2943,
-  serialized_end=3095,
+  serialized_start=3119,
+  serialized_end=3271,
 )
 
 
@@ -1669,8 +1742,8 @@ _GETQUERYRISKREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3097,
-  serialized_end=3149,
+  serialized_start=3273,
+  serialized_end=3325,
 )
 
 
@@ -1714,8 +1787,8 @@ _RISKDATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3151,
-  serialized_end=3225,
+  serialized_start=3327,
+  serialized_end=3401,
 )
 
 
@@ -1752,8 +1825,8 @@ _GETQUERYRISKRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3227,
-  serialized_end=3323,
+  serialized_start=3403,
+  serialized_end=3499,
 )
 
 
@@ -1783,8 +1856,8 @@ _GETDESIGNBUCKETREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3325,
-  serialized_end=3365,
+  serialized_start=3501,
+  serialized_end=3541,
 )
 
 
@@ -1835,8 +1908,8 @@ _DESIGNBUCKET = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3367,
-  serialized_end=3461,
+  serialized_start=3543,
+  serialized_end=3637,
 )
 
 
@@ -1866,8 +1939,8 @@ _GETDESIGNBUCKETRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3463,
-  serialized_end=3527,
+  serialized_start=3639,
+  serialized_end=3703,
 )
 
 
@@ -1911,8 +1984,8 @@ _GETSIMILARQUERIESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3529,
-  serialized_end=3610,
+  serialized_start=3705,
+  serialized_end=3786,
 )
 
 
@@ -2047,8 +2120,8 @@ _GETSIMILARQUERIESRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3613,
-  serialized_end=3989,
+  serialized_start=3789,
+  serialized_end=4165,
 )
 
 
@@ -2078,8 +2151,8 @@ _GETHAQRREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=3991,
-  serialized_end=4023,
+  serialized_start=4167,
+  serialized_end=4199,
 )
 
 
@@ -2193,8 +2266,8 @@ _INCOMPATIBLEQUERIES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4026,
-  serialized_end=4320,
+  serialized_start=4202,
+  serialized_end=4496,
 )
 
 
@@ -2231,8 +2304,8 @@ _GETHAQRRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4322,
-  serialized_end=4427,
+  serialized_start=4498,
+  serialized_end=4603,
 )
 
 
@@ -2270,8 +2343,8 @@ _UPLOADSTATUS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4430,
-  serialized_end=4600,
+  serialized_start=4606,
+  serialized_end=4776,
 )
 
 
@@ -2330,8 +2403,8 @@ _HEADERFIELD = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4603,
-  serialized_end=4765,
+  serialized_start=4779,
+  serialized_end=4941,
 )
 
 
@@ -2410,8 +2483,8 @@ _UPLOADREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4768,
-  serialized_end=4962,
+  serialized_start=4944,
+  serialized_end=5138,
 )
 
 
@@ -2441,8 +2514,8 @@ _UPLOADRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=4964,
-  serialized_end=5018,
+  serialized_start=5140,
+  serialized_end=5194,
 )
 
 
@@ -2479,8 +2552,8 @@ _UPLOADSTATUSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5020,
-  serialized_end=5077,
+  serialized_start=5196,
+  serialized_end=5253,
 )
 
 
@@ -2510,8 +2583,8 @@ _UPLOADSTATUSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5079,
-  serialized_end=5139,
+  serialized_start=5255,
+  serialized_end=5315,
 )
 
 
@@ -2562,8 +2635,8 @@ _WORKLOADINFOREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5141,
-  serialized_end=5233,
+  serialized_start=5317,
+  serialized_end=5409,
 )
 
 
@@ -2649,8 +2722,8 @@ _WORKLOADDATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5236,
-  serialized_end=5427,
+  serialized_start=5412,
+  serialized_end=5603,
 )
 
 
@@ -2680,8 +2753,8 @@ _WORKLOADINFORESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5429,
-  serialized_end=5490,
+  serialized_start=5605,
+  serialized_end=5666,
 )
 
 
@@ -2718,8 +2791,8 @@ _GETQUERIESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5492,
-  serialized_end=5550,
+  serialized_start=5668,
+  serialized_end=5726,
 )
 
 
@@ -2756,8 +2829,8 @@ _QUERYDATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5552,
-  serialized_end=5591,
+  serialized_start=5728,
+  serialized_end=5767,
 )
 
 
@@ -2794,8 +2867,8 @@ _GETQUERIESRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5593,
-  serialized_end=5668,
+  serialized_start=5769,
+  serialized_end=5844,
 )
 
 
@@ -2832,8 +2905,8 @@ _GETQUERIESDETAILREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5670,
-  serialized_end=5724,
+  serialized_start=5846,
+  serialized_end=5900,
 )
 
 
@@ -2884,8 +2957,8 @@ _QUERYTABLE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5726,
-  serialized_end=5805,
+  serialized_start=5902,
+  serialized_end=5981,
 )
 
 
@@ -3020,8 +3093,8 @@ _GETQUERIESDETAILRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=5808,
-  serialized_end=6183,
+  serialized_start=5984,
+  serialized_end=6359,
 )
 
 
@@ -3058,8 +3131,8 @@ _GETTABLESREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6185,
-  serialized_end=6242,
+  serialized_start=6361,
+  serialized_end=6418,
 )
 
 
@@ -3096,8 +3169,8 @@ _TABLEDATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6244,
-  serialized_end=6282,
+  serialized_start=6420,
+  serialized_end=6458,
 )
 
 
@@ -3134,8 +3207,8 @@ _GETTABLESRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6284,
-  serialized_end=6358,
+  serialized_start=6460,
+  serialized_end=6534,
 )
 
 
@@ -3186,8 +3259,8 @@ _GETTABLESDETAILREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6360,
-  serialized_end=6448,
+  serialized_start=6536,
+  serialized_end=6624,
 )
 
 
@@ -3238,8 +3311,8 @@ _TABLESTATS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6450,
-  serialized_end=6535,
+  serialized_start=6626,
+  serialized_end=6711,
 )
 
 
@@ -3304,8 +3377,8 @@ _COLSTATS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6537,
-  serialized_end=6656,
+  serialized_start=6713,
+  serialized_end=6832,
 )
 
 
@@ -3363,8 +3436,8 @@ _JOINTABLES = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6658,
-  serialized_end=6767,
+  serialized_start=6834,
+  serialized_end=6943,
 )
 
 
@@ -3436,8 +3509,8 @@ _QUERYLIST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6770,
-  serialized_end=6918,
+  serialized_start=6946,
+  serialized_end=7094,
 )
 
 
@@ -3474,8 +3547,8 @@ _TOPCOLS = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6920,
-  serialized_end=6958,
+  serialized_start=7096,
+  serialized_end=7134,
 )
 
 
@@ -3645,8 +3718,8 @@ _GETTABLESDETAILRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=6961,
-  serialized_end=7499,
+  serialized_start=7137,
+  serialized_end=7675,
 )
 
 
@@ -3683,8 +3756,8 @@ _GETCOLUMNSREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7501,
-  serialized_end=7559,
+  serialized_start=7677,
+  serialized_end=7735,
 )
 
 
@@ -3721,8 +3794,8 @@ _COLUMNDATA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7561,
-  serialized_end=7600,
+  serialized_start=7737,
+  serialized_end=7776,
 )
 
 
@@ -3759,8 +3832,8 @@ _GETCOLUMNSRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7602,
-  serialized_end=7678,
+  serialized_start=7778,
+  serialized_end=7854,
 )
 
 
@@ -3797,8 +3870,8 @@ _GETCOLUMNSDETAILREQUEST = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7680,
-  serialized_end=7734,
+  serialized_start=7856,
+  serialized_end=7910,
 )
 
 
@@ -3856,8 +3929,8 @@ _GETCOLUMNSDETAILRESPONSE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=7736,
-  serialized_end=7863,
+  serialized_start=7912,
+  serialized_end=8039,
 )
 
 _GETTOPDATABASESRESPONSE.fields_by_name['results'].message_type = _TOPDATABASES
@@ -3873,6 +3946,7 @@ _TOPFILTERS.fields_by_name['popularValues'].message_type = _POPVALUE
 _GETTOPFILTERSRESPONSE.fields_by_name['results'].message_type = _TOPFILTERS
 _TOPJOINS.fields_by_name['joinCols'].message_type = _JOINCOLS
 _GETTOPJOINSRESPONSE.fields_by_name['results'].message_type = _TOPJOINS
+_TOPAGG.fields_by_name['aggregateInfo'].message_type = _AGGINFO
 _GETTOPAGGSRESPONSE.fields_by_name['results'].message_type = _TOPAGG
 _CLAUSEERROR.fields_by_name['startLocator'].message_type = _HIGHLIGHTINFO
 _CLAUSEERROR.fields_by_name['endLocator'].message_type = _HIGHLIGHTINFO
@@ -3929,6 +4003,7 @@ DESCRIPTOR.message_types_by_name['JoinCols'] = _JOINCOLS
 DESCRIPTOR.message_types_by_name['TopJoins'] = _TOPJOINS
 DESCRIPTOR.message_types_by_name['GetTopJoinsResponse'] = _GETTOPJOINSRESPONSE
 DESCRIPTOR.message_types_by_name['GetTopAggsRequest'] = _GETTOPAGGSREQUEST
+DESCRIPTOR.message_types_by_name['AggInfo'] = _AGGINFO
 DESCRIPTOR.message_types_by_name['TopAgg'] = _TOPAGG
 DESCRIPTOR.message_types_by_name['GetTopAggsResponse'] = _GETTOPAGGSRESPONSE
 DESCRIPTOR.message_types_by_name['GetQueryCompatibleRequest'] = _GETQUERYCOMPATIBLEREQUEST
@@ -4159,6 +4234,13 @@ GetTopAggsRequest = _reflection.GeneratedProtocolMessageType('GetTopAggsRequest'
   # @@protoc_insertion_point(class_scope:navopt.GetTopAggsRequest)
   ))
 _sym_db.RegisterMessage(GetTopAggsRequest)
+
+AggInfo = _reflection.GeneratedProtocolMessageType('AggInfo', (_message.Message,), dict(
+  DESCRIPTOR = _AGGINFO,
+  __module__ = 'navopt_pb2'
+  # @@protoc_insertion_point(class_scope:navopt.AggInfo)
+  ))
+_sym_db.RegisterMessage(AggInfo)
 
 TopAgg = _reflection.GeneratedProtocolMessageType('TopAgg', (_message.Message,), dict(
   DESCRIPTOR = _TOPAGG,

@@ -151,6 +151,7 @@ message GetTopColumnsRequest {
   string tenant = 1;
   string dbName = 2;
   string tableName = 3;
+  repeated string dbTableList = 4;
 }
 
 message TopColumns {
@@ -181,6 +182,7 @@ message GetTopFiltersRequest {
   string dbName = 2;
   string tableName = 3;
   repeated string colList = 4;
+  repeated string dbTableList = 5;
 }
 
 message ValGroup {
@@ -234,6 +236,13 @@ message GetTopJoinsResponse {
 
 message GetTopAggsRequest {
   string tenant = 1;
+  repeated string dbTableList = 2;
+}
+
+message AggInfo {
+  string columnName = 1;
+  string tableName = 2;
+  string databaseName = 3;
 }
 
 message TopAgg {
@@ -242,6 +251,7 @@ message TopAgg {
   string functionType = 3;
   string location = 4;
   int32 totalQueryCount = 5;
+  repeated AggInfo aggregateInfo = 6;
 }
 
 message GetTopAggsResponse {

@@ -347,6 +347,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             msg_dict['dbname'] = request.dbName
         if request.tableName != "":
             msg_dict['tablename'] = request.tableName
+        if request.dbTableList != []:
+            msg_dict['dbTblist'] = list(request.dbTableList)
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_columns(loads(response))
@@ -365,7 +367,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                 filters.tableName = entry['tableName']
             if 'tid' in entry:
                 filters.tid = str(entry['tid'])
-            filters.columns.extend(entry['columns'])
+            if 'fullColumns' in entry:
+                filters.columns.extend(entry['fullColumns'])
             filters.qids.extend(entry['qids'])
             if 'popularValues' in entry:
                 for val in entry['popularValues']:
@@ -375,8 +378,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                     if 'group' in val:
                         for group in val['group']:
                             group_val = pop_value.group.add()
-                            if 'columnName' in group:
-                                group_val.columnName = group['columnName']
+                            if 'fullColumnName' in group:
+                                group_val.columnName = group['fullColumnName']
                             if 'isLiteral' in group:
                                 group_val.isLiteral = group['isLiteral']
                             if 'literal' in group:
@@ -399,6 +402,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             msg_dict['tablename'] = request.tableName
         if request.colList != []:
             msg_dict['columns'] = list(request.colList)
+        if request.dbTableList != []:
+            msg_dict['dbTblist'] = list(request.dbTableList)
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_filters(loads(response))
@@ -421,6 +426,15 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                 agg.location = entry['location']
             if 'totalQueryCount' in entry:
                 agg.totalQueryCount = entry['totalQueryCount']
+            if 'aggregateColumns' in entry and entry['aggregateColumns']:
+                for val in entry['aggregateColumns']:
+                    agg_info = agg.aggregateInfo.add()
+                    if 'columnName' in val:
+                        agg_info.columnName = val['columnName']
+                    if 'tableName' in val:
+                        agg_info.tableName = val['tableName']
+                    if 'databaseName' in val:
+                        agg_info.databaseName = val['databaseName']
             ret.results.extend([agg])
         #print "Ret:", ret, "tables:", ret.results
         return ret
@@ -429,6 +443,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant 
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopAccessPatterns', 'pattern': 'AggregateFunction'}
+        if request.dbTableList != []:
+            msg_dict['dbTblist'] = list(request.dbTableList)
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_aggs(loads(response))
