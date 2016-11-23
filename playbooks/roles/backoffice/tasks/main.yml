@@ -32,6 +32,7 @@
   shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-API-Service.tar.gz .
 - name: Copy the service files
   shell: tar -zxf /home/ubuntu/Baaz-API-Service.tar.gz chdir=/
+  sudo: yes
 - name: Install monit
   apt: name=monit state=present
   sudo: yes
