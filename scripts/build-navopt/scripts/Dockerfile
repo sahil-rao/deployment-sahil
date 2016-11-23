@@ -29,6 +29,14 @@ RUN apt-get -y install \
 	python-dev \
 	python-pip
 
+RUN apt-get -y install \
+	nodejs \
+	npm 
+
+RUN npm install -g \
+	npm \
+	gulp-cli
+
 ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 
 # Install thrift

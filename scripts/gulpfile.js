@@ -1,3 +1,7 @@
+/*
+Documentation: https://docs.google.com/document/d/1B7CK9edy6CJsHWzQqEV7xupZeFUvy6I7pzJN6Qk99rQ/edit?usp=sharing
+*/
+
 var gulp = require('gulp'),
     guppy = require('git-guppy')(gulp)
     gulpConfig = require('./gulp-config'),
@@ -23,8 +27,7 @@ var fixEslint = args.fix || false;
 if(!gulpConfig.workDir) throw (new Error("No working directory found in gulp-config. Ensure that workDir is declared."));
 
 var dirs = {
-  cui : gulpConfig.workDir+'/CUI',
-  ui : gulpConfig.workDir+'/UI',
+  ui : gulpConfig.dockerUI || gulpConfig.workDir+'/UI',
   outputDir: gulpConfig.outputDir
 }
 
@@ -32,29 +35,7 @@ var jshintSrc = [dirs.ui+'xplain.io/**/*.js', dirs.ui+'xplain.io/**/*.jsx', '!'+
 '!'+dirs.ui+'xplain.io/node_modules/**/*.js', '!'+dirs.ui+'xplain.io/app/libraries/**/*.js','!'+dirs.ui+'xplain.io/public/build/**/*.js', '!'+dirs.ui+'xplain.io/test/**/*.js',
 '!'+dirs.ui+'xplain.io/src/cloudera-ui/**/*.js'];
 
-/*
-gulp-config.json {
-  workDir: Absolute path to a working directory. This should be a static directory that nothing except for gulp should be working on.
-  gitUrls: {
-    cui: full link to CUI repo.
-    ui: full link to UI repo.
-  }
-  gitLogins:{
-    cui: {
-      user: username
-      pw: password
-    },
-    ui: {
-      ...
-    },
-    default: {
-      ...
-    }
-  }
-  outputDir: Absolute path to where you want the tarballs to be sent too
-  vmDir: Absolute path to the xplain.io folder on the VM
-}
-*/
+
 
 gulp.task('ensure-working-dir', function(){
   console.log("Ensuring working directory exists.")
@@ -64,27 +45,6 @@ gulp.task('ensure-output-dir', function(){
   console.log("Ensuring output directory exists.")
   return ensureDir(gulpConfig.outputDir);
 });
-
-gulp.task('purge-cui', function(){
-  console.log("Cleaning CUI directory");
-  var deferred = Q.defer();
-  fs.emptyDir(dirs.cui, function(err){
-    if(err){
-      throw err;
-    }
-    deferred.resolve();
-  });
-  return deferred.promise;
-});
-
-gulp.task('pull-cui', function(){
-  console.log("Pulling latest CUI code");
-  return pullFromGithub(gulpConfig.gitUrls.cui, dirs.cui, 'cui');
-});
-
-gulp.task('pack-cui', shell.task(['cd '+ dirs.cui, 'npm pack']));
-
-gulp.task('build-cui', gulpSequence('ensure-working-dir', 'purge-cui', 'pull-cui', 'pack-cui'));
 
 gulp.task('purge-ui', function(){
   console.log("Cleaning UI directory");
@@ -117,7 +77,6 @@ gulp.task('webpack-build', function(){
 Build main application
 */
 gulp.task('app-build', ["webpack-build"], function(){
-  console.log("Building app");
   var dir = dirs.ui;
 
   try{
