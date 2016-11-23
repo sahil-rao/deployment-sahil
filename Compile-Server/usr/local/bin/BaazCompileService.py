@@ -56,6 +56,8 @@ CLUSTER_NAME = config.get("ApplicationConfig", "clusterName")
 if CLUSTER_NAME is not None:
     bucket_location = CLUSTER_NAME
 
+DBNAME_IGNORE_LIST = ['xplainio_default_db']
+
 """
 For VM there is not S3 connectivity. Save the logs with a timestamp.
 At some point we should move to using a log rotate handler in the VM.
@@ -140,6 +142,11 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
         column_entity_name = tablename.lower() + "." + columnname.lower()
         column_entity = mongoconn.getEntityByName(column_entity_name)
 
+        if 'databaseName' in column_entry and column_entry['databaseName'] not in DBNAME_IGNORE_LIST:
+            tablename = column_entry['databaseName'] + "." + tablename
+        elif 'DatabaseName' in column_entry and column_entry['DatabaseName'] not in DBNAME_IGNORE_LIST:
+            tablename = column_entry['DatabaseName'] + "." + tablename
+
         if table_entity is None:
             clog.debug("Creating table entity for {0} position 6\n".format(tablename))
             eid = IdentityService.getNewIdentity(tenant, True)
@@ -194,7 +201,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
                                                sort=True, incrBy=1)
     return [0, tableCount]
 
-def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinput, context, clog, tableEidList=None, hive_success=0):
+def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinput, context, clog, is_compiler, tableEidList=None, hive_success=0):
     dbCount = 0
     tableCount = 0
     if tableset is None or len(tableset) == 0:
@@ -221,6 +228,14 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
             tablename = matches.group(2)
         else:
             tablename = entryname
+
+        if 'databaseName' in tableentry and tableentry['databaseName']:
+            database_name = tableentry['databaseName']
+            if tableentry['databaseName'] not in DBNAME_IGNORE_LIST:
+                tablename = tableentry['databaseName'] + "." + tablename
+        elif 'DatabaseName' in tableentry and tableentry['DatabaseName'] not in DBNAME_IGNORE_LIST:
+            database_name = tableentry['DatabaseName']
+            tablename = tableentry['DatabaseName'] + "." + tablename
 
         """
         Create the Table Entity first if it does not already exist.
@@ -256,7 +271,7 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
         if database_name is not None:
             database_entity = mongoconn.getEntityByName(database_name)
             if database_entity is None:
-                clog.debug("Creating database entity for {0}\n".format(database_name))
+                clog.info("Creating database entity for {0}\n".format(database_name))
                 eid = IdentityService.getNewIdentity(tenant, True)
                 mongoconn.addEn(eid, database_name, tenant,\
                           EntityType.SQL_DATABASE, endict, None)
@@ -265,6 +280,20 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                 sendToElastic(connection1, redis_conn, tenant, uid,
                               database_entity, database_name, EntityType.SQL_DATABASE)
                 dbCount = dbCount + 1
+                redis_conn.createEntityProfile(database_entity.eid, "SQL_DATABASE")
+                redis_conn.incrEntityCounter(database_entity.eid, "instance_count", sort = True, incrBy=0)
+            else:
+                redis_conn.incrEntityCounter(database_entity.eid, "instance_count", sort = True, incrBy=1)
+            if is_compiler:
+                redis_conn.createRelationship(database_entity.eid, table_entity.eid, "DBTABLE")
+                redis_conn.incrRelationshipCounter(database_entity.eid, table_entity.eid, "DBTABLE", "instance_count", incrBy=1)
+                clog.info("Relation between {0} {1} position 5\n".format(database_entity.eid, table_entity.eid))
+
+                """ Note this assumes that formRelations is idempotent
+                """
+                redis_conn.createRelationship(database_entity.eid, entity.eid, "DBQUERY")
+                redis_conn.incrRelationshipCounter(database_entity.eid, entity.eid, "DBQUERY", "instance_count", incrBy=1)
+                clog.info("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))
 
         """
         Create relations, first between tables and query
@@ -329,17 +358,6 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                                                               table_entity.eid, "IVIEW_TABLE")
 
                 context.tables.append(table_entity.eid)
-
-        if database_entity is not None:
-            if table_entity is not None:
-                redis_conn.createRelationship(database_entity.eid, table_entity.eid, "CONTAINS")
-                clog.debug("Relation between {0} {1} position 5\n".format(database_entity.eid, table_entity.eid))
-
-            """ Note this assumes that formRelations is idempotent
-            """
-            if entity is not None:
-                redis_conn.createRelationship(database_entity.eid, entity.eid, "CONTAINS")
-                clog.debug("Relation between {0} {1} position 6\n".format(database_entity.eid, entity.eid))
 
     return [dbCount, tableCount]
 
@@ -451,10 +469,14 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
             mongoconn.addEn(eid, database_name, tenant,\
                       EntityType.SQL_DATABASE, endict, None)
             database_entity = mongoconn.getEntityByName(database_name)
+            redis_conn.createEntityProfile(database_entity.eid, "SQL_DATABASE")
+            redis_conn.incrEntityCounter(database_entity.eid, "instance_count", sort = True, incrBy=0)
             #create Elastic search index
             sendToElastic(connection1, redis_conn, tenant, uid,
                           database_entity, database_name, EntityType.SQL_DATABASE)
             dbCount = dbCount + 1
+        else:
+            redis_conn.incrEntityCounter(database_entity.eid, "instance_count", sort = True, incrBy=1)
 
     """
     Create realtion between Outmost Query and Inline view table entity
@@ -536,6 +558,11 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
         tablename = entryname
         if "databaseName" in tableentry:
             database_name = tableentry["databaseName"].lower()
+            if tableentry['databaseName'] not in DBNAME_IGNORE_LIST:
+                tablename = tableentry['databaseName'] + "." + tablename
+        elif 'DatabaseName' in tableentry and tableentry['DatabaseName'] not in DBNAME_IGNORE_LIST:
+            database_name = tableentry['DatabaseName']
+            tablename = tableentry['DatabaseName'] + "." + tablename
 
     """
     Create the Table Entity first if it does not already exist.
@@ -1348,20 +1375,25 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
             mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
 
+            is_compiler = False
             if compile_doc[key].has_key("InputTableList"):
                 inputTableList = compile_doc[key]["InputTableList"]
+                if key == compiler_to_use:
+                    is_compiler = True
+                logging.info("Input table set: %s key: %s compiler: %s flag: %s", compile_doc[key]["InputTableList"], key, compiler_to_use, is_compiler)
                 tmpAdditions = processTableSet(compile_doc[key]["InputTableList"],
                                                mongoconn, redis_conn, tenant, uid, entity, True,
-                                               context, clog, tableEidList)
+                                               context, clog, is_compiler, tableEidList)
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
             if compile_doc[key].has_key("OutputTableList"):
+                logging.info("Output table set: %s", compile_doc[key]["OutputTableList"])
                 tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"],
                                                 mongoconn, redis_conn, tenant, uid, entity, False,
-                                                context, clog, tableEidList)
+                                                context, clog, is_compiler, tableEidList)
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])

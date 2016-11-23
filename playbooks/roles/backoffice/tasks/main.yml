@@ -28,6 +28,10 @@
 - name: Copy the service files
   shell: tar -zxf /home/ubuntu/Baaz-DataAcquisition-Service.tar.gz chdir=/
   sudo: yes
+- name: Get Api service
+  shell: s3cmd sync s3://baaz-deployment/{{ BuildVersion }}Baaz-API-Service.tar.gz .
+- name: Copy the service files
+  shell: tar -zxf /home/ubuntu/Baaz-API-Service.tar.gz chdir=/
 - name: Install monit
   apt: name=monit state=present
   sudo: yes
@@ -49,6 +53,12 @@
 - name: Stop running rule engine
   service: name=ruleengineservice state=stopped
   ignore_errors: yes
+  sudo: yes
+- name: Stop API service
+  service: name=apiservice state=stopped
+  sudo: yes
+- name: Stop NavOpt API server
+  service: name=navoptapiserver state=stopped
   sudo: yes
 # - name: Start dataacquisitionservice (upstart).
 #   service: name=dataacquisitionservice state=started
@@ -194,6 +204,14 @@
 - name: Install python datadog package
   pip: name=datadog
   sudo: yes
+- name: Install python boto3 package
+  pip: name=boto3
+  sudo: yes
+- name: Install python protobuf package
+  pip: name=protobuf
+  sudo: yes
+- name: Install python grpcio package
+  pip: name=grpcio
 - name: Install boto
   pip: name=boto
   sudo: yes
