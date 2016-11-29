@@ -1,4 +1,4 @@
-FROM ubuntu:14.04
+FROM ubuntu:16.04
 MAINTAINER Erick Tryzelaar "erickt@cloudera.com"
 
 RUN \
@@ -29,14 +29,6 @@ RUN apt-get -y install \
 	python-dev \
 	python-pip
 
-RUN apt-get -y install \
-	nodejs \
-	npm 
-
-RUN npm install -g \
-	npm \
-	gulp-cli
-
 ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 
 # Install thrift
@@ -50,5 +42,13 @@ RUN \
 	cd .. && \
 	rm -r thrift-0.9.3.tar.gz thrift-0.9.3 && \
 	pip install thrift==0.9.3
+
+RUN apt-get -y install \
+	nodejs \
+	npm
+
+RUN npm install -g \
+	npm \
+	gulp-cli
 
 WORKDIR /build

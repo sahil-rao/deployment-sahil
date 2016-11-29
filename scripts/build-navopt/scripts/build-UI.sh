@@ -4,12 +4,14 @@ set -eux
 
 BRANCH=$1
 
-mkdir UI && git -C /gitcache/UI archive $BRANCH | tar -x
+mkdir UI && git -C /gitcache/UI archive $BRANCH | tar -x -C UI
 
-mkdir deployment && git -C /gitcache/deployment archive $BRANCH | tar -x
+mkdir deployment
+git -C /gitcache/deployment archive $BRANCH | tar -x -C deployment
 cp deployment/scripts/gulp-config.js ./
 cp deployment/scripts/gulpfile.js ./
 cp deployment/scripts/package.json ./
+ln -s /usr/bin/nodejs /usr/bin/node
 npm install
 gulp app-build
 
