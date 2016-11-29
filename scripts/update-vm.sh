@@ -44,6 +44,24 @@ else
   cd ..
 fi
 
+#install java 8 if needed
+if type -p java; then
+  _java=java
+else
+  echo "no java"
+fi
+
+if [[ "$_java" ]]; then
+    version=$("$_java" -version 2>&1 | awk -F '"' '/version/ {print $2}')
+    echo version "$version"
+    if [[ "$version" < "1.8" ]]; then
+        sudo add-apt-repository ppa:webupd8team/java
+        sudo apt update; sudo apt install -y oracle-java8-installer
+    else
+        echo "java version is up to date"
+    fi
+fi
+
 #check for python thrift libraries
 pip show thrift|grep 0.9.3
 ispip=`echo $?`
