@@ -7,6 +7,9 @@ import "version.proto";
 // For future compatibility, all rpcs must take a request and return a response
 // even if there is initially no content for these messages.
 service NavOpt {
+  // Request for a new tenant.
+  rpc createTenant (CreateTenantRequest)
+    returns (CreateTenantResponse) {}
   // Request for get S3 URL.
   rpc getS3url (GetS3urlRequest)
     returns (GetS3urlResponse) {}
@@ -70,6 +73,14 @@ service NavOpt {
   // Request upload status.
   rpc getColumnsDetail (GetColumnsDetailRequest)
     returns (GetColumnsDetailResponse) {}
+}
+
+message CreateTenantRequest {
+  string userGroup = 1;
+}
+
+message CreateTenantResponse {
+  string tenant = 1;
 }
 
 message GetS3urlRequest {
@@ -167,6 +178,7 @@ message TopColumns {
   string tableType = 10;
   string tableName = 11;
   int32 workloadPercent = 12;
+  string dbName = 13;
 }
 
 message GetTopColumnsResponse {

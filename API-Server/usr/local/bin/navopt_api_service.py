@@ -91,6 +91,18 @@ class ApiRpcClient(object):
 class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
     print 'Call inside NavOptApiServer'
  
+    def createTenant(self, request, context):
+        api_rpc = ApiRpcClient()
+        print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.userGroup 
+        msg_dict = {'email':str(request.userGroup), 'opcode':'CreateTenant'}
+        response = api_rpc.call(dumps(msg_dict))
+        response = loads(response)
+        print "Api Service response", response
+        ret_response = navopt_pb2.CreateTenantResponse()
+        ret_response.tenant = response['tenant']
+        api_rpc.close()
+        return ret_response
+
     def getS3url(self, request, context):
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant
 
@@ -303,6 +315,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             columns.cid = entry['cid']
         if 'workloadPercent' in entry:
             columns.workloadPercent = entry['workloadPercent']
+        if 'dbName' in entry:
+            columns.dbName = entry['dbName']
         return columns
       
     def convert_top_columns(self, entry):
