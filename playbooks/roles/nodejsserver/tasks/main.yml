@@ -6,6 +6,9 @@
 - name: Change the permission
   shell: chown bitnami:bitnami /var/log/cloudera/navopt/nodejs
   sudo: yes
+- name: Set timezone to America/Los_Angeles
+  shell: timedatectl set-timezone America/Los_Angeles
+  sudo: yes
 - name: NTP installed
   apt: name=ntp state=present
   sudo: yes

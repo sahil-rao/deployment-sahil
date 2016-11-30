@@ -6,6 +6,9 @@
 - name: Create the Baaz config directory
   file: path=/var/Baaz state=directory
   sudo: yes
+- name: Set timezone to America/Los_Angeles
+  shell: timedatectl set-timezone America/Los_Angeles
+  sudo: yes
 - name: NTP installed
   apt: name=ntp update_cache=yes state=present
   sudo: yes

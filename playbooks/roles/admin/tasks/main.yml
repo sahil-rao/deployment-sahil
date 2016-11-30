@@ -1,5 +1,8 @@
 ---
 ### DEPENDENCIES ###
+- name: Set timezone to America/Los_Angeles
+  shell: timedatectl set-timezone America/Los_Angeles
+  sudo: yes
 - name: NTP installed
   apt: name=ntp state=present
   sudo: yes
