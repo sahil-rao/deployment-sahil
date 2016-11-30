@@ -31,7 +31,7 @@
   sudo: yes
 ### UNPACK S3 TARBALLS ###
 - name: Get Baazdata App
-  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}xplain.io.tar.gz .
+  shell: aws s3 --region {{ region }} cp s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}xplain.io.tar.gz .
   sudo: yes
 - name: Remove everything from under the /tmp directory
   shell: rm -rf /tmp/*
