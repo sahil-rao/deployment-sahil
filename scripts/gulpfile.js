@@ -28,7 +28,8 @@ if(!gulpConfig.workDir) throw (new Error("No working directory found in gulp-con
 
 var dirs = {
   ui : gulpConfig.dockerUI || gulpConfig.workDir+'/UI',
-  outputDir: gulpConfig.outputDir
+  outputDir: gulpConfig.outputDir,
+  vm: gulpConfig.vmDir
 }
 
 var jshintSrc = [dirs.ui+'xplain.io/**/*.js', dirs.ui+'xplain.io/**/*.jsx', '!'+dirs.ui+'xplain.io/public/js/libs/**/*.js',
@@ -78,7 +79,9 @@ Build main application
 */
 gulp.task('app-build', ["webpack-build"], function(){
   var dir = dirs.ui;
-
+  if(dirs.vm){
+    console.log("VM Detected");
+  }
   try{
     var dest = fsj.dir(dir+'/tmp/xplain.io/xplain.io', {empty:true});
     fsj.copy(dir+'/xplain.io', dest.path(), {
@@ -89,7 +92,7 @@ gulp.task('app-build', ["webpack-build"], function(){
     return gulp.src(dir+'/tmp/xplain.io/**')
         .pipe(tar('xplain.io.tar'))
         .pipe(gzip())
-        .pipe(gulp.dest(dirs.outputDir))
+        .pipe(gulp.dest((dirs.vm || dirs.outputDir)))
         .on('error', function(err){
           console.log(err);
         })
@@ -104,12 +107,12 @@ gulp.task('app-build', ["webpack-build"], function(){
 });
 
 gulp.task('quick-vm-update', ['webpack-build'], function(){
-  return fsj.dirAsync('/var/xplain3000/public', {empty:true})
-  .then(fsj.dirAsync('/var/xplain3000/views', {empty:true}))
-  .then(fsj.dirAsync('/var/xplain3000/app', {empty:true}))
-  .then(fsj.copyAsync(dirs.ui+'/xplain.io/public', '/var/xplain3000/public', {overwrite:true}))
-  .then(fsj.copyAsync(dirs.ui+'/xplain.io/app', '/var/xplain3000/app', {overwrite:true}))
-  .then(fsj.copyAsync(dirs.ui+'/xplain.io/views', '/var/xplain3000/views', {overwrite:true}))
+  return fsj.dirAsync(dirs.vm+'public', {empty:true})
+  .then(fsj.dirAsync(dirs.vm+'views', {empty:true}))
+  .then(fsj.dirAsync(dirs.vm+'app', {empty:true}))
+  .then(fsj.copyAsync(dirs.ui+'/xplain.io/public', dirs.vm+'public', {overwrite:true}))
+  .then(fsj.copyAsync(dirs.ui+'/xplain.io/app', dirs.vm+'app', {overwrite:true}))
+  .then(fsj.copyAsync(dirs.ui+'/xplain.io/views', dirs.vm+'views', {overwrite:true}))
   .catch(function(err){
     console.error(err);
   });

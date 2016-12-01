@@ -1681,38 +1681,62 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
     table_dict = {}
     # get list of input tables
     for table_entry in compiler_data["InputTableList"]:
-        table_dict[table_entry["TableName"]] = []
+        if "DatabaseName" in table_entry and table_entry["DatabaseName"] not in DBNAME_IGNORE_LIST:
+            dbName = str(table_entry["DatabaseName"])
+            tableName = str(table_entry["TableName"])
+            if dbName not in table_dict:
+                table_dict[dbName] = {}
+            if dbName in table_dict and tableName not in table_dict[dbName]:
+                table_dict[dbName][dbName + "." + tableName] = []
+        else:
+            dbName = "<default>"
+            tableName = str(table_entry["TableName"])
+            if dbName not in table_dict:
+                table_dict[dbName] = {}
+            table_dict[dbName][tableName] = []
 
-    if not table_dict:
+    if len(table_dict.keys()) == 0:
         """
         No tables from the compiler.
         """
         return compile_doc
 
+    for db_entry in table_dict:
+        # get the tables data.
+        table_names = table_dict[db_entry].keys()
+        entries = mongoconn.db.entities.find({"etype":"SQL_TABLE", "name": { "$in": table_names}},
+                                             {"eid":1, "name":1})
+        for entry in entries:
+            table_eid = entry["eid"]
+            column_eids = []
+            logging.info("entry is %s", entry)
+            #check table name has tabe name in it
+            format_name = entry["name"].split(".")
+            if len(format_name) > 1:
+                table_dict[db_entry].pop(entry["name"])
+                entry["name"] = format_name[1]
+                table_dict[db_entry][entry["name"]] = []
 
-    # get the tables data.
-    for entry in mongoconn.db.entities.find({"etype":"SQL_TABLE", "name": { "$in" : table_dict.keys()}},
-                                            {"eid":1, "name":1}):
-        table_eid = entry["eid"]
-        column_eids = []
-        for rel in redis_conn.getRelationships(table_eid, None, "TABLE_COLUMN"):
-            column_eids.append(rel["end_en"])
+            for rel in redis_conn.getRelationships(table_eid, None, "TABLE_COLUMN"):
+                column_eids.append(rel["end_en"])
 
-        logging.debug(column_eids)
-        for column_entry in mongoconn.db.entities.find({"etype":"SQL_TABLE_COLUMN",
-                                                        "eid": { "$in" : column_eids}},
-                                                        {"name":1}):
-            c_split = column_entry["name"].split(".")
-            if len(c_split) == 2:
-                table_dict[entry["name"]].append(c_split[1])
-            else:
-                table_dict[entry["name"]].append(column_entry["name"])
+            for column_entry in mongoconn.db.entities.find({"etype":"SQL_TABLE_COLUMN",
+                                                            "eid": { "$in" : column_eids}},
+                                                            {"name":1}):
+                c_split = column_entry["name"].split(".")
+                if len(c_split) == 2:
+                    table_dict[db_entry][entry["name"]].append(c_split[1])
+                else:
+                    table_dict[db_entry][entry["name"]].append(column_entry["name"])
 
     # filter out tables with no data
     nonempty_dict = {}
-    for table in table_dict:
-        if len(table_dict[table]) != 0:
-            nonempty_dict[table] = table_dict[table]
+    for db_entry in table_dict:
+        if db_entry not in nonempty_dict:
+            nonempty_dict[db_entry] = {}
+        for table in table_dict[db_entry]:
+            if len(table_dict[db_entry][table]) != 0:
+                nonempty_dict[db_entry][table] = table_dict[db_entry][table]
     table_dict = nonempty_dict
 
     if len(table_dict.keys()) == 0:
@@ -1722,6 +1746,7 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
         opcode = 10
         retries = 3
         data_dict["catalog"] = dumps(table_dict)
+        logging.info("===> Data dict sent to Compiler: %s", table_dict)
         response = tclient.send_compiler_request(opcode, data_dict, retries)
 
         if not response:

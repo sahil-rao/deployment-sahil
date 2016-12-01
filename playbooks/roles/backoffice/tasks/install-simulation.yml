@@ -2,7 +2,7 @@
 #uncomment below change for impala enablement
 
 - name: Get Impala Module
-  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}Impala.tar.gz /mnt/
+  shell: aws s3 --region {{ region }} cp s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}Impala.tar.gz /mnt/
   sudo: yes
 - name: Untar Impala prebuild code
   shell: tar -zxf /mnt/Impala.tar.gz chdir=/mnt/

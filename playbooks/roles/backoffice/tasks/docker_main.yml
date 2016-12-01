@@ -6,6 +6,9 @@
 - name: Create the Baaz config directory
   file: path=/var/Baaz state=directory
   sudo: yes
+- name: Set timezone to America/Los_Angeles
+  shell: timedatectl set-timezone America/Los_Angeles
+  sudo: yes
 - name: NTP installed
   apt: name=ntp update_cache=yes state=present
   sudo: yes
@@ -22,14 +25,14 @@
   sudo: yes
 #Get docker images
 - name: Get pyservice
-  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}pyservice /mnt/volume1/pyservice
+  shell: aws s3 --region {{ region }} cp s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}pyservice /mnt/volume1/pyservice
   sudo: yes
 - name: Load pyservice
   shell: docker load -i /mnt/volume1/pyservice
   sudo: yes
 
 - name: Get combinedservice
-  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}combinedservice /mnt/volume1/combinedservice
+  shell: aws s3 --region {{ region }} cp s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}combinedservice /mnt/volume1/combinedservice
   sudo: yes
 - name: Load combinedservice
   shell: docker load -i /mnt/volume1/combinedservice

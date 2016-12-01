@@ -15,7 +15,7 @@
   sudo: yes
 ### UNPACK S3 TARBALLS ###
 - name: Get Exec Dashboard
-  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}exec_dashboard.tar.gz .
+  shell: aws s3 --region {{ region }} cp s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}exec_dashboard.tar.gz .
 - name: Remove everything from under the /tmp directory
   shell: rm -rf /tmp/*
   sudo: yes
@@ -25,7 +25,7 @@
   shell: cp -a /home/ubuntu/exec_dashboard/. /var/exec/
   sudo: yes
 - name: Get Flightpath
-  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}flightpath-deployment.tar.gz .
+  shell: aws s3 --region {{ region }} cp s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}flightpath-deployment.tar.gz .
 - name: Untar flightpath
   shell: tar -zxf /home/ubuntu/flightpath-deployment.tar.gz chdir=/
   sudo: yes

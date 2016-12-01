@@ -1,5 +1,8 @@
 ---
 ### DEPENDENCIES ###
+- name: Set timezone to America/Los_Angeles
+  shell: timedatectl set-timezone America/Los_Angeles
+  sudo: yes
 - name: NTP installed
   apt: name=ntp state=present
   sudo: yes
@@ -41,7 +44,7 @@
   sudo: yes
 ### UNPACK S3 TARBALLS ###
 - name: Get Optimizer Admin
-  shell: aws s3 --region {{ region }} sync s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}optimizer_admin.io.tar.gz .
+  shell: aws s3 --region {{ region }} cp s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}optimizer_admin.io.tar.gz .
 - name: Remove everything from under the /tmp directory
   shell: rm -rf /tmp/*
   sudo: yes

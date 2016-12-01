@@ -185,6 +185,7 @@ def build_service(args, service):
         'run',
         '-v', os.path.expanduser('~/.m2:/root/.m2'),
         '-v', '{}/.gitcache:/gitcache'.format(os.getcwd()),
+        '-v', '{}/.node_modules:/node_modules'.format(os.getcwd()),
         '-v', '{}/target:/target'.format(os.getcwd()),
         '-v', '{}/scripts:/scripts'.format(os.getcwd()),
         '-t', 'build-navopt',
@@ -528,6 +529,9 @@ def main():
 
     if not os.path.exists('.gitcache'):
         os.makedirs('.gitcache')
+
+    if not os.path.exists('.node_modules'):
+        os.makedirs('.node_modules')
 
     if not os.path.exists('target'):
         os.makedirs('target')
