@@ -9,6 +9,7 @@
   roles:
   - role: java
   - role: backoffice
+  - { role: centralLogging , tags: ['logging'] }
 
 - hosts: tag_Name_QueueServer
   vars_files:
