@@ -35,6 +35,10 @@ variable "admin_instance_type" {
 variable "api_elb_dns_name" {}
 variable "api_elb_internal" {}
 
+# Backoffice
+variable "backoffice_instance_type" {}
+variable "backoffice_instance_count" {}
+
 # Logging Elasticsearch
 variable "logging_elasticsearch_version" {}
 variable "logging_elasticsearch_ami" {}

@@ -10,8 +10,8 @@ module "backoffice" {
     dns_zone_id = "${var.dns_zone_id}"
     security_groups = ["${module.sg.backoffice_security_groups}"]
 
-    instance_type = "t2.medium"
-    instance_count = 1
+    instance_type = "${var.backoffice_instance_type}"
+    instance_count = "${var.backoffice_instance_count}"
 
     iam_instance_profile = "${module.iam.backoffice_instance_profile}"
     key_name = "${var.key_name}"
