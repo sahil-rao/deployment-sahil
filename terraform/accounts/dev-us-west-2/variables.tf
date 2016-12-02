@@ -38,3 +38,7 @@ variable "datadog_api_key" {
 variable "key_name" {
     default = "navopt-us-west-2-dev"
 }
+
+variable "cloudwatch_retention_in_days" {
+    default = "14"
+}
