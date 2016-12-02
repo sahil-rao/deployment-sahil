@@ -5,7 +5,12 @@ run by going into one of the account directories and running the ansible
 scripts that drive the account configuration.
 
 In order to use these scripts, first you must install the necessary
-dependencies. The `Makefile` drives all of this and can be installed simply by
+dependencies. 
+Install the virtualenv using the following command.
+```shell
+pip install virtualenv
+```
+The `Makefile` drives the dependencies and can be installed simply by
 just running:
 
 ```shell
