@@ -39,7 +39,9 @@ variable "api_elb_internal" {}
 variable "backoffice_instance_type" {}
 variable "backoffice_instance_count" {}
 
-# Logging Elasticsearch
+# Logging
+variable "cloudwatch_retention_in_days" {}
+
 variable "logging_elasticsearch_version" {}
 variable "logging_elasticsearch_ami" {}
 variable "logging_elasticsearch_instance_type" {

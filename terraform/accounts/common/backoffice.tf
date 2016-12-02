@@ -15,4 +15,7 @@ module "backoffice" {
 
     iam_instance_profile = "${module.iam.backoffice_instance_profile}"
     key_name = "${var.key_name}"
+
+    cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
+    log_subscription_destination_arn = "${module.log-service.destination_arn}"
 }
