@@ -6,32 +6,44 @@ import os
 import shutil
 import subprocess
 import sys
+from collections import OrderedDict
 
 # List out the services and their artifacts.
-SERVICES = {
-    'UI': [
-        'xplain.io.tar.gz',
-        'optimizer_api.io.tar.gz',
-        'xplain_dashboard.tar.gz',
-        'optimizer_admin.io.tar.gz',
-    ],
-    'analytics': [
-        'Baaz-Analytics.tar.gz',
-    ],
-    'compiler': [
-        'Baaz-Compiler.tar.gz',
-    ],
-    'deployment': [
-        'Baaz-DataAcquisition-Service.tar.gz',
-        'Baaz-Compile-Service.tar.gz',
-        'Baaz-Analytics-Service.tar.gz',
-        'Baaz-API-Service.tar.gz'
-    ],
-    'documentation': [],
-    'graph': [
-        'flightpath-deployment.tar.gz',
-    ],
-}
+SERVICES = OrderedDict([
+    ('deployment',
+        [
+            'Baaz-DataAcquisition-Service.tar.gz',
+            'Baaz-Compile-Service.tar.gz',
+            'Baaz-Analytics-Service.tar.gz',
+            'Baaz-API-Service.tar.gz'
+        ]
+     ),
+    ('UI',
+        [
+            'xplain.io.tar.gz',
+            'optimizer_api.io.tar.gz',
+            'xplain_dashboard.tar.gz',
+            'optimizer_admin.io.tar.gz',
+        ]
+     ),
+    ('analytics',
+        [
+            'Baaz-Analytics.tar.gz',
+        ]
+     ),
+    ('compiler',
+        [
+            'Baaz-Compiler.tar.gz',
+        ]
+     ),
+    ('documentation',
+        []
+     ),
+    ('graph',
+        [
+            'flightpath-deployment.tar.gz',
+        ]
+     )])
 
 # List services that go in Docker images.
 DOCKER_IMAGES = {
