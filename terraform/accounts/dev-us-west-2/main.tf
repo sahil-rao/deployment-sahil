@@ -47,6 +47,11 @@ module "common" {
     api_elb_dns_name = "navoptapi"
     api_elb_internal = "true"
 
+    backoffice_instance_type = "t2.large"
+    backoffice_instance_count = 8
+
+    cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
+
     logging_elasticsearch_version = "v1"
     logging_elasticsearch_ami = "ami-23d00643"
 

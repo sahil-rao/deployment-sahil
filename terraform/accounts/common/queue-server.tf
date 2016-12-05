@@ -13,6 +13,6 @@ module "queue-server" {
     iam_instance_profile = "${module.iam.queue_server_instance_profile}"
     key_name = "${var.key_name}"
 
-    instance_type = "t2.micro"
+    instance_type = "t2.large"
     instance_count = 2
 }

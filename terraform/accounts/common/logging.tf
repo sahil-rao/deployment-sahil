@@ -1,3 +1,9 @@
+module "log-service" {
+    source = "../../modules/log-service"
+
+    environment = "${var.env}"
+}
+
 module "logging" {
     source = "../../services/logging"
 
