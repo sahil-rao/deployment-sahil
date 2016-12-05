@@ -402,7 +402,7 @@ def main():
         default='master',
         help='which branch to build (default master)')
     parser.add_argument(
-        '--target-branch',
+        '--target_branch',
         default=None,
         help='which branch to build (defaults to `--branch` value)')
     parser.add_argument(
@@ -411,7 +411,7 @@ def main():
         help='upload artifacts to this bucket (default {}'.format(
             DEFAULT_BUCKET))
     parser.add_argument(
-        '--target-path',
+        '--target_path',
         help='upload artifacts to this bucket (default $USERNAME-$BRANCH)')
     parser.add_argument(
         '--no-build',
