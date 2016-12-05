@@ -30,6 +30,9 @@ variable "key_name" {}
 
 ###################################################################
 
+variable "cloudwatch_retention_in_days" {}
+variable "log_subscription_destination_arn" {}
+
 ###################################################################
 
 module "ubuntu" {
@@ -62,6 +65,64 @@ resource "aws_instance" "default" {
         Environment = "${var.env}"
         Name = "${var.name}"
     }
+}
+
+###################################################################
+
+module "advanced-analytics-service" {
+    source = "../../modules/cloudwatch-log-group"
+
+    name = "advanalytics"
+    retention_in_days = "${var.cloudwatch_retention_in_days}"
+    subscription_destination_arn = "${var.log_subscription_destination_arn}"
+}
+
+module "application-service" {
+    source = "../../modules/cloudwatch-log-group"
+
+    name = "applicationservice"
+    retention_in_days = "${var.cloudwatch_retention_in_days}"
+    subscription_destination_arn = "${var.log_subscription_destination_arn}"
+}
+
+module "compile-service" {
+    source = "../../modules/cloudwatch-log-group"
+
+    name = "compileservice"
+    retention_in_days = "${var.cloudwatch_retention_in_days}"
+    subscription_destination_arn = "${var.log_subscription_destination_arn}"
+}
+
+module "data-acquisition-service" {
+    source = "../../modules/cloudwatch-log-group"
+
+    name = "dataacquisitionservice"
+    retention_in_days = "${var.cloudwatch_retention_in_days}"
+    subscription_destination_arn = "${var.log_subscription_destination_arn}"
+}
+
+module "elastic-pub-service" {
+    source = "../../modules/cloudwatch-log-group"
+
+    name = "elasticpub"
+    retention_in_days = "${var.cloudwatch_retention_in_days}"
+    subscription_destination_arn = "${var.log_subscription_destination_arn}"
+}
+
+module "math-service" {
+    source = "../../modules/cloudwatch-log-group"
+
+    name = "mathservice"
+    retention_in_days = "${var.cloudwatch_retention_in_days}"
+    subscription_destination_arn = "${var.log_subscription_destination_arn}"
+}
+
+module "rule-engine-service" {
+    source = "../../modules/cloudwatch-log-group"
+
+    name = "ruleengineservice"
+    retention_in_days = "${var.cloudwatch_retention_in_days}"
+    subscription_destination_arn = "${var.log_subscription_destination_arn}"
 }
 
 ###################################################################

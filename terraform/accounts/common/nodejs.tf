@@ -13,5 +13,6 @@ module "nodejs" {
     key_name = "${var.key_name}"
 
     iam_instance_profile = "${module.iam.nodejs_instance_profile}"
-    instance_type = "t2.micro"
+    instance_type = "t2.large"
+    instance_count = 2
 }
