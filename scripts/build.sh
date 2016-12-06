@@ -91,7 +91,7 @@ git clone https://github.com/baazdata/compiler.git
 git clone https://github.com/baazdata/graph.git
 
 #Checkout UI
-git clone https://github.com/baazdata/UI.git
+#git clone https://github.com/baazdata/UI.git
 
 #Checkout UI-Tests
 git clone https://github.com/baazdata/NavOptTest.git
@@ -104,6 +104,8 @@ git clone https://github.com/baazdata/application.git
 
 #add help topics to S3
 s3cmd sync documentation/NavOptHelp/ s3://xplain-public/$clusterName/documentation/NavOptHelp/ --delete --acl-public
+
+sudo gulp full-deploy
 
 cd graph
 python setup.py bdist
@@ -121,9 +123,11 @@ tar -cvf UI.tar *
 gzip UI.tar
 s3cmd sync UI.tar.gz s3://$S3Bucket/
 cd ../..
-tar -cvf xplain.io.tar xplain.io
-gzip xplain.io.tar
-s3cmd sync xplain.io.tar.gz s3://$S3Bucket/
+
+#tar -cvf xplain.io.tar xplain.io
+#gzip xplain.io.tar
+#s3cmd sync xplain.io.tar.gz s3://$S3Bucket/
+
 tar -cvf optimizer_api.io.tar optimizer_api
 gzip optimizer_api.io.tar
 s3cmd sync optimizer_api.io.tar.gz s3://$S3Bucket/
