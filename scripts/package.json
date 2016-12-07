@@ -41,6 +41,7 @@
     "pdfkit": "0.7.0",
     "react-bootstrap": "*",
     "react-ace": "4.0.0",
+
     "redis": "0.10.3",
     "redis-sentinel": "*",
     "socket.io": "~1.0.6",
@@ -55,6 +56,7 @@
     "babel-loader": "~6.2.4",
     "babel-preset-es2015": "~6.9.0",
     "babel-preset-react": "~6.11.1",
+    "babel-plugin-transform-react-jsx-img-import": "*",
     "chalk": "^1.1.3",
     "css-loader": "*",
     "decompress": "^3.0.0",
