@@ -22,7 +22,8 @@ def execute():
                                             'email': 1, 'archived': 1,
                                             'signed_terms_timestamp': 1})
 
-    IGNORE_DOMAINS = ['xplain.io', 'grr.la', 'zanzog.com']
+    IGNORE_DOMAINS = ['xplain.io', 'grr.la', 'zanzog.com', 'sharklasers.com',
+                      'opayq.com', 'mailinator.com']
 
     ret_dict = {}
     for tenant_data in userCursor:
