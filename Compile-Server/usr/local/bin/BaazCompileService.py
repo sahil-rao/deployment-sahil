@@ -1667,7 +1667,7 @@ def compile_query(mongoconn, redis_conn, compilername, data_dict):
     # if there is an unqualified column, try again with catalog included
     if entity is None and "unqualifiedColumn" in compiler_data and\
 	 compiler_data["unqualifiedColumn"] and\
-         "InputTableList" in compiler_data:
+         ("InputTableList" in compiler_data or "OutputTableList" in compiler_data):
         try:
             compile_doc = compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, compile_doc)
         except:
@@ -1679,8 +1679,14 @@ def compile_query(mongoconn, redis_conn, compilername, data_dict):
 def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, compile_doc):
     compiler_data = compile_doc[compilername]
     table_dict = {}
+    table_list = []
+    if "InputTableList" in compiler_data:
+        table_list.extend(compiler_data["InputTableList"])
+    if "OutputTableList" in compiler_data:
+        table_list.extend(compiler_data["OutputTableList"])
+
     # get list of input tables
-    for table_entry in compiler_data["InputTableList"]:
+    for table_entry in table_list:
         if "DatabaseName" in table_entry and table_entry["DatabaseName"] not in DBNAME_IGNORE_LIST:
             dbName = str(table_entry["DatabaseName"])
             tableName = str(table_entry["TableName"])
