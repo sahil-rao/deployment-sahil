@@ -4,6 +4,8 @@ rabbitmq_apt_key: "http://www.rabbitmq.com/rabbitmq-signing-key-public.asc"
 rabbitmq_repository: "deb http://www.rabbitmq.com/debian/ testing main"
 rabbitmq_pkg: "rabbitmq-server"
 
+rabbitmq_master: "{{ groups['tag_Name_QueueServer'][0] }}"
+
 rabbitmq_config_dir: "/etc/rabbitmq"
 rabbitmq_cookie_dir: "/var/lib/rabbitmq"
 rabbitmq_cookie_location: "{{rabbitmq_cookie_dir}}/.erlang.cookie"
@@ -21,3 +23,4 @@ rabbitmq_auth_config:
 rabbitmq_aws_stack_name: "tag_aws_cloudformation_stack-name_"
 
 rabbitmq_clustered_hosts: []
+enable_rabbitmq_clustering: true
