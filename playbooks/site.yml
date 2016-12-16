@@ -41,6 +41,7 @@
       state: present
     become: yes
   - role: queueserver
+    become: yes
 
 - hosts: tag_Name_NodeJS
   vars_files:

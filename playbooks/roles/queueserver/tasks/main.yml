@@ -2,26 +2,31 @@
 - name: Create the Baaz config directory
   file: path=/var/Baaz state=directory
   sudo: yes
+
 - name: Save configuration file
   template: src=hosts.cfg dest=/var/Baaz/hosts.cfg
   sudo: yes
+
 - name: Set the timezone
   shell: echo "America/Los_Angeles" | sudo tee /etc/timezone
+
 - name: Reset the system time to new timezone.
   shell: dpkg-reconfigure --frontend noninteractive tzdata
   sudo: yes
 
-# Defaulting to /var/lib/rabbitmq
-# Setting up clustering erlang cookie
-- name: create cookie directory
-  file: path={{rabbitmq_cookie_dir}} owner=rabbitmq group=rabbitmq mode=0755 state=directory
-  sudo: yes
-
-- name: add rabbitmq erlang cookie
-  file: content={{ rabbitmq_auth_config.erlang_cookie }} dest={{rabbitmq_cookie_location}} owner=rabbitmq group=rabbitmq mode=0400
-  register: erlang_cookie
+- name: add rabbitmq config file
+  template: src=rabbitmq.config dest=/etc/rabbitmq/rabbitmq.config
+  register: rabbitmq_config
   sudo: yes
 
 - name: restart rabbitmq
-  service: name=rabbitmq-server state=restarted
+  service: name=rabbitmq-server state=stopped
   sudo: yes
+  when: rabbitmq_config.changed
+
+- name: checking to see if already clustered
+  stat: path=/etc/rabbitmq/clustered
+  register: clustered
+
+- include: rabbitmq_clustering.yml
+  when: enable_rabbitmq_clustering and (clustered.stat.exists != True)
