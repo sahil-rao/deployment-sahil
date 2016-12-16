@@ -1626,7 +1626,7 @@ def updateRedisforHAQR(redis_conn,data,tenant,eid):
                         redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseWhereFailure", sort=False, incrBy=1)
     return
 
-def compile_query(mongoconn, redis_conn, compilername, data_dict):
+def compile_query(mongoconn, redis_conn, compilername, data_dict, dbName=None):
     """
     Interact with the compiler service to compile the query.
     Column resolution is performed as a second pass if :
@@ -1665,18 +1665,19 @@ def compile_query(mongoconn, redis_conn, compilername, data_dict):
 
     entity = mongoconn.searchEntity({"md5":q_hash})
     # if there is an unqualified column, try again with catalog included
-    if entity is None and "unqualifiedColumn" in compiler_data and\
-	 compiler_data["unqualifiedColumn"] and\
-         ("InputTableList" in compiler_data or "OutputTableList" in compiler_data):
+    if entity is None and\
+      ("unqualifiedColumn" in compiler_data and compiler_data["unqualifiedColumn"] and\
+       ("InputTableList" in compiler_data or "OutputTableList" in compiler_data)) or\
+      ("unqualifiedTable" in compiler_data and compiler_data['unqualifiedTable'] and dbName):
         try:
-            compile_doc = compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, compile_doc)
+            compile_doc = compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, compile_doc, dbName)
         except:
             logging.exception("CAUGHT: {0}\n".format(traceback.format_exc()))
 
     return compile_doc
 
 
-def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, compile_doc):
+def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, compile_doc, dbName):
     compiler_data = compile_doc[compilername]
     table_dict = {}
     table_list = []
@@ -1694,6 +1695,11 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
                 table_dict[dbName] = {}
             if dbName in table_dict and tableName not in table_dict[dbName]:
                 table_dict[dbName][dbName + "." + tableName] = []
+        elif dbName:
+            tableName = str(table_entry["TableName"])
+            if dbName not in table_dict:
+                table_dict[dbName] = {}
+            table_dict[dbName][tableName] = []
         else:
             dbName = "<default>"
             tableName = str(table_entry["TableName"])
@@ -1909,9 +1915,11 @@ def callback(ch, method, properties, body):
             except:
                 continue
 
+        dbName = None
         if "data" in inst:
             msg_data = inst["data"]
-
+            if 'DATABASE' in inst["data"]:
+                dbName = inst["data"]["DATABASE"]
         query = inst["query"].encode('utf-8').strip()
         clog.debug("Program Entity : {0}, eid {1}\n".format(query, prog_id))
 
@@ -1951,7 +1959,7 @@ def callback(ch, method, properties, body):
                 if source_platform is not None:
                     data_dict["source_platform"] = source_platform
 
-                compile_doc = compile_query(mongoconn, redis_conn, compilername, data_dict)
+                compile_doc = compile_query(mongoconn, redis_conn, compilername, data_dict, dbName)
                 """
                 It is possible the tenant has been cleared. If this is the case then do not add an new entities.
                 """
