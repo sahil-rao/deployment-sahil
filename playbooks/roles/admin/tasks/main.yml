@@ -51,13 +51,10 @@
 - name: Untar Optimizer Admin App
   shell: tar -zxf /home/bitnami/optimizer_admin.io.tar.gz
 - name: Move the new admin code
-  shell: cp -a /home/bitnami/optimizer_admin/. /var/admin/
+  shell: cp -a /home/bitnami/UI/optimizer_admin/. /var/admin/
   sudo: yes
 - name: Create log folders
   file: path=/var/admin/log state=directory owner=bitnami mode=755
-  sudo: yes
-- name: Move the new node code
-  shell: mv /home/bitnami/optimizer_admin/config/* /var/admin/config/
   sudo: yes
 - name: Install the s3 configuration file
   template: src=s3.json dest=/var/admin/config/s3.json
