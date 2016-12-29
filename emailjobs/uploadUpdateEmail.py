@@ -114,7 +114,9 @@ def run():
         uploadsOfInterest = getMatchingDocuments(uploadStatsDocs)
         if len(uploadsOfInterest) > 0:
             print tenant, " # of uploads of interest :", len(uploadsOfInterest)
-            uploadInfo[tenantID['users'][0]] = uploadsOfInterest
+            if tenantID['users'][0] not in uploadInfo:
+                uploadInfo[tenantID['users'][0]] = []
+            uploadInfo[tenantID['users'][0]] += uploadsOfInterest
 
     if len(uploadInfo) > 0:
         formattedData = formatDataforEmail(uploadInfo)
