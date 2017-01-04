@@ -539,6 +539,10 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
 
     def convert_QueryCompatible(self, response):
         ret = navopt_pb2.GetQueryCompatibleResponse()
+        if 'status' in response:
+            ret.status = response['status']
+        if 'parseError' in response:
+            ret.parseError = response['parseError']
         if 'errorClause' in response:
             ret.clauseName = response['errorClause']
         if 'clauseString' in response:
