@@ -96,6 +96,13 @@ gulp eslint
 cd  /home/xplain/build
 
 #Checkout deployment
+cd /home/xplain/build/UI
+git pull
+git checkout $BRANCH_NAME
+git reset --hard
+git pull
+
+#Checkout deployment
 cd /home/xplain/build/deployment
 git pull
 git checkout $BRANCH_NAME
