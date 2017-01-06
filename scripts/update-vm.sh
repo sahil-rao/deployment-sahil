@@ -241,6 +241,6 @@ tar -zxf ExplainIO-SingleVM-deploy.tar.gz
 
 sudo ansible-playbook vm-update-new.yml --connection=local
 
-python /home/xplain/build/deployment/scripts/update_terms_and_conditions.py
+python /home/xplain/build/deployment/scripts/add_data_files_to_xplainIO.py
 
 sudo ./refresh.sh
