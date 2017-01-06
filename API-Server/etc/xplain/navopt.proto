@@ -305,6 +305,8 @@ message GetQueryCompatibleResponse {
   string clauseString = 2;
   ClauseError clauseError = 3;
   QueryError queryError = 4;
+  string status = 5;
+  string parseError = 6;
 }
 
 message GetQueryRiskRequest {
