@@ -16,6 +16,8 @@ saml_aemUrl: "{{ vault_saml_aemUrl }}"
 saml_entryPoint: "{{ vault_saml_entryPoint }}"
 saml_issuer: "{{ vault_saml_issuer }}"
 saml_cert: "{{ vault_saml_cert }}"
+saml_termsUrl: "{{ vault_saml_termsUrl }}"
+saml_termsKey: "{{ vault_saml_termsKey }}"
 
 erlang_cookie: "{{ vault_erlang_cookie }}"
 
