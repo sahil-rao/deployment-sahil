@@ -13,6 +13,7 @@ from flightpath.services.RotatingS3FileHandler import *
 from baazmath.workflows.hbase_analytics import *
 from flightpath.utils import *
 from flightpath.Provenance import getMongoServer
+from flightpath.Provenance import EntityType
 from flightpath.services.mq_template import *
 import flightpath.thriftclient.compilerthriftclient as tclient
 
@@ -1716,8 +1717,8 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
     for db_entry in table_dict:
         # get the tables data.
         table_names = table_dict[db_entry].keys()
-        entries = mongoconn.db.entities.find({"etype":"SQL_TABLE", "name": { "$in": table_names}},
-                                             {"eid":1, "name":1})
+        entries = mongoconn.getEntitiesbyTypeAndName(EntityType.SQL_TABLE, table_names, {"eid" : 1, "name" : 1})
+
         for entry in entries:
             table_eid = entry["eid"]
             column_eids = []
