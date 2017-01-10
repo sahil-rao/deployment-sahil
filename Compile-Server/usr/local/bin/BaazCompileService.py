@@ -1717,7 +1717,7 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
     for db_entry in table_dict:
         # get the tables data.
         table_names = table_dict[db_entry].keys()
-        entries = mongoconn.getEntitiesbyTypeAndName(EntityType.SQL_TABLE, table_names, {"eid" : 1, "name" : 1})
+        entries = mongoconn.getEntitiesByTypeAndName(EntityType.SQL_TABLE, table_names, {"eid" : 1, "name" : 1})
 
         for entry in entries:
             table_eid = entry["eid"]
