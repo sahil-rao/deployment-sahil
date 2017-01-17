@@ -312,6 +312,7 @@ message GetQueryCompatibleResponse {
 message GetQueryRiskRequest {
   string tenant = 1;
   string query = 2;
+  string sourcePlatform = 3;
 }
 
 message RiskData {
@@ -416,6 +417,11 @@ message HeaderField {
 }
 
 message UploadRequest {
+  enum FileType {
+    QUERY = 0;
+    TABLE_STATS = 1;
+    COLUMN_STATS = 2;
+  }
   string tenant = 1;
   string fileLocation = 2;
   string sourcePlatform = 3;
@@ -424,6 +430,7 @@ message UploadRequest {
   string fileName = 6;
   string s3location = 7;
   repeated HeaderField headerFields = 8;
+  FileType fileType = 9;
 }
 
 message UploadResponse {

@@ -15,7 +15,10 @@ from flightpath.Provenance import getMongoServer
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 import navopt_pb2
+from boto.s3.key import Key
+import boto
 
+BAAZ_DATA_ROOT="/mnt/volume1/"
 _ONE_DAY_IN_SECONDS = 60 * 60 * 24
 
 config = ConfigParser.RawConfigParser ()
@@ -248,6 +251,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             msg_dict['dbname'] = request.dbName
         if request.limit != 0:
             msg_dict['limit'] = request.limit
+        print "Sending Msg Dict:", msg_dict
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_tables(loads(response))
@@ -615,6 +619,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
 
     def getQueryRisk(self, request, context):
         api_rpc = ApiRpcClient()
+        '''
         # write query to a file
         filepath ="/tmp/"
         fileName = "riskUpload.sql"
@@ -649,10 +654,10 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                 break
             if response['status'] == 'failed':
                 return
-
+        '''
         #get Risk analysis
-        print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant, "uid", ret_response.status.workloadId 
-        msg_dict = {'tenant':str(request.tenant), 'opcode':'QueryRisk', 'uid':ret_response.status.workloadId, 'query':request.query}
+        print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant 
+        msg_dict = {'tenant':str(request.tenant), 'opcode':'QueryRisk', 'query':request.query}
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_QueryRisk(loads(response))
@@ -726,6 +731,35 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         api_rpc.close()
         return ret_response
 
+    def get_stats_data(self, tenant, fileName):
+        ret_dict = {}
+        timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%m-%d-%Y')
+        filename = timestr + "/" + fileName
+        source = tenant + "/" + filename
+        """
+        Check if the file exists in S3.
+        """
+        if CLUSTER_NAME is not None:
+            boto_conn = boto.connect_s3()
+            bucket = boto_conn.get_bucket(bucket_location)
+            source = "partner-logs/" + source
+            file_key = bucket.get_key(source)
+            if file_key is None:
+                return ret_dict
+        """
+        Download the file and extract:
+        """
+        dest_file = BAAZ_DATA_ROOT + tenant + "/" + filename
+        destination = os.path.dirname(dest_file)
+        if not os.path.exists(destination):
+            os.makedirs(destination)
+        d_file = open(dest_file, "w+")
+        file_key.get_contents_to_file(d_file)
+        d_file.close()
+        with open(dest_file) as json_data:
+            ret_dict = json.load(json_data)
+        return ret_dict
+ 
     def upload(self, request, context):
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant
         row_delim = None
@@ -753,12 +787,22 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                     entry_dict.pop('coltype') 
                 headerInfo.append(entry_dict)
 
-        ret_response = self.updateUploadStats(request.tenant, request.fileName, request.sourcePlatform, col_delim, row_delim, headerInfo)
-        #msg_dict = {'tenant':str(request.tenant), 'opcode':'TopTables'}
-        #response = api_rpc.call(dumps(msg_dict))
-        #print "Api Service response", response, "Type:", type(loads(response))
-        #ret_response = self.convert_top_tables(loads(response))
-        #print "Got Response:", ret_response
+        if request.fileType == 1 or request.fileType == 2:
+            stats = self.get_stats_data(request.tenant, request.fileName)
+            api_rpc = ApiRpcClient()
+            msg_dict = {'tenant':str(request.tenant), 'opcode':'UploadStats'}
+            if request.fileType == 1:
+                msg_dict['table_stats'] = stats
+            else:
+                msg_dict['column_stats'] = stats
+            print "Message to Apiservice", msg_dict
+            response = api_rpc.call(dumps(msg_dict))
+            ret_response = navopt_pb2.UploadResponse()
+            ret_response.status.state = 3 
+            print "Api Service response", response, "Type:", type(loads(response))
+            api_rpc.close()
+        else:
+            ret_response = self.updateUploadStats(request.tenant, request.fileName, request.sourcePlatform, col_delim, row_delim, headerInfo)
         return ret_response
 
     def convert_to_upload_status(self, response):
