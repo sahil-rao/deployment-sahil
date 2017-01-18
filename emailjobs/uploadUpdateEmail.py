@@ -101,7 +101,7 @@ def sendEmail(formattedData):
 
 
 def run():
-    client = getMongoServer('xplainDb')
+    client = getMongoServer('xplainIO')
 
     print "Starting new run on uploadUpdateEmail"
     tenantCursor = client['xplainIO'].organizations.find({}, {"_id": 0, "guid": 1, "users": 1})
@@ -116,7 +116,10 @@ def run():
             print tenant, " # of uploads of interest :", len(uploadsOfInterest)
             if tenantID['users'][0] not in uploadInfo:
                 uploadInfo[tenantID['users'][0]] = []
-            uploadInfo[tenantID['users'][0]] += uploadsOfInterest
+            for x in uploadsOfInterest:
+                if x in uploadInfo[tenantID['users'][0]]:
+                    continue
+                uploadInfo[tenantID['users'][0]].append(x)
 
     if len(uploadInfo) > 0:
         formattedData = formatDataforEmail(uploadInfo)
