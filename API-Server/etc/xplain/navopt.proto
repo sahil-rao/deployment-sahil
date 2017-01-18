@@ -401,6 +401,7 @@ message UploadStatus {
   }
   UploadState state = 1;
   string workloadId = 2;
+  string errorMsg = 3;
 }
 
 message HeaderField {

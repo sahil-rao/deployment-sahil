@@ -817,6 +817,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             if response['status'] == 'finished':
                 ret.status.state = 3
         ret.status.workloadId = response['workloadId']
+        ret.status.errorMsg = response['errorMsg']
         return ret
 
     def uploadStatus(self, request, context):
