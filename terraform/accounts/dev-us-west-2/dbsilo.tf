@@ -15,8 +15,8 @@ module "dbsilo1" {
     mongo_replica_set = "dbsilo1"
     mongo_iam_instance_profile = "${module.common.mongo_instance_profile}"
     mongo_security_groups = ["${module.common.mongo_security_groups}"]
-    mongo_version = "v2"
-    mongo_ami_id = "ami-4bc0162b"
+    mongo_version = "v4"
+    mongo_ami_id = "ami-ac41f1cc"
     mongo_instance_type = "m4.xlarge"
     mongo_min_size = 0
     mongo_max_size = 3
@@ -67,8 +67,8 @@ module "dbsilo2" {
     mongo_replica_set = "dbsilo2"
     mongo_iam_instance_profile = "${module.common.mongo_instance_profile}"
     mongo_security_groups = ["${module.common.mongo_security_groups}"]
-    mongo_version = "v2"
-    mongo_ami_id = "ami-4bc0162b"
+    mongo_version = "v4"
+    mongo_ami_id = "ami-ac41f1cc"
     mongo_instance_type = "m4.xlarge"
     mongo_min_size = 0
     mongo_max_size = 3
