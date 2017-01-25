@@ -55,6 +55,8 @@
     "each-async": "^1.1.1",
     "eslint-plugin-react": "*",
     "extract-text-webpack-plugin": "*",
+    "html-webpack-plugin": "*",
+    "html-loader": "*",
     "file-loader": "~0.9.0",
     "fs-extra": "^0.30.0",
     "fs-jetpack": "^0.9.0",
