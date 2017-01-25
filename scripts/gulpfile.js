@@ -68,9 +68,7 @@ gulp.task('pull-app', ['purge-ui'], function(){
 gulp.task('webpack-build', function(){
   console.log("Compiling code");
   var dir = xplainDir || dirs.ui+'/xplain.io/';
-  fs.copySync(dir+'src/index.html', dir+'public/build/index.html');
-  return gulp.src(dir+'src/main.js')
-    .pipe(webpack(require(dir+'src/webpack.config.js')))
+  return webpack(require(dir+'src/webpack.config.js'))
     .pipe(gulp.dest(dir+'public/build/'));
 });
 
