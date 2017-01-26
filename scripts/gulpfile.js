@@ -90,7 +90,7 @@ gulp.task('app-build', ["webpack-build"], function(){
     return gulp.src(dir+'/tmp/xplain.io/**')
         .pipe(tar('xplain.io.tar'))
         .pipe(gzip())
-        .pipe(gulp.dest((dirs.vm || dirs.outputDir)))
+        .pipe(gulp.dest(dirs.outputDir))
         .on('error', function(err){
           console.log(err);
         })
