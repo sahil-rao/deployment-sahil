@@ -1124,7 +1124,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                                        "instance_count",
                                                        sec_key=custom_id,
                                                        sort=True, incrBy=1)
-                if elapsed_time is not None and not math.isnan(elapsed_time):
+                if elapsed_time is not None and not math.isnan(float(elapsed_time)):
                     try:
                         redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort=True, incrBy=float(elapsed_time))
                         redis_conn.incrEntityCounter("dashboard_data", "total_elapsed_time", sort=False, incrBy=float(elapsed_time))
@@ -1239,7 +1239,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             mongoconn.updateInstance(entity, eid, None, inst_dict)
         if 'ELAPSED_TIME' in data:
             elapsed_time = data['ELAPSED_TIME']
-        if elapsed_time is not None and not math.isnan(elapsed_time):
+        if elapsed_time is not None and not math.isnan(float(elapsed_time)):
             try:
                 redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
                 redis_conn.incrEntityCounter("dashboard_data", "total_elapsed_time", sort=False, incrBy=float(elapsed_time))
