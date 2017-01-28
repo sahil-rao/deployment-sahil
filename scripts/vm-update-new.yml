@@ -230,8 +230,6 @@
 
   - name: Untar Baazdata App
     shell: tar -zxf /home/xplain/xplain.io.tar.gz
-  - name: Remove the existing deployed code
-    file: path=/var/xplain{{ port }} state=absent
   - name: Move the new code
     shell: mv /home/xplain/xplain.io /var/xplain{{ port }}
   - name: Install npm modules.
