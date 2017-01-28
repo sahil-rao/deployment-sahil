@@ -228,6 +228,10 @@
   - name: Copy ruleengine upstart configuration file
     copy: src=/home/xplain/ruleengineservice.conf dest=/etc/init/ruleengineservice.conf
 
+  - name: Untar Baazdata App
+    shell: tar -zxf /home/xplain/xplain.io.tar.gz
+  - name: Move the new code
+    shell: mv /home/xplain/xplain.io /var/xplain{{ port }}
   - name: Install npm modules.
     npm: path=/var/xplain{{ port }} production=yes
 
