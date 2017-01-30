@@ -87,6 +87,7 @@ else
 fi
 
 cd /home/xplain
+cp /home/xplain/build/deployment/scripts/vm-gulp-config.js ~/gulp-config.js
 npm install
 #Build UI with Gulp
 gulp full-build --branch $BRANCH_NAME
@@ -95,7 +96,7 @@ gulp eslint
 #start building process
 cd  /home/xplain/build
 
-#Checkout deployment
+#Checkout UI
 cd /home/xplain/build/UI
 git pull
 git checkout $BRANCH_NAME

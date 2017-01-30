@@ -229,11 +229,9 @@
     copy: src=/home/xplain/ruleengineservice.conf dest=/etc/init/ruleengineservice.conf
 
   - name: Untar Baazdata App
-    shell: tar -zxf /home/xplain/xplain.io.tar.gz
-  - name: Remove the existing deployed code
-    file: path=/var/xplain{{ port }} state=absent
-  - name: Move the new code
-    shell: mv /home/xplain/xplain.io /var/xplain{{ port }}
+    unarchive: src=/home/xplain/xplain.io.tar.gz dest=/home/xplain/
+  - name: copy the new code
+    copy: src=/home/xplain/xplain.io/ dest=/var/xplain{{ port }}/
   - name: Install npm modules.
     npm: path=/var/xplain{{ port }} production=yes
 
