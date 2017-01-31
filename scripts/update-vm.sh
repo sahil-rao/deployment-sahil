@@ -90,8 +90,8 @@ cd /home/xplain
 cp /home/xplain/build/deployment/scripts/vm-gulp-config.js ~/gulp-config.js
 npm install
 #Build UI with Gulp
-sudo gulp full-build --branch $BRANCH_NAME
-sudo gulp eslint
+gulp full-build --branch $BRANCH_NAME
+gulp eslint
 
 #start building process
 cd  /home/xplain/build
