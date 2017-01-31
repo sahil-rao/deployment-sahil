@@ -232,7 +232,8 @@ cp /home/xplain/build/deployment/VM/sentinel.conf .
 cp /home/xplain/build/deployment/VM/redis-sentinel.conf .
 
 cp /home/xplain/build/graph/dist/flightpath-*.tar.gz ./flightpath-deployment.tar.gz
-cp /home/xplain/build/UI/xplain.io.tar.gz .
+#handled by gulp
+#cp /home/xplain/build/UI/xplain.io.tar.gz .
 cp /home/xplain/build/UI/optimizer_admin.tar.gz .
 cp /home/xplain/build/compiler/Baaz-Compiler.tar.gz .
 cp /home/xplain/build/analytics/dist/baazmath-*.tar.gz Baaz-Analytics.tar.gz
