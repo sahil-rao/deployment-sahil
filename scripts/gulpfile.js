@@ -87,6 +87,7 @@ gulp.task('app-build', ["webpack-build"], function(){
       matching: ['!node_modules/**']
     });
     fs.removeSync(dir+'/tmp/xplain.io/xplain.io/node_modules');
+    fs.removeSync(dirs.outputDir+'xplain.io.tar.gz');
     return gulp.src(dir+'/tmp/xplain.io/**')
         .pipe(tar('xplain.io.tar'))
         .pipe(gzip())
