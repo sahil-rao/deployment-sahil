@@ -42,6 +42,7 @@ SERVICES = OrderedDict([
     ('graph',
         [
             'flightpath-deployment.tar.gz',
+            'regression-deployment.tar.gz',
         ]
      )])
 
