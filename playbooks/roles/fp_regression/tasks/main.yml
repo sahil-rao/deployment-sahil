@@ -1,0 +1,10 @@
+---
+- name: Get regression package
+  shell: aws s3 --region {{ region }} cp s3://{{ s3_deployment_bucket }}/{{ BuildVersion }}regression-deployment.tar.gz /home/ubuntu/
+  become: true
+- name: Untar regression
+  shell: tar zxf /home/ubuntu/regression-deployment.tar.gz
+  become: true
+- name: Create entry
+  cron: name="nightly run cron job" state="present" hour="16" user="root" job="cd /home/ubuntu/test && ./nightly_run.sh"
+  become: true  
