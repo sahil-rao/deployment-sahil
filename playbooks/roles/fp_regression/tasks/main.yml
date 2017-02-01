@@ -5,6 +5,9 @@
 - name: Untar regression
   shell: tar zxf /home/ubuntu/regression-deployment.tar.gz
   become: true
+- name: Install tendo
+  pip: name=tendo
+  sudo: yes
 - name: Create entry
-  cron: name="nightly run cron job" state="present" hour="16" user="root" job="cd /home/ubuntu/test && ./nightly_run.sh"
+  cron: name="nightly run cron job" state="present" minute="0" hour="16" user="root" job="cd /home/ubuntu/test && ./nightly_run.sh"
   become: true  
