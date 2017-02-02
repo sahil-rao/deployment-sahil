@@ -65,6 +65,10 @@ module "common" {
     datadog_api_key = "${var.datadog_api_key}"
 
     s3_redis_backups_expiration_days = 7
+
+    account_tls_cert_arn = "${data.terraform_remote_state.networking.account_tls_cert_arn}"
+
+    nodejs_elb_internal = true
 }
 
 resource "aws_route53_record" "website" {

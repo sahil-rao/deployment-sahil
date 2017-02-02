@@ -45,3 +45,7 @@ output "queue_server_security_groups" {
 output "redis_security_groups" {
     value = ["${aws_security_group.redis.id}"]
 }
+
+output "nodejs_elb_security_groups" {
+    value = ["${aws_security_group.elb.id}"]
+}
