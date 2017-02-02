@@ -42,6 +42,21 @@
     become: yes
   - role: queueserver
     become: yes
+  - { role: qserverLogging , tags: ['logging'] }
+
+- hosts: tag_Name_MongoDBServer
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
+  roles:
+  - { role: mongoLogging , tags: ['logging'] }
+
+- hosts: tag_Name_Redis
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
+  roles:
+  - { role: redisLogging , tags: ['logging'] }
 
 - hosts: tag_Name_NodeJS
   vars_files:

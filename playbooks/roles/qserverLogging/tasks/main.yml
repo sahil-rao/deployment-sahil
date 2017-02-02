@@ -1,0 +1,31 @@
+---
+- name: Install updates
+  shell: apt-get update
+  sudo: yes
+- name: install pip
+  shell: apt-get -y install python-pip
+  sudo: yes
+- name: Install awscli package
+  pip: name=awscli
+  sudo: yes
+- name: Install awscli log package
+  pip: name=awscli-cwlogs
+  sudo: yes
+- name: Configure aws log plugin
+  command: aws configure set plugins.cwlogs cwlogs
+  sudo: yes
+- name: Copy aws config file
+  copy: src=awslogs.conf dest=/home/ubuntu/awslogs.conf
+  sudo: yes
+- name: Copy aws config file
+  copy: src=awslogs-agent-setup.py dest=/home/ubuntu/awslogs-agent-setup.py
+  sudo: yes
+- name: Create aws conf dir
+  command: python /home/ubuntu/awslogs-agent-setup.py --region us-west-2 -c /home/ubuntu/awslogs.conf -n
+  sudo: yes
+- name: Stop aws log service
+  service: name=awslogs state=stopped
+  sudo: yes
+- name: Start aws log service
+  service: name=awslogs state=started
+  sudo: yes
