@@ -100,3 +100,7 @@ variable "datadog_api_key" {}
 
 # S3
 variable "s3_redis_backups_expiration_days" {}
+
+# elb
+variable "account_tls_cert_arn" {}
+variable "nodejs_elb_internal" {}

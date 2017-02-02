@@ -18,3 +18,4 @@ variable "nginx_name" {}
 variable "nodejs_name" {}
 variable "queue_server_name" {}
 variable "redis_name" {}
+variable "navopt_elb_name" {}

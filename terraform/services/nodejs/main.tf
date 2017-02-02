@@ -8,10 +8,19 @@ variable "vpc_id" {}
 variable "subnet_ids" {
     type = "list"
 }
+variable "public_subnet_ids" {
+    type = "list"
+}
 variable "dns_zone_id" {}
 variable "security_groups" {
     type = "list"
 }
+
+variable "nodejs_elb_security_groups" {
+    type = "list"
+}
+
+variable "nodejs_elb_internal" {}
 
 ##############################################################################
 
@@ -29,6 +38,27 @@ variable "instance_count" {
 variable "key_name" {}
 
 ##############################################################################
+variable "navopt_elb_cert_arn" {}
+
+variable "elb_access_logs_interval" {
+    description = "The publishing interval in minutes."
+    default = "60"
+}
+
+variable "elb_access_logs_enabled" {
+    description = "Boolean to enable / disable access_logs."
+    default = "true"
+}
+
+##############################################################################
+data "aws_region" "current" {
+    current = true
+}
+
+module "elb_access_logs" {
+    source = "../../modules/elb-access-logs"
+    region = "${data.aws_region.current.name}"
+}
 
 module "bitnami_nodejs" {
     source = "../../modules/bitnami"
@@ -66,6 +96,46 @@ resource "aws_instance" "default" {
 
 ###################################################################
 
+resource "aws_elb" "default" {
+    name = "navopt-elb"
+    subnets = ["${var.public_subnet_ids}"]
+    security_groups = ["${var.nodejs_elb_security_groups}"]
+
+    access_logs {
+      bucket = "${module.elb_access_logs.bucket}"
+      interval = "${var.elb_access_logs_interval}"
+      enabled = "${var.elb_access_logs_enabled}"
+    }
+    
+    listener {
+      instance_port = 3000
+      instance_protocol = "http"
+      lb_port = 443
+      lb_protocol = "https"
+      ssl_certificate_id = "${var.navopt_elb_cert_arn}"
+    }
+
+    health_check {
+      healthy_threshold = 10
+      unhealthy_threshold = 2
+      timeout = 5
+      target = "TCP:3000"
+      interval = 30
+    }
+
+  
+    instances = ["${aws_instance.default.*.id}"]
+
+    connection_draining = true
+    connection_draining_timeout = 60
+    idle_timeout = 60
+
+    cross_zone_load_balancing = true
+    internal = "${var.nodejs_elb_internal}"
+}
+
+###################################################################
+
 resource "aws_route53_record" "default" {
     count = "${var.instance_count}"
     zone_id = "${var.dns_zone_id}"
@@ -74,3 +144,8 @@ resource "aws_route53_record" "default" {
     ttl = "60"
     records = ["${element(aws_instance.default.*.private_ip, count.index)}"]
 }
+
+output "instance_ids" {
+    value = ["${aws_instance.default.*.id}"]
+}
+
