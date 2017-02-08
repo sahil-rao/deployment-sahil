@@ -2,10 +2,6 @@ output "admin_eip" {
     value = "${module.common.admin_eip}"
 }
 
-output "api_fqdn" {
-    value = "${module.common.api_elb_fqdn}"
-}
-
 output "deployment_root_eip" {
     value = "${module.common.deployment_root_eip}"
 }

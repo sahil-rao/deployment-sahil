@@ -2,10 +2,6 @@ output "admin_eip" {
     value = "${module.admin.eip}"
 }
 
-output "api_elb_fqdn" {
-    value = "${module.api.api_elb_fqdn}"
-}
-
 output "deployment_root_eip" {
     value = "${module.deployment-root.eip}"
 }
