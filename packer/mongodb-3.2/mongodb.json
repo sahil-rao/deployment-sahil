@@ -49,6 +49,11 @@
     ],
     "provisioners": [
         {
+            "type": "shell",
+            "script": "../scripts/wait-for-cloud-init.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
             "type": "file",
             "source": "../executables",
             "destination": "/tmp"
@@ -87,6 +92,12 @@
             "type": "shell",
             "script": "../scripts/setup_cloudwatch.sh",
             "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/reboot.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}",
+            "expect_disconnect": true
         }
     ]
 }
