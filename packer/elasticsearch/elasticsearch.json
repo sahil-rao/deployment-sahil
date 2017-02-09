@@ -15,8 +15,18 @@
             "access_key": "",
             "secret_key": "",
             "region": "us-west-2",
-            "source_ami": "ami-704ab610",
-            "instance_type": "m3.xlarge",
+            "source_ami_filter": {
+                "filters": {
+                    "virtualization-type": "hvm",
+                    "name": "*ubuntu-trusty-14.04-amd64-server-*",
+                    "root-device-type": "ebs"
+                },
+                "owners": ["099720109477"],
+                "most_recent": true
+            },
+            "spot_price": "auto",
+            "spot_price_auto_product": "Linux/UNIX",
+            "instance_type": "m3.medium",
             "ssh_username": "ubuntu",
             "ami_regions": [
                 "us-west-2"
