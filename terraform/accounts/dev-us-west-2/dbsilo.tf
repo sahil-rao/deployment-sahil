@@ -48,6 +48,9 @@ module "dbsilo1" {
     elasticsearch_max_size = 3
     elasticsearch_desired_capacity = 3
     elasticsearch_ebs_optimized = false
+
+    cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
+    log_subscription_destination_arn = "${module.common.log_subscription_destination_arn}"
 }
 
 module "dbsilo2" {
@@ -100,4 +103,7 @@ module "dbsilo2" {
     elasticsearch_max_size = 3
     elasticsearch_desired_capacity = 3
     elasticsearch_ebs_optimized = false
+
+    cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
+    log_subscription_destination_arn = "${module.common.log_subscription_destination_arn}"
 }

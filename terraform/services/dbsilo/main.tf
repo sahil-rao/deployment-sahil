@@ -77,6 +77,9 @@ variable "elasticsearch_ebs_optimized" {
     default = true
 }
 
+variable "cloudwatch_retention_in_days" {}
+variable "log_subscription_destination_arn" {}
+
 ###################################################################
 
 module "mongodb" {
@@ -103,6 +106,9 @@ module "mongodb" {
     max_size = "${var.mongo_max_size}"
     desired_capacity = "${var.mongo_desired_capacity}"
     ebs_optimized = "${var.mongo_ebs_optimized}"
+
+    cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
+    log_subscription_destination_arn = "${var.log_subscription_destination_arn}"
 }
 
 module "redis" {
@@ -130,6 +136,9 @@ module "redis" {
     desired_capacity = "${var.redis_desired_capacity}"
     ebs_optimized = "${var.redis_ebs_optimized}"
     backups_enabled = "${var.redis_backups_enabled}"
+
+    cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
+    log_subscription_destination_arn = "${var.log_subscription_destination_arn}"
 }
 
 module "elasticsearch" {
@@ -154,4 +163,7 @@ module "elasticsearch" {
     max_size = "${var.elasticsearch_max_size}"
     desired_capacity = "${var.elasticsearch_desired_capacity}"
     ebs_optimized = "${var.elasticsearch_ebs_optimized}"
+
+    cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
+    log_subscription_destination_arn = "${var.log_subscription_destination_arn}"
 }
