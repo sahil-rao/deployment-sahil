@@ -1,0 +1,82 @@
+{
+    "variables": {
+        "env": null,
+        "encrypted": null,
+        "volume_size": null,
+        "volume_type": null,
+        "iops": "0",
+        "delete_on_termination": "false"
+    },
+    "builders": [
+        {
+            "type": "amazon-ebs",
+            "ami_description": "Packer generated AMI",
+            "ami_name": "mongodb-{{ user `env` }}-{{ timestamp }}",
+            "access_key": "",
+            "secret_key": "",
+            "region": "us-west-2",
+            "source_ami": "ami-704ab610",
+            "instance_type": "m4.xlarge",
+            "ssh_username": "ubuntu",
+            "ami_regions": [
+                "us-west-2"
+            ],
+            "launch_block_device_mappings": [
+                {
+                    "device_name": "/dev/xvdf",
+                    "encrypted": "{{ user `encrypted` }}",
+                    "volume_size": "{{ user `volume_size` }}",
+                    "volume_type": "{{ user `volume_type` }}",
+                    "iops": "{{ user `iops` }}",
+                    "delete_on_termination": "{{ user `delete_on_termination` }}"
+                }
+            ],
+            "tags": {
+                "Name": "mongodb",
+                "Env": "{{ user `env` }}"
+            }
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "file",
+            "source": "../executables",
+            "destination": "/tmp"
+        },
+        {
+            "type": "file",
+            "source": "executables",
+            "destination": "/tmp"
+        },
+        {
+            "type": "file",
+            "source": "etc",
+            "destination": "/tmp"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/setup_ubuntu.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/setup_volume.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }} /dev/xvdf /var/lib/mongodb"
+        },
+        {
+            "type": "shell",
+            "script": "setup_mongodb.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/setup_datadog.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/setup_cloudwatch.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        }
+    ]
+}
