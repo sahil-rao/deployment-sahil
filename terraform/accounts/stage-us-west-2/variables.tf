@@ -10,13 +10,8 @@ variable "env" {
     default = "stage"
 }
 
-variable "all_access_cidrs" {
-    type = "list"
-    default = []
-}
-
 variable "terraform_remote_state_bucket" {
-    default = "navopt-state-stage"
+    default = "cloudera-terraform-infrastructure"
 }
 
 variable "terraform_remote_state_region" {
@@ -24,7 +19,7 @@ variable "terraform_remote_state_region" {
 }
 
 variable "terraform_remote_state_key" {
-    default = "us-west-2/network/terraform.tfstate"
+    default = "stage/navopt-us-west-2-staging/terraform.tfstate"
 }
 
 variable "cluster_name" {
@@ -36,9 +31,13 @@ variable "datadog_api_key" {
 }
 
 variable "key_name" {
-    default = "navopt-stage-us-west-2"
+    default = "navopt-us-west-2-stage"
 }
 
-variable "thunderhead_vpc_cidr" {
-    default = "10.32.0.0/16"
+variable "s3_redis_backups_expiration_days" {
+    default = 7
+}
+
+variable "cloudwatch_retention_in_days" {
+    default = "14"
 }

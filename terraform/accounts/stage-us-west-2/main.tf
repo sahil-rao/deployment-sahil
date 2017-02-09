@@ -13,10 +13,6 @@ data "terraform_remote_state" "networking" {
     }
 }
 
-module "cloudera-exit-cidr" {
-    source = "../../modules/cloudera-exit-cidr"
-}
-
 module "common" {
     source = "../common"
 
@@ -26,40 +22,54 @@ module "common" {
     region = "${var.region}"
     vpc_id = "${data.terraform_remote_state.networking.vpc_id}"
     private_cidrs = [
-        "${data.terraform_remote_state.networking.vpc_cidr}",
-        "${var.thunderhead_vpc_cidr}"
+        "${data.terraform_remote_state.networking.vpc_cidr}"
     ]
     public_cidrs = [
-        "${module.cloudera-exit-cidr.cidr}"
+        "${data.terraform_remote_state.networking.allowed_internet_cidrs}",
     ]
     private_subnet_ids = [
-        "${data.terraform_remote_state.networking.private_subnet_ids}"
+        "${data.terraform_remote_state.networking.private_subnet_ids}",
     ]
     public_subnet_ids = [
-
-        "${data.terraform_remote_state.networking.public_subnet_ids}"
+        "${data.terraform_remote_state.networking.public_subnet_ids}",
     ]
 
-    dns_zone_id = "${data.terraform_remote_state.networking.dns_zone_id}"
-    dns_zone_name = "${data.terraform_remote_state.networking.dns_zone_name}"
+    dns_zone_id = "${data.terraform_remote_state.networking.private_zone_id}"
+    dns_zone_name = "${data.terraform_remote_state.networking.zone_name}"
 
     # Instances
     key_name = "${var.key_name}"
 
-    api_elb_dns_name = "navoptapi"
-    api_elb_internal = "true"
+    backoffice_instance_type = "t2.micro"
+    backoffice_instance_count = 1
+
+    cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
 
     logging_elasticsearch_version = "v1"
     logging_elasticsearch_ami = "ami-062efa66"
-    logging_elasticsearch_instance_type = "t2.micro" # "m3.xlarge"
+    logging_elasticsearch_instance_type = "t2.micro"
 
     logging_redis_version = "v4"
     logging_redis_ami = "ami-ec21f58c"
 
     redis_cache_version = "v3"
     redis_cache_ami = "ami-ec21f58c"
-    redis_cache_instance_type = "t2.micro" # "r3.2xlarge"
+    redis_cache_instance_type = "t2.micro"
 
     # Datadog
     datadog_api_key = "${var.datadog_api_key}"
+
+    s3_redis_backups_expiration_days = "${var.s3_redis_backups_expiration_days}"
+
+    account_tls_cert_arn = "${data.terraform_remote_state.networking.account_tls_cert_arn}"
+
+    nodejs_elb_internal = false
+}
+
+resource "aws_route53_record" "website" {
+    zone_id = "${data.terraform_remote_state.networking.private_zone_id}"
+    name = ""
+    type = "A"
+    ttl = "5"
+    records = ["${module.common.nginx_private_eip}"]
 }
