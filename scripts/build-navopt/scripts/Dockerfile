@@ -53,6 +53,8 @@ RUN npm install -g \
 
 RUN locale-gen en_US.UTF-8
 
+RUN apt-get -y install libcurl4-openssl-dev
+
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
