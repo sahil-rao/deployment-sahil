@@ -363,6 +363,8 @@ class callback_context():
                 Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.totalColumns"%(Self.compiler_to_use), incrBy=1)
         else:
             #Query mongo based to table name in order to update table stats
+            if 'TABLE_NAME' not in stats:
+                return
             table_name = stats['TABLE_NAME'].lower()
             table_entity = Self.mongoconn.getEntityByName(table_name)
 
