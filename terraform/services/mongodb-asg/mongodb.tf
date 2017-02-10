@@ -33,6 +33,9 @@ variable "ebs_optimized" {
     default = true
 }
 
+variable "cloudwatch_retention_in_days" {}
+variable "log_subscription_destination_arn" {}
+
 ###################################################################
 
 variable "snapshot_id" {}
@@ -52,6 +55,16 @@ data "template_file" "user_data" {
         datadog_api_key = "${var.datadog_api_key}"
         snapshot_id = "${var.snapshot_id}"
     }
+}
+
+###################################################################
+
+module "mongodb-service" {
+    source = "../../modules/cloudwatch-log-group"
+
+    name = "${var.name}"
+    retention_in_days = "${var.cloudwatch_retention_in_days}"
+    subscription_destination_arn = "${var.log_subscription_destination_arn}"
 }
 
 ###################################################################

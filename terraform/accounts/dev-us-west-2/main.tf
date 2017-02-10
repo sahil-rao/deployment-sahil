@@ -44,9 +44,6 @@ module "common" {
     # Instances
     key_name = "${var.key_name}"
 
-    api_elb_dns_name = "navoptapi"
-    api_elb_internal = "true"
-
     backoffice_instance_type = "t2.large"
     backoffice_instance_count = 8
 

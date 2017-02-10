@@ -31,10 +31,6 @@ variable "admin_instance_type" {
     default = "t2.micro"
 }
 
-# API Service
-variable "api_elb_dns_name" {}
-variable "api_elb_internal" {}
-
 # Backoffice
 variable "backoffice_instance_type" {}
 variable "backoffice_instance_count" {}

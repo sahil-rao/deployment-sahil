@@ -30,6 +30,9 @@ variable "ebs_optimized" {
     default = "false"
 }
 
+variable "cloudwatch_retention_in_days" {}
+variable "log_subscription_destination_arn" {}
+
 ###################################################################
 
 module "ubuntu" {
@@ -38,6 +41,16 @@ module "ubuntu" {
     distribution = "trusty"
     virttype = "hvm"
     storagetype = "ebs-ssd"
+}
+
+###################################################################
+
+module "queue-server-service" {
+    source = "../../modules/cloudwatch-log-group"
+
+    name = "${var.name}"
+    retention_in_days = "${var.cloudwatch_retention_in_days}"
+    subscription_destination_arn = "${var.log_subscription_destination_arn}"
 }
 
 ###################################################################
