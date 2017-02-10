@@ -41,3 +41,7 @@ output "mongo_security_groups" {
 output "redis_security_groups" {
     value = "${module.sg.redis_security_groups}"
 }
+
+output "log_subscription_destination_arn" {
+    value = "${module.log-service.destination_arn}"
+}

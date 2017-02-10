@@ -15,4 +15,7 @@ module "queue-server" {
 
     instance_type = "t2.large"
     instance_count = 2
+
+    cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
+    log_subscription_destination_arn = "${module.log-service.destination_arn}"
 }

@@ -1,7 +1,11 @@
+variable "cloudwatch_retention_in_days" {}
+variable "log_subscription_destination_arn" {}
+
 module "redis-lc" {
     source = "../redis-lc"
 
-    name_prefix = "${var.name}-${var.version}-"
+    name = "${var.name}"
+    version = "${var.version}"
 
     key_name = "${var.key_name}"
     iam_instance_profile = "${var.iam_instance_profile}"
@@ -19,6 +23,9 @@ module "redis-lc" {
     env = "${var.env}"
     service = "${var.service}"
     datadog_api_key = "${var.datadog_api_key}"
+
+    cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
+    log_subscription_destination_arn = "${var.log_subscription_destination_arn}"
 }
 
 module "redis-asg" {

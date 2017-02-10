@@ -1378,7 +1378,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
 
             is_compiler = False
-            if compile_doc[key].has_key("InputTableList"):
+            if key == compiler_to_use and compile_doc[key].has_key("InputTableList"):
                 inputTableList = compile_doc[key]["InputTableList"]
                 if key == compiler_to_use:
                     is_compiler = True
@@ -1391,7 +1391,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
-            if compile_doc[key].has_key("OutputTableList"):
+            if key == compiler_to_use and compile_doc[key].has_key("OutputTableList"):
                 logging.info("Output table set: %s", compile_doc[key]["OutputTableList"])
                 tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"],
                                                 mongoconn, redis_conn, tenant, uid, entity, False,
@@ -1401,7 +1401,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
-            if compile_doc[key].has_key("ddlColumns"):
+            if key == compiler_to_use and compile_doc[key].has_key("ddlColumns"):
                 tmpAdditions = processColumns(compile_doc[key]["ddlColumns"],
                                               mongoconn, redis_conn, tenant, uid, entity, clog)
                 if uid is not None:
@@ -1410,7 +1410,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
 
-            if compile_doc[key].has_key("createTableName"):
+            if key == compiler_to_use and compile_doc[key].has_key("createTableName"):
                 tmpAdditions = processCreateTable(compile_doc[key]["createTableName"],
                                               mongoconn, redis_conn,tenant, uid, entity, False, context, clog, tableEidList)
                 if uid is not None:
@@ -1418,7 +1418,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
-            if compile_doc[key].has_key("viewName") and compile_doc[key].has_key("view") and compile_doc[key]["view"] == True:
+            if key == compiler_to_use and compile_doc[key].has_key("viewName") and compile_doc[key].has_key("view") and compile_doc[key]["view"] == True:
                 tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["viewName"],
                                          mongoconn, redis_conn, mongoconn.db.entities,
                                          tenant, uid, entity,context, inputTableList, clog, tableEidList,
@@ -1718,7 +1718,7 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
     for db_entry in table_dict:
         # get the tables data.
         table_names = table_dict[db_entry].keys()
-        entries = mongoconn.getEntitiesByTypeAndName(EntityType.SQL_TABLE, table_names, {"eid" : 1, "name" : 1})
+        entries = mongoconn.getEntitiesByTypeAndName(table_names, EntityType.SQL_TABLE, {"eid" : 1, "name" : 1})
 
         for entry in entries:
             table_eid = entry["eid"]
@@ -1736,12 +1736,8 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
 
             for column_entry in mongoconn.db.entities.find({"etype":"SQL_TABLE_COLUMN",
                                                             "eid": { "$in" : column_eids}},
-                                                            {"name":1}):
-                c_split = column_entry["name"].split(".")
-                if len(c_split) == 2:
-                    table_dict[db_entry][entry["name"]].append(c_split[1])
-                else:
-                    table_dict[db_entry][entry["name"]].append(column_entry["name"])
+                                                            {"columnName":1}):
+                table_dict[db_entry][entry["name"]].append(column_entry["columnName"])
 
     # filter out tables with no data
     nonempty_dict = {}

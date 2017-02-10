@@ -54,4 +54,7 @@ module "logging" {
     key_name = "${var.key_name}"
 
     datadog_api_key = "${var.datadog_api_key}"
+
+    cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
+    log_subscription_destination_arn = "${module.log-service.destination_arn}"
 }

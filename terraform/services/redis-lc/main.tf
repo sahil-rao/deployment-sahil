@@ -1,4 +1,5 @@
-variable "name_prefix" {}
+variable "name" {}
+variable "version" {}
 
 variable "key_name" {}
 variable "iam_instance_profile" {}
@@ -25,6 +26,19 @@ variable "backups_enabled" {
     default = false
 }
 
+variable "cloudwatch_retention_in_days" {}
+variable "log_subscription_destination_arn" {}
+
+###################################################################
+
+module "redis-service" {
+    source = "../../modules/cloudwatch-log-group"
+
+    name = "${var.name}"
+    retention_in_days = "${var.cloudwatch_retention_in_days}"
+    subscription_destination_arn = "${var.log_subscription_destination_arn}"
+}
+
 ###################################################################
 
 data "template_file" "user_data" {
@@ -46,7 +60,7 @@ data "template_file" "user_data" {
 ###################################################################
 
 resource "aws_launch_configuration" "default" {
-    name_prefix = "${var.name_prefix}"
+    name_prefix = "${var.name}-${var.version}-"
     image_id = "${var.ami_id}"
     instance_type = "${var.instance_type}"
     iam_instance_profile = "${var.iam_instance_profile}"
