@@ -23,9 +23,10 @@ def execute():
 
     for org in orgs:
         if 'upLimit' in org:
-            if org['upLimit'] >= DEFAULT_UPLOAD_LIMIT:
-                continue
-
+            if type(org['upLimit']) == int:
+                if org['upLimit'] >= DEFAULT_UPLOAD_LIMIT:
+                    continue
+        print org
         db.organizations.update_one({'guid': org['guid']}, { '$set': {"upLimit": DEFAULT_UPLOAD_LIMIT} } )
 
                    
