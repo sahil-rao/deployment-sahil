@@ -26,6 +26,10 @@ variable "cluster_name" {
     default = "prod"
 }
 
+variable "datadog_api_key" {
+    default = "450d437e4234a90b04a15396bd2a83b8"
+}
+
 variable "key_name" {
     default = "navopt-us-west-2-prod"
 }

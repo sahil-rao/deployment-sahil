@@ -12,3 +12,9 @@ data "terraform_remote_state" "networking" {
         key = "${var.terraform_remote_state_key}"
     }
 }
+
+module "log-service" {
+    source = "../../modules/log-service"
+
+    environment = "${var.env}"
+}
