@@ -66,10 +66,18 @@ module "common" {
     nodejs_elb_internal = false
 }
 
-resource "aws_route53_record" "website" {
+resource "aws_route53_record" "private_website" {
     zone_id = "${data.terraform_remote_state.networking.private_zone_id}"
     name = ""
     type = "A"
     ttl = "5"
     records = ["${module.common.nginx_private_eip}"]
+}
+
+resource "aws_route53_record" "public_website" {
+    zone_id = "${data.terraform_remote_state.networking.public_zone_id}"
+    name = ""
+    type = "A"
+    ttl = "5"
+    records = ["${module.common.nginx_public_eip}"]
 }
