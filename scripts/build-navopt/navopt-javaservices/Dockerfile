@@ -15,5 +15,5 @@ RUN apt-get update && apt-get install -y software-properties-common && \
 
 ENV JAVA_HOME /usr/lib/jvm/java-8-oracle
 
-ADD Baaz-Compiler.tar.gz /usr/lib
+ADD ../target/Baaz-Compiler.tar.gz /usr/lib
 ADD compileserver /etc/logrotate.d/
