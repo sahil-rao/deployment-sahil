@@ -1,0 +1,103 @@
+{
+    "variables": {
+        "env": null,
+        "encrypted": null,
+        "volume_size": null,
+        "volume_type": null,
+        "iops": "0",
+        "delete_on_termination": "false"
+    },
+    "builders": [
+        {
+            "type": "amazon-ebs",
+            "ami_description": "Packer generated AMI",
+            "ami_name": "mongodb-3.0-{{ user `env` }}-{{ timestamp }}",
+            "access_key": "",
+            "secret_key": "",
+            "region": "us-west-2",
+            "source_ami_filter": {
+                "filters": {
+                    "virtualization-type": "hvm",
+                    "name": "*ubuntu-trusty-14.04-amd64-server-*",
+                    "root-device-type": "ebs"
+                },
+                "owners": ["099720109477"],
+                "most_recent": true
+            },
+            "spot_price": "auto",
+            "spot_price_auto_product": "Linux/UNIX",
+            "instance_type": "m3.medium",
+            "ssh_username": "ubuntu",
+            "ami_regions": [
+                "us-west-2"
+            ],
+            "launch_block_device_mappings": [
+                {
+                    "device_name": "/dev/xvdf",
+                    "encrypted": "{{ user `encrypted` }}",
+                    "volume_size": "{{ user `volume_size` }}",
+                    "volume_type": "{{ user `volume_type` }}",
+                    "iops": "{{ user `iops` }}",
+                    "delete_on_termination": "{{ user `delete_on_termination` }}"
+                }
+            ],
+            "tags": {
+                "Name": "mongodb",
+                "Env": "{{ user `env` }}"
+            }
+        }
+    ],
+    "provisioners": [
+        {
+            "type": "shell",
+            "script": "../scripts/wait-for-cloud-init.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "file",
+            "source": "../executables",
+            "destination": "/tmp"
+        },
+        {
+            "type": "file",
+            "source": "executables",
+            "destination": "/tmp"
+        },
+        {
+            "type": "file",
+            "source": "etc",
+            "destination": "/tmp"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/setup_ubuntu.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/setup_volume.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }} /dev/xvdf /var/lib/mongodb"
+        },
+        {
+            "type": "shell",
+            "script": "setup_mongodb.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/setup_datadog.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/setup_cloudwatch.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/reboot.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}",
+            "expect_disconnect": true
+        }
+    ]
+}

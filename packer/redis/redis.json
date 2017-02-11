@@ -15,8 +15,18 @@
             "access_key": "",
             "secret_key": "",
             "region": "us-west-2",
-            "source_ami": "ami-704ab610",
-            "instance_type": "r3.2xlarge",
+            "source_ami_filter": {
+                "filters": {
+                    "virtualization-type": "hvm",
+                    "name": "*ubuntu-trusty-14.04-amd64-server-*",
+                    "root-device-type": "ebs"
+                },
+                "owners": ["099720109477"],
+                "most_recent": true
+            },
+            "spot_price": "auto",
+            "spot_price_auto_product": "Linux/UNIX",
+            "instance_type": "m3.medium",
             "ssh_username": "ubuntu",
             "ami_regions": [
                 "us-west-2"
@@ -38,6 +48,11 @@
         }
     ],
     "provisioners": [
+        {
+            "type": "shell",
+            "script": "../scripts/wait-for-cloud-init.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
         {
             "type": "file",
             "source": "../executables",
@@ -77,6 +92,12 @@
             "type": "shell",
             "script": "../scripts/setup_cloudwatch.sh",
             "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/reboot.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}",
+            "expect_disconnect": true
         }
     ]
 }

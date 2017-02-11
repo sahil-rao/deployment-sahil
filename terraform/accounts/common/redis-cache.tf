@@ -1,5 +1,5 @@
 module "redis-cache" {
-    source = "../../services/redis"
+    source = "../../services/redis-asg"
 
     name = "redis-cache"
     key_name = "${var.key_name}"
@@ -7,6 +7,7 @@ module "redis-cache" {
 
     subnet_ids = "${var.private_subnet_ids}"
     security_groups = "${module.sg.redis_security_groups}"
+    zone_id = "${var.dns_zone_id}"
     zone_name = "${var.dns_zone_name}"
 
     version = "${var.redis_cache_version}"

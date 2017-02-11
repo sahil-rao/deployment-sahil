@@ -13,10 +13,6 @@ data "terraform_remote_state" "networking" {
     }
 }
 
-module "cloudera-exit-cidr" {
-    source = "../../modules/cloudera-exit-cidr"
-}
-
 module "common" {
     source = "../common"
 
@@ -26,10 +22,10 @@ module "common" {
     region = "${var.region}"
     vpc_id = "${data.terraform_remote_state.networking.vpc_id}"
     private_cidrs = [
-        "${var.all_access_cidrs}",
+        "${data.terraform_remote_state.networking.all_access_cidrs}",
     ]
     public_cidrs = [
-        "${var.all_access_cidrs}",
+        "${data.terraform_remote_state.networking.all_access_cidrs}",
     ]
     private_subnet_ids = [
         "${data.terraform_remote_state.networking.private_subnet_ids}",
@@ -49,19 +45,19 @@ module "common" {
 
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
 
-    logging_elasticsearch_version = "v1"
+    logging_elasticsearch_version = "v005"
     logging_elasticsearch_ami = "ami-23d00643"
 
-    logging_redis_version = "v1"
+    logging_redis_version = "v005"
     logging_redis_ami = "ami-4bdf092b"
 
-    redis_cache_version = "v1"
+    redis_cache_version = "v005"
     redis_cache_ami = "ami-4bdf092b"
 
     # Datadog
     datadog_api_key = "${var.datadog_api_key}"
 
-    s3_redis_backups_expiration_days = 7
+    s3_redis_backups_expiration_days = "${var.s3_redis_backups_expiration_days}"
 
     account_tls_cert_arn = "${data.terraform_remote_state.networking.account_tls_cert_arn}"
 

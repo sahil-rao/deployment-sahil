@@ -9,6 +9,7 @@ set -euv
     "service": "${service}",
     "replica_set": "${replica_set}",
     "type": "${type}",
+    "zone_id": "${zone_id}",
     "zone_name": "${zone_name}",
     "datadog_api_key": "${datadog_api_key}",
     "source": "${snapshot_id}"

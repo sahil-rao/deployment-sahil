@@ -10,11 +10,6 @@ variable "env" {
     default = "dev"
 }
 
-variable "all_access_cidrs" {
-    type = "list"
-    default = ["0.0.0.0/0"]
-}
-
 variable "terraform_remote_state_bucket" {
     default = "cloudera-terraform-infrastructure"
 }
@@ -37,6 +32,10 @@ variable "datadog_api_key" {
 
 variable "key_name" {
     default = "navopt-us-west-2-dev"
+}
+
+variable "s3_redis_backups_expiration_days" {
+    default = 7
 }
 
 variable "cloudwatch_retention_in_days" {

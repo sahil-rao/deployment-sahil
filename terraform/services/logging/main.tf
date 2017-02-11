@@ -5,6 +5,7 @@ module "elasticsearch" {
     source = "../elasticsearch-asg"
 
     subnet_ids = ["${var.subnet_ids}"]
+    zone_id = "${var.dns_zone_id}"
     zone_name = "${var.zone_name}"
     security_groups = ["${var.elasticsearch_security_groups}"]
 
@@ -71,7 +72,7 @@ module "logstash" {
 }
 
 module "redis-log" {
-    source = "../redis"
+    source = "../redis-asg"
 
     name = "${var.redis_name}"
     key_name = "${var.key_name}"
@@ -79,6 +80,7 @@ module "redis-log" {
 
     subnet_ids = ["${var.subnet_ids}"]
     security_groups = ["${var.redis_security_groups}"]
+    zone_id = "${var.dns_zone_id}"
     zone_name = "${var.zone_name}"
 
     ami_id = "${var.redis_ami_id}"

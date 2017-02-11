@@ -1,6 +1,7 @@
 variable "subnet_ids" {
     type = "list"
 }
+variable "zone_id" {}
 variable "zone_name" {}
 variable "security_groups" {
     type = "list"
@@ -53,6 +54,7 @@ data "template_file" "user_data" {
         env = "${var.env}"
         service = "${var.service}"
         type = "elasticsearch"
+        zone_id = "${var.zone_id}"
         zone_name = "${var.zone_name}"
         datadog_api_key = "${var.datadog_api_key}"
         sg_name = "${join(",", var.security_groups)}"

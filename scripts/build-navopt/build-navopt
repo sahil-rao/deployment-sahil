@@ -36,9 +36,6 @@ SERVICES = OrderedDict([
             'Baaz-Compiler.tar.gz',
         ]
      ),
-    ('documentation',
-        []
-     ),
     ('graph',
         [
             'flightpath-deployment.tar.gz',
@@ -135,45 +132,6 @@ def checkout_repo(args, service):
         run_command(args, cmd)
 
 
-def build_documentation(args):
-    checkout_repo(args, 'documentation')
-
-    cmd_git = [
-        'git',
-        '-C',
-        '.gitcache/documentation',
-        'archive',
-        args.branch,
-        'NavOptHelp',
-    ]
-
-    dst = os.path.join('target', 'NavOptHelp')
-    if os.path.exists(dst):
-        shutil.rmtree(dst)
-
-    cmd_tar = [
-        'tar',
-        '-x',
-        '-C',
-        'target',
-    ]
-    if args.verbose:
-        print '+', ' '.join(cmd_git), '|', ' '.join(cmd_tar)
-
-    if not args.dry_run:
-        p_git = subprocess.Popen(cmd_git, stdout=subprocess.PIPE)
-        p_tar = subprocess.Popen(cmd_tar, stdin=p_git.stdout)
-        p_git.stdout.close()
-        stdout, stderr = p_tar.communicate()
-        p_git.wait()
-
-        if p_git.returncode != 0:
-            raise subprocess.CalledProcessError(p_git.returncode, cmd_git[0])
-
-        if p_tar.returncode != 0:
-            raise subprocess.CalledProcessError(p_tar.returncode, cmd_tar[0])
-
-
 def build_service(args, service):
     """
     Build the service in a docker container.
@@ -213,10 +171,7 @@ def build_services(args):
         return
 
     for service in args.services:
-        if service == 'documentation':
-            build_documentation(args)
-        else:
-            build_service(args, service)
+        build_service(args, service)
 
 
 def upload_service(args, service, target_bucket):
@@ -242,28 +197,6 @@ def upload_service(args, service, target_bucket):
         ]
         env = dict(os.environ, AWS_PROFILE=args.aws_profile)
         run_command(args, cmd, env=env)
-
-
-def upload_documentation(args):
-    """
-    Upload the documentation
-    """
-
-    src = 'target/NavOptHelp/'
-    dst = 's3://xplain-public/{}/documentation/NavOptHelp/'.format(args.cluster)
-
-    print '--- uploading', src, 'to', dst
-    cmd = [
-        'aws',
-        's3',
-        'sync',
-        '--delete',
-        '--acl', 'public-read',
-        src,
-        dst,
-    ]
-    env = dict(os.environ, AWS_PROFILE=args.aws_profile)
-    run_command(args, cmd, env=env)
 
 
 def prompt(msg, assume_yes=None):
@@ -294,10 +227,7 @@ def upload_services(args, target_bucket):
             return
 
     for service in args.services:
-        if service == 'documentation':
-            upload_documentation(args)
-        else:
-            upload_service(args, service, target_bucket)
+        upload_service(args, service, target_bucket)
 
 
 def build_docker_image(args, image):

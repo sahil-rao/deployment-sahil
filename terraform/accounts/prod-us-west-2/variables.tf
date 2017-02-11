@@ -1,21 +1,29 @@
-variable "vpc_id" {
-    default = "vpc-2f858b4d"
+variable "profile" {
+    default = "navopt_prod"
 }
 
 variable "region" {
     default = "us-west-2"
 }
 
-variable "vpc_cidr" {
-    default = "172.31.0.0/16"
+variable "env" {
+    default = "prod"
 }
 
-variable "subnet_ids" {
-    default = "subnet-c0022ab4,subnet-9b8688f9,subnet-80074dc6"
+variable "terraform_remote_state_bucket" {
+    default = "cloudera-terraform-infrastructure"
+}
+
+variable "terraform_remote_state_region" {
+    default = "us-west-2"
+}
+
+variable "terraform_remote_state_key" {
+    default = "prod/navopt-us-west-2-prod/terraform.tfstate"
 }
 
 variable "cluster_name" {
-    default = "app"
+    default = "prod"
 }
 
 variable "datadog_api_key" {
@@ -23,5 +31,13 @@ variable "datadog_api_key" {
 }
 
 variable "key_name" {
-    default = "XplainIO-Release-Deployment"
+    default = "navopt-us-west-2-prod"
+}
+
+variable "s3_redis_backups_expiration_days" {
+    default = "30"
+}
+
+variable "cloudwatch_retention_in_days" {
+    default = "365"
 }

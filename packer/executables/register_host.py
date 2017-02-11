@@ -73,10 +73,15 @@ def upsert_record(route53_zone, record_name, ip):
         route53_zone.add_a(record_name, ip)
 
 
-def register_host(region, service_name, zone_name, is_master=False):
+def register_host(region, service_name, zone_id, zone_name, is_master=False):
     my_ip = socket.gethostbyname(socket.gethostname())
     conn = boto.route53.connect_to_region(region)
-    route53_zone = conn.get_zone(zone_name)
+
+    for route53_zone in conn.get_zones():
+        if route53_zone.id == zone_id:
+            break
+    else:
+        raise Exception('Cannot find zone id %s' % zone_id)
 
     if is_master:
         record_name = "{}-master.{}".format(service_name, zone_name)
@@ -95,14 +100,16 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--region', required=True)
     parser.add_argument('--service', required=True)
-    parser.add_argument('--zone', required=True)
+    parser.add_argument('--zone-id', required=True)
+    parser.add_argument('--zone-name', required=True)
     parser.add_argument('--master', action='store_true', default=False)
     args = parser.parse_args()
 
     register_host(
         region=args.region,
         service_name=args.service,
-        zone_name=args.zone,
+        zone_id=args.zone_id,
+        zone_name=args.zone_name,
         is_master=args.master)
 
 
