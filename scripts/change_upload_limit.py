@@ -4,12 +4,10 @@
 Script to change upload limits for all existing organizations in Mongo
 """
 
-import sys
-import csv
-import pprint
 from flightpath.Provenance import getMongoServer
 
 DEFAULT_UPLOAD_LIMIT = 100000
+
 
 def execute():
     '''
@@ -19,7 +17,8 @@ def execute():
 
     db = client['xplainIO']
 
-    orgs = db.organizations.find({}, {"_id":0})
+    orgs_curr = db.organizations.find({}, {"_id": 0})
+    orgs = [org for org in orgs_curr]
 
     for org in orgs:
         if 'upLimit' in org:
@@ -27,8 +26,8 @@ def execute():
                 if org['upLimit'] >= DEFAULT_UPLOAD_LIMIT:
                     continue
         print org
-        db.organizations.update_one({'guid': org['guid']}, { '$set': {"upLimit": DEFAULT_UPLOAD_LIMIT} } )
+        db.organizations.update_one({'guid': org['guid']},
+                                    {'$set': {"upLimit": DEFAULT_UPLOAD_LIMIT}})
 
-                   
 if __name__ == '__main__':
     execute()
