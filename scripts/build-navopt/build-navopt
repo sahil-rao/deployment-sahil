@@ -3,10 +3,8 @@
 import argparse
 import getpass
 import os
-import shutil
 import subprocess
 import sys
-from collections import OrderedDict
 
 CONFIG = {
     'dev': {
@@ -40,50 +38,58 @@ CONFIG = {
 }
 
 # List out the services and their artifacts.
-SERVICES = OrderedDict([
-    ('deployment',
-        [
+SERVICES = {
+    'deployment': {
+        'tarballs': [
             'Baaz-DataAcquisition-Service.tar.gz',
             'Baaz-Compile-Service.tar.gz',
             'Baaz-Analytics-Service.tar.gz',
             'Baaz-API-Service.tar.gz'
-        ]
-     ),
-    ('UI',
-        [
+        ],
+    },
+    'UI': {
+        'dependencies': ['deployment'],
+        'tarballs': [
             'xplain.io.tar.gz',
             'optimizer_api.io.tar.gz',
             'xplain_dashboard.tar.gz',
             'optimizer_admin.io.tar.gz',
-        ]
-     ),
-    ('analytics',
-        [
+        ],
+    },
+    'analytics': {
+        'dependencies': ['deployment'],
+        'tarballs': [
             'Baaz-Analytics.tar.gz',
-        ]
-     ),
-    ('compiler',
-        [
+        ],
+    },
+    'compiler': {
+        'dependencies': ['deployment'],
+        'tarballs': [
             'Baaz-Compiler.tar.gz',
-        ]
-     ),
-    ('graph',
-        [
+        ],
+    },
+    'graph': {
+        'dependencies': ['deployment'],
+        'tarballs': [
             'flightpath-deployment.tar.gz',
             'regression-deployment.tar.gz',
-        ]
-     )])
-
-# List services that go in Docker images.
-DOCKER_IMAGES = {
-    'navopt-pyservices': [
-        'deployment',
-        'graph',
-        'analytics'
-    ],
-    'navopt-javaservices': [
-        'compiler'
-    ]
+        ],
+    },
+    'navopt-pyservices': {
+        'docker': True,
+        'dependencies': [
+            'deployment',
+            'graph',
+            'analytics',
+        ],
+    },
+    'navopt-javaservices': {
+        'docker': True,
+        'dependencies': [
+            'navopt-pyservices',
+            'compiler',
+        ],
+    },
 }
 
 DEFAULT_GITHUB_PROJECT = 'git@github.com:baazdata'
@@ -177,12 +183,56 @@ def build_service(args, service):
     run_command(args, cmd)
 
 
-def build_services(args):
+def build_docker_image(args, image):
+    print '*'*70
+    print 'Building {} Docker image'.format(image)
+    print '*'*70
+
+    cmd = [
+        'docker',
+        'build',
+        '-t', image,
+        '-f', os.path.join(image, 'Dockerfile'),
+        '.',
+    ]
+    run_command(args, cmd)
+
+
+def determine_services_to_build(args, services):
+    services_set = set()
+    services_to_build = []
+
+    def process(service):
+        for dependency in SERVICES[service].get('dependencies', ()):
+            process(dependency)
+
+        if service in services_set:
+            return
+
+        services_set.add(service)
+
+        # If we're not building dependencies, only build the services in our
+        # list.
+        if args.build_dependencies or service in services:
+            services_to_build.append(service)
+
+    for service in services:
+        process(service)
+
+    return services_to_build
+
+
+def build_services(args, services):
     if not args.build:
         return
 
-    for service in args.services:
-        build_service(args, service)
+    services_to_build = determine_services_to_build(args, services)
+
+    for service in services_to_build:
+        if SERVICES[service].get('docker', False):
+            build_docker_image(args, service)
+        else:
+            build_service(args, service)
 
 
 def upload_service(args, service, target_bucket):
@@ -190,7 +240,7 @@ def upload_service(args, service, target_bucket):
     Upload the service tarballs.
     """
 
-    for tarball in SERVICES[service]:
+    for tarball in SERVICES[service]['tarballs']:
         src = os.path.join('target', tarball)
 
         if not args.dry_run and not os.path.exists(src):
@@ -208,66 +258,6 @@ def upload_service(args, service, target_bucket):
             dst,
         ]
         run_command(args, cmd)
-
-
-def prompt(msg, assume_yes=None):
-    if assume_yes is not None:
-        return assume_yes
-
-    while True:
-        response = raw_input(msg).lower()
-        if response in ('yes', 'y'):
-            return True
-        elif response in ('no', 'n'):
-            return False
-
-
-def upload_services(args, target_bucket):
-    if not args.upload or args.assume_yes is False:
-        return
-
-    if args.assume_yes is None:
-        print
-        print '-' * 78
-        print
-        print \
-            'Are you sure you want to upload the following services?', \
-            ' '.join(sorted(args.services))
-
-        if not prompt('[yes/no]: ', args.assume_yes):
-            return
-
-    for service in args.services:
-        upload_service(args, service, target_bucket)
-
-
-def build_docker_image(args, image):
-    # Ensure all build artifacts are in place, else
-    # the Docker image build will fail.
-    for service in args.services:
-        for artifact in SERVICES[service]:
-            shutil.copy(
-                'target/{}'.format(artifact),
-                '{0}/{1}'.format(image, artifact))
-
-    print '*'*70
-    print 'Building {} Docker image'.format(image)
-    print '*'*70
-
-    cmd = [
-        'docker',
-        'build',
-        '-t',
-        image,
-        image,
-    ]
-    run_command(args, cmd)
-
-
-def build_docker_images(args):
-    for image in args.docker_images:
-        build_docker_image(args, image)
-        push_docker_image(args, image)
 
 
 def push_docker_image(args, image):
@@ -324,6 +314,40 @@ def push_docker_image(args, image):
     run_command(args, cmd)
 
 
+def prompt(msg, assume_yes=None):
+    if assume_yes is not None:
+        return assume_yes
+
+    while True:
+        response = raw_input(msg).lower()
+        if response in ('yes', 'y'):
+            return True
+        elif response in ('no', 'n'):
+            return False
+
+
+def upload_services(args, services, target_bucket):
+    if not args.upload or args.assume_yes is False:
+        return
+
+    if args.assume_yes is None:
+        print
+        print '-' * 78
+        print
+        print \
+            'Are you sure you want to upload the following services?', \
+            ' '.join(sorted(services))
+
+        if not prompt('[yes/no]: ', args.assume_yes):
+            return
+
+    for service in services:
+        if SERVICES[service].get('docker', False):
+            push_docker_image(args, service)
+        else:
+            upload_service(args, service, target_bucket)
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -375,6 +399,12 @@ def parse_args():
         '--target_path',
         help='upload artifacts to this bucket (default $USERNAME-$BRANCH)')
     parser.add_argument(
+        '--no-build-dependencies',
+        dest='build_dependencies',
+        default=True,
+        action='store_false',
+        help='do not build dependency artifacts')
+    parser.add_argument(
         '--no-build',
         dest='build',
         default=True,
@@ -388,20 +418,10 @@ def parse_args():
         help='do not upload artifacts to S3')
     parser.add_argument(
         'services',
-        default=SERVICES.keys(),
+        default='all',
+        choices=['all'] + SERVICES.keys(),
         nargs='*',
         help='which services to build')
-    parser.add_argument(
-        '--build-docker-images',
-        nargs='?',
-        default=None,
-        const='all',
-        dest='docker_images',
-        choices=DOCKER_IMAGES.keys() + ['all'],
-        help=(
-            'Build specified Docker images. Comma-separated. '
-            'Possible values: {}, all'.format(', '.join(DOCKER_IMAGES.keys())))
-        )
 
     return parser.parse_args()
 
@@ -437,33 +457,6 @@ def main():
     if not args.release:
         target_bucket = os.path.join(target_bucket, target_path)
 
-    # Make sure services are known
-    for service in args.services:
-        if service not in SERVICES:
-            print >> sys.stderr, 'unknown service:', service
-            return 1
-
-    if args.docker_images:
-        # Convert human-friendly list of Docker images
-        #  to Python list
-        if 'all' in args.docker_images:
-            args.docker_images = DOCKER_IMAGES.keys()
-        else:
-            args.docker_images = args.docker_images.split(',')
-
-        # The javaservices Docker image uses pyservices as its base
-        if 'javaservices' in args.docker_images and \
-                'pyservices' not in args.docker_images:
-            args.docker_images.append('pyservices')
-
-        # Ensure appropriate packages are built for each image.  i.e. The Docker
-        # build will fail if it's missing the build artifact for a package.
-        for image in args.docker_images:
-            for service in DOCKER_IMAGES[image]:
-                args.services.append(service)
-        # Remove duplicate services.
-        args.services = list(set(args.services))
-
     ############################################################################
     # Do the build
 
@@ -476,11 +469,14 @@ def main():
     if not os.path.exists('target'):
         os.makedirs('target')
 
-    build_services(args)
-    upload_services(args, target_bucket)
+    if args.services == 'all' or \
+            any(service == 'all' for service in args.services):
+        services = SERVICES.keys()
+    else:
+        services = args.services
 
-    if args.docker_images:
-        build_docker_images(args)
+    build_services(args, services)
+    upload_services(args, services, target_bucket)
 
 
 if __name__ == '__main__':
