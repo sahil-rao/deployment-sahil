@@ -112,7 +112,7 @@ module "mongodb" {
 }
 
 module "redis" {
-    source = "../redis"
+    source = "../redis-asg"
 
     subnet_ids = ["${var.subnet_ids}"]
     zone_name = "${var.zone_name}"

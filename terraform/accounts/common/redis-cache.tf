@@ -1,5 +1,5 @@
 module "redis-cache" {
-    source = "../../services/redis"
+    source = "../../services/redis-asg"
 
     name = "redis-cache"
     key_name = "${var.key_name}"

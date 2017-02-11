@@ -71,7 +71,7 @@ module "logstash" {
 }
 
 module "redis-log" {
-    source = "../redis"
+    source = "../redis-asg"
 
     name = "${var.redis_name}"
     key_name = "${var.key_name}"
