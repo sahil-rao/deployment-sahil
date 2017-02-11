@@ -45,13 +45,13 @@ module "common" {
 
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
 
-    logging_elasticsearch_version = "v1"
+    logging_elasticsearch_version = "v005"
     logging_elasticsearch_ami = "ami-23d00643"
 
-    logging_redis_version = "v1"
+    logging_redis_version = "v005"
     logging_redis_ami = "ami-4bdf092b"
 
-    redis_cache_version = "v1"
+    redis_cache_version = "v005"
     redis_cache_ami = "ami-4bdf092b"
 
     # Datadog

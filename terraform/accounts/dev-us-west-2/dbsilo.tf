@@ -16,7 +16,7 @@ module "dbsilo1" {
     mongo_replica_set = "dbsilo1"
     mongo_iam_instance_profile = "${module.common.mongo_instance_profile}"
     mongo_security_groups = ["${module.common.mongo_security_groups}"]
-    mongo_version = "v4"
+    mongo_version = "v005"
     mongo_ami_id = "ami-ac41f1cc"
     mongo_instance_type = "m4.xlarge"
     mongo_min_size = 0
@@ -27,7 +27,7 @@ module "dbsilo1" {
     redis_name = "${var.cluster_name}-dbsilo1-redis"
     redis_iam_instance_profile = "${module.common.redis_instance_profile}"
     redis_security_groups = ["${module.common.redis_security_groups}"]
-    redis_version = "v3"
+    redis_version = "v005"
     redis_ami_id = "ami-4bdf092b"
     redis_instance_type = "r3.2xlarge"
     redis_min_size = 0
@@ -41,7 +41,7 @@ module "dbsilo1" {
     elasticsearch_name = "${var.cluster_name}-dbsilo1-elasticsearch"
     elasticsearch_iam_instance_profile = "${module.common.elasticsearch_instance_profile}"
     elasticsearch_security_groups = ["${module.common.elasticsearch_security_groups}"]
-    elasticsearch_version = "v1"
+    elasticsearch_version = "v005"
     elasticsearch_ami_id = "ami-23d00643"
     #elasticsearch_instance_type = "m3.xlarge"
     elasticsearch_instance_type = "t2.micro"
@@ -72,7 +72,7 @@ module "dbsilo2" {
     mongo_replica_set = "dbsilo2"
     mongo_iam_instance_profile = "${module.common.mongo_instance_profile}"
     mongo_security_groups = ["${module.common.mongo_security_groups}"]
-    mongo_version = "v4"
+    mongo_version = "v005"
     mongo_ami_id = "ami-ac41f1cc"
     mongo_instance_type = "m4.xlarge"
     mongo_min_size = 0
@@ -83,7 +83,7 @@ module "dbsilo2" {
     redis_name = "${var.cluster_name}-dbsilo2-redis"
     redis_iam_instance_profile = "${module.common.redis_instance_profile}"
     redis_security_groups = ["${module.common.redis_security_groups}"]
-    redis_version = "v3"
+    redis_version = "v005"
     redis_ami_id = "ami-4bdf092b"
     redis_instance_type = "r3.2xlarge"
     redis_min_size = 0
@@ -97,7 +97,7 @@ module "dbsilo2" {
     elasticsearch_name = "${var.cluster_name}-dbsilo2-elasticsearch"
     elasticsearch_iam_instance_profile = "${module.common.elasticsearch_instance_profile}"
     elasticsearch_security_groups = ["${module.common.elasticsearch_security_groups}"]
-    elasticsearch_version = "v1"
+    elasticsearch_version = "v005"
     elasticsearch_ami_id = "ami-23d00643"
     #elasticsearch_instance_type = "m3.xlarge"
     elasticsearch_instance_type = "t2.micro"
