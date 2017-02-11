@@ -45,14 +45,14 @@ module "common" {
 
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
 
-    logging_elasticsearch_version = "v1"
+    logging_elasticsearch_version = "v023"
     logging_elasticsearch_ami = "ami-062efa66"
     logging_elasticsearch_instance_type = "t2.micro"
 
-    logging_redis_version = "v4"
+    logging_redis_version = "v023"
     logging_redis_ami = "ami-ec21f58c"
 
-    redis_cache_version = "v3"
+    redis_cache_version = "v023"
     redis_cache_ami = "ami-ec21f58c"
     redis_cache_instance_type = "t2.micro"
 

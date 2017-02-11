@@ -1,11 +1,12 @@
+variable "vpc_id" {}
+variable "private_cidrs" {
+    type = "list"
+}
 variable "subnet_ids" {
     type = "list"
 }
 variable "zone_id" {}
 variable "zone_name" {}
-variable "security_groups" {
-    type = "list"
-}
 
 ###################################################################
 
@@ -21,7 +22,6 @@ variable "datadog_api_key" {}
 ###################################################################
 
 variable "key_name" {}
-variable "iam_instance_profile" {}
 
 ###################################################################
 
@@ -39,7 +39,9 @@ variable "log_subscription_destination_arn" {}
 
 ###################################################################
 
-variable "snapshot_id" {}
+variable "snapshot_id" {
+    default = "null"
+}
 
 ###################################################################
 
@@ -75,11 +77,11 @@ resource "aws_launch_configuration" "default" {
     name_prefix = "${var.name}-${var.version}-"
     image_id = "${var.ami_id}"
     instance_type = "${var.instance_type}"
-    iam_instance_profile = "${var.iam_instance_profile}"
+    iam_instance_profile = "${aws_iam_instance_profile.mongo.name}"
     ebs_optimized = "${var.ebs_optimized}"
     enable_monitoring = false
     key_name = "${var.key_name}"
-    security_groups = ["${var.security_groups}"]
+    security_groups = ["${aws_security_group.mongo.id}"]
     user_data = "${data.template_file.user_data.rendered}"
 
     lifecycle {

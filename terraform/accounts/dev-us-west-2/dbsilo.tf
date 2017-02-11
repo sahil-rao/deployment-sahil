@@ -3,6 +3,9 @@ module "dbsilo1" {
 
     vpc_id = "${data.terraform_remote_state.networking.vpc_id}"
     subnet_ids = ["${data.terraform_remote_state.networking.private_subnet_ids}"]
+    private_cidrs = [
+        "${data.terraform_remote_state.networking.all_access_cidrs}",
+    ]
     zone_id = "${data.terraform_remote_state.networking.private_zone_id}"
     zone_name = "${data.terraform_remote_state.networking.zone_name}"
 
@@ -14,8 +17,6 @@ module "dbsilo1" {
 
     mongo_name = "${var.cluster_name}-dbsilo1-mongo"
     mongo_replica_set = "dbsilo1"
-    mongo_iam_instance_profile = "${module.common.mongo_instance_profile}"
-    mongo_security_groups = ["${module.common.mongo_security_groups}"]
     mongo_version = "v005"
     mongo_ami_id = "ami-ac41f1cc"
     mongo_instance_type = "m4.xlarge"
@@ -59,6 +60,9 @@ module "dbsilo2" {
 
     vpc_id = "${data.terraform_remote_state.networking.vpc_id}"
     subnet_ids = ["${data.terraform_remote_state.networking.private_subnet_ids}"]
+    private_cidrs = [
+        "${data.terraform_remote_state.networking.all_access_cidrs}",
+    ]
     zone_id = "${data.terraform_remote_state.networking.private_zone_id}"
     zone_name = "${data.terraform_remote_state.networking.zone_name}"
 
@@ -70,8 +74,6 @@ module "dbsilo2" {
 
     mongo_name = "${var.cluster_name}-dbsilo2-mongo"
     mongo_replica_set = "dbsilo2"
-    mongo_iam_instance_profile = "${module.common.mongo_instance_profile}"
-    mongo_security_groups = ["${module.common.mongo_security_groups}"]
     mongo_version = "v005"
     mongo_ami_id = "ami-ac41f1cc"
     mongo_instance_type = "m4.xlarge"

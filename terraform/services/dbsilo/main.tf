@@ -2,6 +2,9 @@ variable "vpc_id" {}
 variable "subnet_ids" {
     type = "list"
 }
+variable "private_cidrs" {
+    type = "list"
+}
 variable "zone_id" {}
 variable "zone_name" {}
 
@@ -17,10 +20,6 @@ variable "mongo_name" {}
 variable "mongo_replica_set" {
     default = ""
 }
-variable "mongo_security_groups" {
-    type = "list"
-}
-variable "mongo_iam_instance_profile" {}
 
 variable "mongo_version" {}
 variable "mongo_ami_id" {}
@@ -86,13 +85,13 @@ variable "log_subscription_destination_arn" {}
 module "mongodb" {
     source = "../mongodb-asg"
 
+    vpc_id = "${var.vpc_id}"
+    private_cidrs = ["${var.private_cidrs}"]
     subnet_ids = ["${var.subnet_ids}"]
     zone_id = "${var.zone_id}"
     zone_name = "${var.zone_name}"
-    security_groups = ["${var.mongo_security_groups}"]
 
     key_name = "${var.key_name}"
-    iam_instance_profile = "${var.mongo_iam_instance_profile}"
 
     name = "${var.mongo_name}"
     version = "${var.mongo_version}"
