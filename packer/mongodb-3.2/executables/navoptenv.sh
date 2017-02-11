@@ -12,6 +12,7 @@ if [ -f /etc/navoptenv.json ]; then
 	export SERVICE=`/usr/local/bin/jq -r '.service' /etc/navoptenv.json`
 	export REPLICA_SET=`/usr/local/bin/jq -r '.replica_set' /etc/navoptenv.json`
 	export ENV=`/usr/local/bin/jq -r '.env' /etc/navoptenv.json`
+	export ZONE_ID=`/usr/local/bin/jq -r '.zone_id' /etc/navoptenv.json`
 	export ZONE_NAME=`/usr/local/bin/jq -r '.zone_name' /etc/navoptenv.json`
 	export SET_SRC=`/usr/local/bin/jq -r '.source' /etc/navoptenv.json`
 	export DATADOG_API_KEY=`/usr/local/bin/jq -r '.datadog_api_key' /etc/navoptenv.json`

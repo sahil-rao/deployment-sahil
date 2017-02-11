@@ -2,6 +2,7 @@ variable "vpc_id" {}
 variable "subnet_ids" {
     type = "list"
 }
+variable "zone_id" {}
 variable "zone_name" {}
 
 variable "dbsilo_name" {}
@@ -86,6 +87,7 @@ module "mongodb" {
     source = "../mongodb-asg"
 
     subnet_ids = ["${var.subnet_ids}"]
+    zone_id = "${var.zone_id}"
     zone_name = "${var.zone_name}"
     security_groups = ["${var.mongo_security_groups}"]
 
@@ -115,6 +117,7 @@ module "redis" {
     source = "../redis-asg"
 
     subnet_ids = ["${var.subnet_ids}"]
+    zone_id = "${var.zone_id}"
     zone_name = "${var.zone_name}"
     security_groups = ["${var.redis_security_groups}"]
 
@@ -145,6 +148,7 @@ module "elasticsearch" {
     source = "../elasticsearch-asg"
 
     subnet_ids = ["${var.subnet_ids}"]
+    zone_id = "${var.zone_id}"
     zone_name = "${var.zone_name}"
     security_groups = ["${var.elasticsearch_security_groups}"]
 

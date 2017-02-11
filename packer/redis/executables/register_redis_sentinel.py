@@ -17,7 +17,7 @@ def run(args):
     master = navopt_redis.get_master(server_clients)
     sentinel = navopt_redis.RedisClient('localhost', 26379)
 
-    master_name = '{}-master.{}'.format(args.service, args.zone)
+    master_name = '{}-master.{}'.format(args.service, args.zone_name)
     sentinel.sentinel_monitor(
         master_name,
         master.host,
@@ -34,7 +34,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--region', required=True)
     parser.add_argument('--service', required=True)
-    parser.add_argument('--zone', required=True)
+    parser.add_argument('--zone-name', required=True)
     parser.add_argument('--quorum-size', required=True)
     args = parser.parse_args()
 

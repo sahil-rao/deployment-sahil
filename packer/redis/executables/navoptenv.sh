@@ -11,6 +11,7 @@ if [ -f /etc/navoptenv.json ]; then
 	export APP=`/usr/local/bin/jq -r '.app' /etc/navoptenv.json`
 	export SERVICE=`/usr/local/bin/jq -r '.service' /etc/navoptenv.json`
 	export ENV=`/usr/local/bin/jq -r '.env' /etc/navoptenv.json`
+	export ZONE_ID=`/usr/local/bin/jq -r '.zone_id' /etc/navoptenv.json`
 	export ZONE_NAME=`/usr/local/bin/jq -r '.zone_name' /etc/navoptenv.json`
 	export ROLE=`/usr/local/bin/jq -r '.role' /etc/navoptenv.json`
 	export DATADOG_API_KEY=`/usr/local/bin/jq -r '.datadog_api_key' /etc/navoptenv.json`

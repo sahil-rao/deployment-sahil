@@ -1,6 +1,7 @@
 variable "subnet_ids" {
     type = "list"
 }
+variable "zone_id" {}
 variable "zone_name" {}
 variable "security_groups" {
     type = "list"
@@ -51,6 +52,7 @@ data "template_file" "user_data" {
         service = "${var.service}"
         replica_set = "${coalesce(var.replica_set, var.service)}"
         type = "mongo"
+        zone_id = "${var.zone_id}"
         zone_name = "${var.zone_name}"
         datadog_api_key = "${var.datadog_api_key}"
         snapshot_id = "${var.snapshot_id}"
@@ -98,6 +100,12 @@ resource "aws_autoscaling_group" "default" {
     tag {
         key = "Name"
         value = "${var.name}-${var.version}"
+        propagate_at_launch = true
+    }
+
+    tag {
+        key = "Env"
+        value = "${var.env}"
         propagate_at_launch = true
     }
 

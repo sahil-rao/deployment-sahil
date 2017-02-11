@@ -8,6 +8,7 @@ set -euv
     "env": "${env}",
     "service": "${service}",
     "type": "${type}",
+    "zone_id": "${zone_id}",
     "zone_name": "${zone_name}",
     "datadog_api_key": "${datadog_api_key}",
     "redis_backup_file": "${redis_backup_file}",

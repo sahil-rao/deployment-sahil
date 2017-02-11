@@ -11,6 +11,7 @@ if [ "x$is_master" = "xyes" ]; then
     /usr/bin/python /usr/local/bin/register_host.py \
         --region $AWS_DEFAULT_REGION \
         --service $SERVICE \
-        --zone $ZONE_NAME \
+        --zone-id $ZONE_ID \
+        --zone-name $ZONE_NAME \
         --master
 fi

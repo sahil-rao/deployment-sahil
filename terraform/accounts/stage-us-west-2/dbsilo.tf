@@ -3,6 +3,7 @@ module "dbsilo1" {
 
     vpc_id = "${data.terraform_remote_state.networking.vpc_id}"
     subnet_ids = ["${data.terraform_remote_state.networking.private_subnet_ids}"]
+    zone_id = "${data.terraform_remote_state.networking.private_zone_id}"
     zone_name = "${data.terraform_remote_state.networking.zone_name}"
 
     key_name = "${var.key_name}"
