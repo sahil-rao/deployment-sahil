@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import click
+import logging
 import navopt_admin.cluster
 import navopt_admin.dbsilo
 import navopt_admin.health_check.cli
@@ -22,8 +23,26 @@ import sys
 @click.option('-y/-n', '--yes/--no', 'assume_yes',
               help='respond yes to all questions',
               default=None)
+@click.option('--log-level',
+              default='warning',
+              type=click.Choice([
+                  'critical',
+                  'error',
+                  'warning',
+                  'info',
+                  'debug'
+              ]))
 @click.pass_context
-def cli(ctx, env, bastion, region, zone, assume_yes):
+def cli(ctx, env, bastion, region, zone, assume_yes, log_level):
+    logging.basicConfig()
+    logging.getLogger('navopt_admin').setLevel({
+        'critical': logging.CRITICAL,
+        'error': logging.error,
+        'warning': logging.WARNING,
+        'info': logging.INFO,
+        'debug': logging.DEBUG,
+    }[log_level])
+
     if bastion is None:
         bastion = {
             'alpha': 'navopt-alpha',
