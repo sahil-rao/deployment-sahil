@@ -41,3 +41,7 @@ variable "s3_redis_backups_expiration_days" {
 variable "cloudwatch_retention_in_days" {
     default = "365"
 }
+
+variable "old_vpc_cidr" {
+    default = "172.31.0.0/16"
+}
