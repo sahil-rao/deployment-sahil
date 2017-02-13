@@ -3,12 +3,15 @@ from __future__ import absolute_import
 from .aws import AWSNameHealthCheck
 from .base import HealthCheck, HealthCheckList
 import datetime
-import re
 import sys
 import termcolor
 
 
 class MongoHealthCheck(HealthCheck):
+    def open(self):
+        for host in self.hosts:
+            host.open()
+
     def close(self):
         for host in self.hosts:
             host.close()
@@ -60,16 +63,13 @@ class MongoClusterAgreeOnMasterCheck(MongoHealthCheck):
 
     def check_master_hostname(self, host):
         master_hostname = self.mongo_cluster.master_hostname()
-        command = ['host', master_hostname]
-        bastion = self.mongo_cluster.cluster.bastion
-        stdout = bastion.check_output(command).strip()
+        found_host = self.mongo_cluster.cluster.bastion.resolve_hostname(
+            master_hostname)
 
-        m = re.match('.* has address (.*)$', stdout)
-        if not m:
-            self.host_msgs[host] += ' failed to parse: ' + stdout
+        if not found_host:
+            self.host_msgs[host] += ' failed to resolve: ' + master_hostname
             return False
 
-        found_host = m.group(1)
         if host.host != found_host:
             self.host_msgs[host] += ' master is on {}'.format(found_host)
             return False

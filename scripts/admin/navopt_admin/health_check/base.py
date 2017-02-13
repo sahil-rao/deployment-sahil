@@ -58,6 +58,9 @@ class HealthCheck(object):
         """Return True if healthcheck passed no host"""
         raise NotImplementedError
 
+    def open(self):
+        pass
+
     def close(self):
         pass
 
@@ -133,6 +136,10 @@ class HealthCheckList(object):
                 color.UNDERLINE + self.description + color.END
 
         return status
+
+    def open(self):
+        for health_check in self.health_checks:
+            health_check.open()
 
     def close(self):
         for health_check in self.health_checks:

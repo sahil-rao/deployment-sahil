@@ -8,6 +8,10 @@ import collections
 
 
 class ElasticsearchHealthCheck(HealthCheck):
+    def open(self):
+        for host in self.hosts:
+            host.open()
+
     def close(self):
         for host in self.hosts:
             host.close()

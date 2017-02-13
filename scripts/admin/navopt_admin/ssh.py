@@ -3,9 +3,9 @@ from __future__ import absolute_import
 import logging
 import os
 import pipes
-import shutil
+import re
 import subprocess
-import tempfile
+from .exponential_decay import exponential_decay
 
 LOG = logging.getLogger(__name__)
 DEVNULL = open(os.devnull, 'wb')
@@ -25,7 +25,7 @@ class BaseBastion(object):
     def tunnel(self, remote_host, remote_port):
         raise NotImplementedError
 
-    def check_output(self, *args):
+    def resolve_hostname(self, hostname):
         raise NotImplementedError
 
 
@@ -35,30 +35,8 @@ class Bastion(BaseBastion):
         self._base_port = BASE_PORTS
         self._local_host = local_host
 
-        self._tempdir = tempfile.mkdtemp()
-        self._control_socket = os.path.join(self._tempdir, 'control_socket')
-
-        cmd = [
-            'ssh',
-            self._bastion,
-            '-qNf',
-            '-MS', self._control_socket,
-            '-o', 'ControlPersist=30s',
-        ]
-
-        LOG.debug('running: %s', ' '.join(cmd))
-
-        subprocess.check_call(cmd)
-
     def close(self):
-        self._ssh_cmd('exit')
-
-        if self._tempdir:
-            shutil.rmtree(self._tempdir)
-
-    def __del__(self):
-        if hasattr(self, '_control_socket'):
-            self.close()
+        pass
 
     def tunnel(self, remote_host, remote_port):
         while True:
@@ -68,79 +46,156 @@ class Bastion(BaseBastion):
             if self._base_port >= BASE_PORTS + 100:
                 raise Exception('out of ports')
 
-            forwards = [
-                '-L', '{}:{}:{}:{}'.format(
-                    self._local_host,
-                    local_port,
-                    remote_host,
-                    remote_port,
-                ),
-            ]
+            if _port_is_listening(self._local_host, local_port):
+                continue
 
-            try:
-                self._ssh_cmd('forward', *forwards)
-            except subprocess.CalledProcessError:
-                pass
-            else:
-                return Tunnel(self, forwards, self._local_host, local_port)
-
-    def _ssh_cmd(self, *args):
-        if self._control_socket and os.path.exists(self._control_socket):
             cmd = [
                 'ssh',
-                '-q',
-                '-S', self._control_socket,
-                '-O',
+                '-qN',
+                '-o', 'ControlMaster=no',
+                '-o', 'StrictHostKeyChecking=no',
+                '-S', 'none',
+                '-L', '{}:{}:{}'.format(local_port, remote_host, remote_port),
+                remote_host,
             ]
-            cmd.extend(args)
-            cmd.append('x')
-
             LOG.debug('running: %s', ' '.join(cmd))
 
-            subprocess.check_call(cmd, stdout=DEVNULL, stderr=DEVNULL)
+            process = subprocess.Popen(cmd,
+                                       stdout=DEVNULL,
+                                       stderr=DEVNULL,
+                                       stdin=subprocess.PIPE)
 
-    def check_output(self, cmd):
-        ssh_cmd = [
+            return ProcessTunnel(process, self._local_host, local_port)
+
+    def resolve_hostname(self, hostname):
+        cmd = [
             'ssh',
-            '-S', self._control_socket,
-            'x',
-        ]
-        ssh_cmd.extend(pipes.quote(arg) for arg in cmd)
+            '-q',
+            '-o', 'StrictHostKeyChecking=no',
+            self._bastion,
+            'host', pipes.quote(hostname)]
+        LOG.debug('running: %s', ' '.join(cmd))
 
-        return subprocess.check_output(ssh_cmd)
+        stdout = subprocess.check_output(cmd).strip()
 
-
-class BaseTunnel(object):
-    def close(self):
-        pass
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.close()
-
-
-class Tunnel(BaseTunnel):
-    def __init__(self, bastion, forwards, host, port):
-        self._bastion = bastion
-        self._forwards = forwards
-        self.host = host
-        self.port = port
-
-    def close(self):
-        self._bastion._ssh_cmd('cancel', *self._forwards)
+        m = re.search('^.* has address (.*)$', stdout, re.MULTILINE)
+        if m:
+            return m.group(1)
+        else:
+            return None
 
 
 class NoopBastion(BaseBastion):
     def tunnel(self, remote_host, remote_port):
         return NoopTunnel(remote_host, remote_port)
 
-    def check_output(self, cmd):
-        return subprocess.check_output(cmd)
+    def resolve_hostname(self, hostname):
+        cmd = ['host', pipes.quote(hostname)]
+        LOG.debug('running: %s', ' '.join(cmd))
+
+        stdout = subprocess.check_output(cmd).strip()
+
+        m = re.match('.* has address (.*)$', stdout)
+        if m:
+            return m.group(1)
+        else:
+            return None
+
+
+class BaseTunnel(object):
+    def __init__(self, host, port):
+        self._opened = False
+        self.host = host
+        self.port = port
+
+    def open(self):
+        LOG.debug('opening %s:%s' % (self.host, self.port))
+
+        if self._opened:
+            LOG.debug('%s:%s is already open' % (self.host, self.port))
+            return
+
+        LOG.debug('waiting for port %s:%s to start listening' %
+                  (self.host, self.port))
+
+        # Wait for the port to be created
+        for _ in exponential_decay(10.0):
+            if self.check_if_listening():
+                break
+        else:
+            self.close()
+            raise Exception('ssh failed to open %s:%s' % (self.host, self.port))
+
+        LOG.debug('ssh tunnel is now listening on port %s' % self.port)
+
+        self._opened = True
+
+    def check_if_listening(self):
+        return _port_is_listening(self.host, self.port)
+
+    def close(self):
+        pass
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+
+
+class ProcessTunnel(BaseTunnel):
+    def __init__(self, process, host, port):
+        super(ProcessTunnel, self).__init__(host, port)
+        self._process = process
+        self._closed = False
+
+    def check_if_listening(self):
+        if super(ProcessTunnel, self).check_if_listening():
+            return True
+
+        # Check if ssh died
+        if self._process.poll() != None:
+            raise Exception(
+                'ssh died while connecting to port %s' % self.port)
+
+        return False
+
+    def close(self):
+        if self._closed:
+            False
+
+        status = self._process.poll()
+
+        if status is not None:
+            return
+
+        self._process.stdin.close()
+        self._process.terminate()
+
+        for _ in exponential_decay(10.0):
+            status = self._process.poll()
+
+            if status is not None:
+                break
+        else:
+            LOG.error(
+                'ssh failed to shutdown for %s:%s' % (self.host, self.port))
+            self._process.kill()
+
+        self._process.wait()
+        self._closed = True
 
 
 class NoopTunnel(BaseTunnel):
     def __init__(self, host, port):
-        self.host = host
-        self.port = port
+        super(NoopTunnel, self).__init__(host, port)
+
+
+def _port_is_listening(host, port):
+    cmd = ['nc', '-z', pipes.quote(host), pipes.quote(str(port))]
+    # LOG.debug('running: %s' % ' '.join(cmd))
+
+    process = subprocess.Popen(cmd, stdout=DEVNULL, stderr=DEVNULL)
+    process.communicate()
+    return process.returncode == 0
