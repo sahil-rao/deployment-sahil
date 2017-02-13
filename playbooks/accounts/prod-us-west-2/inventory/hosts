@@ -1,3 +1,6 @@
+# Declare all the original ansible names
+[tag_Name_MongoDBServer]
+
 # Declare the new tags
 [tag_Service_dbsilo1_mongo]
 
