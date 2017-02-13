@@ -25,7 +25,7 @@ class BaseBastion(object):
     def tunnel(self, remote_host, remote_port):
         raise NotImplementedError
 
-    def check_output(self, *args):
+    def resolve_hostname(self, hostname):
         raise NotImplementedError
 
 
@@ -65,19 +65,42 @@ class Bastion(BaseBastion):
                                        stderr=DEVNULL,
                                        stdin=subprocess.PIPE)
 
-    def check_output(self, cmd):
-        ssh_cmd = [
-            'ssh',
-            '-S', self._control_socket,
-            'x',
-        ]
-        ssh_cmd.extend(pipes.quote(arg) for arg in cmd)
+            return ProcessTunnel(process, self._local_host, local_port)
 
-        return subprocess.check_output(ssh_cmd)
+    def resolve_hostname(self, hostname):
+        cmd = [
+            'ssh',
+            '-q',
+            '-o', 'StrictHostKeyChecking=no',
+            self._bastion,
+            'host', pipes.quote(hostname)]
+        LOG.debug('running: %s', ' '.join(cmd))
+
+        stdout = subprocess.check_output(cmd).strip()
+
+        m = re.search('^.* has address (.*)$', stdout, re.MULTILINE)
+        if m:
+            return m.group(1)
+        else:
+            return None
+
 
 class NoopBastion(BaseBastion):
     def tunnel(self, remote_host, remote_port):
         return NoopTunnel(remote_host, remote_port)
+
+    def resolve_hostname(self, hostname):
+        cmd = ['host', pipes.quote(hostname)]
+        LOG.debug('running: %s', ' '.join(cmd))
+
+        stdout = subprocess.check_output(cmd).strip()
+
+        m = re.match('.* has address (.*)$', stdout)
+        if m:
+            return m.group(1)
+        else:
+            return None
+
 
 class BaseTunnel(object):
     def __init__(self, host, port):
@@ -147,8 +170,21 @@ class ProcessTunnel(BaseTunnel):
         if status is not None:
             return
 
-    def check_output(self, cmd):
-        return subprocess.check_output(cmd)
+        self._process.stdin.close()
+        self._process.terminate()
+
+        for _ in exponential_decay(10.0):
+            status = self._process.poll()
+
+            if status is not None:
+                break
+        else:
+            LOG.error(
+                'ssh failed to shutdown for %s:%s' % (self.host, self.port))
+            self._process.kill()
+
+        self._process.wait()
+        self._closed = True
 
 
 class NoopTunnel(BaseTunnel):

@@ -16,7 +16,11 @@ class RedisCluster(object):
 
     def master(self):
         master_hostname = self.master_hostname()
-        return Redis(self.cluster.bastion, master_hostname)
+        port = 6379
+
+        master_address = self.cluster.bastion.resolve_hostname(master_hostname)
+        tunnel = self.cluster.bastion.tunnel(master_address, port)
+        return Redis(self.cluster.bastion, tunnel, master_address, port)
 
     def instance_private_ips(self):
         for instance in self.instances:
@@ -52,7 +56,7 @@ class OldRedisCluster(RedisCluster):
 
     def master_hostname(self):
         env = self.cluster.env
-        if env == 'prod':
+        if env == 'prod-old':
             env = 'app'
 
         return 'redismaster.{}.{}'.format(
@@ -90,5 +94,5 @@ class Redis(object):
 
 
 class RedisSentinel(Redis):
-    def __init__(self, bastion, host, port=26379):
-        super(RedisSentinel, self).__init__(bastion, host, port)
+    def __init__(self, bastion, tunnel, host, port):
+        super(RedisSentinel, self).__init__(bastion, tunnel, host, port)

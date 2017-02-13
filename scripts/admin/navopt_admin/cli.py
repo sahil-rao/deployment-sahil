@@ -16,7 +16,7 @@ import sys
 @click.option('--env', 'env',
               help='what environment are we inspecting',
               required=True,
-              type=click.Choice(['alpha', 'dev', 'stage', 'prod']))
+              type=click.Choice(['alpha', 'dev', 'stage', 'prod-old', 'prod']))
 @click.option('--bastion', 'bastion')
 @click.option('--region')
 @click.option('--zone', default=None)
@@ -48,7 +48,8 @@ def cli(ctx, env, bastion, region, zone, assume_yes, log_level):
             'alpha': 'navopt-alpha',
             'dev': None,
             'stage': 'navopt-stage',
-            'prod': 'navopt-prod',
+            'prod-old': 'navopt-prod',
+            'prod': 'bastion.us-west-1.navopt.altus.cloudera.com',
         }[env]
 
     if region is None:
@@ -56,6 +57,7 @@ def cli(ctx, env, bastion, region, zone, assume_yes, log_level):
             'alpha': 'us-west-1',
             'dev': 'us-west-2',
             'stage': 'us-west-2',
+            'prod-old': 'us-west-2',
             'prod': 'us-west-2',
         }[env]
 
@@ -64,7 +66,8 @@ def cli(ctx, env, bastion, region, zone, assume_yes, log_level):
             'alpha': 'alpha.xplain.io',
             'dev': 'navopt-dev.cloudera.com',
             'stage': 'stage.xplain.io',
-            'prod': 'app.xplain.io',
+            'prod-old': 'app.xplain.io',
+            'prod': 'optimizer.cloudera.com',
         }[env]
 
     cluster = navopt_admin.cluster.Cluster(
