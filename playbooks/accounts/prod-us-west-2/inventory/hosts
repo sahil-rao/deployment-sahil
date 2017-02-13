@@ -1,3 +1,6 @@
+# Declare the new tags
+[tag_Service_dbsilo1_mongo]
+
 [tag_Name_Redis1]
 172.31.38.2
 172.31.47.50
@@ -75,7 +78,7 @@ express_session_secret={{ nodejs_express_session_secret }}
 [tag_Name_Arbiter4]
 172.31.21.208
 
-[tag_Name_MongoDBServer]
+[tag_Name_MongoDBServer:children]
 tag_Service_dbsilo1_mongo
 
 [tag_Name_RedisSlaves]
