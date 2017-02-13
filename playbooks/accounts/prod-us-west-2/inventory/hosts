@@ -76,9 +76,7 @@ express_session_secret={{ nodejs_express_session_secret }}
 172.31.21.208
 
 [tag_Name_MongoDBServer]
-172.31.41.67
-172.31.41.68
-172.31.16.180
+tag_Service_dbsilo1_mongo
 
 [tag_Name_RedisSlaves]
 172.31.38.2
