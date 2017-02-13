@@ -22,15 +22,25 @@ class RedisCluster(object):
         for instance in self.instances:
             yield instance.private_ip_address
 
-    def clients(self):
-        for ip in self.instance_private_ips():
-            yield Redis(self.cluster.bastion, ip)
+    def clients(self, port=6379):
+        tunnels = []
 
-    def sentinel_clients(self):
-        for instance in self.instances:
-            yield RedisSentinel(
-                self.cluster.bastion,
-                instance.private_ip_address)
+        for ip in self.instance_private_ips():
+            tunnel = self.cluster.bastion.tunnel(ip, port)
+            tunnels.append((ip, tunnel))
+
+        for ip, tunnel in tunnels:
+            yield Redis(self.cluster.bastion, tunnel, ip, port)
+
+    def sentinel_clients(self, port=26379):
+        tunnels = []
+
+        for ip in self.instance_private_ips():
+            tunnel = self.cluster.bastion.tunnel(ip, port)
+            tunnels.append((ip, tunnel))
+
+        for ip, tunnel in tunnels:
+            yield RedisSentinel(self.cluster.bastion, tunnel, ip, port)
 
 
 # FIXME: Remove once we get rid of the old-style instances
@@ -51,11 +61,12 @@ class OldRedisCluster(RedisCluster):
 
 
 class Redis(object):
-    def __init__(self, bastion, host, port=6379):
+    def __init__(self, bastion, tunnel, host, port):
         self.host = host
         self.port = port
 
-        self._tunnel = bastion.tunnel(host, port)
+        self._tunnel = tunnel
+        self._tunnel.open()
 
         self._conn = redis.StrictRedis(
             host=self._tunnel.host,

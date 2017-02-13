@@ -9,6 +9,10 @@ import termcolor
 
 
 class MongoHealthCheck(HealthCheck):
+    def open(self):
+        for host in self.hosts:
+            host.open()
+
     def close(self):
         for host in self.hosts:
             host.close()

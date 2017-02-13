@@ -13,17 +13,25 @@ class ElasticsearchCluster(object):
         for instance in self.instances:
             yield instance.private_ip_address
 
-    def clients(self):
+    def clients(self, port=9200):
+        tunnels = []
+
         for ip in self.instance_private_ips():
-            yield Elasticsearch(self.cluster.bastion, ip)
+            tunnel = self.cluster.bastion.tunnel(ip, port)
+            tunnels.append((ip, tunnel))
+
+        for ip, tunnel in tunnels:
+            yield Elasticsearch(self.cluster.bastion, tunnel, ip, port)
 
 
 class Elasticsearch(object):
-    def __init__(self, bastion, host, port=9200):
+    def __init__(self, bastion, tunnel, host, port):
         self.host = host
         self.port = port
 
-        self._tunnel = bastion.tunnel(host, port)
+        self._tunnel = tunnel
+        self._tunnel.open()
+
         self._conn = elasticsearch.Elasticsearch(
             ['{}:{}'.format(self._tunnel.host, self._tunnel.port)],
             use_ssl=False)
