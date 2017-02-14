@@ -5,11 +5,11 @@
 [tag_Name_Bastion]
 [tag_Name_Datadog]
 [tag_Name_DeploymentRoot]
+[tag_Name_ElasticLog]
 [tag_Name_ElasticSearch]
 [tag_Name_Foundation]
-[tag_Name_Kibana]
 [tag_Name_KibanaAndElasticsearch]
-[tag_Name_ElasticLog]
+[tag_Name_Kibana]
 [tag_Name_LogstashServer]
 [tag_Name_MongoDBServer]
 [tag_Name_Nginx]
@@ -29,6 +29,7 @@
 [tag_Name_nginx]
 [tag_Name_nodejs]
 [tag_Name_queue_server]
+[tag_Name_load_balancer]
 [tag_Service_dbsilo1_elasticsearch]
 [tag_Service_dbsilo1_mongo]
 [tag_Service_dbsilo1_redis]
@@ -44,6 +45,7 @@ tag_Name_backoffice
 tag_Name_admin
 tag_Name_backoffice
 tag_Name_nginx
+tag_Name_load_balancer
 tag_Name_queue_server
 
 [tag_Name_ElasticSearch:children]
@@ -63,10 +65,14 @@ tag_Service_dbsilo1_mongo
 
 [tag_Name_Nginx:children]
 tag_Name_nginx
+tag_Name_load_balancer
 
 [tag_Name_nginx:vars]
 domain=dev.optimizer.cloudera.com
 old_domain=dev.xplain.io
+
+[tag_Name_load_balancer:vars]
+domain=navopt-dev.cloudera.com
 
 [tag_Name_NodeJS:children]
 tag_Name_nodejs
