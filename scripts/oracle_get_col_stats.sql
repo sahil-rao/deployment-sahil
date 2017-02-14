@@ -13,9 +13,15 @@ set trimspool on
 set headsep off
 set pagesize 0
 set linesize 132
-spool col_stats.xcollog 
+spool col_stats.log
 
---Below query is used to get table stats info, the '||' is used for concatentation,
+set serveroutput on format wrapped;
+begin
+    DBMS_OUTPUT.put_line('table_name,column_name,data_type,num_distinct,num_nulls,avg_col_len');
+end;
+/
+
+--Below query is used to get column stats info, the '||' is used for concatentation,
 --even though you specifiy owner it shows recycle table which starts with 'BIN$*' we ignore those 
 select table_name||','||column_name||','||data_type||','||num_distinct||','||num_nulls||','||avg_col_len 
 from dba_tab_columns 
