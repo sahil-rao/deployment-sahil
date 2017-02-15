@@ -2,6 +2,7 @@
 [tag_Name_MongoDBServer]
 
 # Declare the new tags
+[tag_Name_load_balancer]
 [tag_Service_dbsilo1_mongo]
 
 [tag_Name_Redis1]
@@ -83,6 +84,9 @@ express_session_secret={{ nodejs_express_session_secret }}
 
 [tag_Name_MongoDBServer:children]
 tag_Service_dbsilo1_mongo
+
+[tag_Name_Nginx:children]
+tag_Name_load_balancer
 
 [tag_Name_RedisSlaves]
 172.31.38.2
