@@ -6,6 +6,7 @@ import click
 import logging
 import navopt_admin.cluster
 import navopt_admin.dbsilo
+import navopt_admin.elasticsearch
 import navopt_admin.health_check.cli
 import navopt_admin.terms
 import navopt_admin.user
@@ -93,6 +94,12 @@ cli.add_command(
 
 cli.add_command(
     click.CommandCollection('dbsilo', sources=[navopt_admin.dbsilo.cli])
+)
+
+cli.add_command(
+    click.CommandCollection(
+        'elasticsearch',
+        sources=[navopt_admin.elasticsearch.cli])
 )
 
 cli.add_command(

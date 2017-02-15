@@ -1,6 +1,10 @@
 from __future__ import absolute_import
 
+import click
 import elasticsearch
+from .util import prompt
+
+TEMPLATE_NAME = 'template_1'
 
 
 class ElasticsearchCluster(object):
@@ -8,20 +12,27 @@ class ElasticsearchCluster(object):
         self.cluster = cluster
         self.service = service
         self.instances = instances
+        self._port = 9200
 
     def instance_private_ips(self):
         for instance in self.instances:
             yield instance.private_ip_address
 
-    def clients(self, port=9200):
+    def master(self):
+        # Just use the first elasticsearch node as our master.
+        ip = self.instances[0].private_ip_address
+        tunnel = self.cluster.bastion.tunnel(ip, self._port)
+        return Elasticsearch(self.cluster.bastion, tunnel, ip, self._port)
+
+    def clients(self):
         tunnels = []
 
         for ip in self.instance_private_ips():
-            tunnel = self.cluster.bastion.tunnel(ip, port)
+            tunnel = self.cluster.bastion.tunnel(ip, self._port)
             tunnels.append((ip, tunnel))
 
         for ip, tunnel in tunnels:
-            yield Elasticsearch(self.cluster.bastion, tunnel, ip, port)
+            yield Elasticsearch(self.cluster.bastion, tunnel, ip, self._port)
 
 
 class Elasticsearch(object):
@@ -58,3 +69,81 @@ class Elasticsearch(object):
 
     def __str__(self):
         return '{}:{}'.format(self.host, self.port)
+
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command('change-replicas')
+@click.argument('dbsilo_name', required=True)
+@click.argument('replicas', type=int)
+@click.pass_context
+def change_replicas(ctx, dbsilo_name, replicas):
+    if replicas < 0:
+        ctx.fail('cannot set replicas under 0')
+
+    dbsilo = ctx.obj['cluster'].dbsilo(dbsilo_name)
+
+    with dbsilo.elasticsearch_cluster().master() as es_client:
+        modified_template = False
+
+        if es_client.indices.exists_template(TEMPLATE_NAME):
+            index_template = es_client \
+                .indices.get_template(TEMPLATE_NAME)[TEMPLATE_NAME]
+            settings = index_template['settings']
+            number_of_replicas = int(settings['index']['number_of_replicas'])
+
+            print 'template {} has {} replicas'.format(
+                TEMPLATE_NAME,
+                number_of_replicas)
+
+            modified_template = replicas != number_of_replicas
+
+        else:
+            modified_template = True
+            index_template = None
+
+        indices_to_change = []
+
+        for index in es_client.indices.get('*'):
+            settings = es_client.indices.get_settings(index)[index]['settings']
+            number_of_replicas = int(settings['index']['number_of_replicas'])
+
+            if replicas != number_of_replicas:
+                print '{} has {} replicas'.format(index, number_of_replicas)
+                indices_to_change.append(index)
+
+        if not modified_template and not indices_to_change:
+            print 'no changes needed'
+            return
+
+        msg = 'are you sure you want to apply? [yes/no]: '
+        if not prompt(msg, ctx.obj['yes']):
+            ctx.fail('elasticsearch cluster unchanged')
+
+        if modified_template:
+            if index_template:
+                index_template['settings']['number_of_replicas'] = replicas
+            else:
+                index_template = {
+                    'template': '*',
+                    'order': 0,
+                    'settings': {
+                        'number_of_replicas': replicas,
+                    },
+                }
+
+            es_client.indices.put_template(TEMPLATE_NAME, index_template)
+
+            print 'template modified'
+
+        if indices_to_change:
+            es_client.indices.put_settings({
+                'index': {
+                    'number_of_replicas': replicas,
+                },
+            })
+
+            print 'indices modified'
