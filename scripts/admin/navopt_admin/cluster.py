@@ -10,14 +10,16 @@ import click
 
 
 class Cluster(object):
-    def __init__(self, env, region, zone, bastion=None):
+    def __init__(self, profile, env, region, zone, bastion=None):
+        self.profile = profile
         self.env = env
         self.region = region
         self.zone = zone
 
         self._bastion_name = bastion
 
-        self._ec2 = boto3.resource('ec2', region_name=region)
+        session = boto3.Session(profile_name=profile)
+        self._ec2 = session.resource('ec2', region_name=region)
 
     @property
     def bastion(self):

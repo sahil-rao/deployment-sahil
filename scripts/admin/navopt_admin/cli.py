@@ -13,6 +13,8 @@ import sys
 
 
 @click.group()
+@click.option('--profile', 'profile',
+              default=None)
 @click.option('--env', 'env',
               help='what environment are we inspecting',
               required=True,
@@ -33,7 +35,7 @@ import sys
                   'debug'
               ]))
 @click.pass_context
-def cli(ctx, env, bastion, region, zone, assume_yes, log_level):
+def cli(ctx, profile, env, bastion, region, zone, assume_yes, log_level):
     logging.basicConfig()
     logging.getLogger('navopt_admin').setLevel({
         'critical': logging.CRITICAL,
@@ -42,6 +44,15 @@ def cli(ctx, env, bastion, region, zone, assume_yes, log_level):
         'info': logging.INFO,
         'debug': logging.DEBUG,
     }[log_level])
+
+    if profile is None:
+        profile = {
+            'alpha': 'navopt_prod',
+            'dev': 'navopt_dev',
+            'stage': 'navopt_stage',
+            'prod-old': 'navopt_prod',
+            'prod': 'navopt_prod',
+        }[env]
 
     if bastion is None:
         bastion = {
@@ -71,6 +82,7 @@ def cli(ctx, env, bastion, region, zone, assume_yes, log_level):
         }[env]
 
     cluster = navopt_admin.cluster.Cluster(
+        profile=profile,
         env=env,
         region=region,
         zone=zone,
