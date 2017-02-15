@@ -74,7 +74,7 @@ module "mongodb-service" {
 ###################################################################
 
 resource "aws_launch_configuration" "default" {
-    name_prefix = "${var.name}-${var.version}-"
+    name = "${var.name}-${var.version}"
     image_id = "${var.ami_id}"
     instance_type = "${var.instance_type}"
     iam_instance_profile = "${aws_iam_instance_profile.mongo.name}"
