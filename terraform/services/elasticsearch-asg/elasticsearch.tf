@@ -62,7 +62,7 @@ data "template_file" "user_data" {
 }
 
 resource "aws_launch_configuration" "default" {
-    name_prefix = "${var.name}-${var.version}-"
+    name = "${var.name}-${var.version}"
     image_id = "${var.ami_id}"
     instance_type = "${var.instance_type}"
     iam_instance_profile = "${var.iam_instance_profile}"

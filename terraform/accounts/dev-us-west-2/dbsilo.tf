@@ -17,8 +17,8 @@ module "dbsilo1" {
 
     mongo_name = "${var.cluster_name}-dbsilo1-mongo"
     mongo_replica_set = "dbsilo1"
-    mongo_version = "v005"
-    mongo_ami_id = "ami-ac41f1cc"
+    mongo_version = "v006"
+    mongo_ami_id = "ami-f678ff96"
     mongo_instance_type = "m4.xlarge"
     mongo_min_size = 0
     mongo_max_size = 3
@@ -74,8 +74,8 @@ module "dbsilo2" {
 
     mongo_name = "${var.cluster_name}-dbsilo2-mongo"
     mongo_replica_set = "dbsilo2"
-    mongo_version = "v005"
-    mongo_ami_id = "ami-ac41f1cc"
+    mongo_version = "v006"
+    mongo_ami_id = "ami-f678ff96"
     mongo_instance_type = "m4.xlarge"
     mongo_min_size = 0
     mongo_max_size = 3
