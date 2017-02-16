@@ -7,13 +7,13 @@ module "load-balancer" {
 
     vpc_id = "${data.terraform_remote_state.networking.vpc_id}"
 
-    subnet_ids = ["${data.terraform_remote_state.networking.private_subnet_ids}"]
+    subnet_ids = ["${data.terraform_remote_state.networking.public_subnet_ids}"]
     private_cidrs = [
         "${data.terraform_remote_state.networking.vpc_cidr}",
         "${var.old_vpc_cidr}",
     ]
     public_cidrs = [
-        "${data.terraform_remote_state.networking.allowed_admin_internet_cidrs}",
+        "0.0.0.0/0",
     ]
 
     instance_type = "m3.medium"
@@ -23,7 +23,7 @@ module "load-balancer" {
 }
 
 resource "aws_eip" "frontend" {
-  instance = "i-c79fb81d"
+  instance = "${module.load-balancer.instance_id}"
   vpc      = true
 }
 
