@@ -51,6 +51,9 @@ all_servers
 [tag_Name_Nginx]
 172.31.6.220 domain=optimizer.cloudera.com old_domain=delta-root.xplain.io
 
+[tag_Name_load_balancer:vars]
+domain=optimizer.cloudera.com
+
 [tag_Name_Redis]
 172.31.13.242
 

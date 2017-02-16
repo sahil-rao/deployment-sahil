@@ -30,6 +30,23 @@
 - name: Install nginx logrotate file
   copy: src=roles/nginx/files/nginx dest=/etc/logrotate.d/nginx
   sudo: yes
+- name: Create /etc/nginx/ssl
+  file: path=/etc/nginx/ssl state=directory owner=www-data mode=600
+  sudo: yes
+- name: Get xplain cert
+  copy:
+    content: "{{ load_balancer_ssl_cert }}"
+    dest: /etc/nginx/ssl/xplain_san_cert.crt
+    owner: www-data
+    mode: 600
+  sudo: yes
+- name: Get Cloudera Key
+  copy:
+    content: "{{ load_balancer_ssl_key }}"
+    dest: /etc/nginx/ssl/san_cloudera_com.key
+    owner: www-data
+    mode: 600
+  sudo: yes
 - name: Start nginx
   command: /usr/sbin/nginx
   sudo: yes

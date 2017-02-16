@@ -23,6 +23,9 @@ erlang_cookie: "{{ vault_erlang_cookie }}"
 
 google_analytics_id: "{{ vault_google_analytics_id }}"
 
+load_balancer_ssl_cert: "{{ vault_load_balancer_ssl_cert }}"
+load_balancer_ssl_key: "{{ vault_load_balancer_ssl_key }}"
+
 admin_nginx_password: "{{ vault_admin_nginx_password }}"
 admin_ssl_cert: "{{ vault_admin_ssl_cert }}"
 admin_ssl_key: "{{ vault_admin_ssl_key }}"
