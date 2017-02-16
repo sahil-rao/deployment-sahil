@@ -138,7 +138,7 @@ class ElasticsearchClusterIndexCheck(ElasticsearchHealthCheck):
                 result = False
                 msgs.append('unassigned:{}'.format(unassigned_shards))
 
-            if number_of_replicas != len(self.hosts):
+            if number_of_replicas + 1 != len(self.hosts):
                 result = False
                 msgs.append('replicas:{}'.format(number_of_replicas))
 
