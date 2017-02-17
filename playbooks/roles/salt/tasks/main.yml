@@ -1,0 +1,78 @@
+- name: Install python-urllib3
+  apt:
+    name: python-urllib3
+    state: present
+    update_cache: yes
+
+- name: Install python-openssl
+  apt:
+    name: python-openssl
+    state: present
+    update_cache: yes
+
+- name: Install python-pyasn1
+  apt:
+    name: python-pyasn1
+    state: present
+    update_cache: yes
+
+- name: Add Salt repository key
+  apt_key:
+    id: "{{ apt_key_sig }}"
+    url: "{{ apt_key_url }}"
+    state: present
+  register: add_repository_key
+  ignore_errors: true
+
+- name: Alternative | Add Salt repository key
+  shell: "curl -sSL {{ apt_key_url }} | sudo apt-key add -"
+  when: add_repository_key|failed
+
+- name: HTTPS APT transport for Salt repository
+  apt:
+    name: apt-transport-https
+    state: present
+
+- name: Add Salt repository and update apt cache
+  apt_repository:
+    repo: "{{ apt_repository }}"
+    mode: '644'
+    update_cache: yes
+    state: present
+
+- name: Install salt-minion package
+  apt:
+    name: salt-minion
+    state: present
+    update_cache: yes
+
+- name: Install awscli
+  apt:
+    name: awscli
+    state: present
+
+- name: Create the /srv/salt directory
+  file:
+    path: /srv/salt
+    state: directory
+    mode: '755'
+
+- name: Create the /sre/salt directory
+  file:
+    path: /sre/bin
+    state: directory
+    mode: '755'
+
+- name: Install the salt_cron.sh file
+  template:
+    src: roles/salt/templates/salt_cron.sh
+    dest: /sre/bin/salt_cron.sh
+    mode: '755'
+
+- name: Run the salt_cron.sh file
+  shell: /sre/bin/salt_cron.sh
+
+- name: Install the salt-minion cron file
+  template:
+    src: roles/salt/templates/cron.d/salt-pull-config-apply
+    dest: /etc/cron.d/salt-pull-config-apply

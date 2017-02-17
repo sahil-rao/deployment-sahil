@@ -48,6 +48,13 @@ tag_Name_nginx
 tag_Name_load_balancer
 tag_Name_queue_server
 
+[tag_Name_salt:children]
+tag_Name_admin
+tag_Name_backoffice
+tag_Name_nginx
+tag_Name_load_balancer
+tag_Name_queue_server
+
 [tag_Name_ElasticSearch:children]
 tag_Service_dbsilo1_elasticsearch
 

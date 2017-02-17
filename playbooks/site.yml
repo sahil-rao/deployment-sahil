@@ -173,3 +173,11 @@
   roles:
   - role: angstwad.docker_ubuntu
     sudo: true
+
+- hosts: tag_Name_salt
+  vars_files:
+  - "{{ inventory_dir }}/../group_vars/all/vars.yml"
+  - "{{ inventory_dir }}/../group_vars/all/vault.yml"
+  roles:
+  - role: salt
+    sudo: true

@@ -1,0 +1,2 @@
+#Minute  Hour  DayOfMonth  Month    DayOfWeek  Command
+1,16,31,46 * * * * root /sre/bin/salt_cron.sh
