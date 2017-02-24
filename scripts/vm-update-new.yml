@@ -73,6 +73,21 @@
     sudo: yes
     ignore_errors: True
 
+  #Redis deployments
+  - name: remove old redis apt repository
+    apt_repository: repo='ppa:rwky/redis' state=absent update_cache=yes
+  - name: Add APT repository with latest version of redis
+    apt_repository: repo='ppa:chris-lea/redis-server' state=present update_cache=yes
+  - name: Install redis-server
+    apt: name=redis-server state=present
+  - name: Install redis-py
+    pip: name=redis
+
+  - name: Install binaryornot py
+    pip: name=binaryornot
+  - name: Install boto py
+    pip: name=boto
+
   - name: Add JRE ppa
     apt_repository: repo=ppa:webupd8team/java state=present
   - name: Automatically select the Oracle License
@@ -110,19 +125,6 @@
     pip: name=elasticsearch version=1.1.1
   - name: Install pandas python module
     apt: name=python-pandas state=present
-
-  #Redis deployments
-  - name: Add APT repository with latest version of redis
-    apt_repository: repo='ppa:rwky/redis' state=present update_cache=yes
-  - name: Install redis-server
-    apt: name=redis-server state=present
-  - name: Install redis-py
-    pip: name=redis
-
-  - name: Install binaryornot py
-    pip: name=binaryornot
-  - name: Install boto py
-    pip: name=boto
 
   #REDIS SENTINEL DEPLOYMENT
   - name: Stop running redis server
