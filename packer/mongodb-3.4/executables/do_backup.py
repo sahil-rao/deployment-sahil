@@ -72,6 +72,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--region', required=True)
+    parser.add_argument('--env', required=True)
     parser.add_argument('--service', required=True)
     parser.add_argument('--instance-id', required=True)
     parser.add_argument('--ttl', type=int, default=14)
