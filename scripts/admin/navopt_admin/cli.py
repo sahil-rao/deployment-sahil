@@ -61,7 +61,7 @@ def cli(ctx, profile, env, bastion, region, zone, assume_yes, log_level):
             'dev': None,
             'stage': 'navopt-stage',
             'prod-old': 'navopt-prod',
-            'prod': 'bastion.us-west-1.navopt.altus.cloudera.com',
+            'prod': 'bastion.optimizer.cloudera.com',
         }[env]
 
     if region is None:
