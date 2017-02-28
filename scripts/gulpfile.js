@@ -17,7 +17,8 @@ var gulp = require('gulp'),
     gulpSequence = require('gulp-sequence'), //Remove this once we upgrade to gulp 4.0
     eslint = require('gulp-eslint'),
     gulpIf = require('gulp-if'),
-    gzip = require('gulp-gzip');
+    gzip = require('gulp-gzip'),
+    gitCred = require('git-credential-node');
 
 var branch = args.branch || 'master';
 var xplainDir = args.xplainDir || null;
@@ -224,24 +225,54 @@ function gitHubLogin(repo){
 }
 
 function pullFromGithub(gitURL, dir, repo){
-  return gitHubLogin(repo).then(function(input){
-    var deffered = Q.defer();
-    var opts = {
-      checkoutBranch: branch,
-      fetchOpts: {
-        callbacks: {
-          credentials: function() {
-            return Git.Cred.userpassPlaintextNew(input.user, input.pw);
-          }
+  var defered = Q.defer();
+  gitCred.fill(gitURL, function (err, data) {
+    // data will contain any stored credentials, or will be {}
+    if(err){
+      console.log(err);
+    }
+    if(!data){
+      gitHubLogin().then(function(out){
+        var d = {
+          username:out.user,
+          password:out.pw,
+          url:gitURL
         }
-      }
-    };
-    deffered.resolve(opts);
-    return deffered.promise;
-  })
-  .then(function(opts){
-    return Git.Clone(gitURL, dir, opts).catch(function(err) { console.log(err); });; //Git Clone returns a promise
+        gitCred.approveSync(d);
+        gitClone(d, gitURL, dir)
+        .then(function(d){defered.resolve(d)})
+        .catch(function(e){defer.reject(e)});
+      })
+    }
+    else{
+      gitClone(data, gitURL, dir)
+      .then(function(d){defered.resolve(d)})
+      .catch(function(e){defer.reject(e)});
+    }
   });
+  return defered.promise;
+}
+
+function gitClone(creds, gitURL, dir){
+  var defered = Q.defer();
+  var opts = {
+    checkoutBranch: branch,
+    fetchOpts: {
+      callbacks: {
+        credentials: function() { return Git.Cred.userpassPlaintextNew(creds.username, creds.password)}
+      }
+    }
+  };
+  console.log("Credentials acquired. Cloning.")
+  Git.Clone(gitURL, dir, opts)//Git Clone returns a promise
+  .then(function(d){
+    defered.resolve(d);
+  })
+  .catch(function(err) {
+    console.log(err);
+    defered.reject(err);
+  });
+  return defered.promise;
 }
 
 function isFixed(file) {
