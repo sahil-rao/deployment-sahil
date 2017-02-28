@@ -1139,10 +1139,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     if countArray is not None:
                         process_count_array(tenant, entity.eid, mongoconn, redis_conn, countArray, data, clog)
 
-                if custom_id is not None:
-                    mongoconn.updateInstance(entity, custom_id, None, inst_dict)
-                else:
-                    mongoconn.updateInstance(entity, eid, None, inst_dict)
+                mongoconn.updateInstance(entity, eid, None, inst_dict)
 
                 entityProfile = entity.profile
 
@@ -1232,11 +1229,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if countArray is not None:
                 process_count_array(tenant, entity.eid, mongoconn, redis_conn, countArray, data, clog)
 
-        if custom_id is not None:
-            mongoconn.updateInstance(entity, custom_id, None, inst_dict)
-        else:
-            eid = IdentityService.getNewIdentity(tenant, True)
-            mongoconn.updateInstance(entity, eid, None, inst_dict)
+        eid = IdentityService.getNewIdentity(tenant, True)
+        mongoconn.updateInstance(entity, eid, None, inst_dict)
         if 'ELAPSED_TIME' in data:
             elapsed_time = data['ELAPSED_TIME']
         if elapsed_time is not None and not math.isnan(float(elapsed_time)):
