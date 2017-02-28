@@ -133,6 +133,7 @@ def end_of_phase_callback(params, current_phase):
 def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
     tableCount = 0
     table_entity = None
+    is_state_change = False
     for column_entry in columnset:
         if "tableName" not in column_entry:
             continue
@@ -182,6 +183,18 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
             eid = column_entity.eid
             if 'dataType' in column_entry and 'primaryKey' in column_entry and 'foreignKey' in column_entry:
                 mongoconn.db.entities.update({'eid':eid}, {'$set': column_entry})
+            '''
+            Check if entity is inactive if so mark it active
+            '''
+            col_entry = mongoconn.db.entities.find_one({"eid" : eid}, {"state": 1})
+            if col_entry and 'state' in col_entry and col_entry['state'] == "inactive":
+                #mongoconn.db.entities.update({"eid" : eid}, {"$set": {"state": "active"}}, upsert=True)
+                data_dict = {"tenant": tenant,
+                             "opcode": "UpdateCol",
+                             "eid": eid}
+                logging.info("===> Send Message to Del Service: %s", data_dict)
+                sendDelMessage(ch, data_dict)
+                is_state_change = True
 
         if 'partitionColumn' in column_entry and column_entry['partitionColumn'] is True:
             redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN_PARTITION")
@@ -194,7 +207,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
     """
     Create relationships.
     """
-    if entity is not None and table_entity is not None:
+    if entity is not None and table_entity is not None and not is_state_change:
         redis_conn.createRelationship(entity.eid, table_entity.eid, "CREATE")
         clog.debug(" CREATE Relation between {0} {1}\n".format(entity.eid, table_entity.eid))
         redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
@@ -203,9 +216,10 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
                                                sort=True, incrBy=1)
     return [0, tableCount]
 
-def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinput, context, clog, is_compiler, tableEidList=None, hive_success=0):
+def processTableSet(tableset, ch, mongoconn, redis_conn, tenant, uid, entity, isinput, context, clog, is_compiler, tableEidList=None, hive_success=0):
     dbCount = 0
     tableCount = 0
+    is_state_change = False
     if tableset is None or len(tableset) == 0:
         return [dbCount, tableCount]
 
@@ -263,6 +277,19 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
                                                        sec_key=table_entity.name,
                                                        sort=True, incrBy=0)
                 tableCount = tableCount + 1
+        else:
+            '''
+            Check if entity is inactive if so mark it active
+            '''
+            table_entry = mongoconn.db.entities.find_one({"eid" : table_entity.eid}, {"state": 1})
+            if table_entry and 'state' in table_entry and table_entry['state'] == "inactive":
+                #mongoconn.db.entities.update({"eid" : table_entity.eid}, {"$set": {"state": "active"}}, upsert=True)
+                data_dict = {"tenant": tenant,
+                             "opcode": "UpdateTable",
+                             "eid": table_entity.eid}
+                logging.info("===> Send Message to Del Service: %s", data_dict)
+                sendDelMessage(ch, data_dict)
+                is_state_change = True
 
         tableEidList.add(table_entity.eid)
 
@@ -301,7 +328,7 @@ def processTableSet(tableset, mongoconn, redis_conn, tenant, uid, entity, isinpu
         Create relations, first between tables and query
             Then between query and database, table and database
         """
-        if entity is not None and table_entity is not None:
+        if entity is not None and table_entity is not None and not is_state_change:
             if isinput:
 
                 if outmost_query is not None and outmost_query != entity.eid:
@@ -781,6 +808,13 @@ def sendAdvAnalyticsMessage(ch, msg_dict):
     message = dumps(msg_dict)
     connection1.publish(ch,'','advanalytics',message)
 
+def sendDelMessage(ch, msg_dict):
+    if msg_dict is None:
+        return
+
+    message = dumps(msg_dict)
+    connection1.publish(ch,'','deleteservicequeue',message)
+
 def create_query_character(signature_keywords, operator_list):
     '''
     Takes in SignatureKeywords and OperatorList lists and creates the filtered
@@ -996,6 +1030,47 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 etype = EntityType.SQL_METAQUERY
                 #return None, None
 
+        if 'OperatorList' in compile_doc[compiler] and \
+           'DROP_TABLE' in compile_doc[compiler]['OperatorList']:
+            if 'OutputTableList' in compile_doc[compiler] and\
+               'tableName' in compile_doc[compiler]['OutputTableList']:
+                tableName = compile_doc[compiler]['OutputTableList']['tableName']
+                if 'databaseName' in compile_doc[compiler]['OutputTableList'] and\
+                   compile_doc[compiler]['OutputTableList']['databaseName'] not in DBNAME_IGNORE_LIST:
+                    tableName = compile_doc[compiler]['OutputTableList']['databaseName'] + "." + tableName
+                logging.info("===> Send Message to Del Service for table: %s", table_name)
+                entries = mongoconn.getEntitiesByTypeAndName([table_name], EntityType.SQL_TABLE, {"eid" : 1})
+                for entry in entries:
+                    table_eid = entry['eid']
+                    data_dict = {"tenant": tenant,
+                                 "opcode": "DeleteTable",
+                                 "eid": table_eid}
+                    logging.info("===> Send Message to Del Service: %s", data_dict)
+                    sendDelMessage(ch, data_dict)
+                    break
+        
+        if 'OperatorList' in compile_doc[compiler] and \
+           'DROP_COLUMN' in compile_doc[compiler]['OperatorList']:
+            #check if table and column name are present
+            if 'dropColumnNames' in compile_doc[compiler] and\
+               'tableName' in compile_doc[compiler]['dropColumnNames'] and\
+               'columnName' in compile_doc[compiler]['dropColumnNames']:
+                tableName = compile_doc[compiler]['dropColumnNames']['tableName']
+                if 'databaseName' in compile_doc[compiler]['dropColumnNames'] and\
+                   compile_doc[compiler]['dropColumnNames']['databaseName'] not in DBNAME_IGNORE_LIST:
+                    tableName = compile_doc[compiler]['dropColumnNames']['databaseName'] + "." + tableName
+                col_name = compile_doc[compiler]['dropColumnNames']['columnName']
+                col_name = tableName + "." + col_name
+                # find the eid based on column name
+                logging.info("Info: Col Name: %s", col_name) 
+                entry = mongoconn.db.entities.find_one({"name": col_name, "etype": "SQL_TABLE_COLUMN"}, {"eid" : 1})
+                col_eid = entry['eid']
+                data_dict = {"tenant": tenant,
+                             "opcode": "DeleteCol",
+                             "eid": col_eid,
+                             "name": col_name}
+                sendDelMessage(ch, data_dict)
+ 
         compile_doc_fields = ["SignatureKeywords",
                       "OperatorList",
                       "selectColumnNames",
@@ -1378,23 +1453,23 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
 
             is_compiler = False
-            if key == compiler_to_use and compile_doc[key].has_key("InputTableList"):
+            if key == compiler_to_use and compile_doc[key].has_key("InputTableList") and 'DROP_TABLE' not in compile_doc[key]['OperatorList']:
                 inputTableList = compile_doc[key]["InputTableList"]
                 if key == compiler_to_use:
                     is_compiler = True
                 logging.info("Input table set: %s key: %s compiler: %s flag: %s", compile_doc[key]["InputTableList"], key, compiler_to_use, is_compiler)
                 tmpAdditions = processTableSet(compile_doc[key]["InputTableList"],
-                                               mongoconn, redis_conn, tenant, uid, entity, True,
+                                               ch, mongoconn, redis_conn, tenant, uid, entity, True,
                                                context, clog, is_compiler, tableEidList)
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
-            if key == compiler_to_use and compile_doc[key].has_key("OutputTableList"):
+            if key == compiler_to_use and compile_doc[key].has_key("OutputTableList") and 'DROP_TABLE' not in compile_doc[key]['OperatorList']:
                 logging.info("Output table set: %s", compile_doc[key]["OutputTableList"])
                 tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"],
-                                                mongoconn, redis_conn, tenant, uid, entity, False,
+                                                ch, mongoconn, redis_conn, tenant, uid, entity, False,
                                                 context, clog, is_compiler, tableEidList)
                 if uid is not None:
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
@@ -1736,8 +1811,12 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
 
             for column_entry in mongoconn.db.entities.find({"etype":"SQL_TABLE_COLUMN",
                                                             "eid": { "$in" : column_eids}},
-                                                            {"columnName":1}):
-                table_dict[db_entry][entry["name"]].append(column_entry["columnName"])
+                                                            {"name":1}):
+                c_split = column_entry["name"].split(".")
+                if len(c_split) == 2:
+                    table_dict[db_entry][entry["name"]].append(c_split[1])
+                else:
+                    table_dict[db_entry][entry["name"]].append(column_entry["name"])
 
     # filter out tables with no data
     nonempty_dict = {}
