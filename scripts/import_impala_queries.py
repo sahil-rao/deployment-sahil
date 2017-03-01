@@ -1,17 +1,43 @@
+# (c) Copyright 2017 Cloudera, Inc. All rights reserved.
+
+__author__ = 'Samir Pujari'
+__copyright__ = 'Copyright 2017, Cloudera, Inc.'
+__credits__ = ['Samir Pujari']
+__license__ = ''
+__version__ = '0.1'
+__maintainer__ = 'Samir Pujari'
+__email__ = 'samir@cloudera.com'
+
 import io
 import re
 import csv
 import json
+import zlib
 import plyvel
 import avro.io
 import avro.schema
 
-IMPALA_DIR = '/home/xplain/tmp/impala/'
-SCHEMA_DIR = IMPALA_DIR + 'work_summary/partition_metadata/'
-DATA_DIR = IMPALA_DIR + 'work_summary/partitions/'
-OUT_FILE_NAME = '/tmp/impala_queries.csv'
-OUTPUT_KEYS = ['queryId', 'user', 'statement', 'queryState', 'durationMillis',
-               'queryType', 'serviceName', 'defaultDatabase']
+
+out_type = 'queries'
+extraction_dir = '/home/xplain/tmp/impala/'
+out_file_name = '/tmp/impala_' + out_type + '.csv'
+
+CONFIG_DICT = {'queries': {'directory': 'work_summary',
+                         'metadata_split_char': ' ',
+                         'output_keys': ['queryId', 'user', 'statement',
+                                         'queryState', 'startTimeMillis',
+                                         'endTimeMillis', 'durationMillis',
+                                         'queryType', 'serviceName',
+                                         'defaultDatabase', 'rowsProduced']},
+               'profiles': {'directory': 'work_details',
+                           'metadata_split_char': '!',
+                           'output_keys': []}}
+SCHEMA_DIR = extraction_dir + CONFIG_DICT[out_type]['directory'] + '/partition_metadata/'
+DATA_DIR = extraction_dir + CONFIG_DICT[out_type]['directory'] + '/partitions/'
+output_keys = CONFIG_DICT[out_type]['output_keys']
+
+#query has [runtimeProfileAvailable', frontEndHostId', defaultDatabase', syntheticAttributes', estimatedTimes', endTimeMillis', queryId', user', statement', rowsProduced', queryState', startTimeMillis', durationMillis', queryType', serviceName']
+#profile has [defaultStartTimeMs', defaultEndTimeMs', serviceName', compressedRuntimeProfile', frontEndHostId']
 
 json_pattern = re.compile('{(.*)}')
 
@@ -29,7 +55,7 @@ for raw_partition_name, raw_schema in schema_db:
     the keys in the schema table look like:
         PARTITION_queries queries_2017-02-17T08:38:55.599Z
     '''
-    key_arr = raw_partition_name.split(' ')
+    key_arr = raw_partition_name.split(CONFIG_DICT[out_type]['metadata_split_char'])
     if len(key_arr) < 2:
         #this skips any keys that don't have enough info.
         continue
@@ -50,9 +76,15 @@ for raw_partition_name, raw_schema in schema_db:
         decoder = avro.io.BinaryDecoder(bytes_reader)
         reader = avro.io.DatumReader(schema)
         decoded_data = reader.read(decoder)
-
         #We only care about specific keys.
-        tmp_dict = {x: decoded_data[x] for x in OUTPUT_KEYS}
+        if output_keys:
+            tmp_dict = {x: decoded_data[x] for x in output_keys}
+        else:
+            output_keys = decoded_data.keys()
+            tmp_dict = decoded_data
+
+        if 'compressedRuntimeProfile' in tmp_dict:
+            tmp_dict['compressedRuntimeProfile'] = repr(zlib.decompress(tmp_dict['compressedRuntimeProfile']))
 
         if 'statement' in tmp_dict:
             s = tmp_dict['statement']
@@ -61,12 +93,13 @@ for raw_partition_name, raw_schema in schema_db:
                 This makes sure the query is utf8 formatted
                     and is on a single line. Much easier to truncate the file.
                 '''
-                tmp_dict['statement'] = s.encode('utf8').encode('string_escape')
+                tmp_dict['statement'] = s.encode('utf8')
+                tmp_dict['statement'] = tmp_dict['statement'].replace("\n", " ")
         out_list.append(tmp_dict)
     data_db.close()
 schema_db.close()
 
-with open(OUT_FILE_NAME, 'wb') as output_file:
-    dict_writer = csv.DictWriter(output_file, OUTPUT_KEYS, lineterminator='\n')
+with open(out_file_name, 'wb') as output_file:
+    dict_writer = csv.DictWriter(output_file, output_keys, lineterminator='\n')
     dict_writer.writeheader()
     dict_writer.writerows(out_list)
