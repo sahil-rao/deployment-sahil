@@ -24,6 +24,10 @@ else
   sudo apt-get install maven
 fi
 
+sudo apt-add-repository ppa:git-core/ppa
+sudo apt-get update
+sudo apt-get install git
+
 #check thrift dependency
 if [ `command -v thrift` ]
 then
