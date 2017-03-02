@@ -232,7 +232,7 @@ function pullFromGithub(gitURL, dir, repo){
       console.log(err);
     }
     if(!data){
-      gitHubLogin().then(function(out){
+      gitHubLogin(repo).then(function(out){
         var d = {
           username:out.user,
           password:out.pw,
