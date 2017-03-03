@@ -113,8 +113,8 @@
     "uuid": "^2.0.2",
     "vinyl-buffer": "^1.0.0",
     "prompt": "*",
-    "webpack": "~1.13.1",
-    "webpack-dev-server": "~1.14.1",
+    "webpack": "~2.2.1",
+    "webpack-dev-server": "*",
     "webpack-stream": "*",
     "q": "*",
     "yargs": "*"
