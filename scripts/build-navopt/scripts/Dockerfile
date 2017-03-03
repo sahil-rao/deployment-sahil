@@ -9,6 +9,8 @@ RUN \
 	add-apt-repository -y ppa:webupd8team/java && \
 	apt-get update && \
 	apt-get install -y oracle-java8-installer
+	apt-get install -y python-software-properties
+	curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -
 
 RUN apt-get -y install \
 	ant \
@@ -42,6 +44,7 @@ RUN \
 	cd .. && \
 	rm -r thrift-0.9.3.tar.gz thrift-0.9.3 && \
 	pip install thrift==0.9.3
+
 
 RUN apt-get -y install \
 	nodejs \
