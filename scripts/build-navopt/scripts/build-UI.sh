@@ -13,6 +13,9 @@ cp deployment/scripts/gulpfile.js ./
 cp deployment/scripts/package.json ./
 ln -s /usr/bin/nodejs /usr/bin/node
 ln -s /node_modules ./node_modules
+npm -v
+node -v
+git --version
 npm install
 gulp app-build
 
