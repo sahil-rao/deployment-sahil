@@ -6,8 +6,8 @@ var gulp = require('gulp'),
     guppy = require('git-guppy')(gulp)
     gulpConfig = require('./gulp-config'),
     webpackStream = require('webpack-stream'),
-    webpack = require('webpack').
-    fs = require('fs-extra'),
+    webpack = require('webpack'),
+    fse = require('fs-extra'),
     fsj = require('fs-jetpack'),
     tar = require('gulp-tar'),
     args = require('yargs').argv,
@@ -54,7 +54,7 @@ gulp.task('ensure-output-dir', function(){
 gulp.task('purge-ui', function(){
   console.log("Cleaning UI directory");
   var deferred = Q.defer();
-  fs.emptyDir(dirs.ui, function(err){
+  fse.emptyDir(dirs.ui, function(err){
     if(err){
       throw err;
     }
@@ -91,8 +91,8 @@ gulp.task('app-build', ["webpack-build"], function(){
       overwrite: true,
       matching: ['!node_modules/**']
     });
-    fs.removeSync(dir+'/tmp/xplain.io/xplain.io/node_modules');
-    fs.removeSync(dirs.outputDir+'xplain.io.tar.gz');
+    fse.removeSync(dir+'/tmp/xplain.io/xplain.io/node_modules');
+    fse.removeSync(dirs.outputDir+'xplain.io.tar.gz');
     return gulp.src(dir+'/tmp/xplain.io/**')
         .pipe(tar('xplain.io.tar'))
         .pipe(gzip())
@@ -102,7 +102,7 @@ gulp.task('app-build', ["webpack-build"], function(){
         })
         .on('end', function(){
           console.log("End");
-          fs.remove(dir+'/tmp/xplain.io');
+          fse.remove(dir+'/tmp/xplain.io');
         });
   }
   catch(e){
@@ -286,7 +286,7 @@ function isFixed(file) {
 
 function ensureDir(dir){
   var def = Q.defer();
-  fs.ensureDir(dir, function (err) {
+  fse.ensureDir(dir, function (err) {
     if(err){
       console.log(err);
       def.reject(err);
