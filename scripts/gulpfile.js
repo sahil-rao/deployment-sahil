@@ -5,7 +5,8 @@ Documentation: https://docs.google.com/document/d/1B7CK9edy6CJsHWzQqEV7xupZeFUvy
 var gulp = require('gulp'),
     guppy = require('git-guppy')(gulp)
     gulpConfig = require('./gulp-config'),
-    webpack = require('webpack-stream'),
+    webpackStream = require('webpack-stream'),
+    webpack = require('webpack').
     fs = require('fs-extra'),
     fsj = require('fs-jetpack'),
     tar = require('gulp-tar'),
@@ -32,6 +33,8 @@ var dirs = {
   outputDir: gulpConfig.outputDir,
   vm: gulpConfig.vmDir
 }
+
+var webpackCfg = require((xplainDir || dirs.ui+'/xplain.io/')+'src/webpack.config.js');
 
 var jshintSrc = [dirs.ui+'xplain.io/**/*.js', dirs.ui+'xplain.io/**/*.jsx', '!'+dirs.ui+'xplain.io/public/js/libs/**/*.js',
 '!'+dirs.ui+'xplain.io/node_modules/**/*.js', '!'+dirs.ui+'xplain.io/app/libraries/**/*.js','!'+dirs.ui+'xplain.io/public/build/**/*.js', '!'+dirs.ui+'xplain.io/test/**/*.js',
@@ -69,7 +72,8 @@ gulp.task('pull-app', ['purge-ui'], function(){
 gulp.task('webpack-build', function(){
   console.log("Compiling code");
   var dir = xplainDir || dirs.ui+'/xplain.io/';
-  return webpack(require(dir+'src/webpack.config.js'))
+  return gulp.src(dir)
+    .pipe(webpackStream(webpackCfg, webpack))
     .pipe(gulp.dest(dir+'public/build/'));
 });
 
