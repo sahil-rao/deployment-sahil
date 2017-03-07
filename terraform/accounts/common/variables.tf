@@ -22,6 +22,8 @@ variable "dns_zone_name" {}
 
 # Instances
 variable "key_name" {}
+variable "instance_managed_policies" { type = "list" }
+variable "num_instance_managed_policies" {}
 
 # Admin
 variable "admin_name" {

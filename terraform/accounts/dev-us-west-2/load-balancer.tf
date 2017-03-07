@@ -17,6 +17,12 @@ module "load-balancer" {
         "${data.terraform_remote_state.networking.allowed_admin_internet_cidrs}",
     ]
 
+    instance_managed_policies = ["${data.terraform_remote_state.networking.instance_managed_policies}"]
+    # FIXME: This might be removable in 0.9.x
+    # Unfortunately due to https://github.com/hashicorp/terraform/pull/10418,
+    # we can't actually pass or compute the count from a data source.
+    num_instance_managed_policies = "2"
+
     instance_type = "t2.micro"
     instance_count = 1
 

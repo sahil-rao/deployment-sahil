@@ -16,6 +16,9 @@ variable "security_groups" {
 ###################################################################
 
 variable "iam_role_name" { default = "queue_server" }
+variable "instance_managed_policies" { type = "list" }
+variable "num_instance_managed_policies" {}
+
 variable "ami" {
     default = ""
 }

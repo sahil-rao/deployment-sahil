@@ -12,6 +12,9 @@ module "queue-server" {
 
     key_name = "${var.key_name}"
 
+    instance_managed_policies = ["${var.instance_managed_policies}"]
+    num_instance_managed_policies = "${var.num_instance_managed_policies}"
+
     instance_type = "t2.large"
     instance_count = 2
 

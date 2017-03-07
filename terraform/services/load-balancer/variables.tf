@@ -15,6 +15,11 @@ variable "name" {}
 
 ###################################################################
 
+variable "instance_managed_policies" { type = "list" }
+
+# FIXME: This might not be needed in Terraform 0.9.x
+variable "num_instance_managed_policies" {}
+
 variable "instance_type" {
     default = "t2.micro"
 }
