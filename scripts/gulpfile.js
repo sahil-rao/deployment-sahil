@@ -66,7 +66,10 @@ gulp.task('purge-ui', function(){
 
 gulp.task('pull-app', ['purge-ui'], function(){
   console.log("Pulling latest UI code");
-  return pullFromGithub(gulpConfig.gitUrls.ui, dirs.ui, 'ui');
+  return pullFromGithub(gulpConfig.gitUrls.ui, dirs.ui, 'ui')
+         .catch(function(e){
+           console.log(e);
+         });
 });
 
 gulp.task('webpack-build', function(){
@@ -259,11 +262,20 @@ function pullFromGithub(gitURL, dir, repo){
 
 function gitClone(creds, gitURL, dir){
   var defered = Q.defer();
+  var authFail = false;
   var opts = {
     checkoutBranch: branch,
     fetchOpts: {
       callbacks: {
-        credentials: function() { return Git.Cred.userpassPlaintextNew(creds.username, creds.password)}
+        credentials: function() {
+          if(authFail){
+            gitCred.rejectSync(gitURL);
+            console.error("Invalid credentials, try again.";
+            NodeGit.Cred.defaultNew();
+          }
+          authFail = true;
+          return Git.Cred.userpassPlaintextNew(creds.username, creds.password)
+        }
       }
     }
   };
@@ -276,6 +288,7 @@ function gitClone(creds, gitURL, dir){
     console.log(err);
     defered.reject(err);
   });
+
   return defered.promise;
 }
 
