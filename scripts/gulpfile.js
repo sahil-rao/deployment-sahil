@@ -270,7 +270,7 @@ function gitClone(creds, gitURL, dir){
         credentials: function() {
           if(authFail){
             gitCred.rejectSync(gitURL);
-            console.error("Invalid credentials, try again.";
+            console.error("Invalid credentials, try again.");
             NodeGit.Cred.defaultNew();
           }
           authFail = true;
