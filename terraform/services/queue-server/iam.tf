@@ -1,5 +1,5 @@
 resource "aws_iam_role" "queue_server" {
-    name = "${var.queue_server_name}"
+    name = "${var.iam_role_name}"
     assume_role_policy = <<EOF
 {
     "Version": "2012-10-17",
@@ -17,6 +17,6 @@ EOF
 }
 
 resource "aws_iam_instance_profile" "queue_server" {
-    name = "${var.queue_server_name}"
+    name = "${var.iam_role_name}"
     roles = ["${aws_iam_role.queue_server.name}"]
 }

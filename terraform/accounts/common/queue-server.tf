@@ -10,7 +10,6 @@ module "queue-server" {
     dns_zone_id = "${var.dns_zone_id}"
     security_groups = ["${module.sg.queue_server_security_groups}"]
 
-    iam_instance_profile = "${module.iam.queue_server_instance_profile}"
     key_name = "${var.key_name}"
 
     instance_type = "t2.large"

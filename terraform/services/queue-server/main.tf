@@ -15,6 +15,7 @@ variable "security_groups" {
 
 ###################################################################
 
+variable "iam_role_name" { default = "queue_server" }
 variable "ami" {
     default = ""
 }
@@ -24,7 +25,6 @@ variable "instance_type" {
 variable "instance_count" {
     default = 1
 }
-variable "iam_instance_profile" {}
 variable "key_name" {}
 variable "ebs_optimized" {
     default = "false"
@@ -63,7 +63,7 @@ resource "aws_instance" "default" {
     subnet_id = "${element(var.subnet_ids, count.index)}"
     key_name = "${var.key_name}"
 
-    iam_instance_profile = "${var.iam_instance_profile}"
+    iam_instance_profile = "${aws_iam_instance_profile.queue_server.name}"
 
     # instance_type = "c3.2xlarge"
     # count = 2

@@ -62,14 +62,6 @@ output "nodejs_instance_profile" {
     value = "${aws_iam_instance_profile.nodejs.name}"
 }
 
-output "queue_server_role_name" {
-    value = "${var.queue_server_name}"
-}
-
-output "queue_server_instance_profile" {
-    value = "${aws_iam_instance_profile.queue_server.name}"
-}
-
 output "redis_role_name" {
     value = "${var.redis_name}"
 }
