@@ -2,7 +2,7 @@ data "aws_ami" "ubuntu_ami" {
     most_recent = true
     filter {
         name = "name"
-        values = ["*ubuntu-trusty-14.04-amd64-server-*"]
+        values = ["ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-20170202.1"]
     }
     owners = ["099720109477"]
 }
