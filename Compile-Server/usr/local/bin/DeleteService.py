@@ -96,6 +96,19 @@ if usingAWS:
     if redis_host:
         logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
 
+def end_of_phase_callback(params, current_phase):
+    if current_phase > 1:
+        logging.info("Attempted end of phase callback, but current phase > 1")
+        return
+
+    logging.info("Changing processing Phase")
+
+    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"}
+    msg_dict['uid'] = params['uid']
+    message = dumps(msg_dict)
+    params['connection'].publish(params['channel'],'',params['queuename'],message)
+    return
+
 def callback(ch, method, properties, body):
 
     starttime = time.time()
@@ -118,14 +131,20 @@ def callback(ch, method, properties, body):
     email = None
     if "eid" in msg_dict:
         eid = msg_dict["eid"]
+    try:
+        received_msgID = msg_dict["message_id"]
+    except:
+        received_msgID = None
     msg_dict["connection"] = connection1
     msg_dict["ch"] = ch
     client = getMongoServer(tenant)
+    redis_conn = RedisConnector(tenant)
     resp_dict = None
 
     log_dict = {'tenant':tenant, 'opcode':msg_dict['opcode'], 'tag':'deleteservice'}
     if 'uid' in msg_dict:
         log_dict['uid'] = msg_dict['uid']
+        uid = msg_dict['uid']
     clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)
     try:
         """
@@ -173,6 +192,8 @@ def callback(ch, method, properties, body):
         clog.error("Unable to send response message")
 
     connection1.basicAck(ch,method)
+    callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
+    decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
 connection1 = RabbitConnection(callback, ['deleteservicequeue'], [], {}, prefetch_count=1)
 
