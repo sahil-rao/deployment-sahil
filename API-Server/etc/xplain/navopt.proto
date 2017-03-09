@@ -141,6 +141,7 @@ message GetTopTablesResponse {
 message GetTopQueriesRequest {
   string tenant = 1;
   string dbName = 2;
+  int32 limit = 3;
 }
 
 message TopQueries {
@@ -163,6 +164,7 @@ message GetTopColumnsRequest {
   string dbName = 2;
   string tableName = 3;
   repeated string dbTableList = 4;
+  int32 limit = 5;
 }
 
 message TopColumns {
@@ -195,6 +197,7 @@ message GetTopFiltersRequest {
   string tableName = 3;
   repeated string colList = 4;
   repeated string dbTableList = 5;
+  int32 limit = 6;
 }
 
 message ValGroup {
@@ -225,6 +228,7 @@ message GetTopFiltersResponse {
 message GetTopJoinsRequest {
   string tenant = 1;
   repeated string dbTableList = 2;
+  int32 limit = 3;
 }
 
 message JoinCols {
@@ -249,6 +253,7 @@ message GetTopJoinsResponse {
 message GetTopAggsRequest {
   string tenant = 1;
   repeated string dbTableList = 2;
+  int32 limit = 3;
 }
 
 message AggInfo {
