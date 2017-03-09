@@ -290,6 +290,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant 
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopQueries'}
+        if request.limit != 0:
+            msg_dict['limit'] = request.limit
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_queries(loads(response))
@@ -367,6 +369,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             msg_dict['tablename'] = request.tableName
         if request.dbTableList != []:
             msg_dict['dbTblist'] = list(request.dbTableList)
+        if request.limit != 0:
+            msg_dict['limit'] = request.limit
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_columns(loads(response))
@@ -422,6 +426,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             msg_dict['columns'] = list(request.colList)
         if request.dbTableList != []:
             msg_dict['dbTblist'] = list(request.dbTableList)
+        if request.limit != 0:
+            msg_dict['limit'] = request.limit
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_filters(loads(response))
@@ -463,6 +469,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopAccessPatterns', 'pattern': 'AggregateFunction'}
         if request.dbTableList != []:
             msg_dict['dbTblist'] = list(request.dbTableList)
+        if request.limit != 0:
+            msg_dict['limit'] = request.limit
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_aggs(loads(response))
@@ -504,6 +512,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopJoins'}
         if request.dbTableList != []:
             msg_dict['dbTblist'] = list(request.dbTableList)
+        if request.limit != 0:
+            msg_dict['limit'] = request.limit
         print "Msg Dict:", msg_dict
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
