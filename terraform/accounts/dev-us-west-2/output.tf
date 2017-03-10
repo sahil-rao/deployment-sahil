@@ -6,14 +6,6 @@ output "deployment_root_eip" {
     value = "${module.common.deployment_root_eip}"
 }
 
-output "nginx_public_eip" {
-    value = "${module.common.nginx_public_eip}"
-}
-
-output "nginx_private_eip" {
-    value = "${module.common.nginx_private_eip}"
-}
-
-output "website_fqdn" {
-    value = "${aws_route53_record.website.fqdn}"
+output "frontend_fqdn" {
+    value = "${aws_route53_record.frontend.fqdn}"
 }

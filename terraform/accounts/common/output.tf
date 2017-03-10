@@ -6,14 +6,6 @@ output "deployment_root_eip" {
     value = "${module.deployment-root.eip}"
 }
 
-output "nginx_public_eip" {
-    value = "${module.nginx.public_eip}"
-}
-
-output "nginx_private_eip" {
-    value = "${module.nginx.private_eip}"
-}
-
 output "elasticsearch_instance_profile" {
     value = "${module.iam.elasticsearch_instance_profile}"
 }

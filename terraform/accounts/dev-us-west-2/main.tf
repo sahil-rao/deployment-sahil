@@ -68,11 +68,3 @@ module "common" {
 
     nodejs_elb_internal = true
 }
-
-resource "aws_route53_record" "website" {
-    zone_id = "${data.terraform_remote_state.networking.private_zone_id}"
-    name = ""
-    type = "A"
-    ttl = "5"
-    records = ["${module.common.nginx_private_eip}"]
-}

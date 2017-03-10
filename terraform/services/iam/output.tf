@@ -46,14 +46,6 @@ output "mongo_instance_profile" {
     value = "${aws_iam_instance_profile.mongo.name}"
 }
 
-output "nginx_role_name" {
-    value = "${var.nginx_name}"
-}
-
-output "nginx_instance_profile" {
-    value = "${aws_iam_instance_profile.nginx.name}"
-}
-
 output "nodejs_role_name" {
     value = "${var.nodejs_name}"
 }

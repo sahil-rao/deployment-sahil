@@ -30,10 +30,6 @@ output "mongo_security_groups" {
     value = ["${aws_security_group.mongo.id}"]
 }
 
-output "nginx_security_groups" {
-    value = ["${aws_security_group.nginx.id}"]
-}
-
 output "nodejs_security_groups" {
     value = ["${aws_security_group.nodejs.id}"]
 }
