@@ -1,37 +1,3 @@
-variable "region" {}
-variable "env" {}
-variable "name" {}
-
-###################################################################
-
-variable "vpc_id" {}
-variable "subnet_ids" {
-    type = "list"
-}
-variable "dns_zone_id" {}
-variable "security_groups" {
-    type = "list"
-}
-
-###################################################################
-
-variable "iam_instance_profile" {}
-
-variable "ami" {
-    default = ""
-}
-variable "instance_type" {
-    default = "t2.micro"
-}
-variable "instance_count" {
-    default = 1
-}
-variable "key_name" {}
-
-###################################################################
-
-variable "cloudwatch_retention_in_days" {}
-variable "log_subscription_destination_arn" {}
 
 ###################################################################
 
@@ -47,11 +13,11 @@ resource "aws_instance" "default" {
     # FIXME: Production uses this AMI, which needs to be copied over to this image.
     # Backoffice-Foundation-07-16-2014 (ami-79b6cf49)
     ami = "${coalesce(var.ami, module.ubuntu.ami_id)}"
-    vpc_security_group_ids = ["${var.security_groups}"]
+    vpc_security_group_ids = ["${aws_security_group.backoffice.id}"]
     subnet_id = "${element(var.subnet_ids, count.index)}"
     key_name = "${var.key_name}"
 
-    iam_instance_profile = "${var.iam_instance_profile}"
+    iam_instance_profile = "${aws_iam_instance_profile.backoffice.name}"
 
     # FIXME: This is what's used in production.
     # instance_type = "c3.xlarge"

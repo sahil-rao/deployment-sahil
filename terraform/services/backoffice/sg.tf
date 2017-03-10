@@ -1,5 +1,5 @@
 resource "aws_security_group" "backoffice" {
-    name = "${var.backoffice_name}"
+    name = "${var.sg_name}"
     vpc_id = "${var.vpc_id}"
 
     ingress {

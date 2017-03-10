@@ -7,7 +7,6 @@ module "sg" {
 
     admin_name = "admin"
     api_elb_name = "api-elb"
-    backoffice_name = "backoffice"
     deployment_root_name = "deployment-root"
     elasticsearch_name = "elasticsearch"
     kibana_name = "kibana"

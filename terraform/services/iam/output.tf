@@ -6,14 +6,6 @@ output "admin_instance_profile" {
     value = "${aws_iam_instance_profile.admin.name}"
 }
 
-output "backoffice_role_name" {
-    value = "${var.backoffice_name}"
-}
-
-output "backoffice_instance_profile" {
-    value = "${aws_iam_instance_profile.backoffice.name}"
-}
-
 output "elasticsearch_role_name" {
     value = "${var.elasticsearch_name}"
 }
