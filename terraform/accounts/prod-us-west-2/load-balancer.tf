@@ -16,6 +16,12 @@ module "load-balancer" {
         "0.0.0.0/0",
     ]
 
+    instance_managed_policies = ["${data.terraform_remote_state.networking.instance_managed_policies}"]
+    # FIXME: This might be removable in 0.9.x
+    # Unfortunately due to https://github.com/hashicorp/terraform/pull/10418,
+    # we can't actually pass or compute the count from a data source.
+    num_instance_managed_policies = "2"
+
     instance_type = "m3.medium"
     instance_count = 1
 
