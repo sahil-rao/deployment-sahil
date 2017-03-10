@@ -8,6 +8,10 @@ module "backoffice" {
     iam_role_name = "backoffice"
     sg_name = "backoffice"
 
+    api_backend_dns_name = "api-backend"
+    api_backend_elb_name = "api-backend-elb"
+    api_backend_elb_sg_name = "api-backend-elb"
+
     vpc_id = "${var.vpc_id}"
     subnet_ids = ["${var.private_subnet_ids}"]
     private_cidrs = ["${var.private_cidrs}"]

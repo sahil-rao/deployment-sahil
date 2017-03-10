@@ -5,6 +5,10 @@ variable "name" {}
 variable "sg_name" {}
 variable "iam_role_name" {}
 
+variable "api_backend_dns_name" {}
+variable "api_backend_elb_name" {}
+variable "api_backend_elb_sg_name" {}
+
 ###################################################################
 
 variable "vpc_id" {}

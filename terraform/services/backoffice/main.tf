@@ -35,6 +35,53 @@ resource "aws_instance" "default" {
 
 ###################################################################
 
+resource "aws_elb" "api_backend" {
+    name = "${var.api_backend_elb_name}"
+    subnets = ["${var.subnet_ids}"]
+    security_groups = ["${aws_security_group.api_backend_elb.id}"]
+
+    instances = ["${aws_instance.default.*.id}"]
+
+    listener {
+      instance_port = 8982
+      instance_protocol = "tcp"
+      lb_port = 8982
+      lb_protocol = "tcp"
+    }
+
+    // FIXME: Disable the health check for now.
+    /*
+    health_check {
+      healthy_threshold = 10
+      unhealthy_threshold = 2
+      timeout = 5
+      target = "HTTP:8983/healthz"
+      interval = 10
+    }
+    */
+
+    connection_draining = true
+    connection_draining_timeout = 60
+    idle_timeout = 60
+
+    cross_zone_load_balancing = true
+    internal = true
+}
+
+resource "aws_route53_record" "api_backend" {
+    zone_id = "${var.dns_zone_id}"
+    name = "${var.api_backend_dns_name}"
+    type = "A"
+
+    alias {
+        name = "${aws_elb.api_backend.dns_name}"
+        zone_id = "${aws_elb.api_backend.zone_id}"
+        evaluate_target_health = true
+    }
+}
+
+###################################################################
+
 module "advanced-analytics-service" {
     source = "../../modules/cloudwatch-log-group"
 
