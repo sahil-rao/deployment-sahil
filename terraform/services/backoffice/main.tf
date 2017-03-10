@@ -1,37 +1,3 @@
-variable "region" {}
-variable "env" {}
-variable "name" {}
-
-###################################################################
-
-variable "vpc_id" {}
-variable "subnet_ids" {
-    type = "list"
-}
-variable "dns_zone_id" {}
-variable "security_groups" {
-    type = "list"
-}
-
-###################################################################
-
-variable "iam_instance_profile" {}
-
-variable "ami" {
-    default = ""
-}
-variable "instance_type" {
-    default = "t2.micro"
-}
-variable "instance_count" {
-    default = 1
-}
-variable "key_name" {}
-
-###################################################################
-
-variable "cloudwatch_retention_in_days" {}
-variable "log_subscription_destination_arn" {}
 
 ###################################################################
 
@@ -47,11 +13,11 @@ resource "aws_instance" "default" {
     # FIXME: Production uses this AMI, which needs to be copied over to this image.
     # Backoffice-Foundation-07-16-2014 (ami-79b6cf49)
     ami = "${coalesce(var.ami, module.ubuntu.ami_id)}"
-    vpc_security_group_ids = ["${var.security_groups}"]
+    vpc_security_group_ids = ["${aws_security_group.backoffice.id}"]
     subnet_id = "${element(var.subnet_ids, count.index)}"
     key_name = "${var.key_name}"
 
-    iam_instance_profile = "${var.iam_instance_profile}"
+    iam_instance_profile = "${aws_iam_instance_profile.backoffice.name}"
 
     # FIXME: This is what's used in production.
     # instance_type = "c3.xlarge"
@@ -64,6 +30,53 @@ resource "aws_instance" "default" {
         Cluster = "${var.env}"
         Environment = "${var.env}"
         Name = "${var.name}"
+    }
+}
+
+###################################################################
+
+resource "aws_elb" "api_backend" {
+    name = "${var.api_backend_elb_name}"
+    subnets = ["${var.subnet_ids}"]
+    security_groups = ["${aws_security_group.api_backend_elb.id}"]
+
+    instances = ["${aws_instance.default.*.id}"]
+
+    listener {
+      instance_port = 8982
+      instance_protocol = "tcp"
+      lb_port = 8982
+      lb_protocol = "tcp"
+    }
+
+    // FIXME: Disable the health check for now.
+    /*
+    health_check {
+      healthy_threshold = 10
+      unhealthy_threshold = 2
+      timeout = 5
+      target = "HTTP:8983/healthz"
+      interval = 10
+    }
+    */
+
+    connection_draining = true
+    connection_draining_timeout = 60
+    idle_timeout = 60
+
+    cross_zone_load_balancing = true
+    internal = true
+}
+
+resource "aws_route53_record" "api_backend" {
+    zone_id = "${var.dns_zone_id}"
+    name = "${var.api_backend_dns_name}"
+    type = "A"
+
+    alias {
+        name = "${aws_elb.api_backend.dns_name}"
+        zone_id = "${aws_elb.api_backend.zone_id}"
+        evaluate_target_health = true
     }
 }
 

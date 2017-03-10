@@ -6,10 +6,6 @@ output "api_elb_security_groups" {
     value = ["${aws_security_group.api_elb.id}"]
 }
 
-output "backoffice_security_groups" {
-    value = ["${aws_security_group.backoffice.id}"]
-}
-
 output "deployment_root_security_groups" {
     value = ["${aws_security_group.deployment-root.id}"]
 }
@@ -28,10 +24,6 @@ output "logstash_security_groups" {
 
 output "mongo_security_groups" {
     value = ["${aws_security_group.mongo.id}"]
-}
-
-output "nginx_security_groups" {
-    value = ["${aws_security_group.nginx.id}"]
 }
 
 output "nodejs_security_groups" {
