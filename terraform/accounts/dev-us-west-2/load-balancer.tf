@@ -29,18 +29,18 @@ module "load-balancer" {
     key_name = "${var.key_name}"
 }
 
-resource "aws_eip" "default" {
+resource "aws_eip" "frontend" {
   instance = "${module.load-balancer.instance_id}"
   vpc      = true
 }
 
-resource "aws_route53_record" "api" {
+resource "aws_route53_record" "frontend" {
     count = "2"
     zone_id = "${element(list(data.terraform_remote_state.networking.private_zone_id,
                               data.terraform_remote_state.networking.public_zone_id), count.index)}"
-    name = "www2"
+    name = "${data.terraform_remote_state.networking.zone_name}"
     type = "A"
-    ttl = "300"
+    ttl = "5"
 
-    records = ["${aws_eip.default.private_ip}"]
+    records = ["${aws_eip.frontend.private_ip}"]
 }

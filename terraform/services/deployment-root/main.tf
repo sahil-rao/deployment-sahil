@@ -69,11 +69,6 @@ resource "aws_instance" "default" {
     }
 }
 
-resource "aws_eip" "default" {
-  instance = "${aws_instance.default.id}"
-  vpc      = true
-}
-
 ###################################################################
 
 resource "aws_route53_record" "bastion" {
@@ -82,10 +77,4 @@ resource "aws_route53_record" "bastion" {
     type = "A"
     ttl = "5"
     records = ["${aws_instance.default.private_ip}"]
-}
-
-###################################################################
-
-output "eip" {
-    value = "${aws_eip.default.public_ip}"
 }

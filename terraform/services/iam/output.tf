@@ -6,14 +6,6 @@ output "admin_instance_profile" {
     value = "${aws_iam_instance_profile.admin.name}"
 }
 
-output "backoffice_role_name" {
-    value = "${var.backoffice_name}"
-}
-
-output "backoffice_instance_profile" {
-    value = "${aws_iam_instance_profile.backoffice.name}"
-}
-
 output "elasticsearch_role_name" {
     value = "${var.elasticsearch_name}"
 }
@@ -44,14 +36,6 @@ output "mongo_role_name" {
 
 output "mongo_instance_profile" {
     value = "${aws_iam_instance_profile.mongo.name}"
-}
-
-output "nginx_role_name" {
-    value = "${var.nginx_name}"
-}
-
-output "nginx_instance_profile" {
-    value = "${aws_iam_instance_profile.nginx.name}"
 }
 
 output "nodejs_role_name" {
