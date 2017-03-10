@@ -138,10 +138,10 @@ message TopTables {
 message GetTopTablesResponse {
   repeated TopTables results = 1;
 }
+
 message GetTopQueriesRequest {
   string tenant = 1;
-  string dbName = 2;
-  int32 limit = 3;
+  int32 limit = 2;
 }
 
 message TopQueries {
