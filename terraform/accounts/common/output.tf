@@ -2,10 +2,6 @@ output "admin_eip" {
     value = "${module.admin.eip}"
 }
 
-output "deployment_root_eip" {
-    value = "${module.deployment-root.eip}"
-}
-
 output "elasticsearch_instance_profile" {
     value = "${module.iam.elasticsearch_instance_profile}"
 }
