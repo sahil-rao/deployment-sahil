@@ -17,8 +17,8 @@ module "dbsilo1" {
 
     mongo_name = "${var.cluster_name}-dbsilo1-mongo"
     mongo_replica_set = "dbsilo1"
-    mongo_version = "v006"
-    mongo_ami_id = "ami-f678ff96"
+    mongo_version = "v007"
+    mongo_ami_id = "ami-245dd244"
     mongo_instance_type = "m4.xlarge"
     mongo_min_size = 0
     mongo_max_size = 3
@@ -28,8 +28,8 @@ module "dbsilo1" {
     redis_name = "${var.cluster_name}-dbsilo1-redis"
     redis_iam_instance_profile = "${module.common.redis_instance_profile}"
     redis_security_groups = ["${module.common.redis_security_groups}"]
-    redis_version = "v005"
-    redis_ami_id = "ami-4bdf092b"
+    redis_version = "v006"
+    redis_ami_id = "ami-045dd264"
     redis_instance_type = "r3.2xlarge"
     redis_min_size = 0
     redis_max_size = 3
@@ -42,8 +42,8 @@ module "dbsilo1" {
     elasticsearch_name = "${var.cluster_name}-dbsilo1-elasticsearch"
     elasticsearch_iam_instance_profile = "${module.common.elasticsearch_instance_profile}"
     elasticsearch_security_groups = ["${module.common.elasticsearch_security_groups}"]
-    elasticsearch_version = "v005"
-    elasticsearch_ami_id = "ami-23d00643"
+    elasticsearch_version = "v006"
+    elasticsearch_ami_id = "ami-7641ce16"
     #elasticsearch_instance_type = "m3.xlarge"
     elasticsearch_instance_type = "t2.micro"
     elasticsearch_min_size = 0
@@ -74,8 +74,8 @@ module "dbsilo2" {
 
     mongo_name = "${var.cluster_name}-dbsilo2-mongo"
     mongo_replica_set = "dbsilo2"
-    mongo_version = "v006"
-    mongo_ami_id = "ami-f678ff96"
+    mongo_version = "v007"
+    mongo_ami_id = "ami-245dd244"
     mongo_instance_type = "m4.xlarge"
     mongo_min_size = 0
     mongo_max_size = 3
@@ -85,8 +85,8 @@ module "dbsilo2" {
     redis_name = "${var.cluster_name}-dbsilo2-redis"
     redis_iam_instance_profile = "${module.common.redis_instance_profile}"
     redis_security_groups = ["${module.common.redis_security_groups}"]
-    redis_version = "v005"
-    redis_ami_id = "ami-4bdf092b"
+    redis_version = "v006"
+    redis_ami_id = "ami-045dd264"
     redis_instance_type = "r3.2xlarge"
     redis_min_size = 0
     redis_max_size = 3
@@ -99,8 +99,8 @@ module "dbsilo2" {
     elasticsearch_name = "${var.cluster_name}-dbsilo2-elasticsearch"
     elasticsearch_iam_instance_profile = "${module.common.elasticsearch_instance_profile}"
     elasticsearch_security_groups = ["${module.common.elasticsearch_security_groups}"]
-    elasticsearch_version = "v005"
-    elasticsearch_ami_id = "ami-23d00643"
+    elasticsearch_version = "v006"
+    elasticsearch_ami_id = "ami-7641ce16"
     #elasticsearch_instance_type = "m3.xlarge"
     elasticsearch_instance_type = "t2.micro"
     elasticsearch_min_size = 0
