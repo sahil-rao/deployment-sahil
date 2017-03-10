@@ -1,5 +1,5 @@
 resource "aws_security_group" "elasticsearch" {
-    name = "${var.elasticsearch_name}"
+    name = "${var.name}"
     vpc_id = "${var.vpc_id}"
 
     ingress {

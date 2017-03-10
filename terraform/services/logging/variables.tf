@@ -8,6 +8,7 @@ variable "vpc_id" {}
 variable "subnet_ids" {
     type = "list"
 }
+variable "private_cidrs" { type = "list" }
 variable "dns_zone_id" {}
 variable "zone_name" {}
 
@@ -16,10 +17,6 @@ variable "key_name" {}
 ##############################################################################
 
 variable "elasticsearch_name" {}
-variable "elasticsearch_security_groups" {
-    type = "list"
-}
-variable "elasticsearch_iam_instance_profile" {}
 
 variable "elasticsearch_version" {}
 variable "elasticsearch_ami_id" {}
