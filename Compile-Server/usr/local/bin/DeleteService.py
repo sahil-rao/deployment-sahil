@@ -192,8 +192,8 @@ def callback(ch, method, properties, body):
         clog.error("Unable to send response message")
 
     connection1.basicAck(ch,method)
-    callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
-    decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
+    #callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
+    #decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
 connection1 = RabbitConnection(callback, ['deleteservicequeue'], [], {}, prefetch_count=1)
 

@@ -193,12 +193,10 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
             '''
             col_entry = mongoconn.db.entities.find_one({"eid" : eid}, {"state": 1})
             if col_entry and 'state' in col_entry and col_entry['state'] == "inactive":
-                #mongoconn.db.entities.update({"eid" : eid}, {"$set": {"state": "active"}}, upsert=True)
                 data_dict = {"tenant": tenant,
                              "opcode": "UpdateCol",
                              "uid": uid,
                              "eid": eid}
-                logging.info("===> Send Message to Del Service: %s", data_dict)
                 sendDelMessage(redis_conn, collection, ch, data_dict, uid, eid)
                 is_state_change = True
 
@@ -294,17 +292,7 @@ def processTableSet(tableset, ch, mongoconn, redis_conn, tenant, uid, entity, is
                              "opcode": "UpdateTable",
                              "uid": uid,
                              "eid": table_entity.eid}
-                logging.info("===> Send Message to Del Service: %s", data_dict)
                 sendDelMessage(redis_conn, collection, ch, data_dict, uid, table_entity.eid)
-                '''
-                redis_conn.incrEntityCounter('dashboard_data', "TableCount", incrBy=1)
-                if table_entry['profile']['table_type'] == "Dim":
-                    redis_conn.incrEntityCounter('dashboard_data', "dim_count", incrBy=1)
-                    mongoconn.db.dashboard_data.update({"tenant":tenant}, {"$inc": {"TableCount": 1, "dim_count": 1}})
-                elif table_entry['profile']['table_type'] == "Fact":
-                    redis_conn.incrEntityCounter('dashboard_data', "fact_count", incrBy=1)
-                    mongoconn.db.dashboard_data.update({"tenant":tenant}, {"$inc": {"TableCount": 1, "fact_count": 1}})
-                '''
                 is_state_change = True
 
         tableEidList.add(table_entity.eid)
@@ -840,7 +828,6 @@ def sendDelMessage(redis_conn, collection, ch, msg_dict, uid, eid):
     message_id = genMessageID("Del", redis_conn, eid)
     msg_dict['message_id'] = message_id
     message = dumps(msg_dict)
-    incrementPendingMessage(collection, redis_conn, uid,message_id)
     connection1.publish(ch,'','deleteservicequeue',message)
 
 def create_query_character(signature_keywords, operator_list):
@@ -1059,14 +1046,11 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
         if 'OperatorList' in compile_doc[compiler] and \
            'DROP_TABLE' in compile_doc[compiler]['OperatorList']:
-            logging.info("===> Checking for Compiler info: %s", compile_doc[compiler])
             if 'OutputTableList' in compile_doc[compiler]:
-                logging.info("===> Checking for Compiler Table info: %s", compile_doc[compiler]['OutputTableList'])
                 for entry in compile_doc[compiler]['OutputTableList']:
                     tableName = entry['TableName']
                     if 'databaseName' in entry and entry['databaseName'] not in DBNAME_IGNORE_LIST:
                         tableName = compile_doc[compiler]['OutputTableList']['databaseName'] + "." + tableName
-                    logging.info("===> Send Message to Del Service for table: %s", tableName)
                     entries = mongoconn.getEntitiesByTypeAndName([tableName], EntityType.SQL_TABLE,
                                                                  {"eid" : 1, "profile":1})
                     for entry in entries:
@@ -1075,7 +1059,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                      "opcode": "DeleteTable",
                                      "uid": uid,
                                      "eid": table_eid}
-                        logging.info("===> Send Message to Del Service: %s", data_dict)
                         sendDelMessage(redis_conn, collection, ch, data_dict, uid, table_eid)
                         break
         
@@ -1090,7 +1073,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     col_name = entry['columnName']
                     col_name = tableName + "." + col_name
                     # find the eid based on column name
-                    logging.info("Info: Col Name: %s", col_name) 
                     entry = mongoconn.db.entities.find_one({"name": col_name, "etype": "SQL_TABLE_COLUMN"}, {"eid" : 1})
                     col_eid = entry['eid']
                     data_dict = {"tenant": tenant,
