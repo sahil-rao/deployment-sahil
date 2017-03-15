@@ -5,20 +5,22 @@ Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenant> <log Directory>
 """
 from flightpath import cluster_config
+from flightpath.parsing.hadoop.HadoopConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.XplainBlockingConnection import *
 from flightpath.services.RotatingS3FileHandler import *
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath.utils import *
+from flightpath.utils import zipkin_http_transport
+from flightpath.utils import get_zipkin_attrs
+from flightpath.utils import get_zipkin_attrs_dict
 from flightpath.Provenance import getMongoServer
 from flightpath.clustering.querygroup import QueryGroup
 import flightpath.thriftclient.compilerthriftclient as tclient
 
 import baazmath.workflows.write_upload_stats as write_upload_stats
-from json import *
-#from baazmath.interface.BaazCSV import *
-#from subprocess import Popen, PIPE
+from json import loads, dumps
 import sys
 import pika
 import shutil
@@ -32,6 +34,10 @@ import logging
 import importlib
 import socket
 from rlog import RedisHandler
+
+import py_zipkin
+from py_zipkin.zipkin import zipkin_span
+from py_zipkin.zipkin import ZipkinAttrs
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 XPLAIN_LOG_FILE = "/var/log/cloudera/navopt/XplainAdvAnalyticsService.err"
@@ -128,6 +134,7 @@ def storeResourceProfile(tenant):
             mongoconn.updateProfile(entity, "Resource", resource_doc)
     mongoconn.close()
 
+
 def analytics_callback(params):
     '''
     Callback method that is used to initiate the processing of a passed in opcode.
@@ -149,6 +156,7 @@ def analytics_callback(params):
     message = dumps(msg_dict)
     params['connection'].publish(params['channel'],'',params['queuename'],message)
     return
+
 
 class analytics_context:
     pass
@@ -455,38 +463,72 @@ def updateMongoRedisforHAQR(db, redis_conn, data, tenant, eid):
 
     return
 
+
 def process_HAQR_request(msg_dict, clog):
     client = getMongoServer(msg_dict['tenant'])
     db = client[msg_dict['tenant']]
     redis_conn = RedisConnector(msg_dict['tenant'])
 
-    analyzeHAQR(msg_dict['query'], msg_dict['key'], msg_dict['tenant'], \
-                msg_dict['eid'], msg_dict['source_platform'], db, redis_conn, clog)
+    analyzeHAQR(msg_dict['query'], msg_dict['key'], msg_dict['tenant'],
+                msg_dict['eid'], msg_dict['source_platform'], db,
+                redis_conn, clog)
+
+
+def instrumentedMethodToCall(toCall, tenant, ctx, opcode, section, zattrs):
+    zipkinAttrs = get_zipkin_attrs(zattrs)
+
+    with zipkin_span(
+            service_name="XplainAdvAnalyticsService",
+            span_name=section,
+            transport_handler=zipkin_http_transport,
+            zipkin_attrs=zipkinAttrs
+    ):
+        toCall(tenant, ctx)
+
+
+"""
+@trace_zipkin(service_name="XplainAdvAnalyticsService",
+              span_name="XplainAdvAnalyticsService")
+"""
+
 
 def callback(ch, method, properties, body):
-
-    startTime = time.clock()
     msg_dict = loads(body)
+    opcode = msg_dict['opcode']
+    zattrs = get_zipkin_attrs_dict(msg_dict)
+    with zipkin_span(
+            service_name="XplainAdvAnalyticsService",
+            span_name=opcode,
+            transport_handler=zipkin_http_transport,
+            zipkin_attrs=zattrs
+    ):
+        real_callback(ch, method, properties, msg_dict, zattrs)
 
-    #send stats to datadog
+
+def real_callback(ch, method, properties, msg_dict, zattrs):
+    startTime = time.clock()
+
+    # send stats to datadog
     if statsd:
         statsd.increment('advanalytics.msg.count', 1)
 
-    logging.debug("Analytics: Got message "+ str(msg_dict))
+    logging.debug("Analytics: Got message " + str(msg_dict))
 
     """
     Validate the message.
     """
-    if not msg_dict.has_key("tenant") or \
-       not msg_dict.has_key("opcode"):
+    if "tenant" not in msg_dict or \
+       "opcode" not in msg_dict:
         logging.error("Invalid message received\n")
 
-        connection1.basicAck(ch,method)
+        connection1.basicAck(ch, method)
         return
 
     tenant = msg_dict['tenant']
     opcode = msg_dict['opcode']
-    log_dict = {'tag':'advanalytics', 'tenant':msg_dict['tenant'], 'opcode':msg_dict['opcode']}
+    log_dict = {'tag': 'advanalytics',
+                'tenant': msg_dict['tenant'],
+                'opcode': msg_dict['opcode']}
     if 'uid' in msg_dict:
         log_dict['uid'] = msg_dict['uid']
     clog = LoggerCustomAdapter(logging.getLogger(__name__), log_dict)
@@ -504,7 +546,7 @@ def callback(ch, method, properties, body):
     except:
         received_msgID = None
     uid = None
-    if msg_dict.has_key('uid'):
+    if 'uid' in msg_dict:
         uid = msg_dict['uid']
 
         """
@@ -522,7 +564,7 @@ def callback(ch, method, properties, body):
             return
 
         collection = client[tenant].uploadStats
-        redis_conn.incrEntityCounter(uid, 'Math.count', incrBy = 1)
+        redis_conn.incrEntityCounter(uid, 'Math.count', incrBy=1)
     else:
         """
         We do not expect anything without UID. Discard message if not present.
@@ -538,7 +580,7 @@ def callback(ch, method, properties, body):
         if not mathconfig.has_option(section, "Opcode") or\
            not mathconfig.has_option(section, "Import") or\
            not mathconfig.has_option(section, "Function"):
-            clog.error("Section "+ section + " Does not have all params")
+            clog.error("Section " + section + " Does not have all params")
             if mathconfig.has_option(section, "BatchMode") and\
                 mathconfig.get(section, "BatchMode") == "True" and\
                 received_msgID is not None:
@@ -548,9 +590,9 @@ def callback(ch, method, properties, body):
             if mathconfig.has_option(section, "NotificationName"):
                 notif_queue = mathconfig.get(section, "NotificationQueue")
                 notif_name = mathconfig.get(section, "NotificationName")
-                message = {"messageType" : notif_name, "tenantId": tenant}
+                message = {"messageType": notif_name, "tenantId": tenant}
                 clog.info("Sending message to node!")
-                connection1.publish(ch,'', notif_queue, dumps(message))
+                connection1.publish(ch, '', notif_queue, dumps(message))
             continue
 
         if not opcode == mathconfig.get(section, "Opcode"):
@@ -594,7 +636,9 @@ def callback(ch, method, properties, body):
                 ctx.outmost_query = msg_dict['outmost_query']
 
             opcode_startTime = time.clock()
-            methodToCall(tenant, ctx)
+        
+            instrumentedMethodToCall(methodToCall, tenant, ctx, opcode, section, zattrs)
+
             #send stats to datadog
             if statsd:
                 totalTime = (time.clock() - opcode_startTime)

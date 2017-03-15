@@ -184,3 +184,5 @@ redisMasterPattern=redismaster.{dbsilo}.app.xplain.io
 region=us-west-2
 url=https://optimizer.cloudera.com
 s3_deployment_bucket=baaz-deployment
+zipkinSampleRate=0.0
+zipkinUrl=http://gaurav-zipkin.vpc.cloudera.com:9411/api/v1/spans

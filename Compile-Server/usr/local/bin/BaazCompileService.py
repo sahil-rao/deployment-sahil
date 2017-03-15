@@ -12,13 +12,16 @@ from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
 from baazmath.workflows.hbase_analytics import *
 from flightpath.utils import *
+from flightpath.utils import zipkin_http_transport
+from flightpath.utils import add_zipkin_trace_info
+from flightpath.utils import get_zipkin_attrs_dict
 from flightpath.Provenance import getMongoServer
 from flightpath.Provenance import EntityType
 from flightpath.services.mq_template import *
 import flightpath.thriftclient.compilerthriftclient as tclient
 
 from subprocess import Popen, PIPE
-from json import *
+from json import loads, dumps
 import sys
 import pika
 import shutil
@@ -34,8 +37,10 @@ import pprint
 import math
 from rlog import RedisHandler
 
-BAAZ_DATA_ROOT="/mnt/volume1/"
-BAAZ_PROCESSING_DIRECTORY="processing"
+from py_zipkin.zipkin import zipkin_span
+
+BAAZ_DATA_ROOT = "/mnt/volume1/"
+BAAZ_PROCESSING_DIRECTORY = "processing"
 BAAZ_COMPILER_LOG_FILE = "/var/log/cloudera/navopt/BaazCompileService.err"
 
 config = ConfigParser.RawConfigParser ()
@@ -675,6 +680,8 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
 
     return [dbCount, tableCount]
 
+
+@zipkin_span(service_name="BaazCompileService", span_name="process_scale_mode")
 def process_scale_mode(tenant, uid, instances, smc, clog):
 
     for inst in instances:
@@ -755,7 +762,7 @@ def updateRelationCounter(redis_conn, eid):
         if rel['rtype'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
 
-def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msg):
+def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msg, zattrs):
     if received_msg is not None and "test_mode" in received_msg:
         return
 
@@ -769,17 +776,24 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
             if received_msg is not None:
                 if "message_id" in received_msg:
                     msg_dict['query_message_id'] = received_msg["message_id"]
+
+            add_zipkin_trace_info(msg_dict, zattrs)
+
             message = dumps(msg_dict)
             logging.info("Sending message to Math pos1:" + str(msg_dict))
-            incrementPendingMessage(collection, redis_conn, uid,message_id)
-            connection1.publish(ch,'','mathqueue',message)
+            incrementPendingMessage(collection, redis_conn, uid, message_id)
+            connection1.publish(ch, '', 'mathqueue', message)
 
-def sendAdvAnalyticsMessage(ch, msg_dict):
+
+def sendAdvAnalyticsMessage(ch, msg_dict, zattrs):
     if msg_dict is None:
         return
 
+    add_zipkin_trace_info(msg_dict, zattrs)
+    
     message = dumps(msg_dict)
-    connection1.publish(ch,'','advanalytics',message)
+    connection1.publish(ch, '', 'advanalytics', message)
+
 
 def create_query_character(signature_keywords, operator_list):
     '''
@@ -941,8 +955,7 @@ def process_count_array(tenant, q_eid, mongoconn, redis_conn, countArray, data, 
                 clog.exception("Non numerical count value passed")
 
 
-def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context, clog, tagArray=None, countArray=None):
-
+def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context, clog, tagArray=None, countArray=None, zattrs=None):
     """
         Takes a list of compiler output files and performs following:
             1. If the compiler is unsuccessful in parsing the query:
@@ -1356,10 +1369,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         continue
                     sub_q = sub_q_dict["origQuery"]
                     clog.debug("Processing Sub queries " + sub_q)
-                    sub_entity, sub_opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection,
-                                                    tenant, uid, sub_q, data, {key:sub_q_dict}, source_platform, smc, context, clog)
-                    temp_msg = {'test_mode':1} if context.test_mode else None
-                    sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode, temp_msg)
+                    sub_entity, sub_opcode = processCompilerOutputs(
+                        mongoconn, redis_conn, ch, collection, tenant,
+                        uid, sub_q, data, {key: sub_q_dict},
+                        source_platform, smc, context, clog, tagArray=None,
+                        countArray=None, zattrs=zattrs)
+                    
+                    temp_msg = {'test_mode': 1} if context.test_mode else None
+                    sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode, temp_msg, zattrs)
 
                     if sub_entity is not None:
                         context.queue.pop()
@@ -1372,6 +1389,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
 
             is_compiler = False
+            update_redis_data = False
+            update_count_type = 'TableCount'
+            tmpAdditions = []
             if key == compiler_to_use and compile_doc[key].has_key("InputTableList"):
                 inputTableList = compile_doc[key]["InputTableList"]
                 if key == compiler_to_use:
@@ -1380,57 +1400,48 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 tmpAdditions = processTableSet(compile_doc[key]["InputTableList"],
                                                mongoconn, redis_conn, tenant, uid, entity, True,
                                                context, clog, is_compiler, tableEidList)
-                if uid is not None:
-                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
-                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
-                    redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
+
+                update_redis_data = True
 
             if key == compiler_to_use and compile_doc[key].has_key("OutputTableList"):
                 logging.info("Output table set: %s", compile_doc[key]["OutputTableList"])
                 tmpAdditions = processTableSet(compile_doc[key]["OutputTableList"],
                                                 mongoconn, redis_conn, tenant, uid, entity, False,
                                                 context, clog, is_compiler, tableEidList)
-                if uid is not None:
-                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
-                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
-                    redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
+
+                update_redis_data = True
 
             if key == compiler_to_use and compile_doc[key].has_key("ddlColumns"):
                 tmpAdditions = processColumns(compile_doc[key]["ddlColumns"],
                                               mongoconn, redis_conn, tenant, uid, entity, clog)
-                if uid is not None:
-                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
-                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
-                    redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
 
+                update_redis_data = True
 
             if key == compiler_to_use and compile_doc[key].has_key("createTableName"):
                 tmpAdditions = processCreateTable(compile_doc[key]["createTableName"],
                                               mongoconn, redis_conn,tenant, uid, entity, False, context, clog, tableEidList)
-                if uid is not None:
-                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
-                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
-                    redis_conn.incrEntityCounter('dashboard_data', 'TableCount', incrBy=tmpAdditions[1])
+
+                update_redis_data = True
 
             if key == compiler_to_use and compile_doc[key].has_key("viewName") and compile_doc[key].has_key("view") and compile_doc[key]["view"] == True:
                 tmpAdditions = processCreateViewOrInlineView(compile_doc[key]["viewName"],
                                          mongoconn, redis_conn, mongoconn.db.entities,
                                          tenant, uid, entity,context, inputTableList, clog, tableEidList,
                                          0, None, current_queue_entry)
-                if uid is not None:
-                    redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
-                    redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
-                    redis_conn.incrEntityCounter('dashboard_data', 'ViewCount', incrBy=tmpAdditions[1])
 
-            if compile_doc[key].has_key("ErrorSignature") \
-                and len(compile_doc[key]["ErrorSignature"]) > 0:
+                update_redis_data = True
+                update_count_type = 'ViewCount'
+
+            if uid is not None and update_redis_data:
+                redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
+                redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
+                redis_conn.incrEntityCounter('dashboard_data', update_count_type, incrBy=tmpAdditions[1])
+
+            if compile_doc[key].has_key("ErrorSignature") and len(compile_doc[key]["ErrorSignature"]) > 0:
                 if etype == "SQL_QUERY":
                     redis_conn.incrEntityCounter(uid, stats_failure_key, incrBy=1)
                     redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=1)
-                    #if its 'gsp' and it failed we do not send it to HAQR...
-                    #if is_failed_in_gsp == True:
-                    #    continue
-                    if key == "impala":
+                    if key == "impala" or key== "hive":
                         try:
                             haqr_query = query
                             if compiler_to_use in compile_doc and\
@@ -1445,44 +1456,19 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                               'source_platform': source_platform,
                                               'opcode': "HAQRPhase"
                                              }
-                            sendAdvAnalyticsMessage(ch, adv_analy_dict)
+                            sendAdvAnalyticsMessage(ch, adv_analy_dict, zattrs)
                             #analyzeHAQR(query,key,tenant,entity.eid,source_platform,mongoconn,redis_conn)
                         except:
                             clog.exception('analyzeHAQR has failed.')
-                    if key == "hive":
-                        try:
-                            haqr_query = query
-                            if compiler_to_use in compile_doc and\
-                               "queryTemplate" in compile_doc[compiler_to_use]:
-                                   haqr_query = compile_doc[compiler_to_use]["queryTemplate"]
-
-                            #call advance analytics to start HAQR Phase
-                            adv_analy_dict = {'tenant': tenant,
-                                              'query': haqr_query,
-                                              'key': key,
-                                              'eid' : eid,
-                                              'source_platform': source_platform,
-                                              'opcode': "HAQRPhase"
-                                             }
-                            sendAdvAnalyticsMessage(ch, adv_analy_dict)
-                            #analyzeHAQR(query,key,tenant,entity.eid,source_platform,mongoconn,redis_conn)
-                        except:
-                            clog.exception('analyzeHAQR has failed.')
-                elif etype == "SQL_SUBQUERY":
-                    redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
-                elif etype == "SQL_INLINE_VIEW":
+                elif etype == "SQL_SUBQUERY" or etype == "SQL_INLINE_VIEW":
                     redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
                 elif etype == "SQL_STORED_PROCEDURE":
                     redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy=1)
-                elif etype == "SQL_SUBQUERY":
-                    redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
             else:
                 if etype == "SQL_QUERY":
                     redis_conn.incrEntityCounter(uid, stats_success_key, incrBy=1)
                     redis_conn.incrEntityCounter(uid, stats_runsuccess_key, incrBy=1)
-                elif etype == "SQL_SUBQUERY":
-                    redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy=1)
-                elif etype == "SQL_INLINE_VIEW":
+                elif etype == "SQL_SUBQUERY" or etype == "SQL_INLINE_VIEW":
                     redis_conn.incrEntityCounter(uid, stats_sub_success_key, incrBy=1)
                 elif etype == "SQL_STORED_PROCEDURE":
                     redis_conn.incrEntityCounter(uid, stats_proc_success_key, incrBy=1)
@@ -1492,9 +1478,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             if uid is not None:
                 if etype == "SQL_QUERY":
                     redis_conn.incrEntityCounter(uid, stats_runfailure_key, incrBy=1)
-                elif etype == "SQL_SUBQUERY":
-                    redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
-                elif etype == "SQL_INLINE_VIEW":
+                elif etype == "SQL_SUBQUERY" or etype == "SQL_INLINE_VIEW":
                     redis_conn.incrEntityCounter(uid, stats_sub_failure_key, incrBy=1)
                 elif etype == "SQL_STORED_PROCEDURE":
                     redis_conn.incrEntityCounter(uid, stats_proc_failure_key, incrBy=1)
@@ -1768,11 +1752,14 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
     return compile_doc
 
 
-def callback(ch, method, properties, body):
+@trace_zipkin(service_name="BaazCompileService",
+              span_name="CompileService")
+def callback(ch, method, properties, body, **kwargs):
     startTime = time.clock()
     dbAdditions = [0,0]
     tmpAdditions = [0,0]
-    msg_dict = loads(body)
+    msg_dict = kwargs['msg_dict']
+    zattrs = get_zipkin_trace_info(msg_dict)
 
     #send stats to datadog
     if statsd:
@@ -1784,8 +1771,8 @@ def callback(ch, method, properties, body):
     """
     Validate the message.
     """
-    if not msg_dict.has_key("tenant") or \
-       not msg_dict.has_key("job_instances"):
+    if 'tenant' not in msg_dict or \
+       'job_instances' not in msg_dict:
         logging.error("Invalid message received\n")
 
     tenant = msg_dict["tenant"]
@@ -1849,7 +1836,7 @@ def callback(ch, method, properties, body):
         ch.basic_ack(delivery_tag=method.delivery_tag)
         return
 
-    if msg_dict.has_key('uid'):
+    if 'uid' in msg_dict:
         uid = msg_dict['uid']
 
         """
@@ -1991,9 +1978,18 @@ def callback(ch, method, properties, body):
 
             temp_msg = {'test_mode':1} if context.test_mode else {'message_id': received_msgID}
 
-            entity, opcode = processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, msg_data, comp_outs, source_platform, smc, context, clog, inst["tagArray"], inst["countArray"])
+            entity, opcode = processCompilerOutputs(mongoconn,
+                                                    redis_conn, ch,
+                                                    collection, tenant,
+                                                    uid, query, msg_data,
+                                                    comp_outs,
+                                                    source_platform,
+                                                    smc, context, clog,
+                                                    inst["tagArray"],
+                                                    inst["countArray"],
+                                                    zattrs=zattrs)
             if entity is not None and opcode is not None:
-                sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg)
+                sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg, zattrs)
             else:
                 redis_conn.incrEntityCounter(uid, 'processed_queries', incrBy = 1)
         except:
@@ -2017,9 +2013,10 @@ def callback(ch, method, properties, body):
 
     mongoconn.close()
     connection1.basicAck(ch,method)
-    callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
+    callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics', 'zattrs': zattrs}
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
+    
 connection1 = RabbitConnection(callback, ['compilerqueue'], ['mathqueue', 'elasticpub'], {})
 
 logging.info("BaazCompiler going to start Consuming")
