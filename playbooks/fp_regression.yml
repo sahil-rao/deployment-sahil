@@ -1,7 +1,7 @@
 ---
 # This Playbook installs the regression runner on a specified host
 
-- hosts: tag_Name_Backoffice[0]
+- hosts: backoffice-3.navopt-dev.cloudera.com
   roles:
   - role: fp_regression
 
