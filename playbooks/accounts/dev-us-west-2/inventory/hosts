@@ -148,5 +148,5 @@ region=us-west-2
 url=http://ec2-52-42-226-102.us-west-2.compute.amazonaws.com/
 usingAWS=true
 s3_deployment_bucket=navopt-dev-deployment-bucket
-zipkinSampleRate=100.0
+zipkinSampleRate=5.0
 zipkinUrl=http://10.34.192.59:9411/api/v1/spans
