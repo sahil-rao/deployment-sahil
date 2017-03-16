@@ -8,16 +8,19 @@ from flightpath import cluster_config
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
 from flightpath.utils import *
+from flightpath.utils import trace_zipkin
+from flightpath.utils import add_zipkin_trace_info
+from flightpath.utils import get_zipkin_attrs_new
+from flightpath.utils import get_zipkin_trace_info
 from flightpath.parsing.ParseDemux import *
 from flightpath.Provenance import getMongoServer
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 
-from json import *
+from json import loads, dumps
 import elasticsearch
 import shutil
 import os
-import sys
 import tarfile
 import ConfigParser
 import datetime
@@ -28,14 +31,13 @@ import urllib
 import re
 from rlog import RedisHandler
 
-BAAZ_DATA_ROOT="/mnt/volume1/"
-BAAZ_PROCESSING_DIRECTORY="processing"
+BAAZ_DATA_ROOT = "/mnt/volume1/"
+BAAZ_PROCESSING_DIRECTORY = "processing"
 BAAZ_FP_LOG_FILE = "/var/log/cloudera/navopt/FPProcessing.err"
 
-config = ConfigParser.RawConfigParser ()
+config = ConfigParser.RawConfigParser()
 config.read("/var/Baaz/hosts.cfg")
 usingAWS = config.getboolean("mode", "usingAWS")
-
 bucket_location = "partner-logs"
 log_bucket_location = "xplain-servicelogs"
 
@@ -93,12 +95,14 @@ if usingAWS:
     if redis_host:
         logging.getLogger().addHandler(RedisHandler('logstash', level=logging_level, host=redis_host, port=6379))
 
+
 def generateTagArray(header_info):
     tagArray = []
     for header in header_info:
         if('tag' in header and header['tag'] is True and header['use'] is True):
             tagArray.append(header['type'].upper())
     return tagArray
+
 
 def generateCountArray(header_info):
     countArray = []
@@ -119,26 +123,34 @@ def clean_header(header_info):
             header_info[i]['type'] = "".join(re.findall("[a-zA-Z-_]+", tag_info['type'].upper()))
     return header_info
 
+
 def end_of_phase_callback(params, current_phase):
     if current_phase > 1:
         logging.error("Attempted end of phase callback, but current phase > 1")
         return
 
     logging.debug("Changing processing Phase")
-    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"}
+    msg_dict = {'tenant': params['tenant'], 'opcode': "PhaseTwoAnalysis"}
     msg_dict['uid'] = params['uid']
+    zattrs = params['zattrs']
+    add_zipkin_trace_info(msg_dict, zattrs)
+
     message = dumps(msg_dict)
-    params['connection'].publish(params['channel'],'',params['queuename'],message)
-    return
+    params['connection'].publish(params['channel'],
+                                 '',
+                                 params['queuename'],
+                                 message)
+
 
 def performTenantCleanup(tenant, clog):
-    clog.info("Cleaning Tenant "+ tenant)
+    clog.info("Cleaning Tenant " + tenant)
     destination = BAAZ_DATA_ROOT + tenant
     if os.path.exists(destination):
         shutil.rmtree(destination)
     destination = '/mnt/volume1/compile-' + tenant
     if os.path.exists(destination):
         shutil.rmtree(destination)
+
 
 def updateRelationCounter(redis_conn, eid):
 
@@ -154,6 +166,7 @@ def updateRelationCounter(redis_conn, eid):
     for rel in relations_from:
         if rel['rtype'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
+
 
 def elasticConnect(tenantID, clog):
 
@@ -201,7 +214,7 @@ class callback_context():
     class QueryLimitReachedException(Exception):
         pass
 
-    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode=False, skipLimit=False, testMode=False, sourcePlatform=None, header_info = None, delimiter = None):
+    def __init__(Self, tenant, uid, ch, mongoconn, redis_conn, collection, scale_mode=False, skipLimit=False, testMode=False, sourcePlatform=None, header_info = None, delimiter = None, zattrs = None):
         Self.tenant = tenant
         Self.uid = uid
         Self.ch = ch
@@ -221,6 +234,7 @@ class callback_context():
         Self.table_stat_table_name_list = []
         Self.compiler_to_use = get_compiler(Self.sourcePlatform)
         Self.clog = LoggerCustomAdapter(logging.getLogger(__name__), {'tag': 'dataacquisitionservice', 'tenant': tenant, 'uid':uid})
+        Self.zattrs = zattrs
 
     def get_source_platform(Self):
         return Self.sourcePlatform
@@ -456,8 +470,9 @@ class callback_context():
                 if Self.testMode:
                     compiler_msg['test_mode'] = 1
 
+                add_zipkin_trace_info(compiler_msg, Self.zattrs)
                 message = dumps(compiler_msg)
-                connection1.publish(Self.ch,'','compilerqueue',message)
+                connection1.publish(Self.ch, '', 'compilerqueue', message)
                 incrementPendingMessage(Self.collection, Self.redis_conn, Self.uid, message_id)
                 Self.clog.debug("Published Compiler Message {0}\n".format(message))
 
@@ -520,29 +535,31 @@ class callback_context():
                 incrementPendingMessage(Self.collection, Self.redis_conn, Self.uid, message_id)
                 Self.clog.debug("Published Compiler Message {0}\n".format(message))
 
-def callback(ch, method, properties, body):
+
+@trace_zipkin(service_name='FPProcessingService',
+              span_name='FPProcessingService',
+              annotate=['tenent', 'uid'])
+def callback(ch, method, properties, body, **kwargs):
     starttime = time.clock()
+    msg_dict = kwargs['msg_dict']
     curr_socket = socket.gethostbyname(socket.gethostname())
-
-    #send stats to datadog
-    if statsd:
-        statsd.increment('fpservice.msg.count', 1)
-
+    zattrs = get_zipkin_trace_info(msg_dict)
     try:
-        msg_dict = loads(body)
+        # send stats to datadog
+        if statsd:
+            statsd.increment('fpservice.msg.count', 1)
     except:
-        logging.exception("Could not load the message JSON")
+        logging.exception("Could not increment fpservice.msg.count")
 
-    logging.info("FPPS Got message "+ str( msg_dict))
+    logging.info("FPPS Got message " + str(msg_dict))
     """
     Validate the message.
     """
-    if not msg_dict.has_key("tenent") or \
-       (not msg_dict.has_key("filename") and
-        not msg_dict.has_key("opcode")):
+    if 'tenent' not in msg_dict or \
+       ('filename' not in msg_dict and 'opcode' not in msg_dict):
         logging.error("Invalid message received\n")
-        logging.error(body)
-        connection1.basicAck(ch,method)
+        logging.error(msg_dict)
+        connection1.basicAck(ch, method)
         return
 
     tenant = msg_dict["tenent"]
@@ -561,11 +578,14 @@ def callback(ch, method, properties, body):
         filename = None
         opcode = None
 
-        if msg_dict.has_key("opcode") and msg_dict["opcode"] == "DeleteTenant":
+        if 'opcode' in msg_dict and msg_dict["opcode"] == "DeleteTenant":
             performTenantCleanup(tenant, clog)
 
-            xplain_client["xplainIO"].organizations.update({"guid":tenant},\
-            {"$set":{"uploads":0, "queries":0, "lastTimeStamp": 0}})
+            xplain_client["xplainIO"].organizations.update(
+                {"guid": tenant},
+                {"$set": {"uploads": 0,
+                          "queries": 0,
+                          "lastTimeStamp": 0}})
             return
     except:
         clog.exception("Testing Cleanup")
@@ -598,7 +618,9 @@ def callback(ch, method, properties, body):
         header_info = None
         if 'header_info' in msg_dict:
             header_info = msg_dict['header_info']
-        delimiter = {'col_delim': None, 'row_delim': None, 'elapsed_time_unit': None}
+        delimiter = {'col_delim': None,
+                     'row_delim': None,
+                     'elapsed_time_unit': None}
         if 'col_delim' in msg_dict and msg_dict['col_delim']:
             delimiter['col_delim'] = msg_dict['col_delim']
         if 'row_delim' in msg_dict and msg_dict['row_delim']:
@@ -606,13 +628,13 @@ def callback(ch, method, properties, body):
         if 'elapsed_time_unit' in msg_dict:
             delimiter['elapsed_time_unit'] = msg_dict['elapsed_time_unit']
 
-        if msg_dict.has_key('uid'):
+        if 'uid' in msg_dict:
             uid = msg_dict['uid']
 
             collection = client[tenant].uploadStats
             startProcessingPhase(collection, redis_conn, uid)
-            redis_conn.incrEntityCounter(uid, "FPProcessing.count", sort = False, incrBy= 1)
-            redis_conn.setEntityProfile(uid, {"FPProcessing.socket":curr_socket})
+            redis_conn.incrEntityCounter(uid, "FPProcessing.count", sort = False, incrBy = 1)
+            redis_conn.setEntityProfile(uid, {"FPProcessing.socket": curr_socket})
             if metrics_url is not None:
                 try:
                     r_collection = MongoClient(metrics_url)["remote_"+tenant].uploadStats
@@ -632,7 +654,7 @@ def callback(ch, method, properties, body):
             file_key = bucket.get_key(source)
             if file_key is None:
                 clog.error("NOT FOUND: {0} not in S3\n".format(source))
-                connection1.basicAck(ch,method)
+                connection1.basicAck(ch, method)
 
                 return
 
@@ -640,8 +662,8 @@ def callback(ch, method, properties, body):
             Check if the file has already been processed. TODO:
             """
             checkpoint = source + ".processed"
-            #chkpoint_key = bucket.get_key(checkpoint)
-            #if chkpoint_key is not None:
+            # chkpoint_key = bucket.get_key(checkpoint)
+            # if chkpoint_key is not None:
             #    errlog.write("ALREADY PROCESSED: {0} \n".format(source))
             #    errlog.flush()
             #    return
@@ -714,12 +736,17 @@ def callback(ch, method, properties, body):
         incrementPendingMessage(collection, redis_conn, uid, message_id)
         clog.debug("Incremementing message count: " + message_id)
 
-        cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn, collection,
-                                  scale_mode, skipLimit, testMode, source_platform, header_info, delimiter)
+        cb_ctx = callback_context(tenant, uid, ch, mongoconn, redis_conn,
+                                  collection, scale_mode, skipLimit, testMode,
+                                  source_platform, header_info, delimiter,
+                                  zattrs)
 
         parseDir(tenant, logpath, cb_ctx)
 
-        callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
+        callback_params = {'tenant': tenant, 'connection': connection1,
+                           'channel': ch, 'uid': uid,
+                           'queuename': 'advanalytics', 'zattrs': zattrs}
+
         decrementPendingMessage(collection, redis_conn, uid, message_id, end_of_phase_callback, callback_params)
         clog.debug("Decrementing message count: " + message_id)
 
@@ -782,7 +809,7 @@ def callback(ch, method, properties, body):
 
     try:
         mongoconn.close()
-        if msg_dict.has_key('uid'):
+        if 'uid' in msg_dict:
             #if uid has been set, the variable will be set already
             redis_conn.setEntityProfile(uid, {"FPProcessing.time":(time.clock()-starttime)})
             if r_collection is not None:
@@ -798,13 +825,12 @@ def callback(ch, method, properties, body):
     except:
         clog.exception("While sending stats to datadog")
 
-    connection1.basicAck(ch,method)
+    connection1.basicAck(ch, method)
 
 connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue','elasticpub'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)
 
 
 logging.info("FPProcessingService going to start consuming")
-
 connection1.run()
 
 if usingAWS:

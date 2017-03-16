@@ -5,14 +5,19 @@ Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenant> <log Directory>
 """
 from flightpath import cluster_config
+from flightpath.parsing.hadoop.HadoopConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.XplainBlockingConnection import *
 from flightpath.services.RotatingS3FileHandler import *
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath.utils import *
+from flightpath.utils import zipkin_http_transport
+from flightpath.utils import add_zipkin_trace_info
+from flightpath.utils import get_zipkin_attrs
+from flightpath.utils import get_zipkin_attrs_dict
 from flightpath.Provenance import getMongoServer
-from json import *
+from json import loads, dumps
 from baazmath.interface.BaazCSV import *
 from subprocess import Popen, PIPE
 import sys
@@ -28,6 +33,10 @@ import logging
 import importlib
 import socket
 from rlog import RedisHandler
+
+import py_zipkin
+from py_zipkin.zipkin import zipkin_span
+from py_zipkin.zipkin import ZipkinAttrs
 
 BAAZ_DATA_ROOT="/mnt/volume1/"
 BAAZ_PROCESSING_DIRECTORY="processing"
@@ -125,17 +134,28 @@ def storeResourceProfile(tenant):
             mongoconn.updateProfile(entity, "Resource", resource_doc)
     mongoconn.close()
 
+
 def end_of_phase_callback(params, current_phase):
     if current_phase > 1:
         logging.error("Attempted end of phase callback, but current phase > 1")
         return
 
     logging.info("Changing processing Phase")
-    msg_dict = {'tenant':params['tenant'], 'opcode':"PhaseTwoAnalysis"}
+    msg_dict = {'tenant': params['tenant'],
+                'opcode': "PhaseTwoAnalysis",
+                'zattrs': params['zattrs']}
+
+    zattrs = params['zattrs']
+    add_zipkin_trace_info(msg_dict, zattrs)
+
     msg_dict['uid'] = params['uid']
     message = dumps(msg_dict)
-    params['connection'].publish(params['channel'],'',params['queuename'],message)
+    params['connection'].publish(params['channel'],
+                                 '',
+                                 params['queuename'],
+                                 message)
     return
+
 
 def analytics_callback(params):
     '''
@@ -146,7 +166,7 @@ def analytics_callback(params):
         clog.info("Calling the analytics callback for opcode %s"%(params['opcode']))
     else:
         clog.info("Calling the analytics callback with no opcode.")
-    msg_dict = {'tenant':params['tenant'], 'opcode':params['opcode']}
+    msg_dict = {'tenant': params['tenant'], 'opcode': params['opcode']}
     msg_dict['uid'] = params['uid']
     msg_dict['entityid'] = params["entityid"]
     collection = params["collection"]
@@ -154,33 +174,57 @@ def analytics_callback(params):
     message_id = genMessageID("Math", redis_conn, msg_dict['entityid'])
     msg_dict['message_id'] = message_id
     incrementPendingMessage(collection, redis_conn, msg_dict['uid'], message_id)
+    zattrs = params['zattrs']
+    add_zipkin_trace_info(msg_dict, zattrs)
 
     message = dumps(msg_dict)
-    params['connection'].publish(params['channel'],'',params['queuename'],message)
+    params['connection'].publish(params['channel'], '',
+                                 params['queuename'], message)
     return
+
 
 class analytics_context:
     pass
 
-def callback(ch, method, properties, body):
 
+def instrumentedMethodToCall(toCall, tenant, ctx, opcode, section, zattrs):
+    zipkinAttrs = get_zipkin_attrs(zattrs)
+    ret = None
+    with zipkin_span(
+            service_name="BaazMathService",
+            span_name=section,
+            transport_handler=zipkin_http_transport,
+            zipkin_attrs=zipkinAttrs
+    ) as zipkin_context:
+        try:
+            ret = toCall(tenant, ctx)
+            zipkin_context.update_binary_annotations({'opcode': opcode})
+        except:
+            raise
+    
+    return ret
+
+
+@trace_zipkin(service_name="BaazMathService",
+              span_name="MathService",
+              annotate=['entityid'])
+def callback(ch, method, properties, body, **kwargs):
     startTime = time.clock()
-    msg_dict = loads(body)
+    msg_dict = kwargs['msg_dict']
+    zattrs = get_zipkin_trace_info(msg_dict)
 
-    #send stats to datadog
+    # send stats to datadog
     if statsd:
         statsd.increment('mathservice.msg.count', 1)
 
-    logging.info("Analytics: Got message "+ str(msg_dict))
+    logging.info("Analytics: Got message " + str(msg_dict))
 
     """
     Validate the message.
     """
-    if not msg_dict.has_key("tenant") or \
-       not msg_dict.has_key("opcode"):
+    if 'tenant' not in msg_dict or 'opcode' not in msg_dict:
         logging.error("Invalid message received\n")
-
-        connection1.basicAck(ch,method)
+        connection1.basicAck(ch, method)
         return
 
     tenant = msg_dict['tenant']
@@ -190,11 +234,11 @@ def callback(ch, method, properties, body):
     except:
         received_msgID = None
     uid = None
-    if msg_dict.has_key('uid'):
+    if 'uid' in msg_dict:
         uid = msg_dict['uid']
 
         """
-        Check if this is a valid UID. If it so happens that this flow has been deleted,
+        Check if this is a valid UID. If this flow has been deleted,
         then drop the message.
         """
         client = getMongoServer(tenant)
@@ -220,7 +264,7 @@ def callback(ch, method, properties, body):
         return
 
     clog = LoggerCustomAdapter(logging.getLogger(__name__), {'tenant': tenant, 'opcode':opcode, 'uid':uid})
-    callback_params = {'tag': 'mathservice', 'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics'}
+    callback_params = {'tag': 'mathservice', 'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics', 'zattrs': zattrs}
 
     mathconfig = ConfigParser.RawConfigParser()
     mathconfig.read("/etc/xplain/analytics.cfg")
@@ -296,6 +340,7 @@ def callback(ch, method, properties, body):
             ctx.redis_conn = redis_conn
             ctx.callback = analytics_callback
             ctx.clog = clog
+            ctx.zattrs = zattrs
             if 'uid' in msg_dict:
                 ctx.uid = uid
             else:
@@ -303,13 +348,24 @@ def callback(ch, method, properties, body):
 
             if 'outmost_query' in msg_dict:
                 ctx.outmost_query = msg_dict['outmost_query']
+            
+            ret = None
 
-            ret = methodToCall(tenant, ctx)
+            clog.error("Going to process " + section)
+
+            ret = instrumentedMethodToCall(methodToCall,
+                                           tenant,
+                                           ctx,
+                                           opcode,
+                                           section,
+                                           zattrs)
+
             if ret is not None and ret == False:
                 '''
                 Attempt to requeue the message.
                 If failed 10 times, will decrement pending message.
                 '''
+                clog.error("Requeuing math message")
                 requeue_status = connection1.requeue(ch,method, '', 'mathqueue', msg_dict)
                 if not requeue_status:
                     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)

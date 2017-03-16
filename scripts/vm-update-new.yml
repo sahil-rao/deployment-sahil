@@ -265,3 +265,6 @@
   - name: Install python funcsigs package
     pip: name=funcsigs
     sudo: yes
+  - name: Install python zipkin package
+    pip: name=py_zipkin
+    sudo: yes

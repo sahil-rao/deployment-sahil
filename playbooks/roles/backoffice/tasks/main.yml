@@ -229,6 +229,9 @@
 - name: Install sqlparse
   pip: name=sqlparse
   sudo: yes
+- name: Install py_zipkin
+  pip: name=py_zipkin
+  sudo: yes
 #REDIS SENTINEL DEPLOYMENT
 #- name: Install Redis APT Package
 #  apt: name=redis-server update_cache=yes
