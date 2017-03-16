@@ -92,3 +92,11 @@ resource "aws_route53_record" "default" {
     ttl = "5"
     records = ["${element(aws_instance.default.*.private_ip, count.index)}"]
 }
+
+resource "aws_route53_record" "master" {
+    zone_id = "${var.dns_zone_id}"
+    name = "queue-master"
+    type = "A"
+    ttl = "5"
+    records = ["${element(aws_instance.default.*.private_ip, 0)}"]
+}
