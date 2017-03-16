@@ -1,6 +1,10 @@
 datadog_config:
   tags: "{{ datadog_tag }}, log, redis, rediscache"
 datadog_checks:
+  disk:
+    init_config:
+    instances:
+      - use_mount: no
   process:
     init_config:
     instances:

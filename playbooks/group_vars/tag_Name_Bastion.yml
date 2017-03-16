@@ -1,2 +1,6 @@
 datadog_config:
   tags: "{{ datadog_tag }}, bastion"
+  disk:
+    init_config:
+    instances:
+      - use_mount: no
