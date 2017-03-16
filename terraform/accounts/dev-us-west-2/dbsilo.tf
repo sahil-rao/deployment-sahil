@@ -40,10 +40,10 @@ module "dbsilo1" {
     redis_backup_file = "s3://xplain-alpha/dbsilo1/redis-backups/dump2016-10-18T01:05:01+0000.rdb"
 
     elasticsearch_name = "${var.cluster_name}-dbsilo1-elasticsearch"
-    elasticsearch_version = "v006"
-    elasticsearch_ami_id = "ami-7641ce16"
+    elasticsearch_version = "v009"
+    elasticsearch_ami_id = "ami-f724ad97"
     #elasticsearch_instance_type = "m3.xlarge"
-    elasticsearch_instance_type = "t2.micro"
+    elasticsearch_instance_type = "t2.medium"
     elasticsearch_min_size = 0
     elasticsearch_max_size = 3
     elasticsearch_desired_capacity = 3
@@ -95,10 +95,10 @@ module "dbsilo2" {
     redis_backup_file = "s3://xplain-alpha/dbsilo2/redis-backups/dump2016-10-18T01:05:01+0000.rdb"
 
     elasticsearch_name = "${var.cluster_name}-dbsilo2-elasticsearch"
-    elasticsearch_version = "v006"
-    elasticsearch_ami_id = "ami-7641ce16"
+    elasticsearch_version = "v009"
+    elasticsearch_ami_id = "ami-f724ad97"
     #elasticsearch_instance_type = "m3.xlarge"
-    elasticsearch_instance_type = "t2.micro"
+    elasticsearch_instance_type = "t2.medium"
     elasticsearch_min_size = 0
     elasticsearch_max_size = 3
     elasticsearch_desired_capacity = 3
