@@ -317,6 +317,7 @@ class callback_context():
                 sendToElastic(connection1, Self.redis_conn, Self.tenant, Self.uid,
                               table_entity, table_name, EntityType.SQL_TABLE)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
+                Self.redis_conn.setEntityProfile(table_entity.eid, {"name": table_name})
                 Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
                                                             "instance_count",
                                                             sec_key=table_entity.name,
@@ -352,8 +353,8 @@ class callback_context():
                 '''
                 if column_entity.eid == eid:
                     Self.redis_conn.createEntityProfile(column_entity.eid, "SQL_TABLE_COLUMN")
+                    Self.redis_conn.setEntityProfile(column_entity.eid, {"name": column_entity_name})
                     Self.redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
-                    Self.redis_conn.createEntityProfile(column_entity.eid, "SQL_TABLE_COLUMN")
                     Self.redis_conn.setRelationship(table_entity.eid, column_entity.eid,
                                            "TABLE_COLUMN", {'weight':1, "columnName":column_entity.columnName})
             else:
@@ -378,6 +379,7 @@ class callback_context():
                 sendToElastic(connection1, Self.redis_conn, Self.tenant, Self.uid,
                               table_entity, table_name, EntityType.SQL_TABLE)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
+                Self.redis_conn.setEntityProfile(table_entity.eid, {"name": table_name})
                 Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
                                                             "instance_count",
                                                             sec_key=table_entity.name,
