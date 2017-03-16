@@ -198,7 +198,7 @@ def instrumentedMethodToCall(toCall, tenant, ctx, opcode, section, zattrs):
     ) as zipkin_context:
         try:
             ret = toCall(tenant, ctx)
-            zipkin_context.update_binary_annotations_for_root_span({'opcode': opcode})
+            zipkin_context.update_binary_annotations({'opcode': opcode})
         except:
             raise
     
