@@ -1,2 +1,6 @@
+# Set up DNS registration crontab now that we've been identified as a master or slave.
+# This has to happen after we check our replication, else there is a race condition (because Redis always boots as master)
+* * * * * root /bin/bash /usr/local/bin/register_host.sh >>/var/log/register_host.log 2>&1
+
 # Set up hourly backup crontab
 */30 * * * * root /bin/bash /usr/local/bin/take_snapshot.sh >>/var/log/take_snapshot.log 2>&1

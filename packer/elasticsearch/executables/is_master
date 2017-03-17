@@ -1,0 +1,20 @@
+#!/usr/bin/python
+
+import sys
+import elasticsearch
+import socket
+
+def main():
+    ips = set(socket.gethostbyname_ex(socket.gethostname())[2])
+
+    client = elasticsearch.Elasticsearch()
+
+    for node in client.cat.nodes(format='json'):
+        if node['master'] == '*':
+            if node['ip'] in ips:
+                print 'yes'
+            else:
+                print 'no'
+
+if __name__ == '__main__':
+    sys.exit(main())
