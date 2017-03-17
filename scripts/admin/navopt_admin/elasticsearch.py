@@ -147,3 +147,50 @@ def change_replicas(ctx, dbsilo_name, replicas):
             })
 
             print 'indices modified'
+
+
+@cli.command('change-master-quorum')
+@click.argument('dbsilo_name', required=True)
+@click.argument('quorum', type=int)
+@click.pass_context
+def change_master_quorum(ctx, dbsilo_name, quorum):
+    if quorum < 1:
+        ctx.fail('cannot set quorum under 1')
+
+    dbsilo = ctx.obj['cluster'].dbsilo(dbsilo_name)
+
+    with dbsilo.elasticsearch_cluster().master() as es_client:
+        current_quorum = es_client.cluster.get_settings() \
+            .get('persistent', {}) \
+            .get('discovery', {}) \
+            .get('zen', {}) \
+            .get('minimum_master_nodes', 1)
+
+        if current_quorum is None:
+            print 'no minimum master nodes set'
+        else:
+            current_quorum = int(current_quorum)
+            print 'minimum master nodes is ', current_quorum
+
+        if quorum == current_quorum:
+            print 'no changes needed'
+            return
+
+        node_counts = es_client.cluster.stats()['nodes']['count']
+        master_nodes = node_counts['master_only'] + node_counts['master_data']
+        print 'master nodes is', master_nodes
+
+        if quorum < master_nodes / 2 + 1:
+            ctx.fail('quorum must be >= master nodes / 2 + 1')
+
+        msg = 'are you sure you want to apply? [yes/no]: '
+        if not prompt(msg, ctx.obj['yes']):
+            ctx.fail('elasticsearch cluster unchanged')
+
+        es_client.cluster.put_settings({
+            'persistent': {
+                'discovery.zen.minimum_master_nodes': quorum
+            }
+        })
+
+        print 'minimum master nodes changed'

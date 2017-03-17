@@ -188,6 +188,29 @@ class ElasticsearchShardHealthCheck(ElasticsearchHealthCheck):
             host.cluster.health() for host in self.hosts)
 
 
+class ElasticsearchQuorumCheck(ElasticsearchHealthCheck):
+    description = "Elasticsearch quorum >= master nodes / 2 + 1"
+
+    def check_es_host(self, host):
+        quorum = host.cluster.get_settings() \
+            .get('persistent', {}) \
+            .get('discovery', {}) \
+            .get('zen', {}) \
+            .get('minimum_master_nodes', 1)
+        quorum = int(quorum)
+
+        node_counts = host.cluster.stats()['nodes']['count']
+        master_nodes = node_counts['master_only'] + node_counts['master_data']
+        min_masters = master_nodes / 2 + 1
+
+        self.host_msgs[host] = 'quorum:{} masters:{} min-masters:{}'.format(
+            quorum,
+            master_nodes,
+            min_masters)
+
+        return quorum >= min_masters
+
+
 def check_elasticsearch(es_cluster):
     es_checklist = HealthCheckList(
         "{} cluster health checklist".format(es_cluster.service))
@@ -210,6 +233,7 @@ def check_elasticsearch(es_cluster):
             ElasticsearchClusterOddCheck(es_servers),
             ElasticsearchClusterIndexCheck(es_servers),
             ElasticsearchShardHealthCheck(es_servers),
+            ElasticsearchQuorumCheck(es_servers),
             ):
         es_checklist.add_check(check)
 
