@@ -12,6 +12,15 @@ DEVNULL = open(os.devnull, 'wb')
 BASE_PORTS = 14000
 
 
+class TunnelDown(Exception):
+    def __init__(self, host, port):
+        self.host = host
+        self.port = port
+
+    def __str__(self):
+        return 'ssh failed to open %s:%s' % (self.host, self.port)
+
+
 class BaseBastion(object):
     def close(self):
         pass
@@ -124,7 +133,7 @@ class BaseTunnel(object):
                 break
         else:
             self.close()
-            raise Exception('ssh failed to open %s:%s' % (self.host, self.port))
+            raise TunnelDown(self.host, self.port)
 
         LOG.debug('ssh tunnel is now listening on port %s' % self.port)
 

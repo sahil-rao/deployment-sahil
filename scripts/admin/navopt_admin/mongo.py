@@ -1,6 +1,10 @@
 from __future__ import absolute_import
 
+import logging
 import pymongo
+from .ssh import TunnelDown
+
+LOG = logging.getLogger(__name__)
 
 
 class MongoCluster(object):
@@ -52,18 +56,24 @@ class Mongo(object):
         self.port = port
 
         self._tunnel = tunnel
-        self._tunnel.open()
 
-        self._conn = pymongo.MongoClient(
-            host=self._tunnel.host,
-            port=self._tunnel.port,
-            socketTimeoutMS=10000,
-            connectTimeoutMS=10000,
-            serverSelectionTimeoutMS=10000,
-        )
+        try:
+            self._tunnel.open()
+        except TunnelDown:
+            LOG.exception('failed to open tunnel')
+            self._conn = None
+        else:
+            self._conn = pymongo.MongoClient(
+                host=self._tunnel.host,
+                port=self._tunnel.port,
+                socketTimeoutMS=10000,
+                connectTimeoutMS=10000,
+                serverSelectionTimeoutMS=10000,
+            )
 
     def close(self):
-        self._conn.close()
+        if self._conn:
+            self._conn.close()
         self._tunnel.close()
 
     def __enter__(self):

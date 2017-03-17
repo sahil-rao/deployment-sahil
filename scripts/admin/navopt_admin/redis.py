@@ -1,6 +1,14 @@
 from __future__ import absolute_import
 
+import logging
 import redis
+from .ssh import TunnelDown
+
+LOG = logging.getLogger(__name__)
+
+
+class ConnectionClosed(Exception):
+    pass
 
 
 class RedisCluster(object):
@@ -70,12 +78,17 @@ class Redis(object):
         self.port = port
 
         self._tunnel = tunnel
-        self._tunnel.open()
 
-        self._conn = redis.StrictRedis(
-            host=self._tunnel.host,
-            port=self._tunnel.port,
-        )
+        try:
+            self._tunnel.open()
+        except TunnelDown:
+            LOG.exception('failed to open tunnel')
+            self._conn = None
+        else:
+            self._conn = redis.StrictRedis(
+                host=self._tunnel.host,
+                port=self._tunnel.port,
+            )
 
     def close(self):
         self._tunnel.close()
@@ -87,7 +100,10 @@ class Redis(object):
         self.close()
 
     def __getattr__(self, key):
-        return getattr(self._conn, key)
+        if self._conn:
+            return getattr(self._conn, key)
+        else:
+            raise ConnectionClosed
 
     def __str__(self):
         return '{}:{}'.format(self.host, self.port)

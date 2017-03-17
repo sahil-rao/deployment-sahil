@@ -2,8 +2,11 @@ from __future__ import absolute_import
 
 import click
 import elasticsearch
+import logging
+from .ssh import TunnelDown
 from .util import prompt
 
+LOG = logging.getLogger(__name__)
 TEMPLATE_NAME = 'template_1'
 
 
@@ -50,11 +53,16 @@ class Elasticsearch(object):
         self.port = port
 
         self._tunnel = tunnel
-        self._tunnel.open()
 
-        self._conn = elasticsearch.Elasticsearch(
-            ['{}:{}'.format(self._tunnel.host, self._tunnel.port)],
-            use_ssl=False)
+        try:
+            self._tunnel.open()
+        except TunnelDown:
+            LOG.exception('failed to open tunnel')
+            self._conn = None
+        else:
+            self._conn = elasticsearch.Elasticsearch(
+                ['{}:{}'.format(self._tunnel.host, self._tunnel.port)],
+                use_ssl=False)
 
     def close(self):
         self._tunnel.close()
