@@ -6,7 +6,7 @@ set -euv
 wget -qO /usr/local/bin/jq https://github.com/stedolan/jq/releases/download/jq-1.5/jq-linux64; chmod +x /usr/local/bin/jq
 
 # Install Redis
-apt-get install -y redis-server
+apt-get install -y redis-server=2:2.8.4-2
 
 # Remove System V redis-server job (we will replace it with an upstart job)
 service redis-server stop
