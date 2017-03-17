@@ -1,41 +1,3 @@
-variable "subnet_ids" {
-    type = "list"
-}
-variable "zone_id" {}
-variable "zone_name" {}
-variable "security_groups" {
-    type = "list"
-}
-
-###################################################################
-
-variable "name" {}
-variable "version" {}
-variable "env" {}
-variable "service" {}
-variable "datadog_api_key" {}
-
-###################################################################
-
-variable "key_name" {}
-variable "iam_instance_profile" {}
-
-###################################################################
-
-variable "ami_id" {}
-variable "instance_type" {}
-variable "min_size" {}
-variable "max_size" {}
-variable "desired_capacity" {}
-variable "ebs_optimized" {
-    default = true
-}
-
-variable "cloudwatch_retention_in_days" {}
-variable "log_subscription_destination_arn" {}
-
-###################################################################
-
 module "elasticsearch-service" {
     source = "../../modules/cloudwatch-log-group"
 
@@ -57,7 +19,7 @@ data "template_file" "user_data" {
         zone_id = "${var.zone_id}"
         zone_name = "${var.zone_name}"
         datadog_api_key = "${var.datadog_api_key}"
-        sg_name = "${join(",", var.security_groups)}"
+        sg_name = "${aws_security_group.elasticsearch.id}"
     }
 }
 
@@ -65,11 +27,11 @@ resource "aws_launch_configuration" "default" {
     name = "${var.name}-${var.version}"
     image_id = "${var.ami_id}"
     instance_type = "${var.instance_type}"
-    iam_instance_profile = "${var.iam_instance_profile}"
+    iam_instance_profile = "${aws_iam_instance_profile.elasticsearch.name}"
     ebs_optimized = "${var.ebs_optimized}"
     enable_monitoring = false
     key_name = "${var.key_name}"
-    security_groups = ["${var.security_groups}"]
+    security_groups = ["${aws_security_group.elasticsearch.id}"]
     user_data = "${data.template_file.user_data.rendered}"
 
     lifecycle {

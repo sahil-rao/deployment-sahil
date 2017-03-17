@@ -2,16 +2,8 @@ output "admin_eip" {
     value = "${module.admin.eip}"
 }
 
-output "elasticsearch_instance_profile" {
-    value = "${module.iam.elasticsearch_instance_profile}"
-}
-
 output "redis_instance_profile" {
     value = "${module.iam.redis_instance_profile}"
-}
-
-output "elasticsearch_security_groups" {
-    value = "${module.sg.elasticsearch_security_groups}"
 }
 
 output "redis_security_groups" {

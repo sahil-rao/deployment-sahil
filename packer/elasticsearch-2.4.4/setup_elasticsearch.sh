@@ -15,7 +15,7 @@ apt-get install -y oracle-java8-set-default
 # Install elasticsearch
 wget -qO - https://packages.elastic.co/GPG-KEY-elasticsearch | apt-key add -
 echo "deb https://packages.elastic.co/elasticsearch/2.x/debian stable main" | sudo tee -a /etc/apt/sources.list.d/elasticsearch-2.x.list
-apt-get update && apt-get -y install elasticsearch
+apt-get update && apt-get -y install elasticsearch=2.4.4
 
 # Make the elasticsearch volume owned by the elasticsearch user
 chown elasticsearch.elasticsearch /var/lib/elasticsearch

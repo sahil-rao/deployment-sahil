@@ -7,6 +7,11 @@ module "log-service" {
 module "logging" {
     source = "../../services/logging"
 
+    vpc_id = "${var.vpc_id}"
+    subnet_ids = ["${var.private_subnet_ids}"]
+    private_cidrs = ["${var.private_cidrs}"]
+    dns_zone_id = "${var.dns_zone_id}"
+
     region = "${var.region}"
     env = "${var.env}"
     zone_name = "${var.dns_zone_name}"
@@ -18,8 +23,6 @@ module "logging" {
     kibana_instance_count = 1
 
     elasticsearch_name = "logging-elastic"
-    elasticsearch_security_groups = ["${module.sg.elasticsearch_security_groups}"]
-    elasticsearch_iam_instance_profile = "${module.iam.elasticsearch_instance_profile}"
     elasticsearch_version = "${var.logging_elasticsearch_version}"
     elasticsearch_ami_id = "${var.logging_elasticsearch_ami}"
     elasticsearch_instance_type = "${var.logging_elasticsearch_instance_type}"
@@ -46,10 +49,6 @@ module "logging" {
     redis_max_size = "${var.logging_redis_max_size}"
     redis_desired_capacity = "${var.logging_redis_desired_capacity}"
     redis_quorum_size = "${var.logging_redis_quorum_size}"
-
-    vpc_id = "${var.vpc_id}"
-    subnet_ids = ["${var.private_subnet_ids}"]
-    dns_zone_id = "${var.dns_zone_id}"
 
     key_name = "${var.key_name}"
 

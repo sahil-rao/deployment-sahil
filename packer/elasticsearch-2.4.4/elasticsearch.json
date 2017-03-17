@@ -65,6 +65,11 @@
         },
         {
             "type": "file",
+            "source": "../etc",
+            "destination": "/tmp"
+        },
+        {
+            "type": "file",
             "source": "etc",
             "destination": "/tmp"
         },
@@ -96,6 +101,11 @@
         {
             "type": "shell",
             "script": "../scripts/setup_cloudwatch.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
+            "script": "../scripts/setup_salt.sh",
             "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
         },
         {
