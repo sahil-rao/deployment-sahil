@@ -46,7 +46,7 @@ module "common" {
     num_instance_managed_policies = "2"
 
     backoffice_instance_type = "t2.large"
-    backoffice_instance_count = 8
+    backoffice_instance_count = 16
 
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
 

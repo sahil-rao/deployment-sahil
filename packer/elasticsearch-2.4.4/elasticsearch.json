@@ -11,7 +11,7 @@
         {
             "type": "amazon-ebs",
             "ami_description": "Packer generated AMI",
-            "ami_name": "mongodb-3.4-{{ user `env` }}-{{ timestamp }}",
+            "ami_name": "elasticsearch-{{ user `env` }}-{{ timestamp }}",
             "access_key": "",
             "secret_key": "",
             "region": "us-west-2",
@@ -42,7 +42,7 @@
                 }
             ],
             "tags": {
-                "Name": "mongodb",
+                "Name": "elasticsearch",
                 "Env": "{{ user `env` }}"
             }
         }
@@ -74,6 +74,11 @@
             "destination": "/tmp"
         },
         {
+            "type": "file",
+            "source": "templates",
+            "destination": "/tmp"
+        },
+        {
             "type": "shell",
             "script": "../scripts/setup_ubuntu.sh",
             "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
@@ -81,11 +86,11 @@
         {
             "type": "shell",
             "script": "../scripts/setup_volume.sh",
-            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }} /dev/xvdf /var/lib/mongodb"
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }} /dev/xvdf /var/lib/elasticsearch"
         },
         {
             "type": "shell",
-            "script": "setup_mongodb.sh",
+            "script": "setup_elasticsearch.sh",
             "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
         },
         {

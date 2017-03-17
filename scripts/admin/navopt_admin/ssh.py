@@ -193,6 +193,9 @@ class NoopTunnel(BaseTunnel):
 
 
 def _port_is_listening(host, port):
+    if host is None:
+        return False
+
     cmd = ['nc', '-z', pipes.quote(host), pipes.quote(str(port))]
     # LOG.debug('running: %s' % ' '.join(cmd))
 
