@@ -211,6 +211,44 @@ class ElasticsearchQuorumCheck(ElasticsearchHealthCheck):
         return quorum >= min_masters
 
 
+class ElasticsearchAgreeOnMasterCheck(ElasticsearchHealthCheck):
+    description = "Elasticsearch nodes agree on the same master"
+
+    def __init__(self, es_cluster, *args, **kwargs):
+        super(ElasticsearchAgreeOnMasterCheck, self).__init__(*args, **kwargs)
+
+        self.es_cluster = es_cluster
+
+    def check_es_host(self, host):
+        if host.is_master():
+            self.host_msgs[host] = '(current master)'
+            return self.check_master_hostname(host)
+
+        master_address = host.master_address()
+        self.host_msgs[host] = 'master: {}'.format(master_address)
+
+        for h in self.hosts:
+            if master_address != h.master_address():
+                return False
+
+        return True
+
+    def check_master_hostname(self, host):
+        master_hostname = self.es_cluster.master_hostname()
+        found_host = self.es_cluster.cluster.bastion.resolve_hostname(
+            master_hostname)
+
+        if not found_host:
+            self.host_msgs[host] += ' failed to resolve: ' + master_hostname
+            return False
+
+        if host.host != found_host:
+            self.host_msgs[host] += ' master is on {}'.format(found_host)
+            return False
+        else:
+            return True
+
+
 def check_elasticsearch(es_cluster):
     es_checklist = HealthCheckList(
         "{} cluster health checklist".format(es_cluster.service))
@@ -234,6 +272,7 @@ def check_elasticsearch(es_cluster):
             ElasticsearchClusterIndexCheck(es_servers),
             ElasticsearchShardHealthCheck(es_servers),
             ElasticsearchQuorumCheck(es_servers),
+             ElasticsearchAgreeOnMasterCheck(es_cluster, es_servers),
             ):
         es_checklist.add_check(check)
 

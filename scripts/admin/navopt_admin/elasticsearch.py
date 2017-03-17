@@ -18,11 +18,20 @@ class ElasticsearchCluster(object):
         for instance in self.instances:
             yield instance.private_ip_address
 
+    def master_hostname(self):
+        return '{}-master.{}'.format(
+            self.service,
+            self.cluster.zone)
+
     def master(self):
-        # Just use the first elasticsearch node as our master.
-        ip = self.instances[0].private_ip_address
-        tunnel = self.cluster.bastion.tunnel(ip, self._port)
-        return Elasticsearch(self.cluster.bastion, tunnel, ip, self._port)
+        master_hostname = self.master_hostname()
+        master_address = self.cluster.bastion.resolve_hostname(master_hostname)
+        tunnel = self.cluster.bastion.tunnel(master_address, self._port)
+        return Elasticsearch(
+            self.cluster.bastion,
+            tunnel,
+            master_address,
+            self._port)
 
     def clients(self):
         tunnels = []
@@ -66,6 +75,16 @@ class Elasticsearch(object):
         nodes = self._conn.nodes.info()['nodes']
 
         return set(info['http_address'] for info in nodes.itervalues())
+
+    def master_address(self):
+        for node in self._conn.cat.nodes(format='json'):
+            if node['master'] == '*':
+                return node['ip']
+
+        return None
+
+    def is_master(self):
+        return self.master_address() == self.host
 
     def __str__(self):
         return '{}:{}'.format(self.host, self.port)
