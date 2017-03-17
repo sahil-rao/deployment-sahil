@@ -2,7 +2,6 @@ module "iam" {
     source = "../../services/iam"
 
     admin_name = "admin"
-    elasticsearch_name = "elasticsearch"
     kibana_name = "kibana"
     logstash_name = "logstash"
     mongo_name = "mongo"

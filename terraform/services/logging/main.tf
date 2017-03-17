@@ -4,13 +4,13 @@ variable "log_subscription_destination_arn" {}
 module "elasticsearch" {
     source = "../elasticsearch-asg"
 
+    vpc_id = "${var.vpc_id}"
     subnet_ids = ["${var.subnet_ids}"]
+    private_cidrs = ["${var.private_cidrs}"]
     zone_id = "${var.dns_zone_id}"
     zone_name = "${var.zone_name}"
-    security_groups = ["${var.elasticsearch_security_groups}"]
 
     key_name = "${var.key_name}"
-    iam_instance_profile = "${var.elasticsearch_iam_instance_profile}"
 
     name = "${var.elasticsearch_name}"
     version = "${var.elasticsearch_version}"

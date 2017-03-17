@@ -10,10 +10,6 @@ output "deployment_root_security_groups" {
     value = ["${aws_security_group.deployment-root.id}"]
 }
 
-output "elasticsearch_security_groups" {
-    value = ["${aws_security_group.elasticsearch.id}"]
-}
-
 output "kibana_security_groups" {
     value = ["${aws_security_group.kibana.id}"]
 }
