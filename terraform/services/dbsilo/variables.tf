@@ -37,10 +37,6 @@ variable "mongo_ebs_optimized" {
 ###################################################################
 
 variable "redis_name" {}
-variable "redis_security_groups" {
-    type = "list"
-}
-variable "redis_iam_instance_profile" {}
 
 variable "redis_version" {}
 variable "redis_ami_id" {}

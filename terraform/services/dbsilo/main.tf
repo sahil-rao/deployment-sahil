@@ -31,13 +31,13 @@ module "mongodb" {
 module "redis" {
     source = "../redis-asg"
 
+    vpc_id = "${var.vpc_id}"
+    private_cidrs = ["${var.private_cidrs}"]
     subnet_ids = ["${var.subnet_ids}"]
     zone_id = "${var.zone_id}"
     zone_name = "${var.zone_name}"
-    security_groups = ["${var.redis_security_groups}"]
 
     key_name = "${var.key_name}"
-    iam_instance_profile = "${var.redis_iam_instance_profile}"
 
     name = "${var.redis_name}"
     version = "${var.redis_version}"

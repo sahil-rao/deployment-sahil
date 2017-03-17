@@ -37,11 +37,3 @@ output "nodejs_role_name" {
 output "nodejs_instance_profile" {
     value = "${aws_iam_instance_profile.nodejs.name}"
 }
-
-output "redis_role_name" {
-    value = "${var.redis_name}"
-}
-
-output "redis_instance_profile" {
-    value = "${aws_iam_instance_profile.redis.name}"
-}

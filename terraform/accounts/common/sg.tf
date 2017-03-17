@@ -13,6 +13,5 @@ module "sg" {
     mongo_name = "mongo"
     nodejs_name = "nodejs"
     queue_server_name = "queue_server"
-    redis_name = "redis"
     navopt_elb_name = "navopt-elb"
 }

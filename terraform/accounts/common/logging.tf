@@ -39,8 +39,6 @@ module "logging" {
 
     redis_name = "logging-redis"
     redis_service = "redis-log"
-    redis_security_groups = ["${module.sg.redis_security_groups}"]
-    redis_iam_instance_profile = "${module.iam.redis_instance_profile}"
 
     redis_version = "${var.logging_redis_version}"
     redis_ami_id = "${var.logging_redis_ami}"

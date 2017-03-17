@@ -26,8 +26,6 @@ module "dbsilo1" {
     mongo_ebs_optimized = false
 
     redis_name = "${var.cluster_name}-dbsilo1-redis"
-    redis_iam_instance_profile = "${module.common.redis_instance_profile}"
-    redis_security_groups = ["${module.common.redis_security_groups}"]
     redis_version = "v006"
     redis_ami_id = "ami-045dd264"
     redis_instance_type = "r3.2xlarge"
@@ -81,8 +79,6 @@ module "dbsilo2" {
     mongo_ebs_optimized = false
 
     redis_name = "${var.cluster_name}-dbsilo2-redis"
-    redis_iam_instance_profile = "${module.common.redis_instance_profile}"
-    redis_security_groups = ["${module.common.redis_security_groups}"]
     redis_version = "v006"
     redis_ami_id = "ami-045dd264"
     redis_instance_type = "r3.2xlarge"

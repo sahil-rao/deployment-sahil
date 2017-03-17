@@ -76,10 +76,10 @@ module "redis-log" {
 
     name = "${var.redis_name}"
     key_name = "${var.key_name}"
-    iam_instance_profile = "${var.redis_iam_instance_profile}"
 
+    vpc_id = "${var.vpc_id}"
     subnet_ids = ["${var.subnet_ids}"]
-    security_groups = ["${var.redis_security_groups}"]
+    private_cidrs = ["${var.private_cidrs}"]
     zone_id = "${var.dns_zone_id}"
     zone_name = "${var.zone_name}"
 

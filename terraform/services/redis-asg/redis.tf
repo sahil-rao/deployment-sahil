@@ -1,48 +1,3 @@
-variable "subnet_ids" {
-    type = "list"
-}
-variable "zone_id" {}
-variable "zone_name" {}
-variable "security_groups" {
-    type = "list"
-}
-
-###################################################################
-
-variable "name" {}
-variable "version" {}
-variable "service" {}
-variable "env" {}
-variable "datadog_api_key" {}
-
-variable "key_name" {}
-variable "iam_instance_profile" {}
-
-###################################################################
-
-variable "ami_id" {}
-variable "instance_type" {}
-variable "min_size" {}
-variable "max_size" {}
-variable "desired_capacity" {}
-variable "ebs_optimized" {
-    default = true
-}
-variable "backup_file" {
-    default = ""
-}
-
-
-variable "quorum_size" {}
-variable "backups_enabled" {
-    default = false
-}
-
-variable "cloudwatch_retention_in_days" {}
-variable "log_subscription_destination_arn" {}
-
-###################################################################
-
 module "redis-service" {
     source = "../../modules/cloudwatch-log-group"
 
@@ -76,11 +31,11 @@ resource "aws_launch_configuration" "default" {
     name = "${var.name}-${var.version}"
     image_id = "${var.ami_id}"
     instance_type = "${var.instance_type}"
-    iam_instance_profile = "${var.iam_instance_profile}"
+    iam_instance_profile = "${aws_iam_instance_profile.redis.name}"
     ebs_optimized = "${var.ebs_optimized}"
     enable_monitoring = false
     key_name = "${var.key_name}"
-    security_groups = ["${var.security_groups}"]
+    security_groups = ["${aws_security_group.redis.id}"]
     user_data = "${data.template_file.user_data.rendered}"
 
     lifecycle {

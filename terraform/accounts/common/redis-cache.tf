@@ -3,10 +3,10 @@ module "redis-cache" {
 
     name = "redis-cache"
     key_name = "${var.key_name}"
-    iam_instance_profile = "${module.iam.redis_instance_profile}"
 
+    vpc_id = "${var.vpc_id}"
+    private_cidrs = ["${var.private_cidrs}"]
     subnet_ids = "${var.private_subnet_ids}"
-    security_groups = "${module.sg.redis_security_groups}"
     zone_id = "${var.dns_zone_id}"
     zone_name = "${var.dns_zone_name}"
 

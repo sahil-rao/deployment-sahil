@@ -1,5 +1,5 @@
 resource "aws_iam_role" "redis" {
-    name = "${var.redis_name}"
+    name = "${var.name}"
     assume_role_policy = <<EOF
 {
     "Version": "2012-10-17",
@@ -21,7 +21,7 @@ EOF
 }
 
 resource "aws_iam_role_policy" "redis" {
-    name = "${var.redis_name}"
+    name = "${var.name}"
     role = "${aws_iam_role.redis.id}"
     policy = <<EOF
 {
@@ -123,10 +123,12 @@ EOF
 }
 
 resource "aws_iam_instance_profile" "redis" {
-    name = "${var.redis_name}"
+    name = "${var.name}"
     roles = ["${aws_iam_role.redis.name}"]
 
     lifecycle {
         create_before_destroy = true
     }
+
+    depends_on = ["aws_iam_role_policy.redis"]
 }

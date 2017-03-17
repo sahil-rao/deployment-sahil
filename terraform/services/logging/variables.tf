@@ -84,11 +84,6 @@ variable "redis_name" {}
 variable "redis_version" {}
 variable "redis_service" {}
 
-variable "redis_security_groups" {
-    type = "list"
-    default = []
-}
-
 variable "redis_ami_id" {
     default = ""
 }
@@ -99,9 +94,6 @@ variable "redis_min_size" {}
 variable "redis_max_size" {}
 variable "redis_desired_capacity" {}
 variable "redis_quorum_size" {}
-variable "redis_iam_instance_profile" {
-    default = ""
-}
 variable "redis_ebs_optimized" {
     default = ""
 }
