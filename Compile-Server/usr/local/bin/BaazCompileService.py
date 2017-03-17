@@ -181,6 +181,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
                               column_entity, column_entity_name, EntityType.SQL_TABLE_COLUMN)
                 clog.debug("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))
                 redis_conn.createEntityProfile(column_entity.eid, "SQL_TABLE_COLUMN")
+                redis_conn.setEntityProfile(column_entity.eid, {"name": column_entity_name})
                 redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
                 redis_conn.setRelationship(table_entity.eid, column_entity.eid,
                                            "TABLE_COLUMN", {'weight':1, "columnName":column_entity.columnName})
