@@ -55,7 +55,7 @@ if not usingAWS:
 
 dbsilo_list = get_dbsilo_list(usingAWS)
 def setup_es_conn():
-    #find all dbsilo's specific elastic host
+    # find all dbsilo's specific elastic host
     prefix = 'dbsilo:'
     es_hosts_silo = {}
     es_conn_silo = {}
@@ -65,8 +65,14 @@ def setup_es_conn():
         es_hosts_silo[dbsilo] = info['elastic'].split(',')
 
     for key in es_hosts_silo:
-        #setup connection to ES host
-        es_conn_silo[key] = elasticsearch.Elasticsearch(hosts=[{'host': es_host, 'port': 9200} for es_host in es_hosts_silo[key]])
+        # setup connection to ES host
+        hosts = [{'host': es_host, 'port': 9200}
+                 for es_host in es_hosts_silo[key]]
+        es_conn_silo[key] = elasticsearch.Elasticsearch(
+            hosts=hosts,
+            sniff_on_start=True,
+            sniff_on_connection_fail=True,
+            sniffer_timeout=60)
     return es_conn_silo
 
 es_conn_silo = setup_es_conn()

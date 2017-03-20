@@ -278,7 +278,7 @@ def register(ctx, dbsilo_name, capacity):
 
     mongo_ips = sorted(mongo_cluster.instance_private_ips())
     redis_ips = sorted(redis_cluster.instance_private_ips())
-    elasticsearch_ips = sorted(elasticsearch_cluster.instance_private_ips())
+    elasticsearch_ips = [elasticsearch_cluster.master_hostname()]
 
     proposed_dbsilo_info_data = {
         'mongo': ','.join(mongo_ips),
