@@ -287,7 +287,6 @@ def processTableSet(tableset, ch, mongoconn, redis_conn, tenant, uid, entity, is
             '''
             table_entry = mongoconn.db.entities.find_one({"eid" : table_entity.eid}, {"state": 1, 'profile': 1})
             if table_entry and 'state' in table_entry and table_entry['state'] == "inactive":
-                #mongoconn.db.entities.update({"eid" : table_entity.eid}, {"$set": {"state": "active"}}, upsert=True)
                 data_dict = {"tenant": tenant,
                              "opcode": "UpdateTable",
                              "uid": uid,
@@ -1047,24 +1046,27 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         if 'OperatorList' in compile_doc[compiler] and \
            'DROP_TABLE' in compile_doc[compiler]['OperatorList']:
             if 'OutputTableList' in compile_doc[compiler]:
+                table_name_list = []
                 for entry in compile_doc[compiler]['OutputTableList']:
                     tableName = entry['TableName']
                     if 'databaseName' in entry and entry['databaseName'] not in DBNAME_IGNORE_LIST:
                         tableName = compile_doc[compiler]['OutputTableList']['databaseName'] + "." + tableName
-                    entries = mongoconn.getEntitiesByTypeAndName([tableName], EntityType.SQL_TABLE,
-                                                                 {"eid" : 1, "profile":1})
-                    for entry in entries:
-                        table_eid = entry['eid']
-                        data_dict = {"tenant": tenant,
-                                     "opcode": "DeleteTable",
-                                     "uid": uid,
-                                     "eid": table_eid}
-                        sendDelMessage(redis_conn, collection, ch, data_dict, uid, table_eid)
-                        break
-        
+                    table_name_list.append(tableName)
+
+                entries = mongoconn.getEntitiesByTypeAndName(table_name_list, EntityType.SQL_TABLE,
+                                                             {"eid" : 1, "profile":1})
+                for entry in entries:
+                    table_eid = entry['eid']
+                    data_dict = {"tenant": tenant,
+                                 "opcode": "DeleteTable",
+                                 "uid": uid,
+                                 "eid": table_eid}
+                    sendDelMessage(redis_conn, collection, ch, data_dict, uid, table_eid)
+
         if 'OperatorList' in compile_doc[compiler] and \
            'DROP_COLUMN' in compile_doc[compiler]['OperatorList']:
             #check if table and column name are present
+            col_name_list = []
             if 'dropColumnNames' in compile_doc[compiler]:
                 for entry in compile_doc[compiler]['dropColumnNames']:
                     tableName = entry['tableName']
@@ -1072,8 +1074,12 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         tableName = entry['databaseName'] + "." + tableName
                     col_name = entry['columnName']
                     col_name = tableName + "." + col_name
-                    # find the eid based on column name
-                    entry = mongoconn.db.entities.find_one({"name": col_name, "etype": "SQL_TABLE_COLUMN"}, {"eid" : 1})
+                    col_name_list.append(col_name)
+
+                # find the eid based on column name
+                entries = mongoconn.getEntitiesByTypeAndName(col_name_list, EntityType.SQL_TABLE_COLUMN,
+                                                             {"eid" : 1})
+                for entry in entries:
                     col_eid = entry['eid']
                     data_dict = {"tenant": tenant,
                                  "opcode": "DeleteCol",
@@ -1081,7 +1087,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                  "uid": uid,
                                  "name": col_name}
                     sendDelMessage(redis_conn, collection, ch, data_dict, uid, col_eid)
- 
+
         compile_doc_fields = ["SignatureKeywords",
                       "OperatorList",
                       "selectColumnNames",
