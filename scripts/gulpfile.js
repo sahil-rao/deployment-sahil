@@ -36,9 +36,9 @@ var dirs = {
 
 
 
-var jshintSrc = [dirs.ui+'xplain.io/**/*.js', dirs.ui+'xplain.io/**/*.jsx', '!'+dirs.ui+'xplain.io/public/js/libs/**/*.js',
-'!'+dirs.ui+'xplain.io/node_modules/**/*.js', '!'+dirs.ui+'xplain.io/app/libraries/**/*.js','!'+dirs.ui+'xplain.io/public/build/**/*.js', '!'+dirs.ui+'xplain.io/test/**/*.js',
-'!'+dirs.ui+'xplain.io/src/cloudera-ui/**/*.js'];
+var jshintSrc = [dirs.ui+'/xplain.io/**/*.js', dirs.ui+'/xplain.io/**/*.jsx', '!'+dirs.ui+'/xplain.io/public/js/libs/**/*.js',
+'!'+dirs.ui+'/xplain.io/node_modules/**/*.js', '!'+dirs.ui+'/xplain.io/app/libraries/**/*.js','!'+dirs.ui+'/xplain.io/public/build/**/*.js', '!'+dirs.ui+'/xplain.io/test/**/*.js',
+'!'+dirs.ui+'/xplain.io/src/cloudera-ui/**/*.js'];
 
 
 
@@ -143,8 +143,9 @@ gulp.task('vm-setup', function(){
 
 gulp.task("eslint", function(){
   var config = {
-		configFile: dirs.ui+'/xplain.io/.eslintrc.json',
-    fix: fixEslint
+		configFile: dirs.ui+'/.eslintrc.json',
+    fix: fixEslint,
+    quiet: true // Hides warnings showing only errors
   };
   return gulp.src(jshintSrc)
 		.pipe(eslint(config))
