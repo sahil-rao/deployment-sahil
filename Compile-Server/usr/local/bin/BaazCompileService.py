@@ -165,6 +165,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
                 sendToElastic(connection1, redis_conn, tenant, uid,
                               table_entity, tablename, EntityType.SQL_TABLE)
                 redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
+                redis_conn.setEntityProfile(table_entity.eid, {"name": tablename})
                 tableCount = tableCount + 1
 
         if column_entity is None:
@@ -181,6 +182,7 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
                               column_entity, column_entity_name, EntityType.SQL_TABLE_COLUMN)
                 clog.debug("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))
                 redis_conn.createEntityProfile(column_entity.eid, "SQL_TABLE_COLUMN")
+                redis_conn.setEntityProfile(column_entity.eid, {"name": column_entity_name})
                 redis_conn.createRelationship(table_entity.eid, column_entity.eid, "TABLE_COLUMN")
                 redis_conn.setRelationship(table_entity.eid, column_entity.eid,
                                            "TABLE_COLUMN", {'weight':1, "columnName":column_entity.columnName})
@@ -272,6 +274,7 @@ def processTableSet(tableset, ch, mongoconn, redis_conn, tenant, uid, entity, is
                 sendToElastic(connection1, redis_conn, tenant, uid,
                               table_entity, tablename, EntityType.SQL_TABLE)
                 redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
+                redis_conn.setEntityProfile(table_entity.eid, {"name": tablename})
                 '''
                 Incrementing by 0 to set the secondary sort key.
                 This way it does not need to be passed in later.
@@ -459,6 +462,7 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
             sendToElastic(connection1, redis_conn, tenant, uid,
                           view_entity, viewname, EntityType.SQL_TABLE)
             redis_conn.createEntityProfile(view_entity.eid, "SQL_TABLE")
+            redis_conn.setEntityProfile(view_entity.eid, {"name": viewname})
             #incrementing by 0 so secondary sort_key is set.
             redis_conn.incrEntityCounterWithSecKey(view_entity.eid,
                                                    "instance_count",
@@ -611,6 +615,7 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
             sendToElastic(connection1, redis_conn, tenant, uid,
                           table_entity, tablename, EntityType.SQL_TABLE)
             redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
+            redis_conn.setEntityProfile(table_entity.eid, {"name": tablename})
             redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
             tableCount = tableCount + 1
 
