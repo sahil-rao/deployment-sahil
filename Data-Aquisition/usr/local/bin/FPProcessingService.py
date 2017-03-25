@@ -230,8 +230,9 @@ class callback_context():
         Self.queryNumThreshold = 50000
         Self.header_info = clean_header(header_info)
         Self.delimiter = delimiter
-        Self.col_stat_table_name_list = []
-        Self.table_stat_table_name_list = []
+        Self.names_dict = {'columns': set(), 'tables': set()}
+        Self.table_name_set = set()
+        Self.column_name_set = set()
         Self.compiler_to_use = get_compiler(Self.sourcePlatform)
         Self.clog = LoggerCustomAdapter(logging.getLogger(__name__), {'tag': 'dataacquisitionservice', 'tenant': tenant, 'uid':uid})
         Self.zattrs = zattrs
@@ -312,15 +313,28 @@ class callback_context():
             #check if this are table or column stats
             Self.mongoconn.db.entities.update({"custom_id": query_stats['custom_id']},{'$set':{'profile.stats': query_stats}})
 
+    def increment_total_count(Self, key_name, stat_name):
+        '''
+        Increment total kets and add this to the keys in set.
+        '''
+        if key_name not in Self.names_dict[stat_name]:
+            Self.redis_conn.incrEntityCounter(Self.uid,
+                                              "Compiler.%s.total%s"%(Self.compiler_to_use,
+                                                                     stat_name.title()),
+                                              incrBy=1)
+            Self.names_dict[stat_name].add(key_name)
+
     def stats_callback(Self, stats):
         #mark upload stats with stats file
-        Self.redis_conn.setEntityProfile(Self.uid, { "StatsFileProcessed":1})
+        Self.redis_conn.setEntityProfile(Self.uid, {"StatsFileProcessed": 1})
         #check if this are table or column stats
         if 'column_name' in stats:
             column_entry = {}
             table_name = stats['table_name'].lower()
             column_name = stats['column_name'].lower()
             table_entity = Self.mongoconn.getEntityByName(table_name)
+            Self.increment_total_count(table_name, 'tables')
+
             if table_entity is None:
                 #this means table doesnt not exsist create it
                 eid = IdentityService.getNewIdentity(Self.tenant, True)
@@ -339,14 +353,13 @@ class callback_context():
                 #updated the upload stats for table
                 Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.newTables"%(Self.compiler_to_use), incrBy=1)
             else:
-                if table_name not in Self.col_stat_table_name_list:
-                    #updated the upload stats for table
-                    Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.totalTables"%(Self.compiler_to_use), incrBy=1)
-                    Self.col_stat_table_name_list.append(table_name)
+                #no need to do anything here.
+                pass
 
             #check if column is already present or not
             column_entity_name = table_name + "." + column_name
             column_entity = Self.mongoconn.getEntityByName(column_entity_name)
+            Self.increment_total_count(column_entity_name, 'columns')
 
             if column_entity is None:
                 eid = IdentityService.getNewIdentity(Self.tenant, True)
@@ -374,14 +387,13 @@ class callback_context():
             else:
                 #update table entity with stats info in it
                 Self.mongoconn.db.entities.update({"eid": column_entity.eid},{'$set':{'stats': stats}})
-                #updated the upload stats for column
-                Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.totalColumns"%(Self.compiler_to_use), incrBy=1)
         else:
             #Query mongo based to table name in order to update table stats
             if 'TABLE_NAME' not in stats:
                 return
             table_name = stats['TABLE_NAME'].lower()
             table_entity = Self.mongoconn.getEntityByName(table_name)
+            Self.increment_total_count(table_name, 'tables')
 
             if table_entity is None:
                 #create table entity with stats info in it
@@ -405,10 +417,6 @@ class callback_context():
             else:
                 #update table entity with stats info in it
                 Self.mongoconn.db.entities.update({"eid": table_entity.eid},{'$set':{'stats': stats}})
-                if table_name not in Self.table_stat_table_name_list:
-                    #updated the upload stats for table
-                    Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.totalTables"%(Self.compiler_to_use), incrBy=1)
-                    Self.table_stat_table_name_list.append(table_name)
 
     def callback(Self, eid, update=False, name=None, etype=None, data=None, header_info=None):
 
