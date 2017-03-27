@@ -51,13 +51,15 @@ def getMatchingDocuments(entities):
 
 
 def formatDataforEmail(uploadInfoDict):
-    htmlStr = '<html><body>' 
+    htmlStr = '<html><body>'
     for user in uploadInfoDict:
-        htmlStr += '<table border="2" style="width:300px"><tr><td></td><td>' + user
-        htmlStr += '</td><td></td></tr><tr><th>File</th> <th>Queries Uploaded</th> <th>Time</th></tr>'
+        htmlStr += '<table border="2" style="width:300px"><tr><td colspan="4">' + user
+        htmlStr += '</td></tr><tr><th>File</th> <th>Vendor</th> <th>Queries Uploaded</th> <th>Time</th></tr>'
         for upload in uploadInfoDict[user]:
             htmlStr += '<tr><td>'
             htmlStr += upload['filename']
+            htmlStr += '</td> <td>'
+            htmlStr += str(upload['vendor_info'])
             htmlStr += '</td> <td>'
             htmlStr += str(upload['queriesUploaded'])
             htmlStr += '</td> <td>'
