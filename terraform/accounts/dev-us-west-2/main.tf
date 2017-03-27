@@ -50,14 +50,23 @@ module "common" {
 
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
 
-    logging_elasticsearch_version = "v005"
-    logging_elasticsearch_ami = "ami-23d00643"
+    logging_elasticsearch_version = "v013"
+    logging_elasticsearch_ami = "ami-1252c772"
+    logging_elasticsearch_min_size = 3
+    logging_elasticsearch_max_size = 5
+    logging_elasticsearch_desired_capacity = 3
 
-    logging_redis_version = "v005"
-    logging_redis_ami = "ami-4bdf092b"
+    logging_redis_version = "v013"
+    logging_redis_ami = "ami-3d50c55d"
+    logging_redis_min_size = 3
+    logging_redis_max_size = 5
+    logging_redis_desired_capacity = 3
 
-    redis_cache_version = "v005"
-    redis_cache_ami = "ami-4bdf092b"
+    redis_cache_version = "v013"
+    redis_cache_ami = "ami-3d50c55d"
+    logging_redis_min_size = 1
+    logging_redis_max_size = 5
+    logging_redis_desired_capacity = 3
 
     # Datadog
     datadog_api_key = "${var.datadog_api_key}"

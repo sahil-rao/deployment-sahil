@@ -21,7 +21,7 @@ data "template_file" "user_data" {
         datadog_api_key = "${var.datadog_api_key}"
         redis_backup_file = "${var.backup_file}"
         redis_quorum_size = "${var.quorum_size}"
-        redis_backups_enabled = "${var.backups_enabled}"
+        redis_backups_enabled = "${var.backups_enabled ? "true" : ""}"
     }
 }
 
