@@ -110,6 +110,11 @@
         },
         {
             "type": "shell",
+            "script": "../scripts/setup_boto.sh",
+            "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}"
+        },
+        {
+            "type": "shell",
             "script": "../scripts/reboot.sh",
             "execute_command": "sudo chmod +x {{ .Path }}; sudo {{ .Vars }} {{ .Path }}",
             "expect_disconnect": true
