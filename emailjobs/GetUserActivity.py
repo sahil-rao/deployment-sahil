@@ -46,9 +46,12 @@ recipients_list = [
 ]
 
 
-def formatDataforEmail(userInfoDict, top_users_by_queries, top_users_by_uploads, users_by_domain, top_users_by_logins, top_users_by_logouts):
+def formatDataforEmail(duration, userInfoDict, top_users_by_queries, top_users_by_uploads, users_by_domain, top_users_by_logins, top_users_by_logouts):
     htmlStr = '<html><body>'
-    htmlStr += '<h1><font color="#660000">User Activity Info for a Week</font></h1>'
+    htmlStr += '<h1><font color="#660000">'
+    htmlStr += duration
+    htmlStr += ' User Activity Info'
+    htmlStr += '</font></h1>'
     
     htmlStr += '<h3><font color="#0000FF">Top Users by number of queries</font></h3>'
     htmlStr += '<table border="2" style="width:300px">'
@@ -129,13 +132,13 @@ def formatDataforEmail(userInfoDict, top_users_by_queries, top_users_by_uploads,
 
     return htmlStr
 
-def sendEmail(formattedData):
+def sendEmail(formattedData, duration):
 
     fromAddress = "no-reply-data@cloudera.com" 
     password = "D8eH5C8T"
 
     msg = MIMEMultipart('alternative')
-    msg['Subject'] = 'Weekly User Activity Update'
+    msg['Subject'] = duration + ' User Activity Update'
     msg['From'] = fromAddress
     msg['To'] = ', '.join(recipients_list)
     part2 = MIMEText(formattedData, 'html')
@@ -157,11 +160,14 @@ def filter_users_by_domain(user_info):
         filter_domain_dict[domain][key] = value
     return filter_domain_dict
 
-def oneWeekAgo():
-    oneWeekInMilliSeconds = 7 * 24 * 60 * 60 * 1000
-    return time.time() * 1000 - oneWeekInMilliSeconds
+def howLongAgo(duration):
+    if duration == 'Weekly':
+        timeInMilliSeconds = 7 * 24 * 60 * 60 * 1000
+    elif duration == 'Monthly':
+        timeInMilliSeconds = 30 * 7 * 24 * 60 * 60 * 1000
+    return time.time() * 1000 - timeInMilliSeconds
 
-def execute():
+def execute(duration):
     '''
     Returns the details of the query with give entity_id.
     '''
@@ -177,7 +183,7 @@ def execute():
             tclient = getMongoServer(tenant)
             db = tclient[str(tenant)]
             uploadStats = db.uploadStats
-            timeLimit = oneWeekAgo()
+            timeLimit = howLongAgo(duration)
             upload_cursor = uploadStats.find({"timestamp": {"$gte": timeLimit}}, {"uid":1, "total_queries":1})
             for upload in upload_cursor:
                 if 'uid' not in upload:
@@ -223,13 +229,13 @@ def execute():
         #make sure we have atleast either of sorted data.
         if (top_users_by_queries or top_users_by_uploads or top_users_by_logins or 
             top_users_by_logouts or users_by_domain):
-            formattedData = formatDataforEmail(t_dict, top_users_by_queries, top_users_by_uploads, users_by_domain, 
+            formattedData = formatDataforEmail(duration, t_dict, top_users_by_queries, top_users_by_uploads, users_by_domain, 
                                                top_users_by_logins, top_users_by_logouts) 
-            sendEmail(formattedData)
+            sendEmail(formattedData, duration)
     return t_dict
 
 if __name__ == '__main__':
-    top_uploads = execute()
+    top_uploads = execute(sys.argv[1])
     print "details", json.dumps(top_uploads, indent=2)
     '''
     top_queries, top_uploads = execute()
