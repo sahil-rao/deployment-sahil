@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import click
 import elasticsearch
 import logging
+import time
 from .ssh import TunnelDown
 from .util import prompt
 
@@ -221,3 +222,61 @@ def change_master_quorum(ctx, dbsilo_name, quorum):
         })
 
         print 'minimum master nodes changed'
+
+
+@cli.command('decommission')
+@click.argument('dbsilo_name', required=True)
+@click.argument('ips', nargs=-1)
+@click.pass_context
+def decommission(ctx, dbsilo_name, ips):
+    dbsilo = ctx.obj['cluster'].dbsilo(dbsilo_name)
+    ips = set(ips)
+
+    with dbsilo.elasticsearch_cluster().master() as es_client:
+        excluded_ips = es_client.cluster.get_settings() \
+            .get('transient', {}) \
+            .get('cluster', {}) \
+            .get('routing', {}) \
+            .get('allocation', {}) \
+            .get('exclude', {}) \
+            .get('_ip')
+
+        if not excluded_ips:
+            print 'no excluded ips'
+        else:
+            excluded_ips = sorted(excluded_ips.split(','))
+            print 'excluded ips are', ' '.join(excluded_ips)
+            excluded_ips = set(excluded_ips)
+
+        if ips == excluded_ips:
+            print 'no changes needed'
+        else:
+            msg = 'are you sure you want to apply? [yes/no]: '
+            if not prompt(msg, ctx.obj['yes']):
+                ctx.fail('elasticsearch excluded ips unchanged')
+
+            es_client.cluster.put_settings({
+                'transient': {
+                    'cluster.routing.allocation.exclude._ip':
+                        ','.join(sorted(ips)),
+                }
+            })
+
+            print 'excluded ips changed'
+
+        print 'waiting for shards to migrate off hosts'
+
+        while True:
+            shards = es_client.cat.shards(h='ip', format='json')
+            migrating = False
+            for ip in ips:
+                count = sum(1 for shard in shards if shard['ip'] == ip)
+                if count > 0:
+                    migrating = True
+                    print 'ip %s has %s shards' % (ip, count)
+
+            if migrating:
+                print 'sleeping'
+                time.sleep(10)
+            else:
+                break
