@@ -1690,7 +1690,7 @@ def updateRedisforHAQR(redis_conn,data,tenant,eid):
                         redis_conn.incrEntityCounter(eid, "HAQRimpalaQueryByClauseWhereFailure", sort=False, incrBy=1)
     return
 
-def compile_query(mongoconn, redis_conn, compilername, data_dict, dbName=None):
+def compile_query(mongoconn, redis_conn, compilername, data_dict, dbName):
     """
     Interact with the compiler service to compile the query.
     Column resolution is performed as a second pass if :
@@ -1763,7 +1763,7 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
             tableName = str(table_entry["TableName"])
             if dbName not in table_dict:
                 table_dict[dbName] = {}
-            table_dict[dbName][tableName] = []
+            table_dict[dbName][dbName + "." + tableName] = []
         else:
             dbName = "<default>"
             tableName = str(table_entry["TableName"])
