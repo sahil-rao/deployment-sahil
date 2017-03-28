@@ -157,6 +157,10 @@ def filter_users_by_domain(user_info):
         filter_domain_dict[domain][key] = value
     return filter_domain_dict
 
+def oneWeekAgo():
+    oneWeekInMilliSeconds = 7 * 24 * 60 * 60 * 1000
+    return time.time() * 1000 - oneWeekInMilliSeconds
+
 def execute():
     '''
     Returns the details of the query with give entity_id.
@@ -171,11 +175,10 @@ def execute():
         tenants = tenant_data['organizations']
         for tenant in tenants:
             tclient = getMongoServer(tenant)
-            db = tclient[tenant]
+            db = tclient[str(tenant)]
             uploadStats = db.uploadStats
-            upload_cursor = uploadStats.find({ 'tenant': tenant, '$where': 'function ()'+ 
-                                             '{ return Date.now() - this.timestamp < (7 * 24 * 60 * 60 * 1000)  }'
-                                             }, {"uid":1, "total_queries":1})
+            timeLimit = oneWeekAgo()
+            upload_cursor = uploadStats.find({"timestamp": {"$gte": timeLimit}}, {"uid":1, "total_queries":1})
             for upload in upload_cursor:
                 if 'uid' not in upload:
                     continue
