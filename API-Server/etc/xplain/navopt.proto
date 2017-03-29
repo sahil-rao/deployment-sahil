@@ -102,7 +102,8 @@ message GetTenantResponse {
 
 message GetTopDataBasesRequest {
   string tenant = 1;
-  int32 limit = 2;
+  int32 pageSize = 2;
+  string startingToken = 3;
 }
 
 // Top table info for a given table
@@ -122,7 +123,8 @@ message GetTopDataBasesResponse {
 message GetTopTablesRequest {
   string tenant = 1;
   string dbName = 2;
-  int32 limit = 3;
+  int32 pageSize = 3;
+  string startingToken = 4;
 }
 
 message TopTables {
@@ -141,7 +143,8 @@ message GetTopTablesResponse {
 
 message GetTopQueriesRequest {
   string tenant = 1;
-  int32 limit = 2;
+  int32 pageSize = 2;
+  string startingToken = 3;
 }
 
 message TopQueries {
@@ -164,7 +167,8 @@ message GetTopColumnsRequest {
   string dbName = 2;
   string tableName = 3;
   repeated string dbTableList = 4;
-  int32 limit = 5;
+  int32 pageSize = 5;
+  string startingToken = 6;
 }
 
 message TopColumns {
@@ -197,7 +201,8 @@ message GetTopFiltersRequest {
   string tableName = 3;
   repeated string colList = 4;
   repeated string dbTableList = 5;
-  int32 limit = 6;
+  int32 pageSize = 6;
+  string startingToken = 7;
 }
 
 message ValGroup {
@@ -228,7 +233,8 @@ message GetTopFiltersResponse {
 message GetTopJoinsRequest {
   string tenant = 1;
   repeated string dbTableList = 2;
-  int32 limit = 3;
+  int32 pageSize = 3;
+  string startingToken = 4;
 }
 
 message JoinCols {
@@ -253,7 +259,8 @@ message GetTopJoinsResponse {
 message GetTopAggsRequest {
   string tenant = 1;
   repeated string dbTableList = 2;
-  int32 limit = 3;
+  int32 pageSize = 3;
+  string startingToken = 4;
 }
 
 message AggInfo {
@@ -327,8 +334,8 @@ message RiskData {
 }
 
 message GetQueryRiskResponse {
-  RiskData hiveRisk = 1;
-  RiskData impalaRisk = 2;
+  repeated RiskData hiveRisk = 1;
+  repeated RiskData impalaRisk = 2;
 }
 
 message GetDesignBucketRequest {
