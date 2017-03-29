@@ -1,13 +1,20 @@
 from __future__ import absolute_import
 
+import click
 import logging
 import redis
+import time
 from .ssh import TunnelDown
+from .util import prompt
 
 LOG = logging.getLogger(__name__)
 
 
 class ConnectionClosed(Exception):
+    pass
+
+
+class UnknownRedisInstance(Exception):
     pass
 
 
@@ -53,6 +60,14 @@ class RedisCluster(object):
 
         for ip, tunnel in tunnels:
             yield RedisSentinel(self.cluster.bastion, tunnel, ip, port)
+
+    def sentinel_client(self, ip, port=26379):
+        for instance in self.instances:
+            if instance.private_ip_address == ip:
+                tunnel = self.cluster.bastion.tunnel(ip, port)
+                return RedisSentinel(self.cluster.bastion, tunnel, ip, port)
+
+        raise UnknownRedisInstance(ip)
 
 
 # FIXME: Remove once we get rid of the old-style instances
@@ -112,3 +127,137 @@ class Redis(object):
 class RedisSentinel(Redis):
     def __init__(self, bastion, tunnel, host, port):
         super(RedisSentinel, self).__init__(bastion, tunnel, host, port)
+
+
+@click.group()
+def cli():
+    pass
+
+
+@cli.command('decommission')
+@click.argument('dbsilo_name', required=True)
+@click.argument('ips', nargs=-1)
+@click.pass_context
+def decommission(ctx, dbsilo_name, ips):
+    cluster = ctx.obj['cluster']
+    dbsilo = cluster.dbsilo(dbsilo_name)
+    ips = set(ips)
+
+    redis_cluster = dbsilo.redis_cluster()
+    old_instance_count = len(redis_cluster.instances)
+    new_instance_count = old_instance_count - len(ips)
+    quorum = (old_instance_count / 2) + 1
+
+    print 'instance count:', old_instance_count
+    print 'quorum:', quorum
+
+    if new_instance_count < quorum:
+        ctx.fail('cannot reduce instance count below quorum')
+
+    # Make sure the IPs are in this redis cluster
+    for ip in ips:
+        found = False
+        for instance in redis_cluster.instances:
+            if ip == instance.private_ip_address:
+                found = True
+                break
+
+        if not found:
+            ctx.fail('ip is not in redis cluster')
+
+    # First, create sentinel clients all but the node we're decommissioning.
+    sentinel_clients = {c.host: c for c in redis_cluster.sentinel_clients()}
+
+    # Make sure sentinels all agree on who is the master
+    if not _sentinels_agree_on_master(redis_cluster, sentinel_clients):
+        ctx.fail('sentinels do not agree who is master')
+
+    msg = 'are you sure you want to apply? [yes/no]: '
+    if not prompt(msg, ctx.obj['yes']):
+        ctx.fail('redis cluster unchanged')
+
+    for ip in ips:
+        _decommission_ip(
+            ctx,
+            ip,
+            cluster.bastion,
+            redis_cluster,
+            sentinel_clients)
+
+
+def _decommission_ip(ctx, ip, bastion, cluster, sentinel_clients):
+    # We decommission according to this document:
+    # https://redis.io/topics/sentinel#adding-or-removing-sentinels
+
+    _decommission_sentinel(ctx, ip, bastion, cluster, sentinel_clients)
+    _decommission_server(ctx, ip, bastion, cluster, sentinel_clients)
+
+
+def _decommission_sentinel(ctx, ip, bastion, cluster, sentinel_clients):
+    # Shut down our sentinel
+    bastion.check_call([
+        'ssh',
+        ip,
+        '/usr/bin/sudo',
+        '/usr/bin/service',
+        'redis-sentinel',
+        'stop'])
+
+    # Remove the decommissioned sentinel from our list
+    del sentinel_clients[ip]
+
+    _reset_sentinels(ctx, cluster, sentinel_clients)
+
+    print 'sentinel %s decommissioned' % ip
+
+
+def _decommission_server(ctx, ip, bastion, cluster, sentinel_clients):
+    # Shut down our server
+    bastion.check_call([
+        'ssh',
+        ip,
+        '/usr/bin/sudo',
+        '/usr/bin/service',
+        'redis-server',
+        'stop'])
+
+    _reset_sentinels(ctx, cluster, sentinel_clients)
+
+    print 'server %s decommissioned' % ip
+
+
+def _reset_sentinels(ctx, cluster, sentinel_clients):
+    # Next, reset each of the sentinels
+    for client in sentinel_clients.itervalues():
+        print 'resetting', client
+        if client.execute_command('SENTINEL RESET *') != 1:
+            ctx.fail('sentinel reset failed')
+
+        print 'sleeping 30 seconds'
+        time.sleep(30)
+
+        for i in xrange(5):
+            if _sentinels_agree_on_master(cluster, sentinel_clients):
+                break
+            else:
+                print 'sentinels do not yet agree on master, sleeping'
+                time.sleep(10)
+        else:
+            ctx.fail('sentinels do not agree on a master')
+
+
+def _sentinels_agree_on_master(cluster, sentinel_clients):
+    master_name = cluster.master_hostname()
+
+    print 'make sure all sentinels agree on the master'
+    master_ips = [(c.host, c.sentinel_master(master_name)['ip'])
+                  for c in sentinel_clients.itervalues()]
+
+    master_ip = master_ips[0][1]
+    sentinels_agree = True
+    for host, ip in master_ips:
+        print '%s thinks %s is master' % (host, ip)
+        if ip != master_ip:
+            sentinels_agree = False
+
+    return sentinels_agree

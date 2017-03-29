@@ -115,6 +115,12 @@ cli.add_command(
 )
 
 cli.add_command(
+    click.CommandCollection(
+        'redis',
+        sources=[navopt_admin.redis.cli])
+)
+
+cli.add_command(
     navopt_admin.health_check.cli.health_check
 )
 

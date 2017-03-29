@@ -76,16 +76,31 @@ class Bastion(BaseBastion):
 
             return ProcessTunnel(process, self._local_host, local_port)
 
-    def resolve_hostname(self, hostname):
-        cmd = [
+    def _wrap_cmd(self, cmd):
+        ssh_cmd = [
             'ssh',
             '-q',
             '-o', 'StrictHostKeyChecking=no',
             self._bastion,
-            'host', pipes.quote(hostname)]
+        ]
+        ssh_cmd.extend(pipes.quote(arg) for arg in cmd)
+        return ssh_cmd
+
+    def check_call(self, cmd):
+        cmd = self._wrap_cmd(cmd)
         LOG.debug('running: %s', ' '.join(cmd))
 
-        stdout = subprocess.check_output(cmd).strip()
+        return subprocess.check_call(cmd)
+
+    def check_output(self, cmd):
+        cmd = self._wrap_cmd(cmd)
+        LOG.debug('running: %s', ' '.join(cmd))
+
+        return subprocess.check_output(cmd)
+
+    def resolve_hostname(self, hostname):
+        cmd = ['host', hostname]
+        stdout = self.check_output(cmd).strip()
 
         m = re.search('^.* has address (.*)$', stdout, re.MULTILINE)
         if m:
@@ -98,11 +113,17 @@ class NoopBastion(BaseBastion):
     def tunnel(self, remote_host, remote_port):
         return NoopTunnel(remote_host, remote_port)
 
+    def check_call(self, cmd):
+        LOG.debug('running: %s', ' '.join(cmd))
+        return subprocess.check_call(cmd)
+
+    def check_output(self, cmd):
+        LOG.debug('running: %s', ' '.join(cmd))
+        return subprocess.check_output(cmd)
+
     def resolve_hostname(self, hostname):
         cmd = ['host', pipes.quote(hostname)]
-        LOG.debug('running: %s', ' '.join(cmd))
-
-        stdout = subprocess.check_output(cmd).strip()
+        stdout = self.check_output(cmd).strip()
 
         m = re.match('.* has address (.*)$', stdout)
         if m:
