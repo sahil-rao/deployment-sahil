@@ -156,6 +156,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             if 'workloadPercent' in entry:
                 tables.workloadPercent = entry['workloadPercent']
             ret.results.extend([tables])
+        if 'next' in response:
+            ret.nextToken = response['next']
         #print "Ret:", ret, "tables:", ret.results
         return ret
 
@@ -228,6 +230,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             if 'eid' in entry:
                 db.eid = entry['eid']
             ret.results.extend([db])
+        if 'next' in response:
+            ret.nextToken = response['next']
         #print "Ret:", ret, "tables:", ret.results
         return ret
 
@@ -235,8 +239,10 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant 
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopDataBases'}
-        if request.limit != 0:
-            msg_dict['limit'] = request.limit
+        if request.pageSize != 0:
+            msg_dict['pageSize'] = request.pageSize
+        if request.startingToken != "":
+            msg_dict['next'] = request.startingToken
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_databases(loads(response))
@@ -249,8 +255,10 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopTables'}
         if request.dbName != "":
             msg_dict['dbname'] = request.dbName
-        if request.limit != 0:
-            msg_dict['limit'] = request.limit
+        if request.pageSize != 0:
+            msg_dict['pageSize'] = request.pageSize
+        if request.startingToken != "":
+            msg_dict['next'] = request.startingToken
         print "Sending Msg Dict:", msg_dict
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
@@ -283,6 +291,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                 queries.customId = entry['custom_id']
             queries.querySignature.extend(entry['character'])
             ret.results.extend([queries])
+        if 'next' in response:
+            ret.nextToken = response['next']
         #print "Ret:", ret, "tables:", ret.results
         return ret
 
@@ -290,8 +300,10 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant 
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopQueries'}
-        if request.limit != 0:
-            msg_dict['limit'] = request.limit
+        if request.pageSize != 0:
+            msg_dict['pageSize'] = request.pageSize
+        if request.startingToken != "":
+            msg_dict['next'] = request.startingToken
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_queries(loads(response))
@@ -357,6 +369,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                 #ret.joinColumns.extend([columns])
                 self.get_col_info(ret.filterColumns.add(), value)
         #print "Ret:", ret, "tables:", ret.results
+        if 'next' in entry:
+            ret.nextToken = entry['next']
         return ret
 
     def getTopColumns(self, request, context):
@@ -369,8 +383,10 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             msg_dict['tablename'] = request.tableName
         if request.dbTableList != []:
             msg_dict['dbTblist'] = list(request.dbTableList)
-        if request.limit != 0:
-            msg_dict['limit'] = request.limit
+        if request.pageSize != 0:
+            msg_dict['pageSize'] = request.pageSize
+        if request.startingToken != "":
+            msg_dict['next'] = request.startingToken
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_columns(loads(response))
@@ -411,6 +427,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                             #pop_value.group.extend([group_val])
                     #filters.popularValues.extend([pop_value])
             #ret.results.extend([filters])
+        if 'next' in response:
+            ret.nextToken = response['next']
         print "Ret:", ret, "tables:", ret.results
         return ret
 
@@ -426,8 +444,10 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             msg_dict['columns'] = list(request.colList)
         if request.dbTableList != []:
             msg_dict['dbTblist'] = list(request.dbTableList)
-        if request.limit != 0:
-            msg_dict['limit'] = request.limit
+        if request.pageSize != 0:
+            msg_dict['pageSize'] = request.pageSize
+        if request.startingToken != "":
+            msg_dict['next'] = request.startingToken
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_filters(loads(response))
@@ -461,6 +481,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                         agg_info.databaseName = val['databaseName']
             ret.results.extend([agg])
         #print "Ret:", ret, "tables:", ret.results
+        if 'next' in response:
+            ret.nextToken = response['next']
         return ret
 
     def getTopAggs(self, request, context):
@@ -469,8 +491,10 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopAccessPatterns', 'pattern': 'AggregateFunction'}
         if request.dbTableList != []:
             msg_dict['dbTblist'] = list(request.dbTableList)
-        if request.limit != 0:
-            msg_dict['limit'] = request.limit
+        if request.pageSize != 0:
+            msg_dict['pageSize'] = request.pageSize
+        if request.startingToken != "":
+            msg_dict['next'] = request.startingToken
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_top_aggs(loads(response))
@@ -503,6 +527,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             if 'queryIds' in entry:
                 join.queryIds.extend(entry['queryIds'])
             ret.results.extend([join])
+        if 'next' in response:
+            ret.nextToken = response['next']
         print "Ret:", ret, "tables:", ret.results
         return ret
 
@@ -512,8 +538,10 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopJoins'}
         if request.dbTableList != []:
             msg_dict['dbTblist'] = list(request.dbTableList)
-        if request.limit != 0:
-            msg_dict['limit'] = request.limit
+        if request.pageSize != 0:
+            msg_dict['pageSize'] = request.pageSize
+        if request.startingToken != "":
+            msg_dict['next'] = request.startingToken
         print "Msg Dict:", msg_dict
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
@@ -610,21 +638,25 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
     def convert_QueryRisk(self, response):
         ret = navopt_pb2.GetQueryRiskResponse()
         if 'hive_risk' in response:
-            #ret.hiveRisk = navopt_pb2.RiskData()
-            if 'risk' in response['hive_risk']:
-                ret.hiveRisk.risk = response['hive_risk']['risk']
-            if 'riskAnalysis' in response['hive_risk']:
-                ret.hiveRisk.riskAnalysis = response['hive_risk']['riskAnalysis']
-            if 'riskRecommendation' in response['hive_risk']:
-                ret.hiveRisk.riskRecommendation = response['hive_risk']['riskRecommendation']
+            for entry in response['hive_risk']:
+                risk = navopt_pb2.RiskData()
+                if 'risk' in entry:
+                    risk.risk = entry['risk']
+                if 'riskAnalysis' in entry:
+                    risk.riskAnalysis = entry['riskAnalysis']
+                if 'riskRecommendation' in entry:
+                    risk.riskRecommendation = entry['riskRecommendation']
+                ret.hiveRisk.extend([risk])
         if 'impala_risk' in response:
-            #ret.impalaRisk = navopt_pb2.RiskData()
-            if 'risk' in response['impala_risk']:
-                ret.impalaRisk.risk = response['impala_risk']['risk']
-            if 'riskAnalysis' in response['impala_risk']:
-                ret.impalaRisk.riskAnalysis = response['impala_risk']['riskAnalysis']
-            if 'riskRecommendation' in response['impala_risk']:
-                ret.impalaRisk.riskRecommendation = response['impala_risk']['riskRecommendation']
+            for entry in response['impala_risk']:
+                risk = navopt_pb2.RiskData()
+                if 'risk' in entry:
+                    risk.risk = entry['risk']
+                if 'riskAnalysis' in entry:
+                    risk.riskAnalysis = entry['riskAnalysis']
+                if 'riskRecommendation' in entry:
+                    risk.riskRecommendation = entry['riskRecommendation']
+                ret.impalaRisk.extend([risk])
         return ret
 
     def getQueryRisk(self, request, context):
