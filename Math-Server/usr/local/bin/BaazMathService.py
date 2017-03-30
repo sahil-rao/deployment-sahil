@@ -5,7 +5,6 @@ Parse the Hadoop logs from the given path and populate flightpath
 Usage : FPProcessing.py <tenant> <log Directory>
 """
 from flightpath import cluster_config
-from flightpath.parsing.hadoop.HadoopConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.XplainBlockingConnection import *
 from flightpath.services.RotatingS3FileHandler import *
