@@ -51,7 +51,7 @@ if CLUSTER_MODE is None:
 if CLUSTER_NAME is not None:
     bucket_location = CLUSTER_NAME
 
-DEFAULT_QUERY_LIMIT = 100000
+DEFAULT_QUERY_LIMIT = 150000
 
 if usingAWS:
     from boto.s3.key import Key
