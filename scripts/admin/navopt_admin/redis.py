@@ -97,7 +97,7 @@ class Redis(object):
         try:
             self._tunnel.open()
         except TunnelDown:
-            LOG.exception('failed to open tunnel')
+            LOG.error('failed to open tunnel to %s:%s', self.host, self.port)
             self._conn = None
         else:
             self._conn = redis.StrictRedis(
@@ -123,6 +123,9 @@ class Redis(object):
     def __str__(self):
         return '{}:{}'.format(self.host, self.port)
 
+    def is_connected(self):
+        return self._conn is not None
+
 
 class RedisSentinel(Redis):
     def __init__(self, bastion, tunnel, host, port):
@@ -135,10 +138,11 @@ def cli():
 
 
 @cli.command('decommission')
+@click.option('--ignore-offline', default=False, is_flag=True)
 @click.argument('dbsilo_name', required=True)
 @click.argument('ips', nargs=-1)
 @click.pass_context
-def decommission(ctx, dbsilo_name, ips):
+def decommission(ctx, ignore_offline, dbsilo_name, ips):
     cluster = ctx.obj['cluster']
     dbsilo = cluster.dbsilo(dbsilo_name)
     ips = set(ips)
@@ -166,7 +170,21 @@ def decommission(ctx, dbsilo_name, ips):
             ctx.fail('ip is not in redis cluster')
 
     # First, create sentinel clients all but the node we're decommissioning.
-    sentinel_clients = {c.host: c for c in redis_cluster.sentinel_clients()}
+    sentinel_clients = {}
+    for ip in redis_cluster.instance_private_ips():
+        try:
+            sentinel_client = redis_cluster.sentinel_client(ip)
+        except TunnelIsDown:
+            if ignore_offline:
+                LOG.error('ip %s is offline', ip)
+                pass
+            else:
+                raise
+        else:
+            if sentinel_client.is_connected():
+                sentinel_clients[ip] = sentinel_client
+            else:
+                LOG.error('ip %s is offline', ip)
 
     # Make sure sentinels all agree on who is the master
     if not _sentinels_agree_on_master(redis_cluster, sentinel_clients):
