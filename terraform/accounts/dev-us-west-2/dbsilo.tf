@@ -39,11 +39,10 @@ module "dbsilo1" {
     elasticsearch_name = "${var.cluster_name}-dbsilo1-elasticsearch"
     elasticsearch_version = "v013"
     elasticsearch_ami_id = "ami-1252c772"
-    #elasticsearch_instance_type = "m3.xlarge"
     elasticsearch_instance_type = "t2.medium"
     elasticsearch_min_size = 0
-    elasticsearch_max_size = 6
-    elasticsearch_desired_capacity = 6
+    elasticsearch_max_size = 3
+    elasticsearch_desired_capacity = 3
     elasticsearch_ebs_optimized = false
 
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
@@ -91,11 +90,10 @@ module "dbsilo2" {
     elasticsearch_name = "${var.cluster_name}-dbsilo2-elasticsearch"
     elasticsearch_version = "v013"
     elasticsearch_ami_id = "ami-1252c772"
-    #elasticsearch_instance_type = "m3.xlarge"
     elasticsearch_instance_type = "t2.medium"
     elasticsearch_min_size = 0
-    elasticsearch_max_size = 5
-    elasticsearch_desired_capacity = 5
+    elasticsearch_max_size = 3
+    elasticsearch_desired_capacity = 3
     elasticsearch_ebs_optimized = false
 
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
