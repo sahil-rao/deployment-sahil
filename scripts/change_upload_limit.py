@@ -6,7 +6,7 @@ Script to change upload limits for all existing organizations in Mongo
 
 from flightpath.Provenance import getMongoServer
 
-DEFAULT_UPLOAD_LIMIT = 100000
+DEFAULT_UPLOAD_LIMIT = 150000
 
 
 def execute():
