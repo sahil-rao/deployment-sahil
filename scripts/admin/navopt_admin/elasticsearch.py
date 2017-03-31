@@ -198,7 +198,7 @@ def change_master_quorum(ctx, dbsilo_name, quorum):
             print 'no minimum master nodes set'
         else:
             current_quorum = int(current_quorum)
-            print 'minimum master nodes is ', current_quorum
+            print 'current quorum:', current_quorum
 
         if quorum == current_quorum:
             print 'no changes needed'
@@ -206,7 +206,7 @@ def change_master_quorum(ctx, dbsilo_name, quorum):
 
         node_counts = es_client.cluster.stats()['nodes']['count']
         master_nodes = node_counts['master_only'] + node_counts['master_data']
-        print 'master nodes is', master_nodes
+        print 'master nodes:', master_nodes
 
         if quorum < master_nodes / 2 + 1:
             ctx.fail('quorum must be >= master nodes / 2 + 1')
@@ -229,10 +229,23 @@ def change_master_quorum(ctx, dbsilo_name, quorum):
 @click.argument('ips', nargs=-1)
 @click.pass_context
 def decommission(ctx, dbsilo_name, ips):
-    dbsilo = ctx.obj['cluster'].dbsilo(dbsilo_name)
+    cluster = ctx.obj['cluster']
+    dbsilo = cluster.dbsilo(dbsilo_name)
     ips = set(ips)
 
-    with dbsilo.elasticsearch_cluster().master() as es_client:
+    if not ips:
+        ctx.fail('cannot decommission an empty list')
+
+    elasticsearch_cluster = dbsilo.elasticsearch_cluster()
+
+    with elasticsearch_cluster.master() as es_client:
+        quorum = es_client.cluster.get_settings() \
+            .get('persistent', {}) \
+            .get('discovery', {}) \
+            .get('zen', {}) \
+            .get('minimum_master_nodes', 1)
+        quorum = int(quorum)
+
         excluded_ips = es_client.cluster.get_settings() \
             .get('transient', {}) \
             .get('cluster', {}) \
@@ -241,42 +254,135 @@ def decommission(ctx, dbsilo_name, ips):
             .get('exclude', {}) \
             .get('_ip')
 
-        if not excluded_ips:
-            print 'no excluded ips'
+        if excluded_ips:
+            instance_ips = set(elasticsearch_cluster.instance_private_ips())
+            excluded_ips = set(ip for ip in excluded_ips.split(',')
+                               if ip in instance_ips)
+
+            print 'excluded ips are', ' '.join(sorted(excluded_ips))
         else:
-            excluded_ips = sorted(excluded_ips.split(','))
-            print 'excluded ips are', ' '.join(excluded_ips)
-            excluded_ips = set(excluded_ips)
+            excluded_ips = set()
+            print 'no excluded ips'
 
         if ips == excluded_ips:
             print 'no changes needed'
-        else:
-            msg = 'are you sure you want to apply? [yes/no]: '
-            if not prompt(msg, ctx.obj['yes']):
-                ctx.fail('elasticsearch excluded ips unchanged')
 
-            es_client.cluster.put_settings({
-                'transient': {
-                    'cluster.routing.allocation.exclude._ip':
-                        ','.join(sorted(ips)),
-                }
-            })
+        for ip in ips:
+            if ip not in excluded_ips:
+                print 'scheduling %s for decommissioning' % ip
+                excluded_ips.add(ip)
 
-            print 'excluded ips changed'
+        old_instance_count = len(elasticsearch_cluster.instances)
+        new_instance_count = old_instance_count - len(excluded_ips)
+
+        if new_instance_count < quorum:
+            ctx.fail('cannot reduce instance count below quorum %s' % quorum)
+
+        msg = 'are you sure you want to apply? [yes/no]: '
+        if not prompt(msg, ctx.obj['yes']):
+            ctx.fail('elasticsearch excluded ips unchanged')
+
+        _update_excluded_ips(es_client, ips)
 
         print 'waiting for shards to migrate off hosts'
+        _migrate_shards(es_client, ips)
+        _stop_elasticsearch(cluster.bastion, ips)
 
-        while True:
-            shards = es_client.cat.shards(h='ip', format='json')
-            migrating = False
-            for ip in ips:
-                count = sum(1 for shard in shards if shard['ip'] == ip)
-                if count > 0:
-                    migrating = True
-                    print 'ip %s has %s shards' % (ip, count)
 
-            if migrating:
-                print 'sleeping'
-                time.sleep(10)
-            else:
-                break
+@cli.command('recommission')
+@click.argument('dbsilo_name', required=True)
+@click.argument('ips', nargs=-1)
+@click.pass_context
+def recommission(ctx, dbsilo_name, ips):
+    cluster = ctx.obj['cluster']
+    dbsilo = cluster.dbsilo(dbsilo_name)
+    ips = set(ips)
+
+    elasticsearch_cluster = dbsilo.elasticsearch_cluster()
+
+    with elasticsearch_cluster.master() as es_client:
+        excluded_ips = es_client.cluster.get_settings() \
+            .get('transient', {}) \
+            .get('cluster', {}) \
+            .get('routing', {}) \
+            .get('allocation', {}) \
+            .get('exclude', {}) \
+            .get('_ip')
+
+        if excluded_ips:
+            instance_ips = set(elasticsearch_cluster.instance_private_ips())
+            excluded_ips = set(ip for ip in excluded_ips.split(',')
+                               if ip in instance_ips)
+            print 'excluded ips are', ' '.join(sorted(excluded_ips))
+        else:
+            excluded_ips = set()
+            print 'no excluded ips'
+
+        if ips == excluded_ips:
+            print 'no changes needed'
+
+        msg = 'are you sure you want to apply? [yes/no]: '
+        if not prompt(msg, ctx.obj['yes']):
+            ctx.fail('elasticsearch excluded ips unchanged')
+
+        for ip in ips:
+            if ip in excluded_ips:
+                excluded_ips.remove(ip)
+
+        _update_excluded_ips(es_client, excluded_ips)
+        _start_elasticsearch(cluster.bastion, ips)
+
+
+def _update_excluded_ips(es_client, ips):
+    es_client.cluster.put_settings({
+        'transient': {
+            'cluster.routing.allocation.exclude._ip':
+                ','.join(sorted(ips)),
+        }
+    })
+    print 'excluded ips changed'
+
+
+def _migrate_shards(es_client, ips):
+    while True:
+        shards = es_client.cat.shards(h='ip', format='json')
+        migrating = False
+        for ip in ips:
+            count = sum(1 for shard in shards if shard['ip'] == ip)
+            if count > 0:
+                migrating = True
+                print 'ip %s has %s shards' % (ip, count)
+
+        if migrating:
+            print 'sleeping'
+            time.sleep(10)
+        else:
+            break
+
+
+def _stop_elasticsearch(bastion, ips):
+    for ip in ips:
+        # Shut down our server
+        bastion.check_call([
+            'ssh',
+            ip,
+            '/usr/bin/sudo',
+            '/usr/bin/service',
+            'elasticsearch',
+            'stop'])
+
+        print 'server %s stopped' % ip
+
+
+def _start_elasticsearch(bastion, ips):
+    for ip in ips:
+        # Shut down our server
+        bastion.check_call([
+            'ssh',
+            ip,
+            '/usr/bin/sudo',
+            '/usr/bin/service',
+            'elasticsearch',
+            'start'])
+
+        print 'server %s started' % ip
