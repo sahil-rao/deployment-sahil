@@ -136,7 +136,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
 
     def convert_top_tables(self, response):
         ret = navopt_pb2.GetTopTablesResponse()
-        for entry in response:
+        for entry in response['ret_data']:
             #print "entry:", entry
             tables = navopt_pb2.TopTables()
             if 'columnCount' in entry:
@@ -214,7 +214,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
 
     def convert_top_databases(self, response):
         ret = navopt_pb2.GetTopDataBasesResponse()
-        for entry in response:
+        for entry in response['ret_data']:
             #print "entry:", entry
             db = navopt_pb2.TopDataBases()
             if 'instanceCount' in entry:
@@ -272,7 +272,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
 
     def convert_top_queries(self, response):
         ret = navopt_pb2.GetTopQueriesResponse()
-        for entry in response:
+        for entry in response['ret_data']:
             #print "entry:", entry
             queries = navopt_pb2.TopQueries()
             if 'impalaCompatible' in entry:
@@ -396,7 +396,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
 
     def convert_top_filters(self, response):
         ret = navopt_pb2.GetTopFiltersResponse()
-        for entry in response:
+        for entry in response['patterns']:
             #filters = navopt_pb2.TopFilters()
             filters = ret.results.add()
             if 'totalQueryCount' in entry:
@@ -428,7 +428,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                     #filters.popularValues.extend([pop_value])
             #ret.results.extend([filters])
         if 'next' in response:
-            ret.nextToken = response['next']
+            ret.nextToken = str(response['next'])
         print "Ret:", ret, "tables:", ret.results
         return ret
 
@@ -457,7 +457,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
 
     def convert_top_aggs(self, response):
         ret = navopt_pb2.GetTopAggsResponse()
-        for entry in response:
+        for entry in response['patterns']:
             #print "entry:", entry
             agg = navopt_pb2.TopAgg()
             if 'aggregateClause' in entry:
@@ -482,7 +482,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             ret.results.extend([agg])
         #print "Ret:", ret, "tables:", ret.results
         if 'next' in response:
-            ret.nextToken = response['next']
+            ret.nextToken = str(response['next'])
         return ret
 
     def getTopAggs(self, request, context):
@@ -504,7 +504,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
 
     def convert_top_joins(self, response):
         ret = navopt_pb2.GetTopJoinsResponse()
-        for entry in response:
+        for entry in response['ret_data']:
             join = navopt_pb2.TopJoins()
             if 'totalQueryCount' in entry:
                 join.totalQueryCount = entry['totalQueryCount']
@@ -700,6 +700,9 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         #get Risk analysis
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.tenant 
         msg_dict = {'tenant':str(request.tenant), 'opcode':'QueryRisk', 'query':request.query}
+        if request.sourcePlatform != "":
+            msg_dict['source_platform'] = request.sourcePlatform
+        print "msg dict:", msg_dict
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
         ret_response = self.convert_QueryRisk(loads(response))

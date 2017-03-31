@@ -118,6 +118,7 @@ message TopDataBases {
 
 message GetTopDataBasesResponse {
   repeated TopDataBases results = 1;
+  string nextToken = 2;
 }
 
 message GetTopTablesRequest {
@@ -139,6 +140,7 @@ message TopTables {
 
 message GetTopTablesResponse {
   repeated TopTables results = 1;
+  string nextToken = 2;
 }
 
 message GetTopQueriesRequest {
@@ -160,6 +162,7 @@ message TopQueries {
 
 message GetTopQueriesResponse {
   repeated TopQueries results = 1;
+  string nextToken = 2;
 }
 
 message GetTopColumnsRequest {
@@ -193,6 +196,7 @@ message GetTopColumnsResponse {
   repeated TopColumns selectColumns = 3;
   repeated TopColumns orderbyColumns = 4;
   repeated TopColumns filterColumns = 5;
+  string nextToken = 6;
 }
 
 message GetTopFiltersRequest {
@@ -228,6 +232,7 @@ message TopFilters {
 
 message GetTopFiltersResponse {
   repeated TopFilters results = 1;
+  string nextToken = 2;
 }
 
 message GetTopJoinsRequest {
@@ -254,6 +259,7 @@ message TopJoins {
 
 message GetTopJoinsResponse {
   repeated TopJoins results = 1;
+  string nextToken = 2;
 }
 
 message GetTopAggsRequest {
@@ -280,6 +286,7 @@ message TopAgg {
 
 message GetTopAggsResponse {
   repeated TopAgg results = 1;
+  string nextToken = 2;
 }
 
 message GetQueryCompatibleRequest {
