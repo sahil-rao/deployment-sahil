@@ -1,3 +1,12 @@
+terraform {
+    backend "s3" {
+        bucket = "cloudera-terraform-infrastructure"
+        key = "prod/navopt-us-west-2-prod/external/terraform.tfstate"
+        region = "us-west-2"
+        profile = "navopt_prod"
+    }
+}
+
 provider "aws" {
     profile = "${var.profile}"
     region = "${var.region}"

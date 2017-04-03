@@ -1,3 +1,12 @@
+terraform {
+    backend "s3" {
+        bucket = "cloudera-terraform-infrastructure"
+        key = "stage/navopt-us-west-2-staging/external/terraform.tfstate"
+        region = "us-west-2"
+        profile = "navopt_stage"
+    }
+}
+
 provider "aws" {
     profile = "${var.profile}"
     region = "${var.region}"
