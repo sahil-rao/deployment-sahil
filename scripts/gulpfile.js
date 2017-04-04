@@ -3,7 +3,6 @@ Documentation: https://docs.google.com/document/d/1B7CK9edy6CJsHWzQqEV7xupZeFUvy
 */
 
 var gulp = require('gulp'),
-    guppy = require('git-guppy')(gulp)
     gulpConfig = require('./gulp-config'),
     webpackStream = require('webpack-stream'),
     webpack = require('webpack'),
