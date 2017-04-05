@@ -4,6 +4,12 @@
 
 - hosts: localhost
   tasks:
+  - name: Create /var/Baaz
+    shell: mkdir -p /var/Baaz
+    sudo: yes
+  - name: Create /etc/xplain
+    shell: mkdir -p /etc/xplain
+    sudo: yes
   - name: Create Log directory
     shell: mkdir -p /var/log/cloudera/navopt/nodejs
     sudo: yes
