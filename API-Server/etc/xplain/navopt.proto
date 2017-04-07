@@ -17,8 +17,8 @@ service NavOpt {
   rpc getTenant (GetTenantRequest)
     returns (GetTenantResponse) {}
   // Request for top databases.
-  rpc getTopDataBases (GetTopDataBasesRequest)
-    returns (GetTopDataBasesResponse) {}
+  rpc getTopDatabases (GetTopDatabasesRequest)
+    returns (GetTopDatabasesResponse) {}
   // Request for get tables.
   rpc getTopTables (GetTopTablesRequest)
     returns (GetTopTablesResponse) {}
@@ -100,14 +100,14 @@ message GetTenantResponse {
   string tenant = 1;
 }
 
-message GetTopDataBasesRequest {
+message GetTopDatabasesRequest {
   string tenant = 1;
   int32 pageSize = 2;
   string startingToken = 3;
 }
 
 // Top table info for a given table
-message TopDataBases {
+message TopDatabases {
   int32 instanceCount = 1;
   string dbName = 2;
   int32 totalTableCount = 3;
@@ -116,8 +116,8 @@ message TopDataBases {
   string eid = 6;
 }
 
-message GetTopDataBasesResponse {
-  repeated TopDataBases results = 1;
+message GetTopDatabasesResponse {
+  repeated TopDatabases results = 1;
   string nextToken = 2;
 }
 
@@ -343,6 +343,7 @@ message RiskData {
 message GetQueryRiskResponse {
   repeated RiskData hiveRisk = 1;
   repeated RiskData impalaRisk = 2;
+  string errorMsg = 3;
 }
 
 message GetDesignBucketRequest {
@@ -421,6 +422,8 @@ message UploadStatus {
   UploadState state = 1;
   string workloadId = 2;
   string errorMsg = 3;
+  int32 failedQueries = 4;
+  int32 successQueries = 5;
 }
 
 message HeaderField {
