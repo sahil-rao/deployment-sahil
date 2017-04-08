@@ -14,7 +14,6 @@ from flightpath.utils import *
 from flightpath.utils import zipkin_http_transport
 from flightpath.utils import add_zipkin_trace_info
 from flightpath.utils import get_zipkin_attrs
-from flightpath.utils import get_zipkin_attrs_dict
 from flightpath.Provenance import getMongoServer
 from json import loads, dumps
 from baazmath.interface.BaazCSV import *
@@ -434,6 +433,10 @@ def callback(ch, method, properties, body, **kwargs):
     if msg_dict.has_key('uid'):
         #if uid has been set, the variable will be set already
         redis_conn.incrEntityCounter(uid, "Math.time", incrBy = endTime-startTime)
+    
+    if 'q_sqno' in msg_dict:
+        logTimeMetrics(redis_conn, tenant, msg_dict['q_sqno'], "math", endTime - startTime)
+
     #send stats to datadog
     if statsd:
         totalTime = (time.clock() - startTime)

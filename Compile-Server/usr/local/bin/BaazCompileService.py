@@ -12,9 +12,7 @@ from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
 from baazmath.workflows.hbase_analytics import *
 from flightpath.utils import *
-from flightpath.utils import zipkin_http_transport
 from flightpath.utils import add_zipkin_trace_info
-from flightpath.utils import get_zipkin_attrs_dict
 from flightpath.Provenance import getMongoServer
 from flightpath.Provenance import EntityType
 from flightpath.services.mq_template import *
@@ -792,7 +790,7 @@ def updateRelationCounter(redis_conn, eid):
         if rel['rtype'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
 
-def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msg, zattrs):
+def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, received_msg, q_sqno, zattrs):
     if received_msg is not None and "test_mode" in received_msg:
         return
 
@@ -808,7 +806,7 @@ def sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, ent
                     msg_dict['query_message_id'] = received_msg["message_id"]
 
             add_zipkin_trace_info(msg_dict, zattrs)
-
+            msg_dict["q_sqno"] = q_sqno
             message = dumps(msg_dict)
             logging.info("Sending message to Math pos1:" + str(msg_dict))
             incrementPendingMessage(collection, redis_conn, uid, message_id)
@@ -994,7 +992,7 @@ def process_count_array(tenant, q_eid, mongoconn, redis_conn, countArray, data, 
                 clog.exception("Non numerical count value passed")
 
 
-def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context, clog, tagArray=None, countArray=None, zattrs=None):
+def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, query, data, compile_doc, source_platform, smc, context, clog, tagArray=None, countArray=None, q_sqno=None, zattrs=None):
     """
         Takes a list of compiler output files and performs following:
             1. If the compiler is unsuccessful in parsing the query:
@@ -1457,10 +1455,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         mongoconn, redis_conn, ch, collection, tenant,
                         uid, sub_q, data, {key: sub_q_dict},
                         source_platform, smc, context, clog, tagArray=None,
-                        countArray=None, zattrs=zattrs)
+                        countArray=None, q_sqno=q_sqno, zattrs=zattrs)
                     
                     temp_msg = {'test_mode': 1} if context.test_mode else None
-                    sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode, temp_msg, zattrs)
+                    sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode, temp_msg, q_sqno, zattrs)
 
                     if sub_entity is not None:
                         context.queue.pop()
@@ -1988,6 +1986,10 @@ def callback(ch, method, properties, body, **kwargs):
             if 'DATABASE' in inst["data"]:
                 dbName = inst["data"]["DATABASE"]
         query = inst["query"].encode('utf-8').strip()
+        q_sqno = None
+        if "q_sqno" in inst["data"]:
+            q_sqno = inst["data"]["q_sqno"]
+
         clog.debug("Program Entity : {0}, eid {1}\n".format(query, prog_id))
 
         clog.debug("Event received for {0}, entity {1}\n".format(tenant, prog_id))
@@ -2075,9 +2077,10 @@ def callback(ch, method, properties, body, **kwargs):
                                                     smc, context, clog,
                                                     inst["tagArray"],
                                                     inst["countArray"],
+                                                    q_sqno=q_sqno,
                                                     zattrs=zattrs)
             if entity is not None and opcode is not None:
-                sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg, zattrs)
+                sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, entity, opcode, temp_msg, q_sqno, zattrs)
             else:
                 redis_conn.incrEntityCounter(uid, 'processed_queries', incrBy = 1)
         except:
@@ -2091,6 +2094,7 @@ def callback(ch, method, properties, body, **kwargs):
     logging.info("Event Processing Complete")
 
     endTime = time.clock()
+    logTimeMetrics(redis_conn, tenant, q_sqno, "compile", endTime - startTime)
     #send stats to datadog
     if statsd:
         totalTime = (endTime - startTime)
