@@ -32,6 +32,9 @@ tag_Name_RedisSentinel
 [tag_Name_Datadog:children]
 all_servers
 
+[tag_Name_salt:children]
+all_servers
+
 [tag_Name_OldMongoDbsilo1]
 # old mongo dbsilo 1
 172.31.19.141
