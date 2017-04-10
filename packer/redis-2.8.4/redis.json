@@ -11,7 +11,7 @@
         {
             "type": "amazon-ebs",
             "ami_description": "Packer generated AMI",
-            "ami_name": "redis-{{ user `env` }}-{{ timestamp }}",
+            "ami_name": "redis-2.8.4-{{ user `env` }}-{{ timestamp }}",
             "access_key": "",
             "secret_key": "",
             "region": "us-west-2",
