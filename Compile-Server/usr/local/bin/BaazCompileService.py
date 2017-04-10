@@ -1796,22 +1796,17 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
 
             for column_entry in mongoconn.db.entities.find({"etype":"SQL_TABLE_COLUMN",
                                                             "eid": { "$in" : column_eids}},
-                                                            {"name":1}):
-                c_split = column_entry["name"].split(".")
-                if len(c_split) == 2:
-                    table_dict[db_entry][entry["name"]].append(c_split[1])
-                else:
-                    table_dict[db_entry][entry["name"]].append(column_entry["name"])
+                                                            {"columnName":1}):
+                table_dict[db_entry][entry["name"]].append(column_entry["columnName"])
 
-    # filter out tables with no data
-    nonempty_dict = {}
+    #strip out database name from table name
     for db_entry in table_dict:
-        if db_entry not in nonempty_dict:
-            nonempty_dict[db_entry] = {}
         for table in table_dict[db_entry]:
-            if len(table_dict[db_entry][table]) != 0:
-                nonempty_dict[db_entry][table] = table_dict[db_entry][table]
-    table_dict = nonempty_dict
+            format_name = table.split(".")
+            if len(format_name) > 1:
+                table_name = format_name[1]
+                table_dict[db_entry][table_name] = table_dict[db_entry][table]
+                table_dict[db_entry].pop(table)
 
     if len(table_dict.keys()) == 0:
         return compile_doc
