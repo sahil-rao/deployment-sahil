@@ -421,7 +421,7 @@ message UploadStatus {
   }
   UploadState state = 1;
   string workloadId = 2;
-  string errorMsg = 3;
+  string statusMsg = 3;
   int32 failedQueries = 4;
   int32 successQueries = 5;
 }

@@ -814,17 +814,20 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                 entry_dict = {}
                 entry = str(entry)
                 entry = entry.split("\n")
-                print "entry:", entry
                 for val in entry:
                     if val == '':
                         continue
                     entry_dict[val.split(":")[0].strip()] = val.split(":")[1].strip(' "')
+                print "entry:", entry_dict
                 if 'coltype' in entry_dict:
                     if entry_dict['coltype'] == 'SQL_QUERY':
                         entry_dict['type'] = 'SQL_FULLTEXT'
                     else: 
                         entry_dict['type'] = entry_dict['coltype']
-                    entry_dict.pop('coltype') 
+                    entry_dict.pop('coltype')
+                else:
+                    if entry_dict['name'] == "DATABASE":
+                        entry_dict['type'] = 'DATABASE'
                 headerInfo.append(entry_dict)
 
         if request.fileType == 1 or request.fileType == 2:
@@ -857,7 +860,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             if response['status'] == 'finished':
                 ret.status.state = 3
         ret.status.workloadId = response['workloadId']
-        ret.status.errorMsg = response['errorMsg']
+        if 'errorMsg' in response:
+            ret.status.statusMsg = response['errorMsg']
         if 'successQueries' in response:
             ret.status.successQueries = response['successQueries']
         if 'failedQueries' in response:
