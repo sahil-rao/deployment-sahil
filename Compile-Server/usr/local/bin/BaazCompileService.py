@@ -818,7 +818,7 @@ def sendAdvAnalyticsMessage(ch, msg_dict, zattrs):
         return
 
     add_zipkin_trace_info(msg_dict, zattrs)
-    
+
     message = dumps(msg_dict)
     connection1.publish(ch, '', 'advanalytics', message)
 
@@ -1221,6 +1221,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                                                        sort=True, incrBy=1)
                 if elapsed_time is not None and not math.isnan(float(elapsed_time)):
                     try:
+                        mongoconn.db.entities.update({'eid': entity.eid}, {"$inc": {"elapsedTime": float(elapsed_time)}})
                         redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort=True, incrBy=float(elapsed_time))
                         redis_conn.incrEntityCounter("dashboard_data", "total_elapsed_time", sort=False, incrBy=float(elapsed_time))
                     except:
@@ -1330,6 +1331,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             elapsed_time = data['ELAPSED_TIME']
         if elapsed_time is not None and not math.isnan(float(elapsed_time)):
             try:
+                mongoconn.db.entities.update({'eid': entity.eid}, {"$inc": {"elapsedTime": float(elapsed_time)}})
                 redis_conn.incrEntityCounter(entity.eid, "total_elapsed_time", sort = True,incrBy=float(elapsed_time))
                 redis_conn.incrEntityCounter("dashboard_data", "total_elapsed_time", sort=False, incrBy=float(elapsed_time))
             except:
@@ -1394,6 +1396,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
         current_query = context.queue[-2]['eid']
 
+
         if etype == EntityType.SQL_QUERY:
             '''
             Stored procedure -> Query relationship
@@ -1456,7 +1459,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                         uid, sub_q, data, {key: sub_q_dict},
                         source_platform, smc, context, clog, tagArray=None,
                         countArray=None, q_sqno=q_sqno, zattrs=zattrs)
-                    
+
                     temp_msg = {'test_mode': 1} if context.test_mode else None
                     sendAnalyticsMessage(mongoconn, redis_conn, ch, collection, tenant, uid, sub_entity, sub_opcode, temp_msg, q_sqno, zattrs)
 
@@ -2103,7 +2106,7 @@ def callback(ch, method, properties, body, **kwargs):
     callback_params = {'tenant':tenant, 'connection':connection1, 'channel':ch, 'uid':uid, 'queuename':'advanalytics', 'zattrs': zattrs}
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
-    
+
 connection1 = RabbitConnection(callback, ['compilerqueue'], ['mathqueue', 'elasticpub'], {})
 
 logging.info("BaazCompiler going to start Consuming")
