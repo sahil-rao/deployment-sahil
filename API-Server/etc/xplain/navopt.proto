@@ -411,6 +411,11 @@ message GetHAQRResponse {
   repeated IncompatibleQueries hive = 2;
 }
 
+message FailedQuery {
+  string query = 1;
+  string error = 2;
+}
+
 message UploadStatus {
   enum UploadState {
     WAITING = 0;
@@ -424,6 +429,7 @@ message UploadStatus {
   string statusMsg = 3;
   int32 failedQueries = 4;
   int32 successQueries = 5;
+  repeated FailedQuery failQueryDetails = 6;
 }
 
 message HeaderField {

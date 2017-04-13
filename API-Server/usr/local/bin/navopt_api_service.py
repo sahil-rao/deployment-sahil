@@ -866,6 +866,14 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             ret.status.successQueries = response['successQueries']
         if 'failedQueries' in response:
             ret.status.failedQueries = response['failedQueries']
+        if 'failedQueryDetails' in response:
+            for entry in response['failedQueryDetails']:
+                query = navopt_pb2.FailedQuery()
+                if 'query' in entry:
+                    query.query = entry['query']
+                if 'error' in entry:
+                    query.error = entry['error']
+                ret.status.failQueryDetails.extend([query])
         return ret
 
     def uploadStatus(self, request, context):
