@@ -338,12 +338,16 @@ message RiskData {
   string risk = 1;
   string riskAnalysis = 2;
   string riskRecommendation = 3;
+  int32 riskId = 4;
 }
 
 message GetQueryRiskResponse {
   repeated RiskData hiveRisk = 1;
   repeated RiskData impalaRisk = 2;
   string errorMsg = 3;
+  repeated string noDDL = 4;
+  repeated string noStats = 5;
+  repeated string tables = 6;
 }
 
 message GetDesignBucketRequest {
