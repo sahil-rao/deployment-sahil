@@ -641,6 +641,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                     risk.riskRecommendation = entry['riskRecommendation']
                 if 'riskId' in entry:
                     risk.riskId = entry['riskId']
+                if 'riskTables' in entry:
+                    risk.riskTables.extend(entry['riskTables'])
                 ret.hiveRisk.extend([risk])
         if 'impala_risk' in response:
             for entry in response['impala_risk']:
@@ -653,6 +655,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                     risk.riskRecommendation = entry['riskRecommendation']
                 if 'riskId' in entry:
                     risk.riskId = entry['riskId']
+                if 'riskTables' in entry:
+                    risk.riskTables.extend(entry['riskTables'])
                 ret.impalaRisk.extend([risk])
         if 'errorMsg' in response:
             ret.errorMsg = response['errorMsg']
@@ -660,8 +664,6 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             ret.noStats.extend(response['noStats'])
         if 'noDDL' in response:
             ret.noDDL.extend(response['noDDL'])
-        if 'tables' in response:
-            ret.tables.extend(response['tables'])
         return ret
 
     def getQueryRisk(self, request, context):

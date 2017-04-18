@@ -340,6 +340,7 @@ message RiskData {
   string riskAnalysis = 2;
   string riskRecommendation = 3;
   int32 riskId = 4;
+  repeated string riskTables = 5;
 }
 
 message GetQueryRiskResponse {
@@ -348,7 +349,6 @@ message GetQueryRiskResponse {
   string errorMsg = 3;
   repeated string noDDL = 4;
   repeated string noStats = 5;
-  repeated string tables = 6;
 }
 
 message GetDesignBucketRequest {
