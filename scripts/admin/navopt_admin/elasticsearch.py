@@ -11,6 +11,10 @@ LOG = logging.getLogger(__name__)
 TEMPLATE_NAME = 'template_1'
 
 
+class ConnectionClosed(Exception):
+    pass
+
+
 class ElasticsearchCluster(object):
     def __init__(self, cluster, service, instances):
         self.cluster = cluster
@@ -75,18 +79,21 @@ class Elasticsearch(object):
         self._tunnel.close()
 
     def __getattr__(self, key):
-        return getattr(self._conn, key)
+        if self._conn:
+            return getattr(self._conn, key)
+        else:
+            raise ConnectionClosed
 
     def version(self):
-        return self._conn.info()['version']['number']
+        return self.info()['version']['number']
 
     def nodes(self):
-        nodes = self._conn.nodes.info()['nodes']
+        nodes = self.nodes.info()['nodes']
 
         return set(info['http_address'] for info in nodes.itervalues())
 
     def master_address(self):
-        for node in self._conn.cat.nodes(format='json'):
+        for node in self.cat.nodes(format='json'):
             if node['master'] == '*':
                 return node['ip']
 

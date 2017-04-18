@@ -7,6 +7,10 @@ from .ssh import TunnelDown
 LOG = logging.getLogger(__name__)
 
 
+class ConnectionClosed(Exception):
+    pass
+
+
 class MongoCluster(object):
     def __init__(self, cluster, service, instances):
         self.cluster = cluster
@@ -83,21 +87,24 @@ class Mongo(object):
         self.close()
 
     def __getattr__(self, key):
-        return getattr(self._conn, key)
+        if self._conn:
+            return getattr(self._conn, key)
+        else:
+            raise ConnectionClosed
 
     def __getitem__(self, key):
-        return self._conn[key]
+        if self._conn:
+            return self._conn[key]
+        else:
+            raise ConnectionClosed
 
     def mongo_version(self):
-        if self._conn is None:
-            return None
-
-        return self._conn.server_info()['version']
+        return self.server_info()['version']
 
     def server_status(self):
         if not hasattr(self, '_server_status'):
             try:
-                self._server_status = self._conn.admin.command('serverStatus')
+                self._server_status = self.admin.command('serverStatus')
             except pymongo.errors.PyMongoError:
                 self._server_status = {}
 
@@ -107,7 +114,7 @@ class Mongo(object):
     def repl_status(self):
         if not hasattr(self, '_repl_status'):
             try:
-                self._repl_status = self._conn.admin.command('replSetGetStatus')
+                self._repl_status = self.admin.command('replSetGetStatus')
             except pymongo.errors.PyMongoError:
                 self._repl_status = {}
 
