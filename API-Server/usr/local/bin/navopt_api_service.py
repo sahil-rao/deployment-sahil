@@ -707,6 +707,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         msg_dict = {'tenant':str(request.tenant), 'opcode':'QueryRisk', 'query':request.query}
         if request.sourcePlatform != "":
             msg_dict['source_platform'] = request.sourcePlatform
+        if request.dbName != "":
+            msg_dict['dbName'] = request.dbName
         print "msg dict:", msg_dict
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))

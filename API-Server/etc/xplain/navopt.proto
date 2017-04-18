@@ -332,6 +332,7 @@ message GetQueryRiskRequest {
   string tenant = 1;
   string query = 2;
   string sourcePlatform = 3;
+  string dbName = 4;
 }
 
 message RiskData {
