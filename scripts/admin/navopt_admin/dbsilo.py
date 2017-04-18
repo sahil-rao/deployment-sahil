@@ -208,7 +208,7 @@ class DBSilo(object):
             ]
 
             return self.cluster.instances_by_name(filters)
-        elif self.cluster.env in ('prod-old', 'prod'):
+        elif self.cluster.env == 'prod-old':
             if self.name == 'dbsilo1':
                 filters = ['ElasticSearch_APP_DBSILO1']
             else:

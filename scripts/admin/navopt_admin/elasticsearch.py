@@ -84,16 +84,22 @@ class Elasticsearch(object):
         else:
             raise ConnectionClosed
 
+    def conn(self):
+        if self._conn:
+            return self._conn
+        else:
+            raise ConnectionClosed
+
     def version(self):
-        return self.info()['version']['number']
+        return self.conn().info()['version']['number']
 
     def nodes(self):
-        nodes = self.nodes.info()['nodes']
+        nodes = self.conn().nodes.info()['nodes']
 
         return set(info['http_address'] for info in nodes.itervalues())
 
     def master_address(self):
-        for node in self.cat.nodes(format='json'):
+        for node in self.conn().cat.nodes(format='json'):
             if node['master'] == '*':
                 return node['ip']
 
