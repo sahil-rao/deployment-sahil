@@ -232,10 +232,11 @@ def change_master_quorum(ctx, dbsilo_name, quorum):
 
 
 @cli.command('decommission')
+@click.option('--shutdown', is_flag=True, default=False)
 @click.argument('dbsilo_name', required=True)
 @click.argument('ips', nargs=-1)
 @click.pass_context
-def decommission(ctx, dbsilo_name, ips):
+def decommission(ctx, shutdown, dbsilo_name, ips):
     cluster = ctx.obj['cluster']
     dbsilo = cluster.dbsilo(dbsilo_name)
     ips = set(ips)
@@ -293,7 +294,9 @@ def decommission(ctx, dbsilo_name, ips):
 
         print 'waiting for shards to migrate off hosts'
         _migrate_shards(es_client, ips)
-        _stop_elasticsearch(cluster.bastion, ips)
+
+        if shutdown:
+            _stop_elasticsearch(cluster.bastion, ips)
 
 
 @cli.command('recommission')
