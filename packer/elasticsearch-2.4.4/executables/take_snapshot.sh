@@ -23,6 +23,6 @@ curl -XPUT "localhost:9200/_snapshot/${REPOSITORY_NAME}" -d '{ "type": "s3"}'
 	delete snapshots \
 	--prefix $SNAPSHOT_PREFIX \
 	--repository $REPOSITORY_NAME \
-	--older-than 3 \
+	--older-than 30 \
 	--time-unit days \
 	--timestring "%Y%m%d%H%M%S"
