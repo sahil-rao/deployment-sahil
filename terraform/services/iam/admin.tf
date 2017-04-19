@@ -35,5 +35,5 @@ EOF
 
 resource "aws_iam_instance_profile" "admin" {
     name = "${var.admin_name}"
-    roles = ["${aws_iam_role.admin.name}"]
+    role = "${aws_iam_role.admin.name}"
 }

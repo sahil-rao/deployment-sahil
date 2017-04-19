@@ -35,5 +35,5 @@ EOF
 
 resource "aws_iam_instance_profile" "nodejs" {
     name = "${var.nodejs_name}"
-    roles = ["${aws_iam_role.nodejs.name}"]
+    role = "${aws_iam_role.nodejs.name}"
 }
