@@ -124,7 +124,7 @@ EOF
 
 resource "aws_iam_instance_profile" "redis" {
     name = "${var.name}"
-    roles = ["${aws_iam_role.redis.name}"]
+    role = "${aws_iam_role.redis.name}"
 
     lifecycle {
         create_before_destroy = true
