@@ -30,6 +30,7 @@ module "logging" {
     elasticsearch_max_size = "${var.logging_elasticsearch_max_size}"
     elasticsearch_desired_capacity = "${var.logging_elasticsearch_desired_capacity}"
     elasticsearch_ebs_optimized = false
+    elasticsearch_heap_size = "${var.logging_elasticsearch_heap_size}"
 
     logstash_name = "logging-logstash"
     logstash_security_groups = ["${module.sg.logstash_security_groups}"]

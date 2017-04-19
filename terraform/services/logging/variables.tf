@@ -27,6 +27,7 @@ variable "elasticsearch_desired_capacity" {}
 variable "elasticsearch_ebs_optimized" {
     default = true
 }
+variable "elasticsearch_heap_size" {}
 
 ##############################################################################
 

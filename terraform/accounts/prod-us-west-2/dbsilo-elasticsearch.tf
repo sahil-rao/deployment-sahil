@@ -17,8 +17,8 @@ module "dbsilo1-elasticsearch" {
     datadog_api_key = "${var.datadog_api_key}"
 
     name = "${var.cluster_name}-dbsilo1-elasticsearch"
-    version = "v033"
-    ami_id = "ami-c240d0a2" # elasticsearch 2.4.4
+    version = "v034"
+    ami_id = "ami-b258c5d2" # elasticsearch 2.4.4
     instance_type = "m3.xlarge"
     min_size = 0
     max_size = 3
