@@ -47,6 +47,17 @@ resource "aws_iam_role_policy" "backoffice" {
               "route53:*"
           ],
           "Resource": "*"
+      },
+      {
+          "Effect":"Allow",
+          "Action":[
+              "logs:CreateLogGroup",
+              "logs:CreateLogStream",
+              "logs:PutLogEvents"
+          ],
+          "Resource":[
+              "*"
+          ]
       }
   ]
 }
