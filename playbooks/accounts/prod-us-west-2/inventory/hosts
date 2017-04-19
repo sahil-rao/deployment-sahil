@@ -64,10 +64,12 @@ domain=optimizer.cloudera.com
 172.31.35.134 port=6379
 
 [tag_Name_NodeJS]
-172.31.29.137 returnURL=http://app.xplain.io/auth/google/return realm=https://app.xplain.io/ node_mode=production port=3000
-172.31.29.138 returnURL=http://app.xplain.io/auth/google/return realm=https://app.xplain.io/ node_mode=production port=3000
 
 [tag_Name_NodeJS:vars]
+returnURL=http://app.xplain.io/auth/google/return
+realm=https://app.xplain.io/
+node_mode=production
+port=3000
 express_session_secret={{ nodejs_express_session_secret }}
 
 [tag_Name_RedisSentinel]
@@ -105,24 +107,6 @@ tag_Name_load_balancer
 172.31.45.194
 
 [tag_Name_Backoffice]
-172.31.32.60
-172.31.38.29
-172.31.38.28
-172.31.38.24
-172.31.38.27
-172.31.38.26
-172.31.38.21
-172.31.38.22
-172.31.38.32
-172.31.38.33
-172.31.38.30
-172.31.38.31
-172.31.38.36
-172.31.38.37
-172.31.38.34
-172.31.38.35
-172.31.38.38
-172.31.38.39
 
 # Map the new instances to the old instances.
 [tag_Name_Backoffice:children]
