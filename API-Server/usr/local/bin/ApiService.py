@@ -136,8 +136,22 @@ def callback(ch, method, properties, body):
         api_config= ConfigParser.RawConfigParser()
         api_config.read("/etc/xplain/apiservice.cfg")
 
+        is_disabled = False
+        db = client[tenant]
         section = msg_dict['opcode']
-        if api_config.has_section(section):
+        #check if opcode is disabled
+        api_access = db.apiaccess.find_one({'tenant': tenant}, {"_id": 0})
+        if api_access:
+            if 'enable_all' in api_access and not api_access['enable_all']:
+                is_disabled = True
+            elif not api_access['enable_all'] and \
+               (('disabled_endpoints' in api_access and section in api_access["disabled_endpoints"]) or
+                ('enabled_endpoints' in api_access and section not in api_access['enabled_endpoints'])):
+                is_disabled = True
+        else:
+            db.apiaccess.update({"tenant" : tenant}, {"$set": {"enable_all": True}}, upsert=True)
+
+        if not is_disabled and api_config.has_section(section):
             if not api_config.has_option(section, "Import") or\
                not api_config.has_option(section, "Function"):
                 clog.error("API configuration section not defined properly")
