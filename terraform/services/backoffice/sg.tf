@@ -97,37 +97,28 @@ resource "aws_security_group" "backoffice" {
 resource "aws_security_group" "api_backend_elb" {
     name = "${var.api_backend_elb_sg_name}"
     vpc_id = "${var.vpc_id}"
-}
 
-resource "aws_security_group_rule" "api_backend_elb_ingress" {
-   // Allow inbound internally originated traffic
-    type = "ingress"
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
-    cidr_blocks = ["${var.private_cidrs}"]
+    // Allow inbound internally originated traffic
+    ingress {
+        from_port = 0
+        to_port = 0
+        protocol = "-1"
+        cidr_blocks = ["${var.private_cidrs}"]
+    }
 
-    security_group_id = "${aws_security_group.api_backend_elb.id}"
-}
-
-resource "aws_security_group_rule" "api_backend_elb_egress_port" {
     // Service port
-    type = "egress"
-    from_port = 8982
-    to_port = 8982
-    protocol = "tcp"
-    source_security_group_id = "${aws_security_group.backoffice.id}"
+    egress {
+        from_port = 8982
+        to_port = 8982
+        protocol = "tcp"
+        cidr_blocks = ["${var.private_cidrs}"]
+    }
 
-    security_group_id = "${aws_security_group.api_backend_elb.id}"
-}
-
-resource "aws_security_group_rule" "api_backend_elb_egress_health_port" {
     // Health port
-    type = "egress"
-    from_port = 8983
-    to_port = 8983
-    protocol = "tcp"
-    source_security_group_id = "${aws_security_group.backoffice.id}"
-
-    security_group_id = "${aws_security_group.api_backend_elb.id}"
+    egress {
+        from_port = 8983
+        to_port = 8983
+        protocol = "tcp"
+        cidr_blocks = ["${var.private_cidrs}"]
+    }
 }
