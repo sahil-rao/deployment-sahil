@@ -124,6 +124,10 @@ tag_Name_load_balancer
 172.31.38.38
 172.31.38.39
 
+# Map the new instances to the old instances.
+[tag_Name_Backoffice:children]
+tag_Name_backoffice
+
 [tag_Name_allBackoffice]
 172.31.32.60
 172.31.38.29
