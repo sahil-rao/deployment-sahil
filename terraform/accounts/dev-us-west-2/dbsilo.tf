@@ -37,11 +37,11 @@ module "dbsilo1" {
     redis_backups_enabled = true
 
     elasticsearch_name = "${var.cluster_name}-dbsilo1-elasticsearch"
-    elasticsearch_version = "v013"
-    elasticsearch_ami_id = "ami-1252c772"
+    elasticsearch_version = "v014"
+    elasticsearch_ami_id = "ami-4026bb20"
     elasticsearch_instance_type = "t2.medium"
     elasticsearch_min_size = 0
-    elasticsearch_max_size = 3
+    elasticsearch_max_size = 6
     elasticsearch_desired_capacity = 3
     elasticsearch_ebs_optimized = false
     elasticsearch_heap_size = "2g"
@@ -89,11 +89,11 @@ module "dbsilo2" {
     redis_backups_enabled = true
 
     elasticsearch_name = "${var.cluster_name}-dbsilo2-elasticsearch"
-    elasticsearch_version = "v013"
-    elasticsearch_ami_id = "ami-1252c772"
+    elasticsearch_version = "v014"
+    elasticsearch_ami_id = "ami-4026bb20"
     elasticsearch_instance_type = "t2.medium"
     elasticsearch_min_size = 0
-    elasticsearch_max_size = 3
+    elasticsearch_max_size = 6
     elasticsearch_desired_capacity = 3
     elasticsearch_ebs_optimized = false
     elasticsearch_heap_size = "2g"
