@@ -1015,6 +1015,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         return None, None
 
     compiler_to_use = get_compiler(source_platform)
+
     profile_dict = {"uid": uid, "profile": {'character': [], "Compiler": {}}, 'compiler_to_use': compiler_to_use, 'parse_success': True}
     comp_profile = profile_dict["profile"]["Compiler"]
 
@@ -1204,6 +1205,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 elapsed_time = data['ELAPSED_TIME']
         try:
             eid = IdentityService.getNewIdentity(tenant, True)
+
             entity = mongoconn.addEn(eid, query, tenant,\
                        etype, profile_dict, None)
             if entity is None:
@@ -1313,8 +1315,24 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     For Eg. In case on Inline view, it can contain information about the
     inline view table object.
     """
-    current_queue_entry = {'eid': entity.eid, 'etype': etype}
+    current_queue_entry = {'eid': entity.eid, 'etype': etype, 'elapsed_time': elapsed_time}
     context.queue.append(current_queue_entry)
+
+    """
+    The first element of the queue should be the outmost query, unless it is a SQL_STORED_PROCEDURE, then it is the second element.
+    """
+    outmost_query = context.queue[0]
+    if context.queue[0]['etype'] == EntityType.SQL_STORED_PROCEDURE:
+        if len(context.queue) > 1:
+            outmost_query = context.queue[1]
+
+    """
+    Store outer query on all subquery, query, and inline view entities.
+    Updates shouldn't go through this code path.
+    """
+    mongoconn.db.entities.update({"eid": entity.eid, "outer_queries.eid": {"$ne": outmost_query['eid']}},
+                                 {"$push": {"outer_queries": outmost_query}})
+
 
     if update == True and etype == "SQL_QUERY":
         inst_dict = {"query": query}
@@ -1388,6 +1406,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
     '''
     Creates relationships between the queries in the hierarchy.
     '''
+
     if len(context.queue) > 1:
         '''
         context.queue[-2] is used here because the last element
@@ -1413,6 +1432,7 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
             Query -> Subquery relationship
             '''
             redis_conn.incrRelationshipCounter(current_query, entity.eid, "SQL_INLINE_VIEW", "count")
+
 
     for i, key in enumerate(compile_doc):
         try:
