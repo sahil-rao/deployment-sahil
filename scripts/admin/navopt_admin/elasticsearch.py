@@ -245,7 +245,7 @@ def change_master_quorum(ctx, dbsilo_name, quorum):
 def decommission(ctx, shutdown, dbsilo_name, ips):
     cluster = ctx.obj['cluster']
     dbsilo = cluster.dbsilo(dbsilo_name)
-    ips = set(ips)
+    ips = set(ip for ipset in ips for ip in ipset.split(','))
 
     if not ips:
         ctx.fail('cannot decommission an empty list')
