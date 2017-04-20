@@ -144,6 +144,48 @@ def cli():
     pass
 
 
+@cli.command('change-master-quorum')
+@click.argument('dbsilo_name', required=True)
+@click.argument('quorum', type=int)
+@click.pass_context
+def change_master_quorum(ctx, dbsilo_name, quorum):
+    if quorum < 1:
+        ctx.fail('cannot set quorum under 1')
+
+    dbsilo = ctx.obj['cluster'].dbsilo(dbsilo_name)
+
+    redis_cluster = dbsilo.redis_cluster()
+    master_hostname = redis_cluster.master_hostname()
+    sentinel_clients = list(redis_cluster.sentinel_clients())
+
+    needs_change = False
+    for sentinel_client in sentinel_clients:
+        if sentinel_client.is_connected():
+            info = sentinel_client.sentinel_master(master_hostname)
+            sentinel_quorum = info['quorum']
+            sentinel_node_count = info['num-other-sentinels']
+
+            print 'current quorum is', sentinel_quorum, 'on', sentinel_client
+
+            if quorum < sentinel_node_count / 2 + 1:
+                ctx.fail('quorum must be >= master nodes / 2 + 1')
+
+            needs_change |= quorum != sentinel_quorum
+
+    if not needs_change:
+        print 'no changes needed'
+        return
+
+    msg = 'are you sure you want to apply? [yes/no]: '
+    if not prompt(msg, ctx.obj['yes']):
+        ctx.fail('cluster unchanged')
+
+    for sentinel_client in sentinel_clients:
+        sentinel_client.sentinel_set(master_hostname, 'quorum', quorum)
+
+    print 'quorum changed'
+
+
 @cli.command('decommission')
 @click.option('--ignore-offline', default=False, is_flag=True)
 @click.argument('dbsilo_name', required=True)
