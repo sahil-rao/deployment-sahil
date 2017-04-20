@@ -364,13 +364,16 @@ def _update_excluded_ips(es_client, ips):
 
 def _migrate_shards(es_client, ips):
     while True:
-        shards = es_client.cat.shards(h='ip', format='json')
+        ip_shards = {}
+        for shard in es_client.cat.shards(h='ip', format='json'):
+            ip_shards.setdefault(shard['ip'], []).append(shard)
+
         migrating = False
         for ip in ips:
-            count = sum(1 for shard in shards if shard['ip'] == ip)
-            if count > 0:
+            shards = ip_shards.get(ip)
+            if shards:
                 migrating = True
-                print 'ip %s has %s shards' % (ip, count)
+                print 'ip %s has %s shards' % (ip, len(shards))
 
         if migrating:
             print 'sleeping'
