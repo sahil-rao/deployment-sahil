@@ -245,7 +245,7 @@ def change_master_quorum(ctx, dbsilo_name, quorum):
 def decommission(ctx, shutdown, dbsilo_name, ips):
     cluster = ctx.obj['cluster']
     dbsilo = cluster.dbsilo(dbsilo_name)
-    ips = set(ips)
+    ips = set(ip for ipset in ips for ip in ipset.split(','))
 
     if not ips:
         ctx.fail('cannot decommission an empty list')
@@ -306,10 +306,11 @@ def decommission(ctx, shutdown, dbsilo_name, ips):
 
 
 @cli.command('recommission')
+@click.option('--start', is_flag=True, default=False)
 @click.argument('dbsilo_name', required=True)
 @click.argument('ips', nargs=-1)
 @click.pass_context
-def recommission(ctx, dbsilo_name, ips):
+def recommission(ctx, start, dbsilo_name, ips):
     cluster = ctx.obj['cluster']
     dbsilo = cluster.dbsilo(dbsilo_name)
     ips = set(ips)
@@ -346,7 +347,9 @@ def recommission(ctx, dbsilo_name, ips):
                 excluded_ips.remove(ip)
 
         _update_excluded_ips(es_client, excluded_ips)
-        _start_elasticsearch(cluster.bastion, ips)
+
+        if start:
+            _start_elasticsearch(cluster.bastion, ips)
 
 
 def _update_excluded_ips(es_client, ips):
@@ -361,13 +364,16 @@ def _update_excluded_ips(es_client, ips):
 
 def _migrate_shards(es_client, ips):
     while True:
-        shards = es_client.cat.shards(h='ip', format='json')
+        ip_shards = {}
+        for shard in es_client.cat.shards(h='ip', format='json'):
+            ip_shards.setdefault(shard['ip'], []).append(shard)
+
         migrating = False
         for ip in ips:
-            count = sum(1 for shard in shards if shard['ip'] == ip)
-            if count > 0:
+            shards = ip_shards.get(ip)
+            if shards:
                 migrating = True
-                print 'ip %s has %s shards' % (ip, count)
+                print 'ip %s has %s shards' % (ip, len(shards))
 
         if migrating:
             print 'sleeping'

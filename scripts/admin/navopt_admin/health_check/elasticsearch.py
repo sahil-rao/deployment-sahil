@@ -71,19 +71,6 @@ class ElasticsearchClusterHealthCheck(ElasticsearchHealthCheck):
             host.cluster.health() for host in self.hosts)
 
 
-class ElasticsearchClusterOddCheck(ElasticsearchHealthCheck):
-    description = "Elasticsearch cluster node count is odd"
-
-    def check_es_host(self, host):
-        health = host.cluster.health()
-
-        if health['number_of_nodes'] % 2 == 0:
-            self.host_msgs[host] = 'not odd'
-            return False
-
-        return True
-
-
 class ElasticsearchClusterNodesCheck(ElasticsearchHealthCheck):
     description = "Elasticsearch cluster nodes can see each other"
 
@@ -268,7 +255,6 @@ def check_elasticsearch(es_cluster):
             ElasticsearchVersionCheck(es_servers),
             ElasticsearchClusterHealthCheck(es_servers),
             ElasticsearchClusterNodesCheck(es_servers),
-            ElasticsearchClusterOddCheck(es_servers),
             ElasticsearchClusterIndexCheck(es_servers),
             ElasticsearchShardHealthCheck(es_servers),
             ElasticsearchQuorumCheck(es_servers),

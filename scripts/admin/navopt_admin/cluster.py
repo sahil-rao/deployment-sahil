@@ -50,7 +50,11 @@ class Cluster(object):
             {
                 'Name': 'tag:{}'.format(tag),
                 'Values': values,
-            }
+            },
+            {
+                'Name': 'instance-state-name',
+                'Values': ['running'],
+            },
         ])
 
     def instances_by_name(self, names):
