@@ -125,7 +125,11 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
     def getTenant(self, request, context):
         api_rpc = ApiRpcClient()
         print 'Received message: %s', request, 'Type:', type(request), 'Tenant', request.email 
-        msg_dict = {'email':str(request.email), 'opcode':'GetTenant'}
+        msg_dict = {'opcode':'GetTenant'}
+        if request.email != '':
+            msg_dict['email'] = str(request.email)
+        if request.clusterId != '':
+            msg_dict['clusterId'] = str(request.clusterId)
         response = api_rpc.call(dumps(msg_dict))
         response = loads(response)
         print "Api Service response", response

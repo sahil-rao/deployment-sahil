@@ -94,6 +94,8 @@ message GetS3urlResponse {
 
 message GetTenantRequest {
   string email = 1;
+  string clusterId = 2;
+  string userId = 3;
 }
 
 message GetTenantResponse {
