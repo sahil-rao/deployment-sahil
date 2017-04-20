@@ -136,6 +136,9 @@ class Mongo(object):
 
         return {}
 
+    def is_connected(self):
+        return self._conn is not None
+
     def is_master(self):
         return self.current_repl_status.get('state') == 1
 

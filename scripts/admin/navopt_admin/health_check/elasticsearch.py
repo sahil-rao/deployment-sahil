@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from .aws import AWSNameHealthCheck
 from .base import HealthCheck, HealthCheckList
+from ..elasticsearch import ConnectionClosed
 import sys
 import termcolor
 import collections
@@ -17,7 +18,18 @@ class ElasticsearchHealthCheck(HealthCheck):
             host.close()
 
     def check_host(self, host):
-        return self.check_es_host(host)
+        if host.is_connected():
+            try:
+                return self.check_es_host(host)
+            except ConnectionClosed:
+                pass
+
+        if host in self.host_msgs:
+            self.host_msgs[host] += ' CANNOT CONNECT'
+        else:
+            self.host_msgs[host] = 'CANNOT CONNECT'
+
+        return False
 
     def check_es_host(self, host):
         raise NotImplementedError
@@ -31,8 +43,14 @@ class ElasticsearchVersionCheck(ElasticsearchHealthCheck):
 
         self.host_msgs[host] = 'version: {}'.format(version)
 
-        return version and \
-            self.all_equal(host.version() for host in self.hosts)
+        if not version:
+            return False
+
+        for h in self.hosts:
+            if not h.is_connected() or h.version() != version:
+                return False
+
+        return True
 
 
 class ElasticsearchClusterHealthCheck(ElasticsearchHealthCheck):
@@ -87,6 +105,7 @@ class ElasticsearchClusterIndexCheck(ElasticsearchHealthCheck):
     description = "Elasticsearch indexes are healthy"
 
     def check_es_host(self, host):
+        quorum = host.minimum_master_nodes()
         health = host.cluster.health(level='indices')
         indices = health['indices']
         self.host_msgs[host] = 'indices:{}'.format(len(indices))
@@ -125,7 +144,7 @@ class ElasticsearchClusterIndexCheck(ElasticsearchHealthCheck):
                 result = False
                 msgs.append('unassigned:{}'.format(unassigned_shards))
 
-            if number_of_replicas + 1 != len(self.hosts):
+            if number_of_replicas + 1 < quorum:
                 result = False
                 msgs.append('replicas:{}'.format(number_of_replicas))
 
@@ -179,12 +198,7 @@ class ElasticsearchQuorumCheck(ElasticsearchHealthCheck):
     description = "Elasticsearch quorum >= master nodes / 2 + 1"
 
     def check_es_host(self, host):
-        quorum = host.cluster.get_settings() \
-            .get('persistent', {}) \
-            .get('discovery', {}) \
-            .get('zen', {}) \
-            .get('minimum_master_nodes', 1)
-        quorum = int(quorum)
+        quorum = host.minimum_master_nodes()
 
         node_counts = host.cluster.stats()['nodes']['count']
         master_nodes = node_counts['master_only'] + node_counts['master_data']
@@ -215,7 +229,10 @@ class ElasticsearchAgreeOnMasterCheck(ElasticsearchHealthCheck):
         self.host_msgs[host] = 'master: {}'.format(master_address)
 
         for h in self.hosts:
-            if master_address != h.master_address():
+            if h.is_connected():
+                if master_address != h.master_address():
+                    return False
+            else:
                 return False
 
         return True

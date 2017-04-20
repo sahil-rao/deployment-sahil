@@ -29,11 +29,12 @@ class RedisCluster(object):
             self.service,
             self.cluster.zone)
 
-    def master(self):
-        master_hostname = self.master_hostname()
-        port = 6379
+    def master_ip_address(self):
+        return self.cluster.bastion.resolve_hostname(master_hostname)
 
-        master_address = self.cluster.bastion.resolve_hostname(master_hostname)
+    def master(self, port=6379):
+        master_address = self.master_ip_address()
+
         tunnel = self.cluster.bastion.tunnel(master_address, port)
         return Redis(self.cluster.bastion, tunnel, master_address, port)
 
@@ -50,6 +51,12 @@ class RedisCluster(object):
 
         for ip, tunnel in tunnels:
             yield Redis(self.cluster.bastion, tunnel, ip, port)
+
+    def sentinel_master(self, port=26379):
+        master_address = self.master_ip_address()
+
+        tunnel = self.cluster.bastion.tunnel(master_address, port)
+        return RedisSentinel(self.cluster.bastion, tunnel, master_address, port)
 
     def sentinel_clients(self, port=26379):
         tunnels = []
@@ -174,7 +181,7 @@ def decommission(ctx, ignore_offline, dbsilo_name, ips):
     for ip in redis_cluster.instance_private_ips():
         try:
             sentinel_client = redis_cluster.sentinel_client(ip)
-        except TunnelIsDown:
+        except TunnelDown:
             if ignore_offline:
                 LOG.error('ip %s is offline', ip)
                 pass

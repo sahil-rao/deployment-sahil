@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from .aws import AWSNameHealthCheck
 from .base import HealthCheck, HealthCheckList
+from ..redis import ConnectionClosed
 import hurry.filesize
 import sys
 import termcolor
@@ -17,7 +18,18 @@ class RedisHealthCheck(HealthCheck):
             host.close()
 
     def check_host(self, host):
-        return self.check_redis_host(host)
+        if host.is_connected():
+            try:
+                return self.check_redis_host(host)
+            except ConnectionClosed:
+                pass
+
+        if host in self.host_msgs:
+            self.host_msgs[host] += ' CANNOT CONNECT'
+        else:
+            self.host_msgs[host] = 'CANNOT CONNECT'
+
+        return False
 
     def check_redis_host(self, host):
         raise NotImplementedError
@@ -83,7 +95,7 @@ class RedisClusterConfigurationCheck(RedisHealthCheck):
         if connected_slaves == len(self.hosts) - 1:
             return True
         else:
-            self.host_msgs[host] = ' {} out of {} connected slaves'.format(
+            self.host_msgs[host] += ' {} out of {} connected slaves'.format(
                 connected_slaves,
                 len(self.hosts) - 1
             )
@@ -94,7 +106,7 @@ class RedisClusterConfigurationCheck(RedisHealthCheck):
         if master_link_status == 'up':
             return True
         else:
-            self.host_msgs[host] = \
+            self.host_msgs[host] += \
                 ' master link status is `{}`'.format(master_link_status)
             return False
 
@@ -120,18 +132,45 @@ class RedisSentinelHealthCheck(RedisHealthCheck):
 class RedisSentinelMastersCheck(RedisSentinelHealthCheck):
     description = "Redis sentinels have the same master"
 
+    def __init__(self, redis_cluster, *args, **kwargs):
+        super(RedisSentinelMastersCheck, self).__init__(*args, **kwargs)
+
+        self.redis_cluster = redis_cluster
+
     def check_redis_host(self, host):
         ip = host.sentinel_masters()[self.master]['ip']
+
+        if host.host == ip:
+            self.host_msgs[host] = '(current master)'
+            return self.check_master_hostname(host)
+
         self.host_msgs[host] = 'master: {}'.format(ip)
 
         for h in self.hosts:
             if h == host:
                 continue
 
-            if h.sentinel_masters()[self.master].get('ip') != ip:
+            if h.is_connected():
+                if h.sentinel_masters()[self.master].get('ip') != ip:
+                    return False
+            else:
                 return False
 
         return True
+
+    def check_master_hostname(self, host):
+        found_host = self.redis_cluster.cluster.bastion.resolve_hostname(
+            self.master)
+
+        if not found_host:
+            self.host_msgs[host] += ' failed to resolve: ' + master_hostname
+            return False
+
+        if host.host != found_host:
+            self.host_msgs[host] += ' master is on {}'.format(found_host)
+            return False
+        else:
+            return True
 
 
 class RedisSameSentinelsCheck(RedisSentinelHealthCheck):
@@ -146,7 +185,10 @@ class RedisSameSentinelsCheck(RedisSentinelHealthCheck):
             if h == host:
                 continue
 
-            if self.sentinels(h) != sentinels:
+            if h.is_connected():
+                if self.sentinels(h) != sentinels:
+                    return False
+            else:
                 return False
 
         return True
@@ -192,14 +234,17 @@ class RedisSentinelQuorumCheck(RedisSentinelHealthCheck):
             if h == host:
                 continue
 
-            h_info = h.sentinel_masters()[self.master]
+            if h.is_connected():
+                h_info = h.sentinel_masters()[self.master]
 
-            if h_info.get('quorum') != quorum:
-                self.host_msgs[host] += ' (quorum count does not match)'
-                result = False
+                if h_info.get('quorum') != quorum:
+                    self.host_msgs[host] += ' (quorum count does not match)'
+                    result = False
 
-            if h_info['num-other-sentinels'] + 1 != sentinels:
-                self.host_msgs[host] += ' (sentinel count does not match)'
+                if h_info['num-other-sentinels'] + 1 != sentinels:
+                    self.host_msgs[host] += ' (sentinel count does not match)'
+                    result = False
+            else:
                 result = False
 
         return result
@@ -234,7 +279,10 @@ def check_redis(redis_cluster):
 
             RedisSameSentinelsCheck(master_hostname, redis_sentinels),
             RedisSentinelQuorumCheck(master_hostname, redis_sentinels),
-            RedisSentinelMastersCheck(master_hostname, redis_sentinels),
+            RedisSentinelMastersCheck(
+                redis_cluster,
+                master_hostname,
+                redis_sentinels),
             ):
         redis_checklist.add_check(check)
 
