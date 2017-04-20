@@ -31,9 +31,12 @@ class ElasticsearchCluster(object):
             self.service,
             self.cluster.zone)
 
-    def master(self):
+    def master_ip_address(self):
         master_hostname = self.master_hostname()
-        master_address = self.cluster.bastion.resolve_hostname(master_hostname)
+        return self.cluster.bastion.resolve_hostname(master_hostname)
+
+    def master(self):
+        master_address = self.master_ip_address()
         tunnel = self.cluster.bastion.tunnel(master_address, self._port)
         return Elasticsearch(
             self.cluster.bastion,
@@ -107,6 +110,33 @@ class Elasticsearch(object):
 
     def is_master(self):
         return self.master_address() == self.host
+
+    def is_connected(self):
+        return self._conn is not None
+
+    def excluded_ips(self):
+        excluded_ips = self.conn().cluster.get_settings() \
+            .get('transient', {}) \
+            .get('cluster', {}) \
+            .get('routing', {}) \
+            .get('allocation', {}) \
+            .get('exclude', {}) \
+            .get('_ip')
+
+        if excluded_ips:
+            excluded_ips = set(excluded_ips.split(','))
+        else:
+            excluded_ips = set()
+
+        return excluded_ips
+
+    def minimum_master_nodes(self):
+        quorum = self.conn().cluster.get_settings() \
+            .get('persistent', {}) \
+            .get('discovery', {}) \
+            .get('zen', {}) \
+            .get('minimum_master_nodes', 1)
+        return int(quorum)
 
     def __str__(self):
         return '{}:{}'.format(self.host, self.port)
@@ -369,18 +399,9 @@ def recommission(ctx, start, dbsilo_name, ips):
     elasticsearch_cluster = dbsilo.elasticsearch_cluster()
 
     with elasticsearch_cluster.master() as es_client:
-        excluded_ips = es_client.cluster.get_settings() \
-            .get('transient', {}) \
-            .get('cluster', {}) \
-            .get('routing', {}) \
-            .get('allocation', {}) \
-            .get('exclude', {}) \
-            .get('_ip')
+        excluded_ips = es_client.excluded_ips()
 
         if excluded_ips:
-            instance_ips = set(elasticsearch_cluster.instance_private_ips())
-            excluded_ips = set(ip for ip in excluded_ips.split(',')
-                               if ip in instance_ips)
             print 'excluded ips are', ' '.join(sorted(excluded_ips))
         else:
             excluded_ips = set()

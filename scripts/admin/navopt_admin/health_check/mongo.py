@@ -2,6 +2,7 @@ from __future__ import absolute_import
 
 from .aws import AWSNameHealthCheck
 from .base import HealthCheck, HealthCheckList
+from ..mongo import ConnectionClosed
 import datetime
 import sys
 import termcolor
@@ -17,7 +18,18 @@ class MongoHealthCheck(HealthCheck):
             host.close()
 
     def check_host(self, host):
-        return self.check_mongo_host(host)
+        if host.is_connected():
+            try:
+                return self.check_mongo_host(host)
+            except ConnectionClosed:
+                pass
+
+        if host in self.host_msgs:
+            self.host_msgs[host] += ' CANNOT CONNECT'
+        else:
+            self.host_msgs[host] = 'CANNOT CONNECT'
+
+        return False
 
     def check_mongo_host(self, host):
         raise NotImplementedError
