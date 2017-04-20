@@ -22,7 +22,7 @@ EOF
 
 resource "aws_iam_instance_profile" "logstash" {
     name = "${var.logstash_name}"
-    roles = ["${aws_iam_role.logstash.name}"]
+    role = "${aws_iam_role.logstash.name}"
 
     lifecycle {
         create_before_destroy = true

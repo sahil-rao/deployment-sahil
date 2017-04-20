@@ -639,6 +639,10 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                     risk.riskAnalysis = entry['riskAnalysis']
                 if 'riskRecommendation' in entry:
                     risk.riskRecommendation = entry['riskRecommendation']
+                if 'riskId' in entry:
+                    risk.riskId = entry['riskId']
+                if 'riskTables' in entry:
+                    risk.riskTables.extend(entry['riskTables'])
                 ret.hiveRisk.extend([risk])
         if 'impala_risk' in response:
             for entry in response['impala_risk']:
@@ -649,9 +653,17 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
                     risk.riskAnalysis = entry['riskAnalysis']
                 if 'riskRecommendation' in entry:
                     risk.riskRecommendation = entry['riskRecommendation']
+                if 'riskId' in entry:
+                    risk.riskId = entry['riskId']
+                if 'riskTables' in entry:
+                    risk.riskTables.extend(entry['riskTables'])
                 ret.impalaRisk.extend([risk])
         if 'errorMsg' in response:
             ret.errorMsg = response['errorMsg']
+        if 'noStats' in response:
+            ret.noStats.extend(response['noStats'])
+        if 'noDDL' in response:
+            ret.noDDL.extend(response['noDDL'])
         return ret
 
     def getQueryRisk(self, request, context):
@@ -697,6 +709,8 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         msg_dict = {'tenant':str(request.tenant), 'opcode':'QueryRisk', 'query':request.query}
         if request.sourcePlatform != "":
             msg_dict['source_platform'] = request.sourcePlatform
+        if request.dbName != "":
+            msg_dict['dbName'] = request.dbName
         print "msg dict:", msg_dict
         response = api_rpc.call(dumps(msg_dict))
         print "Api Service response", response, "Type:", type(loads(response))
@@ -866,6 +880,14 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             ret.status.successQueries = response['successQueries']
         if 'failedQueries' in response:
             ret.status.failedQueries = response['failedQueries']
+        if 'failedQueryDetails' in response:
+            for entry in response['failedQueryDetails']:
+                query = navopt_pb2.FailedQuery()
+                if 'query' in entry:
+                    query.query = entry['query']
+                if 'error' in entry:
+                    query.error = entry['error']
+                ret.status.failQueryDetails.extend([query])
         return ret
 
     def uploadStatus(self, request, context):

@@ -2002,7 +2002,8 @@ def callback(ch, method, properties, body, **kwargs):
         if "data" in inst:
             msg_data = inst["data"]
             if 'DATABASE' in inst["data"]:
-                dbName = inst["data"]["DATABASE"]
+                dbName = str(inst["data"]["DATABASE"])
+                dbName = dbName.rstrip()
         query = inst["query"].encode('utf-8').strip()
         q_sqno = None
         if "q_sqno" in inst["data"]:

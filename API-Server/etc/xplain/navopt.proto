@@ -332,18 +332,23 @@ message GetQueryRiskRequest {
   string tenant = 1;
   string query = 2;
   string sourcePlatform = 3;
+  string dbName = 4;
 }
 
 message RiskData {
   string risk = 1;
   string riskAnalysis = 2;
   string riskRecommendation = 3;
+  int32 riskId = 4;
+  repeated string riskTables = 5;
 }
 
 message GetQueryRiskResponse {
   repeated RiskData hiveRisk = 1;
   repeated RiskData impalaRisk = 2;
   string errorMsg = 3;
+  repeated string noDDL = 4;
+  repeated string noStats = 5;
 }
 
 message GetDesignBucketRequest {
@@ -411,6 +416,11 @@ message GetHAQRResponse {
   repeated IncompatibleQueries hive = 2;
 }
 
+message FailedQuery {
+  string query = 1;
+  string error = 2;
+}
+
 message UploadStatus {
   enum UploadState {
     WAITING = 0;
@@ -424,6 +434,7 @@ message UploadStatus {
   string statusMsg = 3;
   int32 failedQueries = 4;
   int32 successQueries = 5;
+  repeated FailedQuery failQueryDetails = 6;
 }
 
 message HeaderField {

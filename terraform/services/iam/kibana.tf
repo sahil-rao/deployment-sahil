@@ -22,7 +22,7 @@ EOF
 
 resource "aws_iam_instance_profile" "kibana" {
     name = "${var.kibana_name}"
-    roles = ["${aws_iam_role.kibana.name}"]
+    role = "${aws_iam_role.kibana.name}"
 
     lifecycle {
         create_before_destroy = true

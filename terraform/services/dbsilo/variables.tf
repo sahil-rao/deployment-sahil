@@ -71,3 +71,5 @@ variable "elasticsearch_ebs_optimized" {
 
 variable "cloudwatch_retention_in_days" {}
 variable "log_subscription_destination_arn" {}
+
+variable "elasticsearch_heap_size" {}

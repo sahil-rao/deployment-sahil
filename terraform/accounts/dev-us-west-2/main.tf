@@ -64,6 +64,7 @@ module "common" {
     logging_elasticsearch_min_size = 3
     logging_elasticsearch_max_size = 5
     logging_elasticsearch_desired_capacity = 3
+    logging_elasticsearch_heap_size = "512m"
 
     logging_redis_version = "v013"
     logging_redis_ami = "ami-3d50c55d"

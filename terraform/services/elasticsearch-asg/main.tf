@@ -20,6 +20,7 @@ data "template_file" "user_data" {
         zone_name = "${var.zone_name}"
         datadog_api_key = "${var.datadog_api_key}"
         sg_name = "${aws_security_group.elasticsearch.id}"
+        elasticsearch_heap_size = "${var.elasticsearch_heap_size}"
     }
 }
 

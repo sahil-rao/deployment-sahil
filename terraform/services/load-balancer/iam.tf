@@ -18,7 +18,7 @@ EOF
 
 resource "aws_iam_instance_profile" "nginx" {
     name = "${var.name}"
-    roles = ["${aws_iam_role.nginx.name}"]
+    role = "${aws_iam_role.nginx.name}"
 }
 
 resource "aws_iam_role_policy_attachment" "managed_policy_attachment" {

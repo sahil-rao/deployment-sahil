@@ -47,6 +47,17 @@ resource "aws_iam_role_policy" "backoffice" {
               "route53:*"
           ],
           "Resource": "*"
+      },
+      {
+          "Effect":"Allow",
+          "Action":[
+              "logs:CreateLogGroup",
+              "logs:CreateLogStream",
+              "logs:PutLogEvents"
+          ],
+          "Resource":[
+              "*"
+          ]
       }
   ]
 }
@@ -55,5 +66,5 @@ EOF
 
 resource "aws_iam_instance_profile" "backoffice" {
     name = "${var.iam_role_name}"
-    roles = ["${aws_iam_role.backoffice.name}"]
+    role = "${aws_iam_role.backoffice.name}"
 }

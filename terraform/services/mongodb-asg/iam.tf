@@ -126,7 +126,7 @@ EOF
 
 resource "aws_iam_instance_profile" "mongo" {
     name = "${var.name}"
-    roles = ["${aws_iam_role.mongo.name}"]
+    role = "${aws_iam_role.mongo.name}"
 
     lifecycle {
         create_before_destroy = true

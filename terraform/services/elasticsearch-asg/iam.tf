@@ -124,7 +124,7 @@ EOF
 
 resource "aws_iam_instance_profile" "elasticsearch" {
     name = "${var.name}"
-    roles = ["${aws_iam_role.elasticsearch.name}"]
+    role = "${aws_iam_role.elasticsearch.name}"
 
     lifecycle {
         create_before_destroy = true

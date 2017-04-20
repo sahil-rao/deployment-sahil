@@ -147,3 +147,13 @@ resource "aws_route53_record" "dbsilo3-redis-master" {
     ttl = "5"
     records = ["redismaster.dbsilo3.app.xplain.io"]
 }
+
+module "s3" {
+    source = "../../services/s3"
+
+    env = "${var.env}"
+    navopt_name = "navopt-${var.env}"
+    backups_name = "navopt-backups-${var.env}"
+
+    redis_expiration_days = "${var.s3_redis_backups_expiration_days}"
+}

@@ -54,6 +54,9 @@ variable "logging_elasticsearch_max_size" {
 variable "logging_elasticsearch_desired_capacity" {
     default = 1
 }
+variable "logging_elasticsearch_heap_size" {
+    default = "512m"
+}
 
 # Logging Redis
 variable "logging_redis_version" {}

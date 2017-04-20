@@ -272,7 +272,7 @@ def check_elasticsearch(es_cluster):
             ElasticsearchClusterIndexCheck(es_servers),
             ElasticsearchShardHealthCheck(es_servers),
             ElasticsearchQuorumCheck(es_servers),
-             ElasticsearchAgreeOnMasterCheck(es_cluster, es_servers),
+            ElasticsearchAgreeOnMasterCheck(es_cluster, es_servers),
             ):
         es_checklist.add_check(check)
 

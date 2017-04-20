@@ -27,4 +27,9 @@ EOF
 /bin/chown dd-agent /etc/dd-agent/datadog.conf
 /usr/sbin/service datadog-agent start
 
+/bin/cat <<EOF > /etc/default/elasticsearch
+ES_HEAP_SIZE=${elasticsearch_heap_size}
+ES_STARTUP_SLEEP_TIME=5
+EOF
+
 service elasticsearch restart

@@ -85,4 +85,6 @@ module "elasticsearch" {
 
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
     log_subscription_destination_arn = "${var.log_subscription_destination_arn}"
+
+    elasticsearch_heap_size = "${var.elasticsearch_heap_size}"
 }

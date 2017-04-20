@@ -11,6 +11,10 @@ LOG = logging.getLogger(__name__)
 TEMPLATE_NAME = 'template_1'
 
 
+class ConnectionClosed(Exception):
+    pass
+
+
 class ElasticsearchCluster(object):
     def __init__(self, cluster, service, instances):
         self.cluster = cluster
@@ -75,18 +79,27 @@ class Elasticsearch(object):
         self._tunnel.close()
 
     def __getattr__(self, key):
-        return getattr(self._conn, key)
+        if self._conn:
+            return getattr(self._conn, key)
+        else:
+            raise ConnectionClosed
+
+    def conn(self):
+        if self._conn:
+            return self._conn
+        else:
+            raise ConnectionClosed
 
     def version(self):
-        return self._conn.info()['version']['number']
+        return self.conn().info()['version']['number']
 
     def nodes(self):
-        nodes = self._conn.nodes.info()['nodes']
+        nodes = self.conn().nodes.info()['nodes']
 
         return set(info['http_address'] for info in nodes.itervalues())
 
     def master_address(self):
-        for node in self._conn.cat.nodes(format='json'):
+        for node in self.conn().cat.nodes(format='json'):
             if node['master'] == '*':
                 return node['ip']
 
@@ -225,10 +238,11 @@ def change_master_quorum(ctx, dbsilo_name, quorum):
 
 
 @cli.command('decommission')
+@click.option('--shutdown', is_flag=True, default=False)
 @click.argument('dbsilo_name', required=True)
 @click.argument('ips', nargs=-1)
 @click.pass_context
-def decommission(ctx, dbsilo_name, ips):
+def decommission(ctx, shutdown, dbsilo_name, ips):
     cluster = ctx.obj['cluster']
     dbsilo = cluster.dbsilo(dbsilo_name)
     ips = set(ips)
@@ -286,7 +300,9 @@ def decommission(ctx, dbsilo_name, ips):
 
         print 'waiting for shards to migrate off hosts'
         _migrate_shards(es_client, ips)
-        _stop_elasticsearch(cluster.bastion, ips)
+
+        if shutdown:
+            _stop_elasticsearch(cluster.bastion, ips)
 
 
 @cli.command('recommission')
