@@ -480,3 +480,39 @@ def _start_elasticsearch(bastion, ips):
             'start'])
 
         print 'server %s started' % ip
+
+
+@cli.command('failover')
+@click.argument('dbsilo_name', required=True)
+@click.argument('ip')
+@click.pass_context
+def failover(ctx, dbsilo_name, ip):
+    cluster = ctx.obj['cluster']
+    dbsilo = cluster.dbsilo(dbsilo_name)
+
+    elasticsearch_cluster = dbsilo.elasticsearch_cluster()
+
+    if ip not in elasticsearch_cluster.instance_private_ips():
+        ctx.fail('ip is not in this cluster')
+
+    if ip != elasticsearch_cluster.master_ip_address():
+        ctx.fail('ip is not the master')
+
+    with elasticsearch_cluster.master() as es_client:
+        if ip not in es_client.excluded_ips():
+            ctx.fail('ip should be decommissioned first')
+
+    msg = 'are you sure you want to apply? [yes/no]: '
+    if not prompt(msg, ctx.obj['yes']):
+        ctx.fail('elasticsearch excluded ips unchanged')
+
+    # Restart the server to migrate the master
+    cluster.bastion.check_call([
+        'ssh',
+        ip,
+        '/usr/bin/sudo',
+        '/usr/bin/service',
+        'elasticsearch',
+        'restart'])
+
+    print 'server %s failed over' % ip
