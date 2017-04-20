@@ -17,6 +17,7 @@ from flightpath.Provenance import getMongoServer
 from flightpath.Provenance import EntityType
 from flightpath.services.mq_template import *
 import flightpath.thriftclient.compilerthriftclient as tclient
+from flightpath.entities.join_pattern import JoinPattern
 
 from subprocess import Popen, PIPE
 from json import loads, dumps
@@ -1462,6 +1463,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter(uid, stats_newdbs_key, incrBy=tmpAdditions[0])
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     redis_conn.incrEntityCounter('dashboard_data', 'inlineViewCount', incrBy=tmpAdditions[1])
+
+            if key == compiler_to_use and 'joinPredicates' in compile_doc[key]:
+                # Get join hash, store into compile doc profile
+                compile_doc[key]['joinHash'] = hash(JoinPattern.from_join_predicates(compile_doc[key]['joinPredicates']))
 
             if key == compiler_to_use and compile_doc[key].has_key("subQueries") and\
                 len(compile_doc[key]["subQueries"]) > 0:
