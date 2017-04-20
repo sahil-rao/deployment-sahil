@@ -306,10 +306,11 @@ def decommission(ctx, shutdown, dbsilo_name, ips):
 
 
 @cli.command('recommission')
+@click.option('--start', is_flag=True, default=False)
 @click.argument('dbsilo_name', required=True)
 @click.argument('ips', nargs=-1)
 @click.pass_context
-def recommission(ctx, dbsilo_name, ips):
+def recommission(ctx, start, dbsilo_name, ips):
     cluster = ctx.obj['cluster']
     dbsilo = cluster.dbsilo(dbsilo_name)
     ips = set(ips)
@@ -346,7 +347,9 @@ def recommission(ctx, dbsilo_name, ips):
                 excluded_ips.remove(ip)
 
         _update_excluded_ips(es_client, excluded_ips)
-        _start_elasticsearch(cluster.bastion, ips)
+
+        if start:
+            _start_elasticsearch(cluster.bastion, ips)
 
 
 def _update_excluded_ips(es_client, ips):
