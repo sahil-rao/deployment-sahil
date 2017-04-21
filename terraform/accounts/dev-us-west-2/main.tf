@@ -59,10 +59,10 @@ module "common" {
 
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
 
-    logging_elasticsearch_version = "v013"
-    logging_elasticsearch_ami = "ami-1252c772"
+    logging_elasticsearch_version = "v014"
+    logging_elasticsearch_ami = "ami-4026bb20"
     logging_elasticsearch_min_size = 3
-    logging_elasticsearch_max_size = 5
+    logging_elasticsearch_max_size = 6
     logging_elasticsearch_desired_capacity = 3
     logging_elasticsearch_heap_size = "512m"
 
