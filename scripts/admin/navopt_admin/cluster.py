@@ -1,9 +1,9 @@
 from .dbsilo import DBSilo
+from .elasticsearch import ElasticsearchCluster
+from .instance import Instance, format_instances
+from .mongo import MongoCluster
+from .redis import RedisCluster
 from .ssh import Bastion, NoopBastion
-from .instance import (
-    Instance,
-    format_instances,
-)
 from .util import COMMA_SEPARATED_LIST_TYPE
 import boto3
 import click
@@ -70,6 +70,27 @@ class Cluster(object):
         return DBSilo(
             self,
             dbsilo_name,
+        )
+
+    def mongo_cluster(self, service_name):
+        return MongoCluster(
+            self,
+            service_name,
+            self.instances_by_service(service_name),
+        )
+
+    def redis_cluster(self, service_name):
+        return RedisCluster(
+            self,
+            service_name,
+            self.instances_by_service(service_name),
+        )
+
+    def elasticsearch_cluster(self, service_name):
+        return ElasticsearchCluster(
+            self,
+            service_name,
+            list(self.instances_by_services([service_name])),
         )
 
     def __str__(self):

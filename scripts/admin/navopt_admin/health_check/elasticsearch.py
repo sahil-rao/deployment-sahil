@@ -222,7 +222,7 @@ class ElasticsearchAgreeOnMasterCheck(ElasticsearchHealthCheck):
 
     def check_es_host(self, host):
         if host.is_master():
-            self.host_msgs[host] = '(current master)'
+            self.host_msgs[host] = '(master)'
             return self.check_master_hostname(host)
 
         master_address = host.master_address()
@@ -247,7 +247,8 @@ class ElasticsearchAgreeOnMasterCheck(ElasticsearchHealthCheck):
             return False
 
         if host.host != found_host:
-            self.host_msgs[host] += ' master is on {}'.format(found_host)
+            self.host_msgs[host] += \
+                ' master url resolves to {}'.format(found_host)
             return False
         else:
             return True
