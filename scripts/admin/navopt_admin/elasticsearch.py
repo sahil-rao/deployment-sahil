@@ -272,16 +272,16 @@ def change_replicas(ctx, dbsilo_name, replicas):
 
 
 @cli.command('change-master-quorum')
-@click.argument('dbsilo_name', required=True)
+@click.argument('service_name', required=True)
 @click.argument('quorum', type=int)
 @click.pass_context
-def change_master_quorum(ctx, dbsilo_name, quorum):
+def change_master_quorum(ctx, service_name, quorum):
     if quorum < 1:
         ctx.fail('cannot set quorum under 1')
 
-    dbsilo = ctx.obj['cluster'].dbsilo(dbsilo_name)
+    es_cluster = ctx.obj['cluster'].elasticsearch_cluster(service_name)
 
-    with dbsilo.elasticsearch_cluster().master() as es_client:
+    with es_cluster.master() as es_client:
         current_quorum = es_client.cluster.get_settings() \
             .get('persistent', {}) \
             .get('discovery', {}) \
@@ -320,18 +320,17 @@ def change_master_quorum(ctx, dbsilo_name, quorum):
 
 @cli.command('decommission')
 @click.option('--shutdown', is_flag=True, default=False)
-@click.argument('dbsilo_name', required=True)
+@click.argument('service_name', required=True)
 @click.argument('ips', nargs=-1)
 @click.pass_context
-def decommission(ctx, shutdown, dbsilo_name, ips):
+def decommission(ctx, shutdown, service_name, ips):
     cluster = ctx.obj['cluster']
-    dbsilo = cluster.dbsilo(dbsilo_name)
     ips = set(ip for ipset in ips for ip in ipset.split(','))
 
     if not ips:
         ctx.fail('cannot decommission an empty list')
 
-    elasticsearch_cluster = dbsilo.elasticsearch_cluster()
+    elasticsearch_cluster = cluster.elasticsearch_cluster(service_name)
 
     with elasticsearch_cluster.master() as es_client:
         quorum = es_client.cluster.get_settings() \
@@ -388,15 +387,13 @@ def decommission(ctx, shutdown, dbsilo_name, ips):
 
 @cli.command('recommission')
 @click.option('--start', is_flag=True, default=False)
-@click.argument('dbsilo_name', required=True)
+@click.argument('service_name', required=True)
 @click.argument('ips', nargs=-1)
 @click.pass_context
-def recommission(ctx, start, dbsilo_name, ips):
+def recommission(ctx, start, service_name, ips):
     cluster = ctx.obj['cluster']
-    dbsilo = cluster.dbsilo(dbsilo_name)
+    elasticsearch_cluster = cluster.elasticsearch_cluster(service_name)
     ips = set(ips)
-
-    elasticsearch_cluster = dbsilo.elasticsearch_cluster()
 
     with elasticsearch_cluster.master() as es_client:
         excluded_ips = es_client.excluded_ips()
@@ -483,22 +480,20 @@ def _start_elasticsearch(bastion, ips):
 
 
 @cli.command('failover')
-@click.argument('dbsilo_name', required=True)
+@click.argument('service_name', required=True)
 @click.argument('ip')
 @click.pass_context
-def failover(ctx, dbsilo_name, ip):
+def failover(ctx, service_name, ip):
     cluster = ctx.obj['cluster']
-    dbsilo = cluster.dbsilo(dbsilo_name)
+    es_cluster = cluster.elasticsearch_cluster(service_name)
 
-    elasticsearch_cluster = dbsilo.elasticsearch_cluster()
-
-    if ip not in elasticsearch_cluster.instance_private_ips():
+    if ip not in es_cluster.instance_private_ips():
         ctx.fail('ip is not in this cluster')
 
-    if ip != elasticsearch_cluster.master_ip_address():
+    if ip != es_cluster.master_ip_address():
         ctx.fail('ip is not the master')
 
-    with elasticsearch_cluster.master() as es_client:
+    with es_cluster.master() as es_client:
         if ip not in es_client.excluded_ips():
             ctx.fail('ip should be decommissioned first')
 
