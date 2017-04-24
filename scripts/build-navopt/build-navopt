@@ -3,79 +3,96 @@
 import argparse
 import getpass
 import os
-import shutil
 import subprocess
 import sys
-from collections import OrderedDict
+
+CONFIG = {
+    'dev': {
+        'account': '128669107540',
+        'aws_profile': 'navopt_dev',
+        'region': 'us-west-2',
+        'bucket': 'navopt-dev-deployment-bucket',
+        'cluster': 'navopt-dev',
+    },
+    'alpha': {
+        'account': '892272719698',
+        'aws_profile': 'navopt_alpha',
+        'region': 'us-west-1',
+        'bucket': 'navopt-alpha-deployment-bucket',
+        'cluster': 'navopt-alpha',
+    },
+    'stage': {
+        'account': '001209911431',
+        'aws_profile': 'navopt_stage',
+        'region': 'us-west-2',
+        'bucket': 'navopt-stage-deployment-bucket',
+        'cluster': 'navopt-stage',
+    },
+    'prod': {
+        'account': '892272719698',
+        'aws_profile': 'navopt_prod',
+        'region': 'us-west-2',
+        'bucket': 'navopt-prod-deployment-bucket',
+        'cluster': 'navopt-prod',
+    },
+}
 
 # List out the services and their artifacts.
-SERVICES = OrderedDict([
-    ('deployment',
-        [
+SERVICES = {
+    'deployment': {
+        'tarballs': [
             'Baaz-DataAcquisition-Service.tar.gz',
             'Baaz-Compile-Service.tar.gz',
             'Baaz-Analytics-Service.tar.gz',
             'Baaz-API-Service.tar.gz'
-        ]
-     ),
-    ('UI',
-        [
+        ],
+    },
+    'UI': {
+        'dependencies': ['deployment'],
+        'tarballs': [
             'xplain.io.tar.gz',
             'optimizer_api.io.tar.gz',
             'xplain_dashboard.tar.gz',
             'optimizer_admin.io.tar.gz',
-        ]
-     ),
-    ('analytics',
-        [
+        ],
+    },
+    'analytics': {
+        'dependencies': ['deployment'],
+        'tarballs': [
             'Baaz-Analytics.tar.gz',
-        ]
-     ),
-    ('compiler',
-        [
+        ],
+    },
+    'compiler': {
+        'dependencies': ['deployment'],
+        'tarballs': [
             'Baaz-Compiler.tar.gz',
-        ]
-     ),
-    ('graph',
-        [
+        ],
+    },
+    'graph': {
+        'dependencies': ['deployment'],
+        'tarballs': [
             'flightpath-deployment.tar.gz',
             'regression-deployment.tar.gz',
-        ]
-     )])
-
-# List services that go in Docker images.
-DOCKER_IMAGES = {
-    'navopt-pyservices': [
-        'deployment',
-        'graph',
-        'analytics'
-    ],
-    'navopt-javaservices': [
-        'compiler'
-    ]
+        ],
+    },
+    'navopt-pyservices': {
+        'docker': True,
+        'dependencies': [
+            'deployment',
+            'graph',
+            'analytics',
+        ],
+    },
+    'navopt-javaservices': {
+        'docker': True,
+        'dependencies': [
+            'navopt-pyservices',
+            'compiler',
+        ],
+    },
 }
 
-DOCKER_REGISTRY_ENDPOINTS = {
-    'dev': {
-        'endpoint': '128669107540.dkr.ecr.us-west-2.amazonaws.com',
-        'region': 'us-west-2',
-        'aws_profile': 'navopt_dev'
-    },
-    'alpha': {
-        'endpoint': '892272719698.dkr.ecr.us-west-1.amazonaws.com',
-        'region': 'us-west-1',
-        'aws_profile': 'navopt_alpha'
-    },
-    'prod': {
-        'endpoint': '892272719698.dkr.ecr.us-west-2.amazonaws.com',
-        'region': 'us-west-2',
-        'aws_profile': 'navopt_prod'
-    }
-}
-DEFAULT_BUCKET = 'navopt-dev-deployment-bucket'
 DEFAULT_GITHUB_PROJECT = 'git@github.com:baazdata'
-DEFAULT_CLUSTER = 'navopt-dev'
-DEFAULT_AWS_PROFILE = "navopt_dev"
 
 
 def run_command(args, cmd, **kwargs):
@@ -166,12 +183,57 @@ def build_service(args, service):
     run_command(args, cmd)
 
 
-def build_services(args):
+def build_docker_image(args, image):
+    print '*'*70
+    print 'Building {} Docker image'.format(image)
+    print '*'*70
+
+    cmd = [
+        'docker',
+        'build',
+        '-t', image,
+        '-f', os.path.join(image, 'Dockerfile'),
+        '.',
+    ]
+    run_command(args, cmd)
+
+
+def determine_services_to_build(args, services):
+    services_set = set()
+    services_to_build = []
+
+    def process(service):
+        for dependency in SERVICES[service].get('dependencies', ()):
+            process(dependency)
+
+        if service in services_set:
+            return
+
+        services_set.add(service)
+
+        # If we're not building dependencies, only build the services in our
+        # list.
+        if args.build_dependencies or service in services:
+            services_to_build.append(service)
+
+    for service in services:
+        process(service)
+
+    return services_to_build
+
+
+def build_services(args, services):
     if not args.build:
         return
 
-    for service in args.services:
-        build_service(args, service)
+    # Discover and add any dependencies to our build list.
+    services_to_build = determine_services_to_build(args, services)
+
+    for service in services_to_build:
+        if SERVICES[service].get('docker'):
+            build_docker_image(args, service)
+        else:
+            build_service(args, service)
 
 
 def upload_service(args, service, target_bucket):
@@ -179,7 +241,7 @@ def upload_service(args, service, target_bucket):
     Upload the service tarballs.
     """
 
-    for tarball in SERVICES[service]:
+    for tarball in SERVICES[service]['tarballs']:
         src = os.path.join('target', tarball)
 
         if not args.dry_run and not os.path.exists(src):
@@ -190,13 +252,52 @@ def upload_service(args, service, target_bucket):
         print '--- uploading', src, 'to', dst
         cmd = [
             'aws',
+            '--profile', CONFIG[args.env]['aws_profile'],
             's3',
             'cp',
             src,
             dst,
         ]
-        env = dict(os.environ, AWS_PROFILE=args.aws_profile)
-        run_command(args, cmd, env=env)
+        run_command(args, cmd)
+
+
+def push_docker_image(args, image):
+    # Log into AWS Region.
+    # The aws command returns the 'docker login' command.
+    # It does not actually run it, so we capture the output
+    # of 'aws login' and feed that to run_command().
+    cmd = [
+        'aws',
+        '--profile', CONFIG[args.env]['aws_profile'],
+        'ecr',
+        'get-login',
+        '--region', CONFIG[args.env]['region'],
+    ]
+    docker_login_cmd = subprocess.check_output(cmd).strip().split(' ')
+    run_command(args, docker_login_cmd)
+
+    docker_endpoint = '{}.dkr.ecr.{}.amazonaws.com'.format(
+        CONFIG[args.env]['account'],
+        CONFIG[args.env]['region'],
+    )
+
+    for tag in args.tags:
+        # Tag the image
+        cmd = [
+            'docker',
+            'tag',
+            '{0}'.format(image),
+            '{0}/{1}:{2}'.format(docker_endpoint, image, tag),
+        ]
+        run_command(args, cmd)
+
+        # Push the image
+        cmd = [
+            'docker',
+            'push',
+            '{0}/{1}:{2}'.format(docker_endpoint, image, tag),
+        ]
+        run_command(args, cmd)
 
 
 def prompt(msg, assume_yes=None):
@@ -211,9 +312,11 @@ def prompt(msg, assume_yes=None):
             return False
 
 
-def upload_services(args, target_bucket):
+def upload_services(args, services, target_bucket):
     if not args.upload or args.assume_yes is False:
         return
+
+    services = set(services)
 
     if args.assume_yes is None:
         print
@@ -221,91 +324,19 @@ def upload_services(args, target_bucket):
         print
         print \
             'Are you sure you want to upload the following services?', \
-            ' '.join(sorted(args.services))
+            ' '.join(sorted(services))
 
         if not prompt('[yes/no]: ', args.assume_yes):
             return
 
-    for service in args.services:
-        upload_service(args, service, target_bucket)
+    for service in services:
+        if SERVICES[service].get('docker', False):
+            push_docker_image(args, service)
+        else:
+            upload_service(args, service, target_bucket)
 
 
-def build_docker_image(args, image):
-    # Ensure all build artifacts are in place, else
-    # the Docker image build will fail.
-    for service in args.services:
-        for artifact in SERVICES[service]:
-            shutil.copy('target/{}'.format(artifact),
-                        '{0}/{1}'.format(image,artifact))
-    print '*'*70
-    print 'Building {} Docker image'.format(image)
-    print '*'*70
-
-    cmd = [
-        'docker',
-        'build',
-        '-t',
-        image,
-        image,
-    ]
-    run_command(args, cmd)
-
-
-def build_docker_images(args):
-    for image in args.docker_images:
-        build_docker_image(args, image)
-        push_docker_image(args, image)
-
-
-def push_docker_image(args, image):
-    if not args.registry_endpoint:
-        return
-
-    if args.assume_yes is None:
-        print
-        print '-' * 78
-        print
-        print \
-            'Are you sure you want to push the following image?', \
-            image
-
-        if not prompt('[yes/no]: ', args.assume_yes):
-            return
-
-    # Log into AWS Region.
-    # The aws command returns the 'docker login' command.
-    # It does not actually run it, so we capture the output
-    # of 'aws login' and feed that to run_command().
-    env = dict(os.environ, AWS_PROFILE=DOCKER_REGISTRY_ENDPOINTS[args.registry_endpoint]['aws_profile'])
-    cmd = [
-        'aws',
-        'ecr',
-        'get-login',
-        '--region',
-        DOCKER_REGISTRY_ENDPOINTS[args.registry_endpoint]['region']
-    ]
-    docker_login_cmd = subprocess.check_output(cmd, env=env).strip().split(' ')
-    run_command(args, docker_login_cmd, env=env)
-
-    # Tag the image
-    cmd = [
-        'docker',
-        'tag',
-        '{0}'.format(image),
-        '{0}/{1}:latest'.format(DOCKER_REGISTRY_ENDPOINTS[args.registry_endpoint]['endpoint'], image),
-    ]
-    run_command(args, cmd)
-
-    # Push the image
-    cmd = [
-        'docker',
-        'push',
-        '{0}/{1}'.format(DOCKER_REGISTRY_ENDPOINTS[args.registry_endpoint]['endpoint'], image),
-    ]
-    run_command(args, cmd)
-
-
-def main():
+def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '-v', '--verbose',
@@ -336,26 +367,36 @@ def main():
             DEFAULT_GITHUB_PROJECT,
         ))
     parser.add_argument(
+        '--env',
+        default='dev',
+        help='Build for this environment')
+    parser.add_argument(
         '--release',
         default=False,
-        action='store_true',
         help='build a release candidate')
     parser.add_argument(
         '--branch',
         default='master',
-        help='which branch to build (default master)')
+        help='which branch to build (defaults to `master`)')
     parser.add_argument(
         '--target_branch',
         default=None,
         help='which branch to build (defaults to `--branch` value)')
     parser.add_argument(
-        '--bucket',
-        default=DEFAULT_BUCKET,
-        help='upload artifacts to this bucket (default {}'.format(
-            DEFAULT_BUCKET))
-    parser.add_argument(
         '--target_path',
-        help='upload artifacts to this bucket (default $USERNAME-$BRANCH)')
+        help='upload artifacts to this bucket (default $USERNAME/$BRANCH)')
+    parser.add_argument(
+        '--tag',
+        dest='tags',
+        default=None,
+        action='append',
+        help='tag artifacts with this tag. may be repeated')
+    parser.add_argument(
+        '--no-build-dependencies',
+        dest='build_dependencies',
+        default=True,
+        action='store_false',
+        help='do not build dependency artifacts')
     parser.add_argument(
         '--no-build',
         dest='build',
@@ -369,34 +410,23 @@ def main():
         action='store_false',
         help='do not upload artifacts to S3')
     parser.add_argument(
-        '--cluster',
-        default=DEFAULT_CLUSTER,
-        help='The name of the cluster (default {})'.format(DEFAULT_CLUSTER))
-    parser.add_argument(
-        '--aws-profile',
-        default=DEFAULT_AWS_PROFILE,
-        help='AWS Profile for s3 bucket (default {})'.format(
-            DEFAULT_AWS_PROFILE))
-    parser.add_argument(
         'services',
-        default=SERVICES.keys(),
+        default='all',
+        choices=['all'] + SERVICES.keys(),
         nargs='*',
         help='which services to build')
-    parser.add_argument(
-        '--build-docker-images',
-        nargs='?',
-        default=None,
-        const='all',
-        dest='docker_images',
-        help='Build specified Docker images. Comma-separated. Possible values: {}, all'.format(
-            ', '.join(DOCKER_IMAGES.keys())))
-    parser.add_argument(
-        '--push-docker-images',
-        default=None,
-        dest='registry_endpoint',
-        help='Push built Docker images to a Registry. Possible values: {}.'.format(
-            ', '.join(DOCKER_REGISTRY_ENDPOINTS.keys())))
-    args = parser.parse_args()
+
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    if args.services == 'all' or \
+            any(service == 'all' for service in args.services):
+        services = SERVICES.keys()
+    else:
+        services = args.services
 
     ############################################################################
     # Validate arguments
@@ -422,49 +452,13 @@ def main():
         print >> sys.stderr, 'target path is empty'
         return 1
 
-    target_bucket = args.bucket
+    target_bucket = CONFIG[args.env]['bucket']
     if not args.release:
         target_bucket = os.path.join(target_bucket, target_path)
 
-    # Make sure services are known
-    for service in args.services:
-        if service not in SERVICES:
-            print >> sys.stderr, 'unknown service:', service
-            return 1
-
-    if args.docker_images:
-        # Convert human-friendly list of Docker images
-        #  to Python list
-        if 'all' in args.docker_images:
-            args.docker_images = DOCKER_IMAGES.keys()
-        else:
-            args.docker_images = args.docker_images.split(',')
-
-        # Make sure images are known
-        for image in args.docker_images:
-            if image not in DOCKER_IMAGES.keys():
-                print >> sys.stderr, 'unknown Docker image:', image
-                print >> sys.stderr, 'Supported values are: {}'.format(DOCKER_IMAGES.keys())
-                return 1
-
-        # The javaservices Docker image uses pyservices as its base
-        if 'javaservices' in args.docker_images and 'pyservices' not in args.docker_images:
-                args.docker_images.append('pyservices')
-
-        # Ensure appropriate packages are built for each image.
-        # i.e. The Docker build will fail if it's missing the build artifact for a package.
-        for image in args.docker_images:
-            for service in DOCKER_IMAGES[image]:
-                args.services.append(service)
-        # Remove duplicate services.
-        args.services = list(set(args.services))
-
-
-    # Only push to supported registries
-    if args.registry_endpoint:
-        if args.registry_endpoint not in DOCKER_REGISTRY_ENDPOINTS.keys():
-            print >> sys.stderr, 'unknown Docker registry:', args.registry_endpoint
-            print >> sys.stderr, 'Supported values are: {}'.format(DOCKER_REGISTRY_ENDPOINTS.keys())
+    if args.upload and not args.tags:
+        if any(SERVICES[service].get('docker') for service in services):
+            print >> sys.stderr, 'docker images require a tag'
             return 1
 
     ############################################################################
@@ -479,10 +473,8 @@ def main():
     if not os.path.exists('target'):
         os.makedirs('target')
 
-    build_services(args)
-    upload_services(args, target_bucket)
-    if args.docker_images:
-        build_docker_images(args)
+    build_services(args, services)
+    upload_services(args, services, target_bucket)
 
 
 if __name__ == '__main__':

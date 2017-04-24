@@ -19,12 +19,12 @@ RUN pip install thrift==0.9.3 boto pika==0.9.8 networkx sqlparse \
 
 RUN mkdir /var/Baaz
 RUN mkdir /var/log/cloudera && mkdir /var/log/cloudera/navopt
-ADD flightpath-deployment.tar.gz /
-ADD Baaz-DataAcquisition-Service.tar.gz /
-ADD Baaz-Analytics.tar.gz /
-ADD Baaz-Analytics-Service.tar.gz /
-ADD Baaz-Compile-Service.tar.gz /
-ADD hosts.j2 /
-ADD logback.j2 /
-ADD start.sh /
+ADD target/flightpath-deployment.tar.gz /
+ADD target/Baaz-DataAcquisition-Service.tar.gz /
+ADD target/Baaz-Analytics.tar.gz /
+ADD target/Baaz-Analytics-Service.tar.gz /
+ADD target/Baaz-Compile-Service.tar.gz /
+ADD navopt-pyservices/hosts.j2 /
+ADD navopt-pyservices/logback.j2 /
+ADD navopt-pyservices/start.sh /
 CMD ./start.sh
