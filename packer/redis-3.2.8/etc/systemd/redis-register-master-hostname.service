@@ -1,0 +1,15 @@
+[Unit]
+Description=Register host
+After=redis-server.service
+After=redis-sentinel.service
+Requires=redis-server.service
+Requires=redis-sentinel.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/redis-register-master-hostname
+User=redis
+Group=redis
+
+[Install]
+WantedBy=multi-user.target

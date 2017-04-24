@@ -1,0 +1,9 @@
+[Unit]
+Description=Redis backup
+After=redis-server.service
+
+[Timer]
+OnCalendar=*:0/30
+
+[Install]
+WantedBy=multi-user.target

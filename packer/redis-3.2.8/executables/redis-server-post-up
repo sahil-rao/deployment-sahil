@@ -1,0 +1,5 @@
+#!/bin/bash
+
+set -eu
+
+/usr/local/share/redis-mgmt/bin/redis-server-join-cluster
