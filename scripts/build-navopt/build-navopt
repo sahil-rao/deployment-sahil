@@ -226,10 +226,11 @@ def build_services(args, services):
     if not args.build:
         return
 
+    # Discover and add any dependencies to our build list.
     services_to_build = determine_services_to_build(args, services)
 
     for service in services_to_build:
-        if SERVICES[service].get('docker', False):
+        if SERVICES[service].get('docker'):
             build_docker_image(args, service)
         else:
             build_service(args, service)
@@ -261,20 +262,6 @@ def upload_service(args, service, target_bucket):
 
 
 def push_docker_image(args, image):
-    if not args.registry_endpoint:
-        return
-
-    if args.assume_yes is None:
-        print
-        print '-' * 78
-        print
-        print \
-            'Are you sure you want to push the following image?', \
-            image
-
-        if not prompt('[yes/no]: ', args.assume_yes):
-            return
-
     # Log into AWS Region.
     # The aws command returns the 'docker login' command.
     # It does not actually run it, so we capture the output
@@ -294,24 +281,23 @@ def push_docker_image(args, image):
         CONFIG[args.env]['region'],
     )
 
-    # Tag the image
-    cmd = [
-        'docker',
-        'tag',
-        '{0}'.format(image),
-        '{0}/{1}:latest'.format(
-            docker_endpoint,
-            image),
-    ]
-    run_command(args, cmd)
+    for tag in args.tags:
+        # Tag the image
+        cmd = [
+            'docker',
+            'tag',
+            '{0}'.format(image),
+            '{0}/{1}:{2}'.format(docker_endpoint, image, tag),
+        ]
+        run_command(args, cmd)
 
-    # Push the image
-    cmd = [
-        'docker',
-        'push',
-        '{0}/{1}'.format(docker_endpoint, image),
-    ]
-    run_command(args, cmd)
+        # Push the image
+        cmd = [
+            'docker',
+            'push',
+            '{0}/{1}:{2}'.format(docker_endpoint, image, tag),
+        ]
+        run_command(args, cmd)
 
 
 def prompt(msg, assume_yes=None):
@@ -329,6 +315,8 @@ def prompt(msg, assume_yes=None):
 def upload_services(args, services, target_bucket):
     if not args.upload or args.assume_yes is False:
         return
+
+    services = set(services)
 
     if args.assume_yes is None:
         print
@@ -385,19 +373,24 @@ def parse_args():
     parser.add_argument(
         '--release',
         default=False,
-        action='store_true',
         help='build a release candidate')
     parser.add_argument(
         '--branch',
         default='master',
-        help='which branch to build (default master)')
+        help='which branch to build (defaults to `master`)')
     parser.add_argument(
         '--target_branch',
         default=None,
         help='which branch to build (defaults to `--branch` value)')
     parser.add_argument(
         '--target_path',
-        help='upload artifacts to this bucket (default $USERNAME-$BRANCH)')
+        help='upload artifacts to this bucket (default $USERNAME/$BRANCH)')
+    parser.add_argument(
+        '--tag',
+        dest='tags',
+        default=None,
+        action='append',
+        help='tag artifacts with this tag. may be repeated')
     parser.add_argument(
         '--no-build-dependencies',
         dest='build_dependencies',
@@ -429,6 +422,12 @@ def parse_args():
 def main():
     args = parse_args()
 
+    if args.services == 'all' or \
+            any(service == 'all' for service in args.services):
+        services = SERVICES.keys()
+    else:
+        services = args.services
+
     ############################################################################
     # Validate arguments
 
@@ -457,6 +456,11 @@ def main():
     if not args.release:
         target_bucket = os.path.join(target_bucket, target_path)
 
+    if args.upload and not args.tags:
+        if any(SERVICES[service].get('docker') for service in services):
+            print >> sys.stderr, 'docker images require a tag'
+            return 1
+
     ############################################################################
     # Do the build
 
@@ -468,12 +472,6 @@ def main():
 
     if not os.path.exists('target'):
         os.makedirs('target')
-
-    if args.services == 'all' or \
-            any(service == 'all' for service in args.services):
-        services = SERVICES.keys()
-    else:
-        services = args.services
 
     build_services(args, services)
     upload_services(args, services, target_bucket)
