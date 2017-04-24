@@ -380,7 +380,7 @@ def parse_args():
         ))
     parser.add_argument(
         '--env',
-        required=True,
+        default='dev',
         help='Build for this environment')
     parser.add_argument(
         '--release',
