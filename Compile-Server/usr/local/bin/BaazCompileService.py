@@ -143,15 +143,14 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
 
         tablename = column_entry["tableName"].replace('"', '')
         columnname = column_entry["columnName"].replace('"', '')
-        table_entity = mongoconn.getEntityByName(tablename)
-
-        column_entity_name = tablename.lower() + "." + columnname.lower()
-        column_entity = mongoconn.getEntityByName(column_entity_name)
 
         if 'databaseName' in column_entry and column_entry['databaseName'] not in DBNAME_IGNORE_LIST:
             tablename = column_entry['databaseName'] + "." + tablename
         elif 'DatabaseName' in column_entry and column_entry['DatabaseName'] not in DBNAME_IGNORE_LIST:
             tablename = column_entry['DatabaseName'] + "." + tablename
+        table_entity = mongoconn.getEntityByName(tablename)
+        column_entity_name = tablename.lower() + "." + columnname.lower()
+        column_entity = mongoconn.getEntityByName(column_entity_name)
 
         if table_entity is None:
             clog.debug("Creating table entity for {0} position 6\n".format(tablename))
@@ -1286,10 +1285,18 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 return None, None
     else:
         update = True
-        #update the stats since they were provided
 
+        entity_instance = mongoconn.db.entities.find_one({'md5':q_hash})
+        #check if query had unqualified column and updated version has that resolved
+        if 'Compiler' in entity_instance['profile'] and compiler_to_use in entity_instance['profile']['Compiler'] and \
+           'unqualifiedColumn' in entity_instance['profile']['Compiler'][compiler_to_use] and \
+           entity_instance['profile']['Compiler'][compiler_to_use]['unqualifiedColumn']:
+            if 'unqualifiedColumn' not in compile_doc[compiler_to_use] or \
+                not compile_doc[compiler_to_use]['unqualifiedColumn']:
+                mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.Compiler.'+compiler_to_use: compile_doc[compiler_to_use]}})
+
+        #update the stats since they were provided
         if data is not None:
-            entity_instance = mongoconn.db.entities.find_one({'md5':q_hash})
             stats = entity_instance["profile"]["stats"]
             setDict = stats.copy()
             for field in data:
