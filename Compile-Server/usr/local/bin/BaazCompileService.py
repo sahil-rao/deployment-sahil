@@ -630,6 +630,8 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
             mongoconn.addEn(eid, database_name, tenant,\
                       EntityType.SQL_DATABASE, endict, None)
             database_entity = mongoconn.getEntityByName(database_name)
+            redis_conn.createEntityProfile(database_entity.eid, "SQL_DATABASE")
+            redis_conn.incrEntityCounter(database_entity.eid, "instance_count", sort = True, incrBy=0)
             #create Elastic search index
             sendToElastic(connection1, redis_conn, tenant, uid,
                           database_entity, database_name, EntityType.SQL_DATABASE)
