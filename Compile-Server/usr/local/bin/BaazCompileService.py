@@ -18,6 +18,7 @@ from flightpath.Provenance import EntityType
 from flightpath.services.mq_template import *
 import flightpath.thriftclient.compilerthriftclient as tclient
 from flightpath.entities.join_pattern import JoinPattern
+from flightpath.entities.column_family_pattern import ColumnFamilyPattern
 
 from subprocess import Popen, PIPE
 from json import loads, dumps
@@ -1464,9 +1465,19 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     redis_conn.incrEntityCounter(uid, stats_newtables_key, incrBy=tmpAdditions[1])
                     redis_conn.incrEntityCounter('dashboard_data', 'inlineViewCount', incrBy=tmpAdditions[1])
 
-            if key == compiler_to_use and 'joinPredicates' in compile_doc[key]:
-                # Get join hash, store into compile doc profile
-                compile_doc[key]['joinHash'] = hash(JoinPattern.from_join_predicates(compile_doc[key]['joinPredicates']))
+            if key == compiler_to_use:
+
+                if 'joinPredicates' in compile_doc[key]:
+                    # Get join hash, store into compile doc profile
+                    compile_doc[key]['joinHash'] = hash(JoinPattern.from_join_predicates(compile_doc[key]['joinPredicates']))
+
+                if 'selectColumnNames' in compile_doc[key]:
+                    # Get select columns hash, store into compile doc profile
+                    compile_doc[key]['selectColumnsHash'] = hash(ColumnFamilyPattern(compile_doc[key]['selectColumnNames'], 'select'))
+
+                if 'groupByColumns' in compile_doc[key]:
+                    # Get group by columns hash, store into compile doc profile
+                    compile_doc[key]['groupByColumnsHash'] = hash(ColumnFamilyPattern(compile_doc[key]['groupByColumns'], 'group by'))
 
             if key == compiler_to_use and compile_doc[key].has_key("subQueries") and\
                 len(compile_doc[key]["subQueries"]) > 0:
