@@ -8,7 +8,7 @@ of the application. This script has many options, to see them all run
 Here's how to see it in action:
 
 ```
-% ./build-navopt --dry-run
+% ./build-navopt --env dev --dry-run
 --- updating git@github.com:baazdata/graph.git
 --- updating git@github.com:baazdata/documentation.git
 --- updating git@github.com:baazdata/analytics.git
@@ -38,7 +38,7 @@ packages.  To actually see the commands it will run, just run it with verbosity
 (and we'll pass `--yes` to assume yes):
 
 ```
-% ./build-navopt --dry-run -v --yes
+% ./build-navopt --env dev --dry-run -v --yes
 --- updating git@github.com:baazdata/graph.git
 + git -C .gitcache/graph remote set-url origin git@github.com:baazdata/graph.git
 + git -C .gitcache/graph remote update origin
@@ -82,21 +82,6 @@ upload: target/optimizer_admin.io.tar.gz to s3://baaz-deployment/erickt/master/o
 This is just like before, but instead we also specify the `--release` flag:
 
 ```
-% ./build-navopt --release -v
+% ./build-navopt --env dev --release -v
 ...
-```
-
-## Building Docker Images
-Assuming you have Docker installed, you can build Navopt Docker images and, optionally, push them to a registry. For example:
-
-```
-# Build pyservices Docker image and push it to the navopt_dev account
-./build-navopt --build-docker-images navopt-pyservices --push-docker-images dev
-
-# Build all Docker images and push them to the navopt_dev account
-# Note: '--no-upload' disables uploading build artifacts to S3.
-./build-navopt --build-docker-images --push-docker-images dev --no-upload
-
-# Build all Docker images but do not push them to ECR
-./build-navopt --build-docker-images --no-upload
 ```

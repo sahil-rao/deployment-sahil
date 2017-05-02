@@ -35,10 +35,6 @@ elif [ "$SERVICE_NAME" == "elasticpub" ]
 then
 sudo python /usr/local/bin/ElasticPubService.py
 
-elif [ "$SERVICE_NAME" == "mathservice" ]
-then
-sudo python /usr/local/bin/XplainAdvAnalyticsService.py
-
 elif [ "$SERVICE_NAME" == "dataacquisitionservice" ]
 then
 sudo python /usr/local/bin/FPProcessingService.py
