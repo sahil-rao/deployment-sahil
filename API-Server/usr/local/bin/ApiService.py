@@ -108,7 +108,7 @@ def callback(ch, method, properties, body):
 
     logging.info("ApiService: Got message : "+ str(msg_dict))
     logging.debug("Correlation ID : "+ properties.correlation_id)
-    if "opcode" not in msg_dict or ('tenant' not in msg_dict and 'email' not in msg_dict):
+    if "opcode" not in msg_dict or ('tenant' not in msg_dict and 'email' not in msg_dict and 'clusterId' not in msg_dict):
         logging.error('ApiService there was no opcode or tenant in msg_dict.')
         connection1.basicAck(ch,method)
         return
@@ -119,6 +119,9 @@ def callback(ch, method, properties, body):
     email = None
     if "email" in msg_dict:
         email = msg_dict["email"]
+    clusterId = None
+    if "clusterId" in msg_dict:
+        clusterId = msg_dict["clusterId"]
     msg_dict["connection"] = connection1
     msg_dict["ch"] = ch
     client = getMongoServer(tenant)
@@ -164,6 +167,8 @@ def callback(ch, method, properties, body):
                     resp_dict = methodToCall(tenant, msg_dict)
                 elif email:
                     resp_dict = methodToCall(email, msg_dict)
+                elif clusterId:
+                    resp_dict = methodToCall(None, {'clusterId': clusterId})
         #send stats to datadog
         if statsd:
             uid = None
