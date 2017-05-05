@@ -145,7 +145,7 @@ def callback(ch, method, properties, body):
         dbsilo = get_silo(tenant)
         es_conn_silo[dbsilo].create(index=tenant, id=msg_dict['eid'], doc_type=msg_dict['doc_type'], body=es_cfg)
     except elasticsearch.TransportError, e:
-        logging.error("Could not connect to ElasticSearch %s", e.args)
+        logging.error("ElasticSearch error {}, tenant {}, eid {}, doc {}".format(e.args, tenant, msg_dict['eid'], str(es_cfg)))
 
     connection1.basicAck(ch, method)
     #send stats to datadog
