@@ -117,6 +117,57 @@ def cli():
     pass
 
 
+@cli.command('change-default-shards')
+@click.argument('dbsilo_name', required=True)
+@click.argument('shards', type=int)
+@click.pass_context
+def change_shards(ctx, dbsilo_name, shards):
+    if shards < 0:
+        ctx.fail('cannot set shards under 0')
+
+    dbsilo = ctx.obj['cluster'].dbsilo(dbsilo_name)
+
+    with dbsilo.elasticsearch_cluster().master() as es_client:
+        modified_template = False
+
+        if es_client.indices.exists_template(TEMPLATE_NAME):
+            index_template = es_client \
+                .indices.get_template(TEMPLATE_NAME)[TEMPLATE_NAME]
+            settings = index_template['settings']
+            number_of_shards = settings['index'].get('number_of_shards', 0)
+            number_of_shards = int(number_of_shards)
+
+            print 'template {} has {} shards'.format(
+                TEMPLATE_NAME,
+                number_of_shards)
+
+            modified_template = shards != number_of_shards
+
+        else:
+            modified_template = True
+            index_template = None
+
+        msg = 'are you sure you want to apply? [yes/no]: '
+        if not prompt(msg, ctx.obj['yes']):
+            ctx.fail('elasticsearch cluster unchanged')
+
+        if modified_template:
+            if index_template:
+                index_template['settings']['number_of_shards'] = shards
+            else:
+                index_template = {
+                    'template': '*',
+                    'order': 0,
+                    'settings': {
+                        'number_of_shards': shards,
+                    },
+                }
+
+            es_client.indices.put_template(TEMPLATE_NAME, index_template)
+
+            print 'template modified'
+
+
 @cli.command('change-replicas')
 @click.argument('dbsilo_name', required=True)
 @click.argument('replicas', type=int)
