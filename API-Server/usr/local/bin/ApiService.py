@@ -168,7 +168,7 @@ def callback(ch, method, properties, body):
                 elif email:
                     resp_dict = methodToCall(email, msg_dict)
                 elif clusterId:
-                    resp_dict = methodToCall(None, {'clusterId': clusterId})
+                    resp_dict = methodToCall(None, msg_dict)
         #send stats to datadog
         if statsd:
             uid = None
