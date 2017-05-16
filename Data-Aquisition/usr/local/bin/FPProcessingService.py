@@ -341,11 +341,10 @@ class callback_context():
                 table_entry = {"uid" : Self.uid}
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
-                #create Elastic search index
-                sendToElastic(connection1, Self.redis_conn, Self.tenant, Self.uid,
-                              table_entity, table_name, EntityType.SQL_TABLE)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 Self.redis_conn.setEntityProfile(table_entity.eid, {"name": table_name})
+                Self.redis_conn.createAutocompleteEntity(table_entity.eid, "SQL_TABLE", table_name)
+
                 Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
                                                             "instance_count",
                                                             sec_key=table_entity.name,
@@ -401,11 +400,9 @@ class callback_context():
                 table_entry = {"uid" : Self.uid, "stats":stats}
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
-                #create Elastic search index
-                sendToElastic(connection1, Self.redis_conn, Self.tenant, Self.uid,
-                              table_entity, table_name, EntityType.SQL_TABLE)
                 Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 Self.redis_conn.setEntityProfile(table_entity.eid, {"name": table_name})
+                Self.redis_conn.createAutocompleteEntity(table_entity.eid, "SQL_TABLE", table_name)
                 Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
                                                             "instance_count",
                                                             sec_key=table_entity.name,
