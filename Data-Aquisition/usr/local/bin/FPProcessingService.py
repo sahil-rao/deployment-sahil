@@ -338,6 +338,8 @@ class callback_context():
                 table_entry = {"uid" : Self.uid}
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
+                Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
+                Self.redis_conn.setEntityProfile(table_entity.eid, {"name": table_name})
                 Self.redis_conn.createAutocompleteEntity(table_entity.eid, "SQL_TABLE", table_name)
 
                 Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
@@ -395,6 +397,8 @@ class callback_context():
                 table_entry = {"uid" : Self.uid, "stats":stats}
                 table_entity = Self.mongoconn.addEn(eid, table_name, Self.tenant,\
                                 EntityType.SQL_TABLE, table_entry, None)
+                Self.redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
+                Self.redis_conn.setEntityProfile(table_entity.eid, {"name": table_name})
                 Self.redis_conn.createAutocompleteEntity(table_entity.eid, "SQL_TABLE", table_name)
                 Self.redis_conn.incrEntityCounterWithSecKey(table_entity.eid,
                                                             "instance_count",
