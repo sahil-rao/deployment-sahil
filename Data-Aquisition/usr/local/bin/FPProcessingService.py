@@ -199,11 +199,8 @@ def elasticConnect(tenantID, clog):
                     }
                 }
 
-            settings = { "index" : {
-                            "number_of_shards" : 3,
-                            "number_of_replicas": 0
-                            }
-                        }
+            settings = { "index" : { } }
+
             es.indices.create(index=tenantID, body=settings, ignore=[400,409])
             es.indices.put_mapping(index=tenantID, doc_type='entity', body=mapping, ignore=[400,409])
     except:
