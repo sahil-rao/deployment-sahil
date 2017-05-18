@@ -141,8 +141,10 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             msg_dict['email'] = str(request.email)
         if request.clusterId != '':
             msg_dict['clusterId'] = str(request.clusterId)
-        if request.userId != '':
-            msg_dict['userId'] = {'id': str(request.userId.id), 'name': str(request.userId.name)}
+        if request.externalAccountId != '':
+            msg_dict['accountId'] = str(request.externalAccountId)
+        if request.crn != '':
+            msg_dict['userId'] = str(request.crn)
         logging.info("Get tenant Msg Dict: %s", msg_dict)
         response = api_rpc.call(dumps(msg_dict))
         response = loads(response)

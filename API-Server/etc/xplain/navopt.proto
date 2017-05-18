@@ -3,7 +3,6 @@ syntax = "proto3";
 package navopt;
 
 import "version.proto";
-import "resources.proto";
 
 // For future compatibility, all rpcs must take a request and return a response
 // even if there is initially no content for these messages.
@@ -96,7 +95,8 @@ message GetS3urlResponse {
 message GetTenantRequest {
   string email = 1;
   string clusterId = 2;
-  resources.Id userId = 3;
+  string externalAccountId = 3;
+  string crn = 4;
 }
 
 message GetTenantResponse {
