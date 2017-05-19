@@ -30,6 +30,7 @@ class RedisCluster(object):
             self.cluster.zone)
 
     def master_ip_address(self):
+        master_hostname = self.master_hostname()
         return self.cluster.bastion.resolve_hostname(master_hostname)
 
     def master(self, port=6379):
@@ -250,6 +251,44 @@ def decommission(ctx, ignore_offline, dbsilo_name, ips):
             cluster.bastion,
             redis_cluster,
             sentinel_clients)
+
+
+@cli.command('reset-sentinels')
+@click.option('--ignore-offline', default=False, is_flag=True)
+@click.argument('dbsilo_name', required=True)
+@click.pass_context
+def reset_sentinels(ctx, ignore_offline, dbsilo_name):
+    cluster = ctx.obj['cluster']
+    dbsilo = cluster.dbsilo(dbsilo_name)
+
+    redis_cluster = dbsilo.redis_cluster()
+
+    # First, create sentinel clients.
+    sentinel_clients = {}
+    for ip in redis_cluster.instance_private_ips():
+        try:
+            sentinel_client = redis_cluster.sentinel_client(ip)
+        except TunnelDown:
+            if ignore_offline:
+                LOG.error('ip %s is offline', ip)
+                pass
+            else:
+                raise
+        else:
+            if sentinel_client.is_connected():
+                sentinel_clients[ip] = sentinel_client
+            else:
+                LOG.error('ip %s is offline', ip)
+
+    # Make sure sentinels all agree on who is the master
+    if not _sentinels_agree_on_master(redis_cluster, sentinel_clients):
+        ctx.fail('sentinels do not agree who is master')
+
+    msg = 'are you sure you want to apply? [yes/no]: '
+    if not prompt(msg, ctx.obj['yes']):
+        ctx.fail('redis cluster unchanged')
+
+    _reset_sentinels(ctx, redis_cluster, sentinel_clients)
 
 
 def _decommission_ip(ctx, ip, bastion, cluster, sentinel_clients):
