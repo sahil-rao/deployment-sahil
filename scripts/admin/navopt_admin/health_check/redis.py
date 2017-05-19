@@ -111,6 +111,57 @@ class RedisClusterConfigurationCheck(RedisHealthCheck):
             return False
 
 
+class RedisAgreeOnMasterCheck(RedisHealthCheck):
+    description = "Redis nodes agree on the same master"
+
+    def __init__(self, redis_cluster, master, *args, **kwargs):
+        super(RedisAgreeOnMasterCheck, self).__init__(*args, **kwargs)
+
+        self.redis_cluster = redis_cluster
+        self.master = master
+
+    def check_redis_host(self, host):
+        info = host.info()
+
+        if info['role'] == 'master':
+            self.host_msgs[host] = '(master)'
+            return self.check_master_hostname(host)
+
+        master_host = info['master_host']
+        master_port = info['master_port']
+        master_address = '{}:{}'.format(master_host, master_port)
+
+        self.host_msgs[host] = '(slave) current master: ' + master_address
+
+        found_host = self.redis_cluster.cluster.bastion.resolve_hostname(
+            self.master)
+        found_address = '{}:6379'.format(found_host)
+
+        for h in self.hosts:
+            if h.is_connected():
+                if master_address != found_address:
+                    return False
+            else:
+                return False
+
+        return True
+
+    def check_master_hostname(self, host):
+        found_host = self.redis_cluster.cluster.bastion.resolve_hostname(
+            self.master)
+
+        if not found_host:
+            self.host_msgs[host] += ' failed to resolve: ' + self.master
+            return False
+
+        if host.host != found_host:
+            self.host_msgs[host] += \
+                ' master url resolves to {}'.format(found_host)
+            return False
+        else:
+            return True
+
+
 class RedisClusterSyncCheck(RedisHealthCheck):
 
     description = "Redis cluster is not syncing"
@@ -130,7 +181,7 @@ class RedisSentinelHealthCheck(RedisHealthCheck):
 
 
 class RedisSentinelMastersCheck(RedisSentinelHealthCheck):
-    description = "Redis sentinels have the same master"
+    description = "Redis sentinels see the same redis server master"
 
     def __init__(self, redis_cluster, *args, **kwargs):
         super(RedisSentinelMastersCheck, self).__init__(*args, **kwargs)
@@ -138,39 +189,24 @@ class RedisSentinelMastersCheck(RedisSentinelHealthCheck):
         self.redis_cluster = redis_cluster
 
     def check_redis_host(self, host):
-        ip = host.sentinel_masters()[self.master]['ip']
+        info = host.sentinel_masters()[self.master]
+        master_host = info['ip']
+        master_port = info['port']
+        master_address = '{}:{}'.format(master_host, master_port)
 
-        if host.host == ip:
-            self.host_msgs[host] = '(current master)'
-            return self.check_master_hostname(host)
-
-        self.host_msgs[host] = 'master: {}'.format(ip)
+        self.host_msgs[host] = 'server master: ' + master_address
 
         for h in self.hosts:
             if h == host:
                 continue
 
             if h.is_connected():
-                if h.sentinel_masters()[self.master].get('ip') != ip:
+                if h.sentinel_masters()[self.master].get('ip') != master_host:
                     return False
             else:
                 return False
 
         return True
-
-    def check_master_hostname(self, host):
-        found_host = self.redis_cluster.cluster.bastion.resolve_hostname(
-            self.master)
-
-        if not found_host:
-            self.host_msgs[host] += ' failed to resolve: ' + master_hostname
-            return False
-
-        if host.host != found_host:
-            self.host_msgs[host] += ' master is on {}'.format(found_host)
-            return False
-        else:
-            return True
 
 
 class RedisSameSentinelsCheck(RedisSentinelHealthCheck):
@@ -200,14 +236,13 @@ class RedisSameSentinelsCheck(RedisSentinelHealthCheck):
         sentinels.add('{}:{}'.format(redis.host, redis.port))
 
         sentinels.update(
-            sentinel['name']
+            '{}:{}'.format(sentinel['ip'], sentinel['port'])
             for sentinel in redis.sentinel_sentinels(self.master))
 
         return sentinels
 
 
 class RedisSentinelQuorumCheck(RedisSentinelHealthCheck):
-
     description = \
         "Redis sentinel is >= quorum, is odd, " \
         "and matches other sentinels"
@@ -274,6 +309,9 @@ def check_redis(redis_cluster):
             RedisAofDisabledCheck(redis_servers),
             RedisMemoryUsageCheck(redis_servers),
             RedisClusterConfigurationCheck(redis_servers),
+            RedisAgreeOnMasterCheck(redis_cluster,
+                                    master_hostname,
+                                    redis_servers),
 
             RedisClusterSyncCheck(redis_servers),
 
