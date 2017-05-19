@@ -101,3 +101,36 @@ module "dbsilo2" {
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
     log_subscription_destination_arn = "${module.common.log_subscription_destination_arn}"
 }
+
+module "dbsilo3-redis" {
+    source = "../../services/redis"
+
+    vpc_id = "${data.terraform_remote_state.networking.vpc_id}"
+    subnet_ids = ["${data.terraform_remote_state.networking.private_subnet_ids}"]
+    private_cidrs = [
+        "${data.terraform_remote_state.networking.all_access_cidrs}",
+    ]
+    zone_id = "${data.terraform_remote_state.networking.private_zone_id}"
+    zone_name = "${data.terraform_remote_state.networking.zone_name}"
+
+    key_name = "${var.key_name}"
+
+    service = "dbsilo3-redis"
+    env = "${var.cluster_name}"
+    datadog_api_key = "${var.datadog_api_key}"
+
+    name = "${var.cluster_name}-dbsilo3-redis"
+    version = "v052"
+    ami_id = "ami-944929f4" # redis 3.2.8
+    instance_type = "t2.medium"
+    min_size = 0
+    max_size = 3
+    desired_capacity = 3
+    ebs_optimized = false
+
+    cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
+    log_subscription_destination_arn = "${module.common.log_subscription_destination_arn}"
+
+    master_name = "dbsilo3-redis-master.navopt-dev.cloudera.com"
+    quorum_size = 2
+}
