@@ -3,3 +3,5 @@
 set -euv
 
 reboot now
+
+sleep 60
