@@ -20,6 +20,7 @@ apt-get -y install \
 	python-pip \
 	vim
 
+pip install --upgrade pip
 pip install awscli-cwlogs==1.4.0
 pip install awscli==1.9.8
 pip install boto==2.45.0
