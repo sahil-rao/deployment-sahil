@@ -1,44 +1,63 @@
 #!/bin/bash
+set -m
 
-j2 /hosts.j2 /config.json > /var/Baaz/hosts.cfg
+# if any suprocess exits trap and exit
 
-if [ "$SERVICE_NAME" == "applicationservice" ]
-then
-j2 /logback.j2 /config.json > /usr/lib/baaz_compiler/logback.xml
+function chld_exit() {
+  kill -9 $xplain_pid $python_pid
+  exit 0
+}
+
 export COMPILER_PORT=12121
 export HIVE_HOME=/usr/local/hive
-/usr/local/bin/xplaincompileserver & sudo COMPILER_PORT=$COMPILER_PORT python /usr/local/bin/ApplicationService.py
 
-elif [ "$SERVICE_NAME" == "compileservice" ]
-then
+case "$SERVICE_NAME" in
+  "applicationservice" )
+    python_service=/usr/local/bin/ApplicationService.py
+    java_svc='yes'
+  ;;
+  "compileservice" )
+    python_service=/usr/local/bin/BaazCompileService.py
+    java_svc='yes'
+  ;;
+  "advanalytics" )
+    python_service=/usr/local/bin/XplainAdvAnalyticsService.py
+    java_svc='yes'
+  ;;
+  "apiservice" )
+    python_service=/usr/local/bin/ApiService.py
+    java_svc='yes'
+  ;;
+  "mathservice" )
+    python_service=/usr/local/bin/BaazMathService.py
+  ;;
+  "ruleengineservice" )
+    python_service=/usr/local/bin/RuleEngineService.py
+  ;;
+  "elasticpub" )
+    python_service=/usr/local/bin/ElasticPubService.py
+  ;;
+  "dataacquisitionservice" )
+    python_service=/usr/local/bin/FPProcessingService.py
+  ;;
+  * )
+    echo "No service was found for the given argument"
+    exit 1
+  ;;
+esac
+
+j2 /hosts.j2 /config.json > /var/Baaz/hosts.cfg
 j2 /logback.j2 /config.json > /usr/lib/baaz_compiler/logback.xml
-export COMPILER_PORT=13131
-export HIVE_HOME=/usr/local/hive
-/usr/local/bin/xplaincompileserver & sudo COMPILER_PORT=$COMPILER_PORT python /usr/local/bin/BaazCompileService.py
 
-elif [ "$SERVICE_NAME" == "advanalytics" ]
+trap chld_exit CHLD
+
+if [ ! -z "$java_svc" ]
 then
-j2 /logback.j2 /config.json > /usr/lib/baaz_compiler/logback.xml
-export COMPILER_PORT=14141
-export HIVE_HOME=/usr/local/hive
-/usr/local/bin/xplaincompileserver & sudo COMPILER_PORT=$COMPILER_PORT python /usr/local/bin/XplainAdvAnalyticsService.py
-
-elif [ "$SERVICE_NAME" == "mathservice" ]
-then
-sudo python /usr/local/bin/BaazMathService.py
-
-elif [ "$SERVICE_NAME" == "ruleengineservice" ]
-then
-sudo python /usr/local/bin/RuleEngineService.py
-
-elif [ "$SERVICE_NAME" == "elasticpub" ]
-then
-sudo python /usr/local/bin/ElasticPubService.py
-
-elif [ "$SERVICE_NAME" == "dataacquisitionservice" ]
-then
-sudo python /usr/local/bin/FPProcessingService.py
-
-else
-echo "No service was found for the inputted service"
+  (/usr/local/bin/xplaincompileserver) &
+  xplain_pid=$!
 fi
+
+(/usr/bin/python $python_service) &
+python_pid=$!
+
+wait

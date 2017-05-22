@@ -5,6 +5,9 @@ import getpass
 import os
 import subprocess
 import sys
+import boto3
+from botocore.exceptions import ClientError
+import time
 
 CONFIG = {
     'dev': {
@@ -89,7 +92,17 @@ SERVICES = {
             'navopt-pyservices',
             'compiler',
         ],
-    },
+        'ecs_tasks': [
+            'navopt-applicationservice-test',
+            'navopt-advanalytics-test',
+            'navopt-mathservice-test',
+            'navopt-ruleengine-test',
+            'navopt-compileservice-test',
+            'navopt-fpprocessing-test',
+            'navopt-apiservice-test',
+            'navopt-dataacquisitionservice-test'
+        ]
+    }
 }
 
 DEFAULT_GITHUB_PROJECT = 'git@github.com:baazdata'
@@ -203,6 +216,7 @@ def determine_services_to_build(args, services):
     services_to_build = []
 
     def process(service):
+
         for dependency in SERVICES[service].get('dependencies', ()):
             process(dependency)
 
@@ -216,8 +230,11 @@ def determine_services_to_build(args, services):
         if args.build_dependencies or service in services:
             services_to_build.append(service)
 
-    for service in services:
-        process(service)
+    for service in args.services:
+        process(service.split(":")[0])
+
+    print "will build:"
+    print services_to_build
 
     return services_to_build
 
@@ -226,14 +243,29 @@ def build_services(args, services):
     if not args.build:
         return
 
-    # Discover and add any dependencies to our build list.
+    branch_overrides = {}
+
+    for service_override in args.services:
+        if ":" in service_override:
+            branch_overrides[service_override.split(":")[0]] = service_override.split(":")[1]
+
     services_to_build = determine_services_to_build(args, services)
 
+    args_default_branch = args.branch
+
     for service in services_to_build:
-        if SERVICES[service].get('docker'):
-            build_docker_image(args, service)
+
+        if service in branch_overrides:
+            args.branch = branch_overrides[service]
+
+        if SERVICES[service].get('docker', False):
+           #  build_docker_image(args, service)
+             print("building docker %s branch in  %s service " %  (args.branch, service))
         else:
-            build_service(args, service)
+           #  build_service(args, service)
+             print("building %s branch in  %s service " % (args.branch, service))
+
+        args.branch = args_default_branch
 
 
 def upload_service(args, service, target_bucket):
@@ -252,16 +284,116 @@ def upload_service(args, service, target_bucket):
         print '--- uploading', src, 'to', dst
         cmd = [
             'aws',
-            '--profile', CONFIG[args.env]['aws_profile'],
+                '--profile', CONFIG[args.env]['aws_profile'],
             's3',
             'cp',
             src,
             dst,
         ]
+        print cmd
         run_command(args, cmd)
 
 
+def refresh_ecs_service(args, service):
+
+    docker_endpoint = '{}.dkr.ecr.{}.amazonaws.com'.format(
+        CONFIG[args.env]['account'],
+        CONFIG[args.env]['region'],
+    )
+
+    cluster = args.cluster
+    image = service
+    tag = args.tag
+    tasks = []
+
+    if 'all' in args.refresh_ecs:
+        tasks = SERVICES[service]['ecs_tasks']
+    else:
+        tasks = args.refresh_ecs
+
+    boto3.setup_default_session(profile_name=CONFIG[args.env]['aws_profile'],\
+                                region_name=CONFIG[args.env]['region'])
+    try:
+        ecs = boto3.client('ecs')
+    except ClientError as err:
+        print('Failed to create boto3 client.\n%s ... aborting refresh.' % err)
+        sys.exit(1)
+
+
+    for task in tasks:
+
+        task_definition = ecs.describe_task_definition(taskDefinition=task)['taskDefinition']
+
+        task_definition['containerDefinitions'][0]['image'] = '{0}/{1}:{2}'.format(docker_endpoint, \
+                                                                                   image, \
+                                                                                   tag)
+
+        new_task_definition = ecs.register_task_definition(family = task_definition['family'],\
+                        volumes = task_definition['volumes'],\
+                        containerDefinitions = task_definition['containerDefinitions'])['taskDefinition']
+
+        ecs.update_service(cluster=cluster, service=task, taskDefinition=task)
+
+        # loop for desired timeout
+        timeout = time.time() + 90
+        while True:
+            updated = False
+            progress = False
+            task_arns = ecs.list_tasks(cluster=cluster, family=task)['taskArns']
+            # no running tasks for that service ..
+            if len(task_arns) == 0:
+                if not progress:
+                    sys.stdout.write("Waiting for %s to spawn..." % (task))
+                    progress = True
+                else:
+                    sys.stdout.write(".")
+                time.sleep(3)
+                continue
+
+            running_tasks = ecs.describe_tasks(cluster=cluster,tasks=task_arns )['tasks']
+
+            for running_task in running_tasks:
+                if running_task['taskDefinitionArn'] == new_task_definition['taskDefinitionArn']:
+                    print("")
+                    print('SUCCESS')
+                    updated = True
+            if time.time() > timeout:
+                print ("Timeout while updating %s... moving on.." % (task))
+                break
+            if updated:
+                print (" %s updated .. " % (task))
+                break
+            time.sleep(1)
+
 def push_docker_image(args, image):
+
+    if args.assume_yes is None:
+        print
+        print '-' * 78
+        print
+        print \
+            'Are you sure you want to push the following image?', \
+            image
+
+        if not prompt('[yes/no]: ', args.assume_yes):
+            return
+
+    if not args.tag:
+        tag = 'latest'
+    else:
+        tag = args.tag
+
+    if args.assume_yes is None:
+        print
+        print '-' * 78
+        print
+        print \
+            'Are you sure you want to push the following image?', \
+            image
+
+        if not prompt('[yes/no]: ', args.assume_yes):
+            return
+
     # Log into AWS Region.
     # The aws command returns the 'docker login' command.
     # It does not actually run it, so we capture the output
@@ -281,23 +413,27 @@ def push_docker_image(args, image):
         CONFIG[args.env]['region'],
     )
 
-    for tag in args.tags:
-        # Tag the image
-        cmd = [
-            'docker',
-            'tag',
-            '{0}'.format(image),
-            '{0}/{1}:{2}'.format(docker_endpoint, image, tag),
-        ]
-        run_command(args, cmd)
+    # Tag the image
+    cmd = [
+        'docker',
+        'tag',
+        '{0}'.format(image),
+        '{0}/{1}:{2}'.format(
+            docker_endpoint,
+            image,
+            tag),
+    ]
 
-        # Push the image
-        cmd = [
-            'docker',
-            'push',
-            '{0}/{1}:{2}'.format(docker_endpoint, image, tag),
-        ]
-        run_command(args, cmd)
+    run_command(args, cmd)
+
+    # Push the image
+    cmd = [
+        'docker',
+        'push',
+        '{0}/{1}:{2}'.format(docker_endpoint, image, tag),
+    ]
+
+    #run_command(args, cmd)
 
 
 def prompt(msg, assume_yes=None):
@@ -312,11 +448,14 @@ def prompt(msg, assume_yes=None):
             return False
 
 
-def upload_services(args, services, target_bucket):
+def upload_services(args, services, target_path):
+
     if not args.upload or args.assume_yes is False:
         return
 
     services = set(services)
+
+    target_bucket = CONFIG[args.env]['bucket']
 
     if args.assume_yes is None:
         print
@@ -330,10 +469,20 @@ def upload_services(args, services, target_bucket):
             return
 
     for service in services:
-        if SERVICES[service].get('docker', False):
-            push_docker_image(args, service)
-        else:
-            upload_service(args, service, target_bucket)
+        service_name = service.split(":")[0]
+
+        if SERVICES[service_name].get('docker', False):
+            push_docker_image(args, service_name)
+        elif not args.release:
+                target_bucket = os.path.join(target_bucket, target_path)
+
+                if ":" in service:
+                    target_bucket = os.path.join(target_bucket, service.split(":")[1])
+                else:
+                    target_bucket = os.path.join(target_bucket, args.branch)
+
+                upload_service(args, service_name, target_bucket)
+                target_bucket = ""
 
 
 def parse_args():
@@ -377,7 +526,7 @@ def parse_args():
     parser.add_argument(
         '--branch',
         default='master',
-        help='which branch to build (defaults to `master`)')
+        help='which common branch to build (default master for all)')
     parser.add_argument(
         '--target_branch',
         default=None,
@@ -386,7 +535,7 @@ def parse_args():
         '--target_path',
         help='upload artifacts to this bucket (default $USERNAME/$BRANCH)')
     parser.add_argument(
-        '--tag',
+        '--artifact-tag',
         dest='tags',
         default=None,
         action='append',
@@ -412,10 +561,23 @@ def parse_args():
     parser.add_argument(
         'services',
         default='all',
-        choices=['all'] + SERVICES.keys(),
+        #choices=['all'] + SERVICES.keys(),
         nargs='*',
-        help='which services to build')
-
+        help='which services to build (service_name:branch)')
+    parser.add_argument(
+        '--tag',
+        default='latest',
+        help='tag for the resulting docker image and ecs task')
+    parser.add_argument(
+        '--refresh-ecs',
+        default=None,
+        dest='refresh_ecs',
+        nargs='*',
+        help='refresh task(s) in ecs (complete deploy if applicable)')
+    parser.add_argument(
+        '--cluster',
+        default=None,
+        help='cluster to refresh')
     return parser.parse_args()
 
 
@@ -431,9 +593,9 @@ def main():
     ############################################################################
     # Validate arguments
 
-    if not args.branch:
-        print >> sys.stderr, 'build branch is empty'
-        return 1
+    # if not args.branch:
+    #    print >> sys.stderr, 'build branch is empty'
+    #    return 1
 
     # Use the build branch if the target branch is not specified.
     target_branch = args.target_branch
@@ -446,17 +608,18 @@ def main():
 
     target_path = args.target_path
     if target_path is None:
-        target_path = '{}/{}'.format(getpass.getuser(), target_branch)
+        target_path = '{}/'.format(getpass.getuser())
 
     if not target_path:
         print >> sys.stderr, 'target path is empty'
         return 1
 
-    target_bucket = CONFIG[args.env]['bucket']
-    if not args.release:
-        target_bucket = os.path.join(target_bucket, target_path)
+    if args.refresh_ecs:
+        if not args.cluster:
+            print >> sys.stderr, 'cluster is mandatory with --refresh-ecs'
+            return 1
 
-    if args.upload and not args.tags:
+    if args.upload and not args.tag:
         if any(SERVICES[service].get('docker') for service in services):
             print >> sys.stderr, 'docker images require a tag'
             return 1
@@ -474,8 +637,13 @@ def main():
         os.makedirs('target')
 
     build_services(args, services)
-    upload_services(args, services, target_bucket)
+    upload_services(args, services, target_path)
 
+    if args.refresh_ecs:
+        for  service in args.services:
+            if 'ecs_tasks' in SERVICES[service] and 'docker' in SERVICES[service]:
+                print "refreshing ecs"
+                refresh_ecs_service(args, service)
 
 if __name__ == '__main__':
     sys.exit(main())

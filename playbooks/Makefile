@@ -5,7 +5,7 @@ all: setup-pip setup-ansible
 
 venv:
 	virtualenv $(VENV_DIR)
-	$(VENV_DIR)/bin/pip install --upgrade pip==8.1.1 # needed for pip-tools<1.7
+#	$(VENV_DIR)/bin/pip install --upgrade pip==8.1.1 # needed for pip-tools<1.7
 	$(VENV_DIR)/bin/pip install pip-tools
 
 requirements.txt: venv requirements.in

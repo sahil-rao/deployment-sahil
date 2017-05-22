@@ -12,14 +12,10 @@ enum34==1.1.6             # via cryptography
 idna==2.1                 # via cryptography
 ipaddress==1.0.17         # via cryptography
 jinja2==2.8               # via ansible
-MarkupSafe==0.23          # via jinja2
+markupsafe==0.23          # via jinja2
 paramiko==2.0.2           # via ansible
 pyasn1==0.1.9             # via cryptography, paramiko
 pycparser==2.14           # via cffi
 pycrypto==2.6.1           # via ansible
-PyYAML==3.12              # via ansible
+pyyaml==3.12              # via ansible
 six==1.10.0               # via cryptography
-
-# The following packages are commented out because they are
-# considered to be unsafe in a requirements file:
-# setuptools                # via ansible, cryptography

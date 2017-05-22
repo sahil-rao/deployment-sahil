@@ -15,7 +15,7 @@ RUN pip install -U pip
 RUN pip install thrift==0.9.3 boto pika==0.9.8 networkx sqlparse \
                 elasticsearch httplib2 pygraphviz redis \
                 python-logstash binaryornot pymongo rlog mock \
-                six --upgrade pbr funcsigs datadog pandas j2cli py_zipkin
+                six --upgrade pbr funcsigs datadog pandas j2cli py_zipkin scipy
 
 RUN mkdir /var/Baaz
 RUN mkdir /var/log/cloudera && mkdir /var/log/cloudera/navopt
@@ -26,5 +26,6 @@ ADD target/Baaz-Analytics-Service.tar.gz /
 ADD target/Baaz-Compile-Service.tar.gz /
 ADD navopt-pyservices/hosts.j2 /
 ADD navopt-pyservices/logback.j2 /
+ADD navopt-pyservices/config.json /
 ADD navopt-pyservices/start.sh /
 CMD ./start.sh
