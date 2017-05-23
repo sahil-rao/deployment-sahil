@@ -52,8 +52,7 @@ EOF
 cat << EOF > /lib/systemd/system/awslogs.service
 [Unit]
 Description=AWS CloudWatch Log Collector
-Wants=cloud-final.service
-After=cloud-final.service
+After=network.service
 
 [Service]
 ExecStart=/usr/local/share/awslogs/bin/aws logs push --config-file /etc/awslogs/awslogs.conf --additional-configs-dir /etc/awslogs/config
