@@ -1,8 +1,9 @@
 [Unit]
 Description=Redis register host
 After=redis-server.service
-After=redis-sentinel.service
 Requires=redis-server.service
+
+After=redis-sentinel.service
 Requires=redis-sentinel.service
 
 [Timer]

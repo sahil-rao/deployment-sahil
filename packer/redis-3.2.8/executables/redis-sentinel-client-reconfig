@@ -2,4 +2,11 @@
 
 set -eu
 
+NAVOPTENV="/etc/navoptenv.json"
+
+while [ ! -f "$NAVOPTENV" ]; do
+	echo "waiting for $NAVOPTENV to exist"
+	sleep 1
+done
+
 /usr/local/share/redis-mgmt/bin/redis-register-master-hostname

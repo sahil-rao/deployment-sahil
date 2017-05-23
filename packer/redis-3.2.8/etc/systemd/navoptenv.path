@@ -1,0 +1,8 @@
+[Unit]
+Description=Wait for /etc/navoptenv.json to exist
+
+[Path]
+PathExists=/etc/navoptenv.json
+
+[Install]
+WantedBy=multi-user.target

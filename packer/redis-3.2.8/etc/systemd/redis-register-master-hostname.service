@@ -1,9 +1,13 @@
 [Unit]
 Description=Register host
 After=redis-server.service
-After=redis-sentinel.service
 Requires=redis-server.service
+
+After=redis-sentinel.service
 Requires=redis-sentinel.service
+
+After=navoptenv.path
+Wants=navoptenv.path
 
 [Service]
 Type=oneshot

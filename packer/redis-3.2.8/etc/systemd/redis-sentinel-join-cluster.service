@@ -1,0 +1,16 @@
+[Unit]
+Description=Join redis sentinel cluster
+After=redis-sentinel.service
+Wants=redis-sentinel.service
+
+After=navoptenv.path
+Wants=navoptenv.path
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/share/redis-mgmt/bin/redis-sentinel-join-cluster
+User=redis
+Group=redis
+
+[Install]
+WantedBy=multi-user.target
