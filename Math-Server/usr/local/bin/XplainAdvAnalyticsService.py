@@ -68,9 +68,6 @@ if not usingAWS:
     statsd = None
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=XPLAIN_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
-es_logger = logging.getLogger('elasticsearch')
-es_logger.propagate = False
-es_logger.setLevel(logging.WARN)
 
 """
 In AWS use S3 log rotate to save the log files.
@@ -692,7 +689,7 @@ def real_callback(ch, method, properties, msg_dict, zattrs):
         totalTime = (time.clock() - startTime)
         statsd.timing("advanalytics.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
 
-connection1 = RabbitConnection(callback, ['advanalytics'], ['elasticpub'], {}, prefetch_count=1)
+connection1 = RabbitConnection(callback, ['advanalytics'], [], {}, prefetch_count=1)
 
 logging.info("XplainAdvAnalytics going to start consuming")
 

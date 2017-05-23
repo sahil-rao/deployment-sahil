@@ -16,7 +16,6 @@ from flightpath.RedisConnector import *
 from flightpath.ScaleModeConnector import *
 from flightpath import FPConnector
 from json import *
-import elasticsearch
 import shutil
 import os
 import tarfile

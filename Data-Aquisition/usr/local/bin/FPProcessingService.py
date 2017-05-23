@@ -18,7 +18,6 @@ from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 
 from json import loads, dumps
-import elasticsearch
 import shutil
 import os
 import tarfile
@@ -78,9 +77,6 @@ if not usingAWS:
     statsd = None
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_FP_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
-es_logger = logging.getLogger('elasticsearch')
-es_logger.propagate = False
-es_logger.setLevel(logging.WARN)
 
 
 """
@@ -167,44 +163,6 @@ def updateRelationCounter(redis_conn, eid):
         if rel['rtype'] in relationshipTypes:
             redis_conn.incrRelationshipCounter(rel['start_en'], eid, rel['rtype'], "instance_count", incrBy=1)
 
-
-def elasticConnect(tenantID, clog):
-
-    elastichosts = getElasticServer(tenantID)
-    if not elastichosts:
-        return
-
-    es = elasticsearch.Elasticsearch(hosts=[{'host' : es_host, 'port' : 9200} for es_host in elastichosts])
-    if es is None:
-        return
-    try:
-        if not es.indices.exists(index=tenantID):
-            mapping = { "entity" : {
-                            "properties" : {
-                                "name":{
-                                    "type":"completion",
-                                    "context" : {
-                                        "etype" : {
-                                            "type" : "category",
-                                            "default" : ["SQL_QUERY","SQL_TABLE"],
-                                            "path" : "etype"
-                                        }
-                                    },
-                                    "fields" : {
-                                        "untouched" : { "type":"string", "index":"not_analyzed" }
-                                    }
-                                },
-                            "eid" : { "type" : "completion" }
-                        }
-                    }
-                }
-
-            settings = { "index" : { } }
-
-            es.indices.create(index=tenantID, body=settings, ignore=[400,409])
-            es.indices.put_mapping(index=tenantID, doc_type='entity', body=mapping, ignore=[400,409])
-    except:
-        clog.exception("Elastic Search : ")
 
 class callback_context():
 
@@ -366,9 +324,7 @@ class callback_context():
                 column_entry['tableName'] = table_name
                 column_entity = Self.mongoconn.addEn(eid, column_entity_name, Self.tenant,\
                                                 EntityType.SQL_TABLE_COLUMN, column_entry, None)
-                #create Elastic search index
-                sendToElastic(connection1, Self.redis_conn, Self.tenant, Self.uid,
-                              column_entity, column_entity_name, EntityType.SQL_TABLE_COLUMN)
+
                 #updated the upload stats for column
                 Self.redis_conn.incrEntityCounter(Self.uid, "Compiler.%s.newColumns"%(Self.compiler_to_use), incrBy=1)
                 '''
@@ -600,7 +556,6 @@ def callback(ch, method, properties, body, **kwargs):
     if "opcode" in msg_dict and msg_dict["opcode"] == "scale_mode":
         scale_mode = True
 
-    elasticConnect(tenant, clog)
     r_collection = None
     dest_file = None
 
@@ -829,7 +784,7 @@ def callback(ch, method, properties, body, **kwargs):
 
     connection1.basicAck(ch, method)
 
-connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue','elasticpub'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)
+connection1 = RabbitConnection(callback, ['ftpupload'], ['compilerqueue','mathqueue'], {"Fanout": {'type':"fanout"}}, prefetch_count=1)
 
 
 logging.info("FPProcessingService going to start consuming")

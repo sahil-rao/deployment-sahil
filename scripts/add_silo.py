@@ -10,9 +10,6 @@ def add_silo():
         "redis": {
             "nodes": "172.31.37.232,172.31.30.247,172.31.3.43"
         },
-        "elasticsearch": {
-            "nodes": "172.31.45.98,172.31.20.234,172.31.15.114"
-        },
         "siloinfo": {
             "siloname": "dbsilo3",
             "capacitylimit": 1000
@@ -33,7 +30,6 @@ def add_silo():
     #Add information about silo to redis
     dbsilo_info_data = { "mongo": new_silo_info["mongo"]["nodes"],
                          "redis": new_silo_info["redis"]["nodes"],
-                         "elastic": new_silo_info["elasticsearch"]["nodes"],
                          "capacitylimit": new_silo_info["siloinfo"]["capacitylimit"],
                          "name": new_silo_info["siloinfo"]["siloname"] }
     r.hmset(dbsilo_info_key, dbsilo_info_data)

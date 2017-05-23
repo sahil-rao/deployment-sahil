@@ -1,6 +1,5 @@
 #Restarts stateful services (mongodb and elasticsearch) 
 sudo mongod --fork --logpath /mnt/volume1/mongo/log/mongo.log -dbpath /mnt/volume1/mongo/db 
-sudo service elasticsearch restart
 
 # Restart java compilers
 sudo stop advanalytics_compiler 

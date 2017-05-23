@@ -39,7 +39,6 @@ import flightpath.services.app_add_table_volume as add_table_volume
 import flightpath.services.app_get_impala_import as get_impala_import
 from flightpath import FPConnector
 from json import *
-import elasticsearch
 import shutil
 import os
 import tarfile
@@ -100,9 +99,6 @@ if not usingAWS:
     statsd = None
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=APPSRV_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
-es_logger = logging.getLogger('elasticsearch')
-es_logger.propagate = False
-es_logger.setLevel(logging.WARN)
 
 """
 In AWS use S3 log rotate to save the log files.
@@ -452,8 +448,6 @@ def callback(ch, method, properties, body):
         elif msg_dict['opcode'] == "GetRedisForTenant":
             resp_dict = {'redis_master_name': FPConnector.get_redis_master_name(tenant),
                          'redis_hosts': FPConnector.get_redis_hosts(tenant)}
-        elif msg_dict['opcode'] == "ElasticNodesForTenant":
-            resp_dict = {'elastic_nodes': FPConnector.get_elastic_nodes(tenant)}
         else:
             api_config= ConfigParser.RawConfigParser()
             api_config.read("/etc/xplain/application-api.cfg")

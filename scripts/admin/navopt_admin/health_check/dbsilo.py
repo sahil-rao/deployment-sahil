@@ -8,7 +8,7 @@ from . import redis
 
 def check_dbsilo(dbsilo, services=None):
     if services is None:
-        services = ('mongo', 'redis', 'elasticsearch')
+        services = ('mongo', 'redis')
 
     dbsilo_checklist = base.HealthCheckList(
             description=dbsilo.name.upper() + " Health Checklist")

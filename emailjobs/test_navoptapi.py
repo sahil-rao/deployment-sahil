@@ -6,7 +6,7 @@ import sys
 import time
 import uuid
 from flightpath.services import app_cleanup_user
-from flightpath.Provenance import getMongoServer, getElasticServer
+from flightpath.Provenance import getMongoServer
 from navoptapi.api_lib import ApiLib
 
 class TestNavOptApi(unittest.TestCase):

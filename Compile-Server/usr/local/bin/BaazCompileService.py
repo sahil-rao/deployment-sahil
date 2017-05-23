@@ -75,9 +75,6 @@ if not usingAWS:
     statsd = None
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_COMPILER_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
-es_logger = logging.getLogger('elasticsearch')
-es_logger.propagate = False
-es_logger.setLevel(logging.WARN)
 
 """
 In AWS use S3 log rotate to save the log files.
@@ -172,9 +169,6 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
                             EntityType.SQL_TABLE_COLUMN, column_entry, None)
 
             if column_entity.eid == eid:
-                #create Elastic search index
-                sendToElastic(connection1, redis_conn, tenant, uid,
-                              column_entity, column_entity_name, EntityType.SQL_TABLE_COLUMN)
                 clog.debug("TABLE_COLUMN Relation between {0} {1}\n".format(table_entity.eid, column_entity.eid))
                 redis_conn.createEntityProfile(column_entity.eid, "SQL_TABLE_COLUMN")
                 redis_conn.setEntityProfile(column_entity.eid, {"name": column_entity_name})
@@ -304,9 +298,6 @@ def processTableSet(tableset, ch, mongoconn, redis_conn, tenant, uid, entity, is
                 mongoconn.addEn(eid, database_name, tenant,\
                           EntityType.SQL_DATABASE, endict, None)
                 database_entity = mongoconn.getEntityByName(database_name)
-                #create Elastic search index
-                sendToElastic(connection1, redis_conn, tenant, uid,
-                              database_entity, database_name, EntityType.SQL_DATABASE)
                 dbCount = dbCount + 1
                 redis_conn.createEntityProfile(database_entity.eid, "SQL_DATABASE")
                 redis_conn.incrEntityCounter(database_entity.eid, "instance_count", sort = True, incrBy=0)
@@ -498,9 +489,6 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
             database_entity = mongoconn.getEntityByName(database_name)
             redis_conn.createEntityProfile(database_entity.eid, "SQL_DATABASE")
             redis_conn.incrEntityCounter(database_entity.eid, "instance_count", sort = True, incrBy=0)
-            #create Elastic search index
-            sendToElastic(connection1, redis_conn, tenant, uid,
-                          database_entity, database_name, EntityType.SQL_DATABASE)
             dbCount = dbCount + 1
         else:
             redis_conn.incrEntityCounter(database_entity.eid, "instance_count", sort = True, incrBy=1)
@@ -624,9 +612,6 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
             database_entity = mongoconn.getEntityByName(database_name)
             redis_conn.createEntityProfile(database_entity.eid, "SQL_DATABASE")
             redis_conn.incrEntityCounter(database_entity.eid, "instance_count", sort = True, incrBy=0)
-            #create Elastic search index
-            sendToElastic(connection1, redis_conn, tenant, uid,
-                          database_entity, database_name, EntityType.SQL_DATABASE)
             dbCount = dbCount + 1
 
     """
@@ -957,9 +942,6 @@ def process_tag_array(tenant, q_eid, mongoconn, redis_conn, tagArray, data, uid)
                                          tag_profile, None)
             if tag_eid == tag_entity.eid:
                 redis_conn.createEntityProfile(tag_entity.eid, tag_etype)
-            #create Elastic search index
-            sendToElastic(connection1, redis_conn, tenant, uid,
-                          tag_entity, tag_name, tag_etype)
             """
             Establish relationship between the Tag entity and the query.
                 Tag -> Query.
@@ -1204,9 +1186,6 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                 return None, None
             if eid == entity.eid:
 
-                #create Elastic search index
-                sendToElastic(connection1, redis_conn, tenant, uid,
-                              entity, query, etype)
                 redis_conn.createEntityProfile(entity.eid, etype)
                 redis_conn.incrEntityCounterWithSecKey(entity.eid,
                                                        "instance_count",
@@ -2106,7 +2085,7 @@ def callback(ch, method, properties, body, **kwargs):
     decrementPendingMessage(collection, redis_conn, uid, received_msgID, end_of_phase_callback, callback_params)
 
     
-connection1 = RabbitConnection(callback, ['compilerqueue'], ['mathqueue', 'elasticpub'], {})
+connection1 = RabbitConnection(callback, ['compilerqueue'], ['mathqueue'], {})
 
 logging.info("BaazCompiler going to start Consuming")
 

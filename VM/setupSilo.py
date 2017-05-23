@@ -15,7 +15,6 @@ def add_silo():
     #Add information about silo to redis                                                                                                                                                                                                                                      
     dbsilo_info_data = { "mongo": "mongodb://127.0.0.1/",
                          "redis": "redismasterSilo1",
-                         "elastic": "127.0.0.1",
                          "capacitylimit": "100",
                          "name": "Silo1" }
     r.hmset(dbsilo_info_key, dbsilo_info_data)

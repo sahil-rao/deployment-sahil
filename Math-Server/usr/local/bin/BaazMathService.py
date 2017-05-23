@@ -67,9 +67,7 @@ if not usingAWS:
     statsd = None
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_MATH_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
-es_logger = logging.getLogger('elasticsearch')
-es_logger.propagate = False
-es_logger.setLevel(logging.WARN)
+
 
 """
 In AWS use S3 log rotate to save the log files.
@@ -442,7 +440,7 @@ def callback(ch, method, properties, body, **kwargs):
         totalTime = (time.clock() - startTime)
         statsd.timing("mathservice.per.msg.time", totalTime, tags=["tenant:"+tenant, "uid:"+uid])
 
-connection1 = RabbitConnection(callback, ['mathqueue'], ['elasticpub'], {})
+connection1 = RabbitConnection(callback, ['mathqueue'], [], {})
 
 logging.info("BaazMath going to start consuming")
 

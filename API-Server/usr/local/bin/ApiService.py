@@ -19,7 +19,6 @@ from flightpath.RedisConnector import *
 from flightpath.ScaleModeConnector import *
 from flightpath import FPConnector
 from json import *
-import elasticsearch
 import shutil
 import os
 import tarfile
@@ -80,9 +79,6 @@ if not usingAWS:
     statsd = None
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=APISRV_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
-es_logger = logging.getLogger('elasticsearch')
-es_logger.propagate = False
-es_logger.setLevel(logging.WARN)
 
 """
 In AWS use S3 log rotate to save the log files.
