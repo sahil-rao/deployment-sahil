@@ -31,13 +31,14 @@ tags: app:${app}, env:${env}, service:${service}, type:${type}
 EOF
 /bin/chown dd-agent /etc/dd-agent/datadog.conf
 
-
 cat << EOF > /etc/awslogs/awscli.conf
 [plugins]
 cwlogs = cwlogs
 region = ${region}
 EOF
 /bin/chown root.root /etc/awslogs/awscli.conf
+
+set -x
 
 systemctl enable awslogs.service
 systemctl enable datadog-agent.service
@@ -62,3 +63,14 @@ systemctl restart redis-server-join-cluster.service
 systemctl restart redis-sentinel-join-cluster.service
 systemctl restart redis-backup.timer
 systemctl restart redis-register-master-hostname.timer
+
+sleep 10
+
+systemctl status awslogs.service
+systemctl status datadog-agent.service
+systemctl status redis-server.service
+systemctl status redis-sentinel.service
+systemctl status redis-server-join-cluster.service
+systemctl status redis-sentinel-join-cluster.service
+systemctl status redis-backup.timer
+systemctl status redis-register-master-hostname.timer
