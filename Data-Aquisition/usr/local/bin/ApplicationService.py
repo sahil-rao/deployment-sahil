@@ -27,14 +27,12 @@ import flightpath.services.app_get_top_table_by_patterns as top_tables_by_patter
 import flightpath.services.app_get_top_tables as top_tables
 import flightpath.services.app_get_tail_tables as tail_tables
 import flightpath.services.app_get_columns_by_operator as columns_by_operator
-import flightpath.services.app_get_simple_queries as simple_queries
 import flightpath.services.app_get_table_stats as table_stats
 import flightpath.services.app_get_table_transform_stats as table_transform_stats
 import flightpath.services.app_get_query_transform_stats as query_transform_stats
 import flightpath.services.app_get_column_stats as column_stats
 import flightpath.services.app_get_workload_assessment as workload_assessment
 import flightpath.services.app_get_access_patterns as access_patterns
-import flightpath.services.app_cleanup_user as cleanup_user
 import flightpath.services.app_add_table_volume as add_table_volume
 import flightpath.services.app_get_impala_import as get_impala_import
 from flightpath import FPConnector
@@ -435,10 +433,6 @@ def callback(ch, method, properties, body):
             resp_dict = table_stats.execute(tenant)
         elif msg_dict['opcode'] == "ColumnStats":
             resp_dict = column_stats.execute(tenant)
-        elif msg_dict['opcode'] == "SimpleQueries":
-            resp_dict = simple_queries.execute(tenant)
-        elif msg_dict['opcode'] == "WorkloadAssessment":
-            resp_dict = workload_assessment.execute(tenant)
         elif msg_dict['opcode'] == "AccessPatterns":
             resp_dict = access_patterns.execute(tenant, msg_dict["accessPatternIds"])
         elif msg_dict['opcode'] == "MongoUrlForTenant":
