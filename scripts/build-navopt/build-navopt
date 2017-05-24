@@ -8,6 +8,18 @@ import sys
 import boto3
 from botocore.exceptions import ClientError
 import time
+import threading
+
+
+class FuncThread(threading.Thread):
+    def __init__(self, target, **kwargs):
+        self._target = target
+        self._kwargs = kwargs
+        threading.Thread.__init__(self)
+
+    def run(self):
+       # print self._kwargs
+        self._target(**self._kwargs['kwargs'])
 
 CONFIG = {
     'dev': {
@@ -332,38 +344,72 @@ def refresh_ecs_service(args, service):
                         volumes = task_definition['volumes'],\
                         containerDefinitions = task_definition['containerDefinitions'])['taskDefinition']
 
-        ecs.update_service(cluster=cluster, service=task, taskDefinition=task)
+        sys.stdout.write("Updating service definition for %s > " % (task))
+
+        service_update_thread = FuncThread(ecs.update_service,
+                                               kwargs={
+                                                   'cluster' : cluster,
+                                                   'service' : task,
+                                                   'taskDefinition' : task})
+
+        service_update_thread.start()
+
+        while service_update_thread.isAlive():
+            sys.stdout.write(".")
+            sys.stdout.flush()
+            time.sleep(2)
+        service_update_thread.join()
+
+        print("")
+
+        sys.stdout.write("(Re)Starting tasks for %s > " % (task))
+        sys.stdout.flush()
 
         # loop for desired timeout
         timeout = time.time() + 90
+        task_progress = False
+        spawn_progress = False
         while True:
             updated = False
-            progress = False
+            task_progress = True
             task_arns = ecs.list_tasks(cluster=cluster, family=task)['taskArns']
             # no running tasks for that service ..
             if len(task_arns) == 0:
-                if not progress:
-                    sys.stdout.write("Waiting for %s to spawn..." % (task))
-                    progress = True
+                if not spawn_progress:
+                    sys.stdout.write("Waiting for %s to spawn > " % (task))
+                    sys.stdout.flush()
+                    spawn_progress = True
                 else:
                     sys.stdout.write(".")
+                    sys.stdout.flush()
                 time.sleep(3)
                 continue
 
-            running_tasks = ecs.describe_tasks(cluster=cluster,tasks=task_arns )['tasks']
+            if spawn_progress:
+                print ""
+                spawn_progress = False
+
+            running_tasks = ecs.describe_tasks(cluster=cluster,tasks=task_arns)['tasks']
 
             for running_task in running_tasks:
                 if running_task['taskDefinitionArn'] == new_task_definition['taskDefinitionArn']:
-                    print("")
-                    print('SUCCESS')
+                    if task_progress:
+                        print ""
+                    print('SUCCESS %s started' % running_task['taskArn'])
+                    task_progress = False
                     updated = True
+
             if time.time() > timeout:
-                print ("Timeout while updating %s... moving on.." % (task))
+                print ("Timeout while updating %s... moving on " % (task))
                 break
             if updated:
-                print (" %s updated .. " % (task))
+                print ("%s updated . " % (task))
                 break
-            time.sleep(1)
+            time.sleep(2)
+            sys.stdout.write(".")
+            sys.stdout.flush()
+
+        print("")
 
 def push_docker_image(args, image):
 
@@ -642,7 +688,7 @@ def main():
     if args.refresh_ecs:
         for  service in args.services:
             if 'ecs_tasks' in SERVICES[service] and 'docker' in SERVICES[service]:
-                print "refreshing ecs"
+                print "Refreshing ecs ..."
                 refresh_ecs_service(args, service)
 
 if __name__ == '__main__':
