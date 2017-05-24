@@ -10,7 +10,6 @@ from flightpath.ScaleModeConnector import *
 from flightpath.FilterModeConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
-from baazmath.workflows.hbase_analytics import *
 from flightpath.utils import *
 from flightpath.utils import add_zipkin_trace_info
 from flightpath.Provenance import getMongoServer
