@@ -75,7 +75,9 @@ if not usingAWS:
     statsd = None
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',filename=BAAZ_COMPILER_LOG_FILE,level=logging_level,datefmt='%m/%d/%Y %I:%M:%S %p')
-
+es_logger = logging.getLogger('elasticsearch')
+es_logger.propagate = False
+es_logger.setLevel(logging.WARN)
 """
 In AWS use S3 log rotate to save the log files.
 """
