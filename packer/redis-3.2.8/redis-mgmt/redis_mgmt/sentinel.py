@@ -35,8 +35,10 @@ def join_cluster():
     try:
         sentinel.execute_command('sentinel', 'ckquorum', master_name)
     except redis.ResponseError:
-        LOG.exception('sentinel master is under quorum')
-        return 1
+        sentinel_info = sentinel.sentinel_master(master_name)
+        if sentinel_info['num-other-sentinels'] + 1 < sentinel_info['quorum']:
+            LOG.exception('sentinel master is under quorum')
+            return 1
 
     # Connect to the master sentinel, and see if it knows about the master.
     master_sentinel = redis.sentinel.Sentinel([(master_name, sentinel_port)])
