@@ -9,7 +9,7 @@ module "ecs" {
 
     key_name = "${var.key_name}"
     instance_type = "t2.micro"
-    min_size = 1
-    max_size = 2
-    desired_capacity = 1
+    min_size = 10
+    max_size = 30
+    desired_capacity = 10
 }
