@@ -114,7 +114,7 @@ module "dbsilo1-redis" {
 }
 
 module "dbsilo2-redis" {
-    source = "../../services/redis-asg"
+    source = "../../services/redis"
 
     vpc_id = "${data.terraform_remote_state.networking.vpc_id}"
     subnet_ids = ["${data.terraform_remote_state.networking.private_subnet_ids}"]
@@ -131,17 +131,18 @@ module "dbsilo2-redis" {
     datadog_api_key = "${var.datadog_api_key}"
 
     name = "${var.cluster_name}-dbsilo2-redis"
-    version = "v013"
-    ami_id = "ami-3d50c55d" # redis 2.8.4
+    version = "v053"
+    ami_id = "ami-12107372" # redis 3.2.8
     instance_type = "r3.2xlarge"
     min_size = 0
-    max_size = 5
-    desired_capacity = 3
+    max_size = 6
+    desired_capacity = 6
     ebs_optimized = false
 
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
     log_subscription_destination_arn = "${module.common.log_subscription_destination_arn}"
 
+    master_name = "dbsilo2-redis-master.navopt-dev.cloudera.com"
     quorum_size = 2
     backups_enabled = true
 }
