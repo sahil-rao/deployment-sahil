@@ -479,6 +479,7 @@ class callback_context():
                     compiler_msg['test_mode'] = 1
 
                 add_zipkin_trace_info(compiler_msg, Self.zattrs)
+                add_tenant_platform_mapping(Self.redis_conn, Self.tenant, compiler_msg['source_platform'])
                 message = dumps(compiler_msg)
                 connection1.publish(Self.ch, '', 'compilerqueue', message)
                 incrementPendingMessage(Self.collection, Self.redis_conn, Self.uid, message_id)
