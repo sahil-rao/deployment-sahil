@@ -24,7 +24,6 @@
     "log4js": "0.6.10",
     "material-ui": "0.18.0",
     "mkdirp": "0.5.1",
-    "material-ui": "0.18.0",
     "moment": "^2.15.2",
     "moment-duration-format": "*",
     "node-dogstatsd": "0.0.6",
