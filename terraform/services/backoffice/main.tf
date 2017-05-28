@@ -138,6 +138,14 @@ module "rule-engine-service" {
     subscription_destination_arn = "${var.log_subscription_destination_arn}"
 }
 
+module "navopt-api-service" {
+    source = "../../modules/cloudwatch-log-group"
+
+    name = "navoptapiserver"
+    retention_in_days = "${var.cloudwatch_retention_in_days}"
+    subscription_destination_arn = "${var.log_subscription_destination_arn}"
+}
+
 ###################################################################
 
 resource "aws_route53_record" "default" {

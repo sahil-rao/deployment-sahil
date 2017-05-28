@@ -36,27 +36,6 @@ variable "mongo_ebs_optimized" {
 
 ###################################################################
 
-variable "redis_name" {}
-
-variable "redis_version" {}
-variable "redis_ami_id" {}
-variable "redis_instance_type" {}
-variable "redis_min_size" {}
-variable "redis_max_size" {}
-variable "redis_desired_capacity" {}
-variable "redis_backup_file" {
-    default = ""
-}
-variable "redis_quorum_size" {}
-variable "redis_ebs_optimized" {
-    default = true
-}
-variable "redis_backups_enabled" {
-    default = "true"
-}
-
-###################################################################
-
 variable "elasticsearch_name" {}
 
 variable "elasticsearch_version" {}

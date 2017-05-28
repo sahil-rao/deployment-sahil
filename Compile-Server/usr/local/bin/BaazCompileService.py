@@ -10,7 +10,6 @@ from flightpath.ScaleModeConnector import *
 from flightpath.FilterModeConnector import *
 from flightpath.services.RabbitMQConnectionManager import *
 from flightpath.services.RotatingS3FileHandler import *
-from baazmath.workflows.hbase_analytics import *
 from flightpath.utils import *
 from flightpath.utils import add_zipkin_trace_info
 from flightpath.Provenance import getMongoServer
@@ -160,11 +159,9 @@ def processColumns(columnset, mongoconn, redis_conn, tenant, uid, entity, clog):
             table_entity = mongoconn.addEn(eid, tablename, tenant,\
                     EntityType.SQL_TABLE, {"uid" : uid}, None)
             if eid == table_entity.eid:
-                #create Elastic search index
-                sendToElastic(connection1, redis_conn, tenant, uid,
-                              table_entity, tablename, EntityType.SQL_TABLE)
                 redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 redis_conn.setEntityProfile(table_entity.eid, {"name": tablename})
+                redis_conn.createAutocompleteEntity(table_entity.eid, "SQL_TABLE", tablename)
                 tableCount = tableCount + 1
 
         if column_entity is None:
@@ -269,11 +266,9 @@ def processTableSet(tableset, ch, mongoconn, redis_conn, tenant, uid, entity, is
                       EntityType.SQL_TABLE, endict, None)
 
             if eid == table_entity.eid:
-                #create Elastic search index
-                sendToElastic(connection1, redis_conn, tenant, uid,
-                              table_entity, tablename, EntityType.SQL_TABLE)
                 redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
                 redis_conn.setEntityProfile(table_entity.eid, {"name": tablename})
+                redis_conn.createAutocompleteEntity(table_entity.eid, "SQL_TABLE", tablename)
                 '''
                 Incrementing by 0 to set the secondary sort key.
                 This way it does not need to be passed in later.
@@ -457,11 +452,9 @@ def processCreateViewOrInlineView(viewName, mongoconn, redis_conn, entity_col,
                   EntityType.SQL_TABLE, endict, None)
 
         if eid == view_entity.eid:
-            #create Elastic search index
-            sendToElastic(connection1, redis_conn, tenant, uid,
-                          view_entity, viewname, EntityType.SQL_TABLE)
             redis_conn.createEntityProfile(view_entity.eid, "SQL_TABLE")
             redis_conn.setEntityProfile(view_entity.eid, {"name": viewname})
+            redis_conn.createAutocompleteEntity(view_entity.eid, "SQL_TABLE", viewname)
             #incrementing by 0 so secondary sort_key is set.
             redis_conn.incrEntityCounterWithSecKey(view_entity.eid,
                                                    "instance_count",
@@ -610,11 +603,9 @@ def processCreateTable(table, mongoconn, redis_conn, tenant, uid, entity, isinpu
                   EntityType.SQL_TABLE, endict, None)
 
         if eid == table_entity.eid:
-            #create Elastic search index
-            sendToElastic(connection1, redis_conn, tenant, uid,
-                          table_entity, tablename, EntityType.SQL_TABLE)
             redis_conn.createEntityProfile(table_entity.eid, "SQL_TABLE")
             redis_conn.setEntityProfile(table_entity.eid, {"name": tablename})
+            redis_conn.createAutocompleteEntity(table_entity.eid, "SQL_TABLE", tablename)
             redis_conn.incrEntityCounter(table_entity.eid, "instance_count", sort=True, incrBy=0)
             tableCount = tableCount + 1
 

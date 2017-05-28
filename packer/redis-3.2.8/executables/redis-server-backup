@@ -1,0 +1,37 @@
+#!/bin/bash
+
+set -eu
+
+export PATH="/usr/local/share/redis-mgmt/bin:$PATH"
+
+source /usr/local/bin/navoptenv.sh
+
+if [ "$REDIS_BACKUPS_ENABLED" != "true" ]; then
+	echo "backups not enabled"
+	exit
+fi
+
+is_master=$(/usr/local/share/redis-mgmt/bin/redis-server-is-master)
+
+# Only run the backup if we're the master node.
+if [ "x$is_master" = "xyes" ]; then
+	datestr=`date -uIseconds`
+	bucket="navopt-backups-${ENV}"
+	prefix="redis-backups/${SERVICE}"
+
+	s3path="s3://${bucket}/${prefix}/${EC2_INSTANCE_ID}-${datestr}.rdb"
+
+	# Copy redis dump file (.rdb) to s3
+	dogwrap \
+		--name=backup-redis \
+		--api_key="$DATADOG_API_KEY" \
+		--tags="app:$APP,env:$ENV,service:$SERVICE" \
+		--submit_mode=all \
+		--priority=normal \
+		--timeout=1800 \
+		-- \
+		aws s3 cp /var/lib/redis/dump.rdb "$s3path"
+else
+	echo "Skipping backup, not the master node"
+	exit
+fi

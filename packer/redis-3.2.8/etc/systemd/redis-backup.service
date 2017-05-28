@@ -1,0 +1,15 @@
+[Unit]
+Description=Backs up redis database
+After=redis-server.service
+
+After=navoptenv.path
+Wants=navoptenv.path
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/redis-server-backup
+User=redis
+Group=redis
+
+[Install]
+WantedBy=multi-user.target

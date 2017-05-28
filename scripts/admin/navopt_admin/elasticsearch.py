@@ -31,9 +31,12 @@ class ElasticsearchCluster(object):
             self.service,
             self.cluster.zone)
 
-    def master(self):
+    def master_ip_address(self):
         master_hostname = self.master_hostname()
-        master_address = self.cluster.bastion.resolve_hostname(master_hostname)
+        return self.cluster.bastion.resolve_hostname(master_hostname)
+
+    def master(self):
+        master_address = self.master_ip_address()
         tunnel = self.cluster.bastion.tunnel(master_address, self._port)
         return Elasticsearch(
             self.cluster.bastion,
@@ -108,6 +111,33 @@ class Elasticsearch(object):
     def is_master(self):
         return self.master_address() == self.host
 
+    def is_connected(self):
+        return self._conn is not None
+
+    def excluded_ips(self):
+        excluded_ips = self.conn().cluster.get_settings() \
+            .get('transient', {}) \
+            .get('cluster', {}) \
+            .get('routing', {}) \
+            .get('allocation', {}) \
+            .get('exclude', {}) \
+            .get('_ip')
+
+        if excluded_ips:
+            excluded_ips = set(excluded_ips.split(','))
+        else:
+            excluded_ips = set()
+
+        return excluded_ips
+
+    def minimum_master_nodes(self):
+        quorum = self.conn().cluster.get_settings() \
+            .get('persistent', {}) \
+            .get('discovery', {}) \
+            .get('zen', {}) \
+            .get('minimum_master_nodes', 1)
+        return int(quorum)
+
     def __str__(self):
         return '{}:{}'.format(self.host, self.port)
 
@@ -115,6 +145,57 @@ class Elasticsearch(object):
 @click.group()
 def cli():
     pass
+
+
+@cli.command('change-default-shards')
+@click.argument('dbsilo_name', required=True)
+@click.argument('shards', type=int)
+@click.pass_context
+def change_shards(ctx, dbsilo_name, shards):
+    if shards < 0:
+        ctx.fail('cannot set shards under 0')
+
+    dbsilo = ctx.obj['cluster'].dbsilo(dbsilo_name)
+
+    with dbsilo.elasticsearch_cluster().master() as es_client:
+        modified_template = False
+
+        if es_client.indices.exists_template(TEMPLATE_NAME):
+            index_template = es_client \
+                .indices.get_template(TEMPLATE_NAME)[TEMPLATE_NAME]
+            settings = index_template['settings']
+            number_of_shards = settings['index'].get('number_of_shards', 0)
+            number_of_shards = int(number_of_shards)
+
+            print 'template {} has {} shards'.format(
+                TEMPLATE_NAME,
+                number_of_shards)
+
+            modified_template = shards != number_of_shards
+
+        else:
+            modified_template = True
+            index_template = None
+
+        msg = 'are you sure you want to apply? [yes/no]: '
+        if not prompt(msg, ctx.obj['yes']):
+            ctx.fail('elasticsearch cluster unchanged')
+
+        if modified_template:
+            if index_template:
+                index_template['settings']['number_of_shards'] = shards
+            else:
+                index_template = {
+                    'template': '*',
+                    'order': 0,
+                    'settings': {
+                        'number_of_shards': shards,
+                    },
+                }
+
+            es_client.indices.put_template(TEMPLATE_NAME, index_template)
+
+            print 'template modified'
 
 
 @cli.command('change-replicas')
@@ -191,16 +272,16 @@ def change_replicas(ctx, dbsilo_name, replicas):
 
 
 @cli.command('change-master-quorum')
-@click.argument('dbsilo_name', required=True)
+@click.argument('service_name', required=True)
 @click.argument('quorum', type=int)
 @click.pass_context
-def change_master_quorum(ctx, dbsilo_name, quorum):
+def change_master_quorum(ctx, service_name, quorum):
     if quorum < 1:
         ctx.fail('cannot set quorum under 1')
 
-    dbsilo = ctx.obj['cluster'].dbsilo(dbsilo_name)
+    es_cluster = ctx.obj['cluster'].elasticsearch_cluster(service_name)
 
-    with dbsilo.elasticsearch_cluster().master() as es_client:
+    with es_cluster.master() as es_client:
         current_quorum = es_client.cluster.get_settings() \
             .get('persistent', {}) \
             .get('discovery', {}) \
@@ -239,18 +320,17 @@ def change_master_quorum(ctx, dbsilo_name, quorum):
 
 @cli.command('decommission')
 @click.option('--shutdown', is_flag=True, default=False)
-@click.argument('dbsilo_name', required=True)
+@click.argument('service_name', required=True)
 @click.argument('ips', nargs=-1)
 @click.pass_context
-def decommission(ctx, shutdown, dbsilo_name, ips):
+def decommission(ctx, shutdown, service_name, ips):
     cluster = ctx.obj['cluster']
-    dbsilo = cluster.dbsilo(dbsilo_name)
     ips = set(ip for ipset in ips for ip in ipset.split(','))
 
     if not ips:
         ctx.fail('cannot decommission an empty list')
 
-    elasticsearch_cluster = dbsilo.elasticsearch_cluster()
+    elasticsearch_cluster = cluster.elasticsearch_cluster(service_name)
 
     with elasticsearch_cluster.master() as es_client:
         quorum = es_client.cluster.get_settings() \
@@ -307,29 +387,18 @@ def decommission(ctx, shutdown, dbsilo_name, ips):
 
 @cli.command('recommission')
 @click.option('--start', is_flag=True, default=False)
-@click.argument('dbsilo_name', required=True)
+@click.argument('service_name', required=True)
 @click.argument('ips', nargs=-1)
 @click.pass_context
-def recommission(ctx, start, dbsilo_name, ips):
+def recommission(ctx, start, service_name, ips):
     cluster = ctx.obj['cluster']
-    dbsilo = cluster.dbsilo(dbsilo_name)
+    elasticsearch_cluster = cluster.elasticsearch_cluster(service_name)
     ips = set(ips)
 
-    elasticsearch_cluster = dbsilo.elasticsearch_cluster()
-
     with elasticsearch_cluster.master() as es_client:
-        excluded_ips = es_client.cluster.get_settings() \
-            .get('transient', {}) \
-            .get('cluster', {}) \
-            .get('routing', {}) \
-            .get('allocation', {}) \
-            .get('exclude', {}) \
-            .get('_ip')
+        excluded_ips = es_client.excluded_ips()
 
         if excluded_ips:
-            instance_ips = set(elasticsearch_cluster.instance_private_ips())
-            excluded_ips = set(ip for ip in excluded_ips.split(',')
-                               if ip in instance_ips)
             print 'excluded ips are', ' '.join(sorted(excluded_ips))
         else:
             excluded_ips = set()
@@ -408,3 +477,37 @@ def _start_elasticsearch(bastion, ips):
             'start'])
 
         print 'server %s started' % ip
+
+
+@cli.command('failover')
+@click.argument('service_name', required=True)
+@click.argument('ip')
+@click.pass_context
+def failover(ctx, service_name, ip):
+    cluster = ctx.obj['cluster']
+    es_cluster = cluster.elasticsearch_cluster(service_name)
+
+    if ip not in es_cluster.instance_private_ips():
+        ctx.fail('ip is not in this cluster')
+
+    if ip != es_cluster.master_ip_address():
+        ctx.fail('ip is not the master')
+
+    with es_cluster.master() as es_client:
+        if ip not in es_client.excluded_ips():
+            ctx.fail('ip should be decommissioned first')
+
+    msg = 'are you sure you want to apply? [yes/no]: '
+    if not prompt(msg, ctx.obj['yes']):
+        ctx.fail('elasticsearch excluded ips unchanged')
+
+    # Restart the server to migrate the master
+    cluster.bastion.check_call([
+        'ssh',
+        ip,
+        '/usr/bin/sudo',
+        '/usr/bin/service',
+        'elasticsearch',
+        'restart'])
+
+    print 'server %s failed over' % ip

@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -eu
+
+export PATH="/usr/local/share/redis-mgmt/bin:$PATH"
+
+source /usr/local/bin/navoptenv.sh
+
+is_master=$(/usr/local/share/redis-mgmt/bin/redis-server-is-master)
+
+# If we are the master, we also want to register ourselves as such, and launch our slaves if we have none
+if [ "x$is_master" = "xyes" ]; then
+	dogwrap \
+		--name=redis-register-host \
+		--api_key="$DATADOG_API_KEY" \
+		--tags="app:$APP,env:$ENV,service:$SERVICE" \
+		--submit_mode=errors \
+		--priority=normal \
+		--timeout=1800 \
+		-- \
+		python /usr/local/bin/register-host \
+		--region "$AWS_DEFAULT_REGION" \
+		--service "$SERVICE" \
+		--zone-id "$ZONE_ID" \
+		--zone-name "$ZONE_NAME" \
+		--master
+fi

@@ -1,0 +1,16 @@
+[Unit]
+Description=Join redis server cluster
+After=redis-server.service
+Wants=redis-server.service
+
+After=navoptenv.path
+Wants=navoptenv.path
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/share/redis-mgmt/bin/redis-server-join-cluster
+User=redis
+Group=redis
+
+[Install]
+WantedBy=multi-user.target

@@ -152,7 +152,7 @@
   apt: name=python-pip state=present
   sudo: yes
 - name: Install Elasticsearch
-  pip: name=elasticsearch
+  pip: name=elasticsearch version=2.4.0
   sudo: yes
 - name: Install pandas python module
   apt: name=python-pandas state=present

@@ -16,7 +16,6 @@ from flightpath.utils import add_zipkin_trace_info
 from flightpath.utils import get_zipkin_attrs
 from flightpath.Provenance import getMongoServer
 from json import loads, dumps
-from baazmath.interface.BaazCSV import *
 from subprocess import Popen, PIPE
 import sys
 import pika
