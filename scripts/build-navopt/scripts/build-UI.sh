@@ -15,7 +15,7 @@ ln -s /usr/bin/nodejs /usr/bin/node
 ln -s /node_modules ./node_modules
 rm -r node_modules
 npm install
-gulp app-build
+gulp app-build --prod
 
 
 echo "--- building UI..."
