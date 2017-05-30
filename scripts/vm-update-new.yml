@@ -274,3 +274,10 @@
   - name: Install python zipkin package
     pip: name=py_zipkin
     sudo: yes
+  - name: Install tendo
+    pip: name=tendo
+    sudo: yes
+  - name: copy regression script
+    copy: src=/home/xplain/build/graph/test/regression-runner.sh dest=/home/xplain/regression-runner.sh
+  - name: copy regression yml
+   copy: src=/home/xplain/build/graph/test/vm-update-regression.yml dest=/home/xplain/vm-update-regression.yml
