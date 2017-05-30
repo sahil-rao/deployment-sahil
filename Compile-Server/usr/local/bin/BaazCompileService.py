@@ -1189,6 +1189,8 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
     update = False
     if entity is None:
+        profile_dict['correctCompileDoc'] = profile_dict[compiler]
+
         clog.debug("Going to create the entity")
         profile_dict["instance_count"] = 1
         if custom_id is not None:
