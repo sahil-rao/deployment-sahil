@@ -62,8 +62,8 @@ module "dbsilo2" {
     mongo_ami_id = "ami-3f50c55f"
     mongo_instance_type = "m4.xlarge"
     mongo_min_size = 0
-    mongo_max_size = 5
-    mongo_desired_capacity = 5
+    mongo_max_size = 6
+    mongo_desired_capacity = 6
     mongo_ebs_optimized = false
 
     elasticsearch_name = "${var.cluster_name}-dbsilo2-elasticsearch"
@@ -81,7 +81,7 @@ module "dbsilo2" {
 }
 
 module "dbsilo1-redis" {
-    source = "../../services/redis-asg"
+    source = "../../services/redis"
 
     vpc_id = "${data.terraform_remote_state.networking.vpc_id}"
     subnet_ids = ["${data.terraform_remote_state.networking.private_subnet_ids}"]
@@ -98,17 +98,18 @@ module "dbsilo1-redis" {
     datadog_api_key = "${var.datadog_api_key}"
 
     name = "${var.cluster_name}-dbsilo1-redis"
-    version = "v013"
-    ami_id = "ami-3d50c55d" # redis 2.8.4
+    version = "v054"
+    ami_id = "ami-0db5d66d" # redis 3.2.8
     instance_type = "r3.2xlarge"
     min_size = 0
-    max_size = 5
-    desired_capacity = 3
+    max_size = 6
+    desired_capacity = 6
     ebs_optimized = false
 
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
     log_subscription_destination_arn = "${module.common.log_subscription_destination_arn}"
 
+    master_name = "dbsilo1-redis-master.navopt-dev.cloudera.com"
     quorum_size = 2
     backups_enabled = true
 }
@@ -131,12 +132,12 @@ module "dbsilo2-redis" {
     datadog_api_key = "${var.datadog_api_key}"
 
     name = "${var.cluster_name}-dbsilo2-redis"
-    version = "v053"
-    ami_id = "ami-12107372" # redis 3.2.8
+    version = "v054"
+    ami_id = "ami-0db5d66d" # redis 3.2.8
     instance_type = "r3.2xlarge"
     min_size = 0
     max_size = 6
-    desired_capacity = 6
+    desired_capacity = 3
     ebs_optimized = false
 
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"
