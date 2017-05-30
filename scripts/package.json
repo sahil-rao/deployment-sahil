@@ -43,6 +43,7 @@
     "react-tap-event-plugin": "2.0.1",
     "react-virtualized": "9.7.6",
     "reactable": "0.14.1",
+    "prop-types": "15.5.10",
     "style-loader": "0.18.1",
     "socket.io": "~1.7.3",
     "socket.io-client": "~1.7.3",
