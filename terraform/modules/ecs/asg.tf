@@ -43,4 +43,10 @@ resource "aws_autoscaling_group" "ecs" {
         value = "${var.name}-${var.version}"
         propagate_at_launch = true
     }
+
+    tag {
+        key = "datadog"
+        value = "monitored"
+        propagate_at_launch = true
+    }
 }

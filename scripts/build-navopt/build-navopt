@@ -9,6 +9,7 @@ import boto3
 from botocore.exceptions import ClientError
 import time
 import threading
+from termcolor import colored, cprint
 
 
 class FuncThread(threading.Thread):
@@ -105,14 +106,13 @@ SERVICES = {
             'compiler',
         ],
         'ecs_tasks': [
-            'navopt-applicationservice-test',
-            'navopt-advanalytics-test',
-            'navopt-mathservice-test',
-            'navopt-ruleengine-test',
-            'navopt-compileservice-test',
-            'navopt-fpprocessing-test',
-            'navopt-apiservice-test',
-            'navopt-dataacquisitionservice-test'
+            'navopt-applicationservice',
+            'navopt-advanalytics',
+            'navopt-mathservice',
+            'navopt-ruleengineservice',
+            'navopt-compileservice',
+            'navopt-apiservice',
+            'navopt-dataaquisitionservice'
         ]
     }
 }
@@ -271,10 +271,10 @@ def build_services(args, services):
             args.branch = branch_overrides[service]
 
         if SERVICES[service].get('docker', False):
-           #  build_docker_image(args, service)
+             build_docker_image(args, service)
              print("building docker %s branch in  %s service " %  (args.branch, service))
         else:
-           #  build_service(args, service)
+             build_service(args, service)
              print("building %s branch in  %s service " % (args.branch, service))
 
         args.branch = args_default_branch
@@ -479,7 +479,7 @@ def push_docker_image(args, image):
         '{0}/{1}:{2}'.format(docker_endpoint, image, tag),
     ]
 
-    #run_command(args, cmd)
+    run_command(args, cmd)
 
 
 def prompt(msg, assume_yes=None):
@@ -496,7 +496,7 @@ def prompt(msg, assume_yes=None):
 
 def upload_services(args, services, target_path):
 
-    if not args.upload or args.assume_yes is False:
+    if args.upload or args.assume_yes is False:
         return
 
     services = set(services)
@@ -528,7 +528,7 @@ def upload_services(args, services, target_path):
                     target_bucket = os.path.join(target_bucket, args.branch)
 
                 upload_service(args, service_name, target_bucket)
-                target_bucket = ""
+                target_bucket = CONFIG[args.env]['bucket']
 
 
 def parse_args():
@@ -601,7 +601,7 @@ def parse_args():
     parser.add_argument(
         '--no-upload',
         dest='upload',
-        default=True,
+        default=False,
         action='store_false',
         help='do not upload artifacts to S3')
     parser.add_argument(
@@ -616,13 +616,13 @@ def parse_args():
         help='tag for the resulting docker image and ecs task')
     parser.add_argument(
         '--refresh-ecs',
-        default=None,
+        default='all',
         dest='refresh_ecs',
-        nargs='*',
-        help='refresh task(s) in ecs (complete deploy if applicable)')
+        nargs=1,
+        help='refresh task in ecs (complete deploy if applicable)')
     parser.add_argument(
         '--cluster',
-        default=None,
+        default="ecs",
         help='cluster to refresh')
     return parser.parse_args()
 
@@ -687,7 +687,7 @@ def main():
 
     if args.refresh_ecs:
         for  service in args.services:
-            if 'ecs_tasks' in SERVICES[service] and 'docker' in SERVICES[service]:
+            if 'ecs_tasks' in SERVICES[service.split(":")[0]] and 'docker' in SERVICES[service.split(":")[0]]:
                 print "Refreshing ecs ..."
                 refresh_ecs_service(args, service)
 

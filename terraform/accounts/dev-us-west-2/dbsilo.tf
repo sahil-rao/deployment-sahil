@@ -22,7 +22,7 @@ module "dbsilo1" {
     mongo_instance_type = "m4.xlarge"
     mongo_min_size = 0
     mongo_max_size = 5
-    mongo_desired_capacity = 5
+    mongo_desired_capacity = 3
     mongo_ebs_optimized = false
 
     elasticsearch_name = "${var.cluster_name}-dbsilo1-elasticsearch"
@@ -103,7 +103,7 @@ module "dbsilo1-redis" {
     instance_type = "r3.2xlarge"
     min_size = 0
     max_size = 6
-    desired_capacity = 6
+    desired_capacity = 3
     ebs_optimized = false
 
     cloudwatch_retention_in_days = "${var.cloudwatch_retention_in_days}"

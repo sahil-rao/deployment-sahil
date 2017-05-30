@@ -8,8 +8,8 @@ module "ecs" {
     subnet_ids = ["${data.terraform_remote_state.networking.private_subnet_ids}"]
 
     key_name = "${var.key_name}"
-    instance_type = "t2.micro"
-    min_size = 10
+    instance_type = "t2.medium"
+    min_size = 12
     max_size = 30
-    desired_capacity = 10
+    desired_capacity = 12
 }
