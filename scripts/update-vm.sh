@@ -9,7 +9,7 @@ then
 else
   BRANCH_NAME=$1
 fi
-
+set -e
 # Service discovery changes
 redis-cli hmset dbsilo:Silo1:info redis 127.0.0.1 mongo 127.0.0.1 elastic 127.0.0.1
 redis-cli -p 26379 sentinel monitor redismaster.dbsilo1.vm.xplain.io 127.0.0.1 6379 1
@@ -146,11 +146,11 @@ echo "Graph is built!"
 #tar -cvf  xplain.io.tar xplain.io
 #gzip -f  xplain.io.tar
 
-tar -cvf  optimizer_admin.tar optimizer_admin
-gzip -f  optimizer_admin.tar
+#tar -cvf  optimizer_admin.tar optimizer_admin
+#gzip -f  optimizer_admin.tar
 
-tar -cvf  xplain_dashboard.tar xplain_dashboard
-gzip -f  xplain_dashboard.tar
+#tar -cvf  xplain_dashboard.tar xplain_dashboard
+#gzip -f  xplain_dashboard.tar
 
 
 cd /home/xplain/build/compiler
@@ -163,7 +163,7 @@ else
   echo "ERROR with compiler build process"
   exit 1
 fi
-mkdir baaz_compiler
+mkdir -p baaz_compiler
 rm -rf baaz_compiler/*
 #mv bin/com Baaz-Hive-Compiler/.
 cp target/Baaz-Compiler-1/*.jar baaz_compiler/
@@ -193,9 +193,9 @@ cd /home/xplain/build/deployment/Math-Server
 tar -cf Baaz-Analytics-Service.tar etc usr
 gzip -f   Baaz-Analytics-Service.tar
 
-cd /home/xplain/build/compiler
-tar -cf Baaz-Basestats-Report.tar reports
-gzip -f   Baaz-Basestats-Report.tar
+#cd /home/xplain/build/compiler
+#tar -cf Baaz-Basestats-Report.tar reports
+#gzip -f   Baaz-Basestats-Report.tar
 
 
 cd /home/xplain
@@ -204,7 +204,7 @@ cd /home/xplain
 rm -rf /home/xplain/build/VM-Deploy
 
 #Make sure the build directory does not yet exist
-mkdir /home/xplain/build/VM-Deploy
+mkdir -p /home/xplain/build/VM-Deploy
 
 cd  /home/xplain/build/VM-Deploy
 
@@ -238,13 +238,13 @@ cp /home/xplain/build/deployment/VM/redis-sentinel.conf .
 cp /home/xplain/build/graph/dist/flightpath-*.tar.gz ./flightpath-deployment.tar.gz
 #handled by gulp
 #cp /home/xplain/build/UI/xplain.io.tar.gz .
-cp /home/xplain/build/UI/optimizer_admin.tar.gz .
+#cp /home/xplain/build/UI/optimizer_admin.tar.gz .
 cp /home/xplain/build/compiler/Baaz-Compiler.tar.gz .
 cp /home/xplain/build/analytics/dist/baazmath-*.tar.gz Baaz-Analytics.tar.gz
 cp /home/xplain/build/deployment/Data-Aquisition/Baaz-DataAcquisition-Service.tar.gz .
 cp /home/xplain/build/deployment/Compile-Server/Baaz-Compile-Service.tar.gz .
 cp /home/xplain/build/deployment/Math-Server/Baaz-Analytics-Service.tar.gz .
-cp /home/xplain/build/compiler/Baaz-Basestats-Report.tar.gz .
+#cp /home/xplain/build/compiler/Baaz-Basestats-Report.tar.gz .
 
 tar -cvf ExplainIO-SingleVM-deploy.tar ./*
 gzip ExplainIO-SingleVM-deploy.tar
