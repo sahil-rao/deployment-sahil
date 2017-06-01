@@ -19,6 +19,11 @@ saml_cert: "{{ vault_saml_cert }}"
 saml_termsUrl: "{{ vault_saml_termsUrl }}"
 saml_termsKey: "{{ vault_saml_termsKey }}"
 
+admin_saml_aemUrl: "{{ vault_admin_saml_aemUrl }}"
+admin_saml_entryPoint: "{{ vault_admin_saml_entryPoint }}"
+admin_saml_issuer: "{{ vault_admin_saml_issuer }}"
+admin_saml_cert: "{{ vault_admin_saml_cert }}"
+
 erlang_cookie: "{{ vault_erlang_cookie }}"
 
 google_analytics_id: "{{ vault_google_analytics_id }}"
