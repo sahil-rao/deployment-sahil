@@ -1189,7 +1189,14 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
     update = False
     if entity is None:
-        profile_dict['correctCompileDoc'] = profile_dict[compiler]
+        logging.error(profile_dict)
+        try:
+            profile_dict['correctCompileDoc'] = comp_profile[compiler]
+        except:
+            if compiler not in profile_dict:
+                logging.error("gsp not found in profile_dict")
+                logging.error("profile_dict keys: " + str(profile_dict.keys()))
+
 
         clog.debug("Going to create the entity")
         profile_dict["instance_count"] = 1
@@ -1471,7 +1478,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
 
                 if 'joinPredicates' in compile_doc[key]:
                     # Get join hash, store into compile doc profile
-                    compile_doc[key]['joinHash'] = hash(JoinPattern.from_join_predicates(compile_doc[key]['joinPredicates']))
+                    try:
+                        compile_doc[key]['joinHash'] = hash(JoinPattern.from_join_predicates(compile_doc[key]['joinPredicates']))
+                    except:
+                        pass
 
                 if 'selectColumnNames' in compile_doc[key]:
                     # Get select columns hash, store into compile doc profile
