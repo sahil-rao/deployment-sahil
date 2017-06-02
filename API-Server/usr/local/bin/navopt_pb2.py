@@ -20,10 +20,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='navopt.proto',
   package='navopt',
   syntax='proto3',
-  serialized_pb=_b('\n\x0cnavopt.proto\x12\x06navopt\x1a\rversion.proto\"(\n\x13\x43reateTenantRequest\x12\x11\n\tuserGroup\x18\x01 \x01(\t\"&\n\x14\x43reateTenantResponse\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"3\n\x0fGetS3urlRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x10\n\x08\x66ileName\x18\x02 \x01(\t\"\x1f\n\x10GetS3urlResponse\x12\x0b\n\x03url\x18\x01 \x01(\t\"\\\n\x10GetTenantRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x11\n\tclusterId\x18\x02 \x01(\t\x12\x19\n\x11\x65xternalAccountId\x18\x03 \x01(\t\x12\x0b\n\x03\x63rn\x18\x04 \x01(\t\"#\n\x11GetTenantResponse\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"Q\n\x16GetTopDatabasesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x10\n\x08pageSize\x18\x02 \x01(\x05\x12\x15\n\rstartingToken\x18\x03 \x01(\t\"\x8d\x01\n\x0cTopDatabases\x12\x15\n\rinstanceCount\x18\x01 \x01(\x05\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x17\n\x0ftotalTableCount\x18\x03 \x01(\x05\x12\x17\n\x0ftotalQueryCount\x18\x04 \x01(\x05\x12\x17\n\x0fworkloadPercent\x18\x05 \x01(\x05\x12\x0b\n\x03\x65id\x18\x06 \x01(\t\"S\n\x17GetTopDatabasesResponse\x12%\n\x07results\x18\x01 \x03(\x0b\x32\x14.navopt.TopDatabases\x12\x11\n\tnextToken\x18\x02 \x01(\t\"^\n\x13GetTopTablesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x10\n\x08pageSize\x18\x03 \x01(\x05\x12\x15\n\rstartingToken\x18\x04 \x01(\t\"\x87\x01\n\tTopTables\x12\x13\n\x0b\x63olumnCount\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x14\n\x0cpatternCount\x18\x03 \x01(\x05\x12\x17\n\x0fworkloadPercent\x18\x04 \x01(\x05\x12\r\n\x05total\x18\x05 \x01(\x05\x12\x0c\n\x04type\x18\x06 \x01(\t\x12\x0b\n\x03\x65id\x18\x07 \x01(\t\"M\n\x14GetTopTablesResponse\x12\"\n\x07results\x18\x01 \x03(\x0b\x32\x11.navopt.TopTables\x12\x11\n\tnextToken\x18\x02 \x01(\t\"O\n\x14GetTopQueriesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x10\n\x08pageSize\x18\x02 \x01(\x05\x12\x15\n\rstartingToken\x18\x03 \x01(\t\"\xb5\x01\n\nTopQueries\x12\x18\n\x10impalaCompatible\x18\x01 \x01(\x08\x12\x16\n\x0ehiveCompatible\x18\x02 \x01(\x08\x12\x15\n\rinstanceCount\x18\x03 \x01(\x05\x12\x13\n\x0b\x65lapsedTime\x18\x04 \x01(\x05\x12\x10\n\x08\x63ustomId\x18\x05 \x01(\t\x12\x12\n\ncomplexity\x18\x06 \x01(\t\x12\x0b\n\x03qid\x18\x07 \x01(\t\x12\x16\n\x0equerySignature\x18\x08 \x03(\t\"O\n\x15GetTopQueriesResponse\x12#\n\x07results\x18\x01 \x03(\x0b\x32\x12.navopt.TopQueries\x12\x11\n\tnextToken\x18\x02 \x01(\t\"\x87\x01\n\x14GetTopColumnsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x11\n\ttableName\x18\x03 \x01(\t\x12\x13\n\x0b\x64\x62TableList\x18\x04 \x03(\t\x12\x10\n\x08pageSize\x18\x05 \x01(\x05\x12\x15\n\rstartingToken\x18\x06 \x01(\t\"\xfd\x01\n\nTopColumns\x12\x13\n\x0b\x63olumnCount\x18\x01 \x01(\x05\x12\x12\n\ncolumnName\x18\x02 \x01(\t\x12\x12\n\ngroupbyCol\x18\x03 \x01(\x05\x12\x11\n\tselectCol\x18\x04 \x01(\x05\x12\x11\n\tfilterCol\x18\x05 \x01(\x05\x12\x0b\n\x03tid\x18\x06 \x01(\t\x12\x0b\n\x03\x63id\x18\x07 \x01(\t\x12\x0f\n\x07joinCol\x18\x08 \x01(\x05\x12\x12\n\norderbyCol\x18\t \x01(\x05\x12\x11\n\ttableType\x18\n \x01(\t\x12\x11\n\ttableName\x18\x0b \x01(\t\x12\x17\n\x0fworkloadPercent\x18\x0c \x01(\x05\x12\x0e\n\x06\x64\x62Name\x18\r \x01(\t\"\x81\x02\n\x15GetTopColumnsResponse\x12*\n\x0egroupbyColumns\x18\x01 \x03(\x0b\x32\x12.navopt.TopColumns\x12\'\n\x0bjoinColumns\x18\x02 \x03(\x0b\x32\x12.navopt.TopColumns\x12)\n\rselectColumns\x18\x03 \x03(\x0b\x32\x12.navopt.TopColumns\x12*\n\x0eorderbyColumns\x18\x04 \x03(\x0b\x32\x12.navopt.TopColumns\x12)\n\rfilterColumns\x18\x05 \x03(\x0b\x32\x12.navopt.TopColumns\x12\x11\n\tnextToken\x18\x06 \x01(\t\"\x98\x01\n\x14GetTopFiltersRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x11\n\ttableName\x18\x03 \x01(\t\x12\x0f\n\x07\x63olList\x18\x04 \x03(\t\x12\x13\n\x0b\x64\x62TableList\x18\x05 \x03(\t\x12\x10\n\x08pageSize\x18\x06 \x01(\x05\x12\x15\n\rstartingToken\x18\x07 \x01(\t\"N\n\x08ValGroup\x12\x12\n\ncolumnName\x18\x01 \x01(\t\x12\x11\n\tisLiteral\x18\x02 \x01(\x08\x12\x0f\n\x07literal\x18\x03 \x01(\t\x12\n\n\x02op\x18\x04 \x01(\t\":\n\x08PopValue\x12\r\n\x05\x63ount\x18\x01 \x01(\x05\x12\x1f\n\x05group\x18\x02 \x03(\x0b\x32\x10.navopt.ValGroup\"\x8d\x01\n\nTopFilters\x12\x17\n\x0ftotalQueryCount\x18\x01 \x01(\x05\x12\x0f\n\x07\x63olumns\x18\x02 \x03(\t\x12\x0c\n\x04qids\x18\x03 \x03(\t\x12\x11\n\ttableName\x18\x04 \x01(\t\x12\x0b\n\x03tid\x18\x05 \x01(\t\x12\'\n\rpopularValues\x18\x06 \x03(\x0b\x32\x10.navopt.PopValue\"O\n\x15GetTopFiltersResponse\x12#\n\x07results\x18\x01 \x03(\x0b\x32\x12.navopt.TopFilters\x12\x11\n\tnextToken\x18\x02 \x01(\t\"b\n\x12GetTopJoinsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x62TableList\x18\x02 \x03(\t\x12\x10\n\x08pageSize\x18\x03 \x01(\x05\x12\x15\n\rstartingToken\x18\x04 \x01(\t\"\x1b\n\x08JoinCols\x12\x0f\n\x07\x63olumns\x18\x01 \x03(\t\"\xa4\x01\n\x08TopJoins\x12\"\n\x08joinCols\x18\x01 \x03(\x0b\x32\x10.navopt.JoinCols\x12\x10\n\x08queryIds\x18\x02 \x03(\t\x12\x0e\n\x06tables\x18\x03 \x03(\t\x12\x17\n\x0ftotalQueryCount\x18\x04 \x01(\x05\x12\x17\n\x0ftotalTableCount\x18\x05 \x01(\x05\x12\x10\n\x08joinType\x18\x06 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x07 \x01(\t\"K\n\x13GetTopJoinsResponse\x12!\n\x07results\x18\x01 \x03(\x0b\x32\x10.navopt.TopJoins\x12\x11\n\tnextToken\x18\x02 \x01(\t\"a\n\x11GetTopAggsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x62TableList\x18\x02 \x03(\t\x12\x10\n\x08pageSize\x18\x03 \x01(\x05\x12\x15\n\rstartingToken\x18\x04 \x01(\t\"F\n\x07\x41ggInfo\x12\x12\n\ncolumnName\x18\x01 \x01(\t\x12\x11\n\ttableName\x18\x02 \x01(\t\x12\x14\n\x0c\x64\x61tabaseName\x18\x03 \x01(\t\"\xa5\x01\n\x06TopAgg\x12\x17\n\x0f\x61ggregateClause\x18\x01 \x01(\t\x12\x19\n\x11\x61ggregateFunction\x18\x02 \x01(\t\x12\x14\n\x0c\x66unctionType\x18\x03 \x01(\t\x12\x10\n\x08location\x18\x04 \x01(\t\x12\x17\n\x0ftotalQueryCount\x18\x05 \x01(\x05\x12&\n\raggregateInfo\x18\x06 \x03(\x0b\x32\x0f.navopt.AggInfo\"H\n\x12GetTopAggsResponse\x12\x1f\n\x07results\x18\x01 \x03(\x0b\x32\x0e.navopt.TopAgg\x12\x11\n\tnextToken\x18\x02 \x01(\t\"j\n\x19GetQueryCompatibleRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\x12\x16\n\x0etargetPlatform\x18\x04 \x01(\t\"T\n\nQueryError\x12\x19\n\x11\x65ncounteredString\x18\x01 \x01(\t\x12\x13\n\x0b\x65rrorString\x18\x02 \x01(\t\x12\x16\n\x0e\x65xpectedString\x18\x03 \x01(\t\"S\n\rHighLightInfo\x12\x0e\n\x06\x63olumn\x18\x01 \x01(\x05\x12\x0f\n\x07lineNum\x18\x02 \x01(\x05\x12\x11\n\ttokenRank\x18\x03 \x01(\x05\x12\x0e\n\x06offset\x18\x04 \x01(\x05\"e\n\x0b\x43lauseError\x12+\n\x0cstartLocator\x18\x01 \x01(\x0b\x32\x15.navopt.HighLightInfo\x12)\n\nendLocator\x18\x02 \x01(\x0b\x32\x15.navopt.HighLightInfo\"\xbc\x01\n\x1aGetQueryCompatibleResponse\x12\x12\n\nclauseName\x18\x01 \x01(\t\x12\x14\n\x0c\x63lauseString\x18\x02 \x01(\t\x12(\n\x0b\x63lauseError\x18\x03 \x01(\x0b\x32\x13.navopt.ClauseError\x12&\n\nqueryError\x18\x04 \x01(\x0b\x32\x12.navopt.QueryError\x12\x0e\n\x06status\x18\x05 \x01(\t\x12\x12\n\nparseError\x18\x06 \x01(\t\"\\\n\x13GetQueryRiskRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x04 \x01(\t\"n\n\x08RiskData\x12\x0c\n\x04risk\x18\x01 \x01(\t\x12\x14\n\x0criskAnalysis\x18\x02 \x01(\t\x12\x1a\n\x12riskRecommendation\x18\x03 \x01(\t\x12\x0e\n\x06riskId\x18\x04 \x01(\x05\x12\x12\n\nriskTables\x18\x05 \x03(\t\"\x92\x01\n\x14GetQueryRiskResponse\x12\"\n\x08hiveRisk\x18\x01 \x03(\x0b\x32\x10.navopt.RiskData\x12$\n\nimpalaRisk\x18\x02 \x03(\x0b\x32\x10.navopt.RiskData\x12\x10\n\x08\x65rrorMsg\x18\x03 \x01(\t\x12\r\n\x05noDDL\x18\x04 \x03(\t\x12\x0f\n\x07noStats\x18\x05 \x03(\t\"(\n\x16GetDesignBucketRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"^\n\x0c\x44\x65signBucket\x12\x12\n\nbucketName\x18\x01 \x01(\t\x12\x12\n\nnumQueries\x18\x02 \x01(\x05\x12\x11\n\tnumTables\x18\x03 \x01(\x05\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t\"@\n\x17GetDesignBucketResponse\x12%\n\x07results\x18\x01 \x03(\x0b\x32\x14.navopt.DesignBucket\"Q\n\x18GetSimilarQueriesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\"\xf8\x02\n\x19GetSimilarQueriesResponse\x12\x14\n\x0corderByCount\x18\x01 \x01(\x05\x12\x14\n\x0cgroupByCount\x18\x02 \x01(\x05\x12\x16\n\x0ehiveCompatible\x18\x03 \x01(\x05\x12!\n\x05table\x18\x04 \x03(\x0b\x32\x12.navopt.QueryTable\x12\x16\n\x0equerySignature\x18\x05 \x03(\t\x12\x13\n\x0bselectCount\x18\x06 \x01(\x05\x12\x12\n\nunionCount\x18\x07 \x01(\x05\x12\x15\n\runionAllCount\x18\x08 \x01(\x05\x12\x15\n\rStmtSignature\x18\t \x01(\t\x12\x15\n\rinstanceCount\x18\n \x01(\x05\x12\x13\n\x0b\x66ilterCount\x18\x0b \x01(\x05\x12\x11\n\tjoinCount\x18\x0c \x01(\x05\x12\x10\n\x08\x63ustomId\x18\r \x01(\t\x12\x0b\n\x03qid\x18\x0e \x01(\t\x12\r\n\x05query\x18\x0f \x01(\t\x12\x18\n\x10impalaCompatible\x18\x10 \x01(\x05\" \n\x0eGetHAQRRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"\xa6\x02\n\x13IncompatibleQueries\x12\x0b\n\x03qid\x18\x01 \x01(\t\x12\x11\n\tfromError\x18\x02 \x01(\x05\x12\x12\n\nwhereError\x18\x03 \x01(\x05\x12\x13\n\x0bselectError\x18\x04 \x01(\x05\x12\x14\n\x0corderbyError\x18\x05 \x01(\x05\x12\x14\n\x0cgroupbyError\x18\x06 \x01(\x05\x12\x12\n\notherError\x18\x07 \x01(\x05\x12\x13\n\x0b\x66romClauses\x18\x08 \x03(\t\x12\x14\n\x0cwhereClauses\x18\t \x03(\t\x12\x15\n\rselectClauses\x18\n \x03(\t\x12\x16\n\x0eorderbyClauses\x18\x0b \x03(\t\x12\x16\n\x0egroupbyClauses\x18\x0c \x03(\t\x12\x14\n\x0cotherClauses\x18\r \x03(\t\"i\n\x0fGetHAQRResponse\x12+\n\x06impala\x18\x01 \x03(\x0b\x32\x1b.navopt.IncompatibleQueries\x12)\n\x04hive\x18\x02 \x03(\x0b\x32\x1b.navopt.IncompatibleQueries\"+\n\x0b\x46\x61iledQuery\x12\r\n\x05query\x18\x01 \x01(\t\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"\x9b\x02\n\x0cUploadStatus\x12/\n\x05state\x18\x01 \x01(\x0e\x32 .navopt.UploadStatus.UploadState\x12\x12\n\nworkloadId\x18\x02 \x01(\t\x12\x11\n\tstatusMsg\x18\x03 \x01(\t\x12\x15\n\rfailedQueries\x18\x04 \x01(\x05\x12\x16\n\x0esuccessQueries\x18\x05 \x01(\x05\x12-\n\x10\x66\x61ilQueryDetails\x18\x06 \x03(\x0b\x32\x13.navopt.FailedQuery\"U\n\x0bUploadState\x12\x0b\n\x07WAITING\x10\x00\x12\x0f\n\x0bIN_PROGRESS\x10\x01\x12\x0e\n\nPROCESSING\x10\x02\x12\x0c\n\x08\x46INISHED\x10\x03\x12\n\n\x06\x46\x41ILED\x10\x04\"\xa2\x01\n\x0bHeaderField\x12,\n\x07\x63oltype\x18\x01 \x01(\x0e\x32\x1b.navopt.HeaderField.ColType\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0b\n\x03tag\x18\x03 \x01(\t\x12\x0b\n\x03use\x18\x04 \x01(\x08\x12\r\n\x05\x63ount\x18\x05 \x01(\x05\".\n\x07\x43olType\x12\x08\n\x04NONE\x10\x00\x12\n\n\x06SQL_ID\x10\x01\x12\r\n\tSQL_QUERY\x10\x02\"\xae\x02\n\rUploadRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x14\n\x0c\x66ileLocation\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\x12\x10\n\x08rowDelim\x18\x04 \x01(\t\x12\x10\n\x08\x63olDelim\x18\x05 \x01(\t\x12\x10\n\x08\x66ileName\x18\x06 \x01(\t\x12\x12\n\ns3location\x18\x07 \x01(\t\x12)\n\x0cheaderFields\x18\x08 \x03(\x0b\x32\x13.navopt.HeaderField\x12\x30\n\x08\x66ileType\x18\t \x01(\x0e\x32\x1e.navopt.UploadRequest.FileType\"8\n\x08\x46ileType\x12\t\n\x05QUERY\x10\x00\x12\x0f\n\x0bTABLE_STATS\x10\x01\x12\x10\n\x0c\x43OLUMN_STATS\x10\x02\"6\n\x0eUploadResponse\x12$\n\x06status\x18\x01 \x01(\x0b\x32\x14.navopt.UploadStatus\"9\n\x13UploadStatusRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x12\n\nworkloadId\x18\x02 \x01(\t\"<\n\x14UploadStatusResponse\x12$\n\x06status\x18\x01 \x01(\x0b\x32\x14.navopt.UploadStatus\"\\\n\x13WorkloadInfoRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x12\n\nworkloadId\x18\x02 \x01(\t\x12\x10\n\x08inActive\x18\x03 \x01(\x08\x12\x0f\n\x07\x64\x65tails\x18\x04 \x01(\x08\"\xbf\x01\n\x0cWorkloadData\x12\x0f\n\x07queries\x18\x01 \x01(\r\x12\x12\n\nworkloadId\x18\x02 \x01(\t\x12\x14\n\x0cworkloadName\x18\x03 \x01(\t\x12\x19\n\x11processed_queries\x18\x04 \x01(\r\x12\x0e\n\x06\x61\x63tive\x18\x05 \x01(\x08\x12\x17\n\x0fsource_platform\x18\x06 \x01(\t\x12\x0e\n\x06tenant\x18\x07 \x01(\t\x12\x11\n\ttimestamp\x18\x08 \x01(\x04\x12\r\n\x05\x65type\x18\t \x01(\t\"=\n\x14WorkloadInfoResponse\x12%\n\x07results\x18\x01 \x03(\x0b\x32\x14.navopt.WorkloadData\":\n\x11GetQueriesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x15\n\rstartingToken\x18\x02 \x01(\t\"\'\n\tQueryData\x12\x0b\n\x03qid\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\"K\n\x12GetQueriesResponse\x12\"\n\x07results\x18\x01 \x03(\x0b\x32\x11.navopt.QueryData\x12\x11\n\tnextToken\x18\x02 \x01(\t\"6\n\x17GetQueriesDetailRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0b\n\x03qid\x18\x02 \x01(\t\"O\n\nQueryTable\x12\x11\n\ttableType\x18\x01 \x01(\t\x12\x11\n\ttableName\x18\x02 \x01(\t\x12\x0b\n\x03tid\x18\x03 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x04 \x01(\t\"\xf7\x02\n\x18GetQueriesDetailResponse\x12\x14\n\x0corderByCount\x18\x01 \x01(\x05\x12\x14\n\x0cgroupByCount\x18\x02 \x01(\x05\x12\x16\n\x0ehiveCompatible\x18\x03 \x01(\x05\x12!\n\x05table\x18\x04 \x03(\x0b\x32\x12.navopt.QueryTable\x12\x16\n\x0equerySignature\x18\x05 \x03(\t\x12\x13\n\x0bselectCount\x18\x06 \x01(\x05\x12\x12\n\nunionCount\x18\x07 \x01(\x05\x12\x15\n\runionAllCount\x18\x08 \x01(\x05\x12\x15\n\rStmtSignature\x18\t \x01(\t\x12\x15\n\rinstanceCount\x18\n \x01(\x05\x12\x13\n\x0b\x66ilterCount\x18\x0b \x01(\x05\x12\x11\n\tjoinCount\x18\x0c \x01(\x05\x12\x10\n\x08\x63ustomId\x18\r \x01(\t\x12\x0b\n\x03qid\x18\x0e \x01(\t\x12\r\n\x05query\x18\x0f \x01(\t\x12\x18\n\x10impalaCompatible\x18\x10 \x01(\x05\"9\n\x10GetTablesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x15\n\rstartingToken\x18\x02 \x01(\t\"&\n\tTableData\x12\x0b\n\x03tid\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\"J\n\x11GetTablesResponse\x12\"\n\x07results\x18\x01 \x03(\x0b\x32\x11.navopt.TableData\x12\x11\n\tnextToken\x18\x02 \x01(\t\"X\n\x16GetTablesDetailRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0b\n\x03tid\x18\x02 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x03 \x01(\t\x12\x11\n\ttableName\x18\x04 \x01(\t\"U\n\nTableStats\x12\x0f\n\x07numRows\x18\x01 \x01(\t\x12\x11\n\tavgRowLen\x18\x02 \x01(\t\x12\x10\n\x08rowRange\x18\x03 \x01(\t\x12\x11\n\ttableName\x18\x04 \x01(\t\"w\n\x08\x43olStats\x12\x11\n\tavgColLen\x18\x01 \x01(\t\x12\x10\n\x08numNulls\x18\x02 \x01(\t\x12\x0b\n\x03\x63id\x18\x03 \x01(\t\x12\x10\n\x08\x64\x61taType\x18\x04 \x01(\t\x12\x13\n\x0bnumDistinct\x18\x05 \x01(\t\x12\x12\n\ncolumnName\x18\x06 \x01(\t\"m\n\nJoinTables\x12\x11\n\ttableName\x18\x01 \x01(\t\x12\x10\n\x08tableEid\x18\x02 \x01(\t\x12\x13\n\x0bjoinpercent\x18\x03 \x01(\x05\x12\x10\n\x08numJoins\x18\x04 \x01(\x05\x12\x13\n\x0bjoinColumns\x18\x05 \x03(\t\"\x94\x01\n\tQueryList\x12\r\n\x05query\x18\x01 \x01(\t\x12\x0b\n\x03qid\x18\x02 \x01(\t\x12\x12\n\nqueryCount\x18\x03 \x01(\x05\x12\x11\n\tqueryChar\x18\x04 \x03(\t\x12\x18\n\x10impalaCompatible\x18\x05 \x01(\x08\x12\x16\n\x0ehiveCompatible\x18\x06 \x01(\x08\x12\x12\n\ncomplexity\x18\x07 \x01(\t\"&\n\x07TopCols\x12\r\n\x05score\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\"\x9a\x04\n\x17GetTablesDetailResponse\x12\x13\n\x0b\x63olumnCount\x18\x01 \x01(\x05\x12\x13\n\x0b\x63reateCount\x18\x02 \x01(\x05\x12\x13\n\x0bselectCount\x18\x03 \x01(\x05\x12\x13\n\x0bupdateCount\x18\x04 \x01(\x05\x12\x12\n\nqueryCount\x18\x05 \x01(\x05\x12\x13\n\x0binsertCount\x18\x06 \x01(\x05\x12\x13\n\x0b\x64\x65leteCount\x18\x07 \x01(\x05\x12\x11\n\tjoinCount\x18\x08 \x01(\x05\x12&\n\ntableStats\x18\t \x01(\x0b\x32\x12.navopt.TableStats\x12\"\n\x08\x63olStats\x18\n \x03(\x0b\x32\x10.navopt.ColStats\x12\x0c\n\x04name\x18\x0b \x01(\t\x12\x0b\n\x03tid\x18\x0c \x01(\t\x12\x0c\n\x04type\x18\r \x01(\t\x12\x11\n\ttable_ddl\x18\x0e \x01(\t\x12\x11\n\tiview_ddl\x18\x0f \x01(\t\x12\x10\n\x08view_ddl\x18\x10 \x01(\t\x12$\n\tqueryList\x18\x11 \x03(\x0b\x32\x11.navopt.QueryList\x12$\n\x0btopJoinCols\x18\x12 \x03(\x0b\x32\x0f.navopt.TopCols\x12&\n\njoinTables\x18\x13 \x03(\x0b\x32\x12.navopt.JoinTables\x12\x17\n\x0fworkloadPercent\x18\x14 \x01(\x05\x12 \n\x07topCols\x18\x15 \x03(\x0b\x32\x0f.navopt.TopCols\":\n\x11GetColumnsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x15\n\rstartingToken\x18\x02 \x01(\t\"\'\n\nColumnData\x12\x0b\n\x03\x63id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\"L\n\x12GetColumnsResponse\x12#\n\x07results\x18\x01 \x03(\x0b\x32\x12.navopt.ColumnData\x12\x11\n\tnextToken\x18\x02 \x01(\t\"6\n\x17GetColumnsDetailRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0b\n\x03\x63id\x18\x02 \x01(\t\"\x7f\n\x18GetColumnsDetailResponse\x12\x12\n\ncolumnName\x18\x01 \x01(\t\x12\"\n\x08\x63olStats\x18\x02 \x03(\x0b\x32\x10.navopt.ColStats\x12\x0b\n\x03tid\x18\x03 \x01(\t\x12\x0b\n\x03\x63id\x18\x04 \x01(\t\x12\x11\n\ttableName\x18\x05 \x01(\t2\xc9\x0e\n\x06NavOpt\x12K\n\x0c\x63reateTenant\x12\x1b.navopt.CreateTenantRequest\x1a\x1c.navopt.CreateTenantResponse\"\x00\x12?\n\x08getS3url\x12\x17.navopt.GetS3urlRequest\x1a\x18.navopt.GetS3urlResponse\"\x00\x12\x42\n\tgetTenant\x12\x18.navopt.GetTenantRequest\x1a\x19.navopt.GetTenantResponse\"\x00\x12T\n\x0fgetTopDatabases\x12\x1e.navopt.GetTopDatabasesRequest\x1a\x1f.navopt.GetTopDatabasesResponse\"\x00\x12K\n\x0cgetTopTables\x12\x1b.navopt.GetTopTablesRequest\x1a\x1c.navopt.GetTopTablesResponse\"\x00\x12N\n\rgetTopQueries\x12\x1c.navopt.GetTopQueriesRequest\x1a\x1d.navopt.GetTopQueriesResponse\"\x00\x12N\n\rgetTopColumns\x12\x1c.navopt.GetTopColumnsRequest\x1a\x1d.navopt.GetTopColumnsResponse\"\x00\x12N\n\rgetTopFilters\x12\x1c.navopt.GetTopFiltersRequest\x1a\x1d.navopt.GetTopFiltersResponse\"\x00\x12H\n\x0bgetTopJoins\x12\x1a.navopt.GetTopJoinsRequest\x1a\x1b.navopt.GetTopJoinsResponse\"\x00\x12\x45\n\ngetTopAggs\x12\x19.navopt.GetTopAggsRequest\x1a\x1a.navopt.GetTopAggsResponse\"\x00\x12T\n\x0fgetDesignBucket\x12\x1e.navopt.GetDesignBucketRequest\x1a\x1f.navopt.GetDesignBucketResponse\"\x00\x12<\n\x07getHAQR\x12\x16.navopt.GetHAQRRequest\x1a\x17.navopt.GetHAQRResponse\"\x00\x12]\n\x12getQueryCompatible\x12!.navopt.GetQueryCompatibleRequest\x1a\".navopt.GetQueryCompatibleResponse\"\x00\x12K\n\x0cgetQueryRisk\x12\x1b.navopt.GetQueryRiskRequest\x1a\x1c.navopt.GetQueryRiskResponse\"\x00\x12Z\n\x11getSimilarQueries\x12 .navopt.GetSimilarQueriesRequest\x1a!.navopt.GetSimilarQueriesResponse\"\x00\x12\x39\n\x06upload\x12\x15.navopt.UploadRequest\x1a\x16.navopt.UploadResponse\"\x00\x12K\n\x0cuploadStatus\x12\x1b.navopt.UploadStatusRequest\x1a\x1c.navopt.UploadStatusResponse\"\x00\x12K\n\x0cworkloadInfo\x12\x1b.navopt.WorkloadInfoRequest\x1a\x1c.navopt.WorkloadInfoResponse\"\x00\x12\x45\n\ngetQueries\x12\x19.navopt.GetQueriesRequest\x1a\x1a.navopt.GetQueriesResponse\"\x00\x12W\n\x10getQueriesDetail\x12\x1f.navopt.GetQueriesDetailRequest\x1a .navopt.GetQueriesDetailResponse\"\x00\x12\x42\n\tgetTables\x12\x18.navopt.GetTablesRequest\x1a\x19.navopt.GetTablesResponse\"\x00\x12T\n\x0fgetTablesDetail\x12\x1e.navopt.GetTablesDetailRequest\x1a\x1f.navopt.GetTablesDetailResponse\"\x00\x12\x45\n\ngetColumns\x12\x19.navopt.GetColumnsRequest\x1a\x1a.navopt.GetColumnsResponse\"\x00\x12W\n\x10getColumnsDetail\x12\x1f.navopt.GetColumnsDetailRequest\x1a .navopt.GetColumnsDetailResponse\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x0cnavopt.proto\x12\x06navopt\x1a\rversion.proto\"(\n\x13\x43reateTenantRequest\x12\x11\n\tuserGroup\x18\x01 \x01(\t\"&\n\x14\x43reateTenantResponse\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"3\n\x0fGetS3urlRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x10\n\x08\x66ileName\x18\x02 \x01(\t\"\x1f\n\x10GetS3urlResponse\x12\x0b\n\x03url\x18\x01 \x01(\t\"\\\n\x10GetTenantRequest\x12\r\n\x05\x65mail\x18\x01 \x01(\t\x12\x11\n\tclusterId\x18\x02 \x01(\t\x12\x19\n\x11\x65xternalAccountId\x18\x03 \x01(\t\x12\x0b\n\x03\x63rn\x18\x04 \x01(\t\"#\n\x11GetTenantResponse\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"Q\n\x16GetTopDatabasesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x10\n\x08pageSize\x18\x02 \x01(\x05\x12\x15\n\rstartingToken\x18\x03 \x01(\t\"\x8d\x01\n\x0cTopDatabases\x12\x15\n\rinstanceCount\x18\x01 \x01(\x05\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x17\n\x0ftotalTableCount\x18\x03 \x01(\x05\x12\x17\n\x0ftotalQueryCount\x18\x04 \x01(\x05\x12\x17\n\x0fworkloadPercent\x18\x05 \x01(\x05\x12\x0b\n\x03\x65id\x18\x06 \x01(\t\"S\n\x17GetTopDatabasesResponse\x12%\n\x07results\x18\x01 \x03(\x0b\x32\x14.navopt.TopDatabases\x12\x11\n\tnextToken\x18\x02 \x01(\t\"^\n\x13GetTopTablesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x10\n\x08pageSize\x18\x03 \x01(\x05\x12\x15\n\rstartingToken\x18\x04 \x01(\t\"\x87\x01\n\tTopTables\x12\x13\n\x0b\x63olumnCount\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x14\n\x0cpatternCount\x18\x03 \x01(\x05\x12\x17\n\x0fworkloadPercent\x18\x04 \x01(\x05\x12\r\n\x05total\x18\x05 \x01(\x05\x12\x0c\n\x04type\x18\x06 \x01(\t\x12\x0b\n\x03\x65id\x18\x07 \x01(\t\"M\n\x14GetTopTablesResponse\x12\"\n\x07results\x18\x01 \x03(\x0b\x32\x11.navopt.TopTables\x12\x11\n\tnextToken\x18\x02 \x01(\t\"O\n\x14GetTopQueriesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x10\n\x08pageSize\x18\x02 \x01(\x05\x12\x15\n\rstartingToken\x18\x03 \x01(\t\"\xb5\x01\n\nTopQueries\x12\x18\n\x10impalaCompatible\x18\x01 \x01(\x08\x12\x16\n\x0ehiveCompatible\x18\x02 \x01(\x08\x12\x15\n\rinstanceCount\x18\x03 \x01(\x05\x12\x13\n\x0b\x65lapsedTime\x18\x04 \x01(\x05\x12\x10\n\x08\x63ustomId\x18\x05 \x01(\t\x12\x12\n\ncomplexity\x18\x06 \x01(\t\x12\x0b\n\x03qid\x18\x07 \x01(\t\x12\x16\n\x0equerySignature\x18\x08 \x03(\t\"O\n\x15GetTopQueriesResponse\x12#\n\x07results\x18\x01 \x03(\x0b\x32\x12.navopt.TopQueries\x12\x11\n\tnextToken\x18\x02 \x01(\t\"\x87\x01\n\x14GetTopColumnsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x11\n\ttableName\x18\x03 \x01(\t\x12\x13\n\x0b\x64\x62TableList\x18\x04 \x03(\t\x12\x10\n\x08pageSize\x18\x05 \x01(\x05\x12\x15\n\rstartingToken\x18\x06 \x01(\t\"\xfd\x01\n\nTopColumns\x12\x13\n\x0b\x63olumnCount\x18\x01 \x01(\x05\x12\x12\n\ncolumnName\x18\x02 \x01(\t\x12\x12\n\ngroupbyCol\x18\x03 \x01(\x05\x12\x11\n\tselectCol\x18\x04 \x01(\x05\x12\x11\n\tfilterCol\x18\x05 \x01(\x05\x12\x0b\n\x03tid\x18\x06 \x01(\t\x12\x0b\n\x03\x63id\x18\x07 \x01(\t\x12\x0f\n\x07joinCol\x18\x08 \x01(\x05\x12\x12\n\norderbyCol\x18\t \x01(\x05\x12\x11\n\ttableType\x18\n \x01(\t\x12\x11\n\ttableName\x18\x0b \x01(\t\x12\x17\n\x0fworkloadPercent\x18\x0c \x01(\x05\x12\x0e\n\x06\x64\x62Name\x18\r \x01(\t\"\x81\x02\n\x15GetTopColumnsResponse\x12*\n\x0egroupbyColumns\x18\x01 \x03(\x0b\x32\x12.navopt.TopColumns\x12\'\n\x0bjoinColumns\x18\x02 \x03(\x0b\x32\x12.navopt.TopColumns\x12)\n\rselectColumns\x18\x03 \x03(\x0b\x32\x12.navopt.TopColumns\x12*\n\x0eorderbyColumns\x18\x04 \x03(\x0b\x32\x12.navopt.TopColumns\x12)\n\rfilterColumns\x18\x05 \x03(\x0b\x32\x12.navopt.TopColumns\x12\x11\n\tnextToken\x18\x06 \x01(\t\"\x98\x01\n\x14GetTopFiltersRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x02 \x01(\t\x12\x11\n\ttableName\x18\x03 \x01(\t\x12\x0f\n\x07\x63olList\x18\x04 \x03(\t\x12\x13\n\x0b\x64\x62TableList\x18\x05 \x03(\t\x12\x10\n\x08pageSize\x18\x06 \x01(\x05\x12\x15\n\rstartingToken\x18\x07 \x01(\t\"N\n\x08ValGroup\x12\x12\n\ncolumnName\x18\x01 \x01(\t\x12\x11\n\tisLiteral\x18\x02 \x01(\x08\x12\x0f\n\x07literal\x18\x03 \x01(\t\x12\n\n\x02op\x18\x04 \x01(\t\":\n\x08PopValue\x12\r\n\x05\x63ount\x18\x01 \x01(\x05\x12\x1f\n\x05group\x18\x02 \x03(\x0b\x32\x10.navopt.ValGroup\"\x8d\x01\n\nTopFilters\x12\x17\n\x0ftotalQueryCount\x18\x01 \x01(\x05\x12\x0f\n\x07\x63olumns\x18\x02 \x03(\t\x12\x0c\n\x04qids\x18\x03 \x03(\t\x12\x11\n\ttableName\x18\x04 \x01(\t\x12\x0b\n\x03tid\x18\x05 \x01(\t\x12\'\n\rpopularValues\x18\x06 \x03(\x0b\x32\x10.navopt.PopValue\"O\n\x15GetTopFiltersResponse\x12#\n\x07results\x18\x01 \x03(\x0b\x32\x12.navopt.TopFilters\x12\x11\n\tnextToken\x18\x02 \x01(\t\"b\n\x12GetTopJoinsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x62TableList\x18\x02 \x03(\t\x12\x10\n\x08pageSize\x18\x03 \x01(\x05\x12\x15\n\rstartingToken\x18\x04 \x01(\t\"\x1b\n\x08JoinCols\x12\x0f\n\x07\x63olumns\x18\x01 \x03(\t\"\xa4\x01\n\x08TopJoins\x12\"\n\x08joinCols\x18\x01 \x03(\x0b\x32\x10.navopt.JoinCols\x12\x10\n\x08queryIds\x18\x02 \x03(\t\x12\x0e\n\x06tables\x18\x03 \x03(\t\x12\x17\n\x0ftotalQueryCount\x18\x04 \x01(\x05\x12\x17\n\x0ftotalTableCount\x18\x05 \x01(\x05\x12\x10\n\x08joinType\x18\x06 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x07 \x01(\t\"K\n\x13GetTopJoinsResponse\x12!\n\x07results\x18\x01 \x03(\x0b\x32\x10.navopt.TopJoins\x12\x11\n\tnextToken\x18\x02 \x01(\t\"a\n\x11GetTopAggsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x13\n\x0b\x64\x62TableList\x18\x02 \x03(\t\x12\x10\n\x08pageSize\x18\x03 \x01(\x05\x12\x15\n\rstartingToken\x18\x04 \x01(\t\"F\n\x07\x41ggInfo\x12\x12\n\ncolumnName\x18\x01 \x01(\t\x12\x11\n\ttableName\x18\x02 \x01(\t\x12\x14\n\x0c\x64\x61tabaseName\x18\x03 \x01(\t\"\xa5\x01\n\x06TopAgg\x12\x17\n\x0f\x61ggregateClause\x18\x01 \x01(\t\x12\x19\n\x11\x61ggregateFunction\x18\x02 \x01(\t\x12\x14\n\x0c\x66unctionType\x18\x03 \x01(\t\x12\x10\n\x08location\x18\x04 \x01(\t\x12\x17\n\x0ftotalQueryCount\x18\x05 \x01(\x05\x12&\n\raggregateInfo\x18\x06 \x03(\x0b\x32\x0f.navopt.AggInfo\"H\n\x12GetTopAggsResponse\x12\x1f\n\x07results\x18\x01 \x03(\x0b\x32\x0e.navopt.TopAgg\x12\x11\n\tnextToken\x18\x02 \x01(\t\"j\n\x19GetQueryCompatibleRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\x12\x16\n\x0etargetPlatform\x18\x04 \x01(\t\"T\n\nQueryError\x12\x19\n\x11\x65ncounteredString\x18\x01 \x01(\t\x12\x13\n\x0b\x65rrorString\x18\x02 \x01(\t\x12\x16\n\x0e\x65xpectedString\x18\x03 \x01(\t\"S\n\rHighLightInfo\x12\x0e\n\x06\x63olumn\x18\x01 \x01(\x05\x12\x0f\n\x07lineNum\x18\x02 \x01(\x05\x12\x11\n\ttokenRank\x18\x03 \x01(\x05\x12\x0e\n\x06offset\x18\x04 \x01(\x05\"e\n\x0b\x43lauseError\x12+\n\x0cstartLocator\x18\x01 \x01(\x0b\x32\x15.navopt.HighLightInfo\x12)\n\nendLocator\x18\x02 \x01(\x0b\x32\x15.navopt.HighLightInfo\"\xbc\x01\n\x1aGetQueryCompatibleResponse\x12\x12\n\nclauseName\x18\x01 \x01(\t\x12\x14\n\x0c\x63lauseString\x18\x02 \x01(\t\x12(\n\x0b\x63lauseError\x18\x03 \x01(\x0b\x32\x13.navopt.ClauseError\x12&\n\nqueryError\x18\x04 \x01(\x0b\x32\x12.navopt.QueryError\x12\x0e\n\x06status\x18\x05 \x01(\t\x12\x12\n\nparseError\x18\x06 \x01(\t\"\\\n\x13GetQueryRiskRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x04 \x01(\t\"n\n\x08RiskData\x12\x0c\n\x04risk\x18\x01 \x01(\t\x12\x14\n\x0criskAnalysis\x18\x02 \x01(\t\x12\x1a\n\x12riskRecommendation\x18\x03 \x01(\t\x12\x0e\n\x06riskId\x18\x04 \x01(\x05\x12\x12\n\nriskTables\x18\x05 \x03(\t\"\x92\x01\n\x14GetQueryRiskResponse\x12\"\n\x08hiveRisk\x18\x01 \x03(\x0b\x32\x10.navopt.RiskData\x12$\n\nimpalaRisk\x18\x02 \x03(\x0b\x32\x10.navopt.RiskData\x12\x10\n\x08\x65rrorMsg\x18\x03 \x01(\t\x12\r\n\x05noDDL\x18\x04 \x03(\t\x12\x0f\n\x07noStats\x18\x05 \x03(\t\"(\n\x16GetDesignBucketRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"^\n\x0c\x44\x65signBucket\x12\x12\n\nbucketName\x18\x01 \x01(\t\x12\x12\n\nnumQueries\x18\x02 \x01(\x05\x12\x11\n\tnumTables\x18\x03 \x01(\x05\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t\"@\n\x17GetDesignBucketResponse\x12%\n\x07results\x18\x01 \x03(\x0b\x32\x14.navopt.DesignBucket\"Q\n\x18GetSimilarQueriesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\"\xf8\x02\n\x19GetSimilarQueriesResponse\x12\x14\n\x0corderByCount\x18\x01 \x01(\x05\x12\x14\n\x0cgroupByCount\x18\x02 \x01(\x05\x12\x16\n\x0ehiveCompatible\x18\x03 \x01(\x05\x12!\n\x05table\x18\x04 \x03(\x0b\x32\x12.navopt.QueryTable\x12\x16\n\x0equerySignature\x18\x05 \x03(\t\x12\x13\n\x0bselectCount\x18\x06 \x01(\x05\x12\x12\n\nunionCount\x18\x07 \x01(\x05\x12\x15\n\runionAllCount\x18\x08 \x01(\x05\x12\x15\n\rStmtSignature\x18\t \x01(\t\x12\x15\n\rinstanceCount\x18\n \x01(\x05\x12\x13\n\x0b\x66ilterCount\x18\x0b \x01(\x05\x12\x11\n\tjoinCount\x18\x0c \x01(\x05\x12\x10\n\x08\x63ustomId\x18\r \x01(\t\x12\x0b\n\x03qid\x18\x0e \x01(\t\x12\r\n\x05query\x18\x0f \x01(\t\x12\x18\n\x10impalaCompatible\x18\x10 \x01(\x05\" \n\x0eGetHAQRRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\"\xa6\x02\n\x13IncompatibleQueries\x12\x0b\n\x03qid\x18\x01 \x01(\t\x12\x11\n\tfromError\x18\x02 \x01(\x05\x12\x12\n\nwhereError\x18\x03 \x01(\x05\x12\x13\n\x0bselectError\x18\x04 \x01(\x05\x12\x14\n\x0corderbyError\x18\x05 \x01(\x05\x12\x14\n\x0cgroupbyError\x18\x06 \x01(\x05\x12\x12\n\notherError\x18\x07 \x01(\x05\x12\x13\n\x0b\x66romClauses\x18\x08 \x03(\t\x12\x14\n\x0cwhereClauses\x18\t \x03(\t\x12\x15\n\rselectClauses\x18\n \x03(\t\x12\x16\n\x0eorderbyClauses\x18\x0b \x03(\t\x12\x16\n\x0egroupbyClauses\x18\x0c \x03(\t\x12\x14\n\x0cotherClauses\x18\r \x03(\t\"i\n\x0fGetHAQRResponse\x12+\n\x06impala\x18\x01 \x03(\x0b\x32\x1b.navopt.IncompatibleQueries\x12)\n\x04hive\x18\x02 \x03(\x0b\x32\x1b.navopt.IncompatibleQueries\"+\n\x0b\x46\x61iledQuery\x12\r\n\x05query\x18\x01 \x01(\t\x12\r\n\x05\x65rror\x18\x02 \x01(\t\"\x9b\x02\n\x0cUploadStatus\x12/\n\x05state\x18\x01 \x01(\x0e\x32 .navopt.UploadStatus.UploadState\x12\x12\n\nworkloadId\x18\x02 \x01(\t\x12\x11\n\tstatusMsg\x18\x03 \x01(\t\x12\x15\n\rfailedQueries\x18\x04 \x01(\x05\x12\x16\n\x0esuccessQueries\x18\x05 \x01(\x05\x12-\n\x10\x66\x61ilQueryDetails\x18\x06 \x03(\x0b\x32\x13.navopt.FailedQuery\"U\n\x0bUploadState\x12\x0b\n\x07WAITING\x10\x00\x12\x0f\n\x0bIN_PROGRESS\x10\x01\x12\x0e\n\nPROCESSING\x10\x02\x12\x0c\n\x08\x46INISHED\x10\x03\x12\n\n\x06\x46\x41ILED\x10\x04\"\xa2\x01\n\x0bHeaderField\x12,\n\x07\x63oltype\x18\x01 \x01(\x0e\x32\x1b.navopt.HeaderField.ColType\x12\x0c\n\x04name\x18\x02 \x01(\t\x12\x0b\n\x03tag\x18\x03 \x01(\t\x12\x0b\n\x03use\x18\x04 \x01(\x08\x12\r\n\x05\x63ount\x18\x05 \x01(\x05\".\n\x07\x43olType\x12\x08\n\x04NONE\x10\x00\x12\n\n\x06SQL_ID\x10\x01\x12\r\n\tSQL_QUERY\x10\x02\"\xae\x02\n\rUploadRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x14\n\x0c\x66ileLocation\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\x12\x10\n\x08rowDelim\x18\x04 \x01(\t\x12\x10\n\x08\x63olDelim\x18\x05 \x01(\t\x12\x10\n\x08\x66ileName\x18\x06 \x01(\t\x12\x12\n\ns3location\x18\x07 \x01(\t\x12)\n\x0cheaderFields\x18\x08 \x03(\x0b\x32\x13.navopt.HeaderField\x12\x30\n\x08\x66ileType\x18\t \x01(\x0e\x32\x1e.navopt.UploadRequest.FileType\"8\n\x08\x46ileType\x12\t\n\x05QUERY\x10\x00\x12\x0f\n\x0bTABLE_STATS\x10\x01\x12\x10\n\x0c\x43OLUMN_STATS\x10\x02\"6\n\x0eUploadResponse\x12$\n\x06status\x18\x01 \x01(\x0b\x32\x14.navopt.UploadStatus\"9\n\x13UploadStatusRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x12\n\nworkloadId\x18\x02 \x01(\t\"<\n\x14UploadStatusResponse\x12$\n\x06status\x18\x01 \x01(\x0b\x32\x14.navopt.UploadStatus\"\\\n\x13WorkloadInfoRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x12\n\nworkloadId\x18\x02 \x01(\t\x12\x10\n\x08inActive\x18\x03 \x01(\x08\x12\x0f\n\x07\x64\x65tails\x18\x04 \x01(\x08\"\xbf\x01\n\x0cWorkloadData\x12\x0f\n\x07queries\x18\x01 \x01(\r\x12\x12\n\nworkloadId\x18\x02 \x01(\t\x12\x14\n\x0cworkloadName\x18\x03 \x01(\t\x12\x19\n\x11processed_queries\x18\x04 \x01(\r\x12\x0e\n\x06\x61\x63tive\x18\x05 \x01(\x08\x12\x17\n\x0fsource_platform\x18\x06 \x01(\t\x12\x0e\n\x06tenant\x18\x07 \x01(\t\x12\x11\n\ttimestamp\x18\x08 \x01(\x04\x12\r\n\x05\x65type\x18\t \x01(\t\"=\n\x14WorkloadInfoResponse\x12%\n\x07results\x18\x01 \x03(\x0b\x32\x14.navopt.WorkloadData\":\n\x11GetQueriesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x15\n\rstartingToken\x18\x02 \x01(\t\"\'\n\tQueryData\x12\x0b\n\x03qid\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\"K\n\x12GetQueriesResponse\x12\"\n\x07results\x18\x01 \x03(\x0b\x32\x11.navopt.QueryData\x12\x11\n\tnextToken\x18\x02 \x01(\t\"6\n\x17GetQueriesDetailRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0b\n\x03qid\x18\x02 \x01(\t\"O\n\nQueryTable\x12\x11\n\ttableType\x18\x01 \x01(\t\x12\x11\n\ttableName\x18\x02 \x01(\t\x12\x0b\n\x03tid\x18\x03 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x04 \x01(\t\"\xf7\x02\n\x18GetQueriesDetailResponse\x12\x14\n\x0corderByCount\x18\x01 \x01(\x05\x12\x14\n\x0cgroupByCount\x18\x02 \x01(\x05\x12\x16\n\x0ehiveCompatible\x18\x03 \x01(\x05\x12!\n\x05table\x18\x04 \x03(\x0b\x32\x12.navopt.QueryTable\x12\x16\n\x0equerySignature\x18\x05 \x03(\t\x12\x13\n\x0bselectCount\x18\x06 \x01(\x05\x12\x12\n\nunionCount\x18\x07 \x01(\x05\x12\x15\n\runionAllCount\x18\x08 \x01(\x05\x12\x15\n\rStmtSignature\x18\t \x01(\t\x12\x15\n\rinstanceCount\x18\n \x01(\x05\x12\x13\n\x0b\x66ilterCount\x18\x0b \x01(\x05\x12\x11\n\tjoinCount\x18\x0c \x01(\x05\x12\x10\n\x08\x63ustomId\x18\r \x01(\t\x12\x0b\n\x03qid\x18\x0e \x01(\t\x12\r\n\x05query\x18\x0f \x01(\t\x12\x18\n\x10impalaCompatible\x18\x10 \x01(\x05\"9\n\x10GetTablesRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x15\n\rstartingToken\x18\x02 \x01(\t\"&\n\tTableData\x12\x0b\n\x03tid\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\"J\n\x11GetTablesResponse\x12\"\n\x07results\x18\x01 \x03(\x0b\x32\x11.navopt.TableData\x12\x11\n\tnextToken\x18\x02 \x01(\t\"X\n\x16GetTablesDetailRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0b\n\x03tid\x18\x02 \x01(\t\x12\x0e\n\x06\x64\x62Name\x18\x03 \x01(\t\x12\x11\n\ttableName\x18\x04 \x01(\t\"U\n\nTableStats\x12\x0f\n\x07numRows\x18\x01 \x01(\t\x12\x11\n\tavgRowLen\x18\x02 \x01(\t\x12\x10\n\x08rowRange\x18\x03 \x01(\t\x12\x11\n\ttableName\x18\x04 \x01(\t\"w\n\x08\x43olStats\x12\x11\n\tavgColLen\x18\x01 \x01(\t\x12\x10\n\x08numNulls\x18\x02 \x01(\t\x12\x0b\n\x03\x63id\x18\x03 \x01(\t\x12\x10\n\x08\x64\x61taType\x18\x04 \x01(\t\x12\x13\n\x0bnumDistinct\x18\x05 \x01(\t\x12\x12\n\ncolumnName\x18\x06 \x01(\t\"m\n\nJoinTables\x12\x11\n\ttableName\x18\x01 \x01(\t\x12\x10\n\x08tableEid\x18\x02 \x01(\t\x12\x13\n\x0bjoinpercent\x18\x03 \x01(\x05\x12\x10\n\x08numJoins\x18\x04 \x01(\x05\x12\x13\n\x0bjoinColumns\x18\x05 \x03(\t\"\x94\x01\n\tQueryList\x12\r\n\x05query\x18\x01 \x01(\t\x12\x0b\n\x03qid\x18\x02 \x01(\t\x12\x12\n\nqueryCount\x18\x03 \x01(\x05\x12\x11\n\tqueryChar\x18\x04 \x03(\t\x12\x18\n\x10impalaCompatible\x18\x05 \x01(\x08\x12\x16\n\x0ehiveCompatible\x18\x06 \x01(\x08\x12\x12\n\ncomplexity\x18\x07 \x01(\t\"&\n\x07TopCols\x12\r\n\x05score\x18\x01 \x01(\x05\x12\x0c\n\x04name\x18\x02 \x01(\t\"\x9a\x04\n\x17GetTablesDetailResponse\x12\x13\n\x0b\x63olumnCount\x18\x01 \x01(\x05\x12\x13\n\x0b\x63reateCount\x18\x02 \x01(\x05\x12\x13\n\x0bselectCount\x18\x03 \x01(\x05\x12\x13\n\x0bupdateCount\x18\x04 \x01(\x05\x12\x12\n\nqueryCount\x18\x05 \x01(\x05\x12\x13\n\x0binsertCount\x18\x06 \x01(\x05\x12\x13\n\x0b\x64\x65leteCount\x18\x07 \x01(\x05\x12\x11\n\tjoinCount\x18\x08 \x01(\x05\x12&\n\ntableStats\x18\t \x01(\x0b\x32\x12.navopt.TableStats\x12\"\n\x08\x63olStats\x18\n \x03(\x0b\x32\x10.navopt.ColStats\x12\x0c\n\x04name\x18\x0b \x01(\t\x12\x0b\n\x03tid\x18\x0c \x01(\t\x12\x0c\n\x04type\x18\r \x01(\t\x12\x11\n\ttable_ddl\x18\x0e \x01(\t\x12\x11\n\tiview_ddl\x18\x0f \x01(\t\x12\x10\n\x08view_ddl\x18\x10 \x01(\t\x12$\n\tqueryList\x18\x11 \x03(\x0b\x32\x11.navopt.QueryList\x12$\n\x0btopJoinCols\x18\x12 \x03(\x0b\x32\x0f.navopt.TopCols\x12&\n\njoinTables\x18\x13 \x03(\x0b\x32\x12.navopt.JoinTables\x12\x17\n\x0fworkloadPercent\x18\x14 \x01(\x05\x12 \n\x07topCols\x18\x15 \x03(\x0b\x32\x0f.navopt.TopCols\":\n\x11GetColumnsRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x15\n\rstartingToken\x18\x02 \x01(\t\"\'\n\nColumnData\x12\x0b\n\x03\x63id\x18\x01 \x01(\t\x12\x0c\n\x04name\x18\x02 \x01(\t\"L\n\x12GetColumnsResponse\x12#\n\x07results\x18\x01 \x03(\x0b\x32\x12.navopt.ColumnData\x12\x11\n\tnextToken\x18\x02 \x01(\t\"6\n\x17GetColumnsDetailRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\x0b\n\x03\x63id\x18\x02 \x01(\t\"\x7f\n\x18GetColumnsDetailResponse\x12\x12\n\ncolumnName\x18\x01 \x01(\t\x12\"\n\x08\x63olStats\x18\x02 \x03(\x0b\x32\x10.navopt.ColStats\x12\x0b\n\x03tid\x18\x03 \x01(\t\x12\x0b\n\x03\x63id\x18\x04 \x01(\t\x12\x11\n\ttableName\x18\x05 \x01(\t\"\x86\x01\n\x16GetQueryRewriteRequest\x12\x0e\n\x06tenant\x18\x01 \x01(\t\x12\r\n\x05query\x18\x02 \x01(\t\x12\x16\n\x0esourcePlatform\x18\x03 \x01(\t\x12\x16\n\x0etargetPlatform\x18\x04 \x01(\t\x12\x1d\n\x15targetPlatformVersion\x18\x05 \x01(\t\"o\n\x17GetQueryRewriteResponse\x12\x15\n\rrewriteStatus\x18\x01 \x01(\t\x12\x14\n\x0cisCompatible\x18\x02 \x01(\x08\x12\r\n\x05query\x18\x03 \x01(\t\x12\x18\n\x10rewrittenQueries\x18\x04 \x03(\t2\x9f\x0f\n\x06NavOpt\x12K\n\x0c\x63reateTenant\x12\x1b.navopt.CreateTenantRequest\x1a\x1c.navopt.CreateTenantResponse\"\x00\x12?\n\x08getS3url\x12\x17.navopt.GetS3urlRequest\x1a\x18.navopt.GetS3urlResponse\"\x00\x12\x42\n\tgetTenant\x12\x18.navopt.GetTenantRequest\x1a\x19.navopt.GetTenantResponse\"\x00\x12T\n\x0fgetTopDatabases\x12\x1e.navopt.GetTopDatabasesRequest\x1a\x1f.navopt.GetTopDatabasesResponse\"\x00\x12K\n\x0cgetTopTables\x12\x1b.navopt.GetTopTablesRequest\x1a\x1c.navopt.GetTopTablesResponse\"\x00\x12N\n\rgetTopQueries\x12\x1c.navopt.GetTopQueriesRequest\x1a\x1d.navopt.GetTopQueriesResponse\"\x00\x12N\n\rgetTopColumns\x12\x1c.navopt.GetTopColumnsRequest\x1a\x1d.navopt.GetTopColumnsResponse\"\x00\x12N\n\rgetTopFilters\x12\x1c.navopt.GetTopFiltersRequest\x1a\x1d.navopt.GetTopFiltersResponse\"\x00\x12H\n\x0bgetTopJoins\x12\x1a.navopt.GetTopJoinsRequest\x1a\x1b.navopt.GetTopJoinsResponse\"\x00\x12\x45\n\ngetTopAggs\x12\x19.navopt.GetTopAggsRequest\x1a\x1a.navopt.GetTopAggsResponse\"\x00\x12T\n\x0fgetDesignBucket\x12\x1e.navopt.GetDesignBucketRequest\x1a\x1f.navopt.GetDesignBucketResponse\"\x00\x12<\n\x07getHAQR\x12\x16.navopt.GetHAQRRequest\x1a\x17.navopt.GetHAQRResponse\"\x00\x12]\n\x12getQueryCompatible\x12!.navopt.GetQueryCompatibleRequest\x1a\".navopt.GetQueryCompatibleResponse\"\x00\x12K\n\x0cgetQueryRisk\x12\x1b.navopt.GetQueryRiskRequest\x1a\x1c.navopt.GetQueryRiskResponse\"\x00\x12T\n\x0fgetQueryRewrite\x12\x1e.navopt.GetQueryRewriteRequest\x1a\x1f.navopt.GetQueryRewriteResponse\"\x00\x12Z\n\x11getSimilarQueries\x12 .navopt.GetSimilarQueriesRequest\x1a!.navopt.GetSimilarQueriesResponse\"\x00\x12\x39\n\x06upload\x12\x15.navopt.UploadRequest\x1a\x16.navopt.UploadResponse\"\x00\x12K\n\x0cuploadStatus\x12\x1b.navopt.UploadStatusRequest\x1a\x1c.navopt.UploadStatusResponse\"\x00\x12K\n\x0cworkloadInfo\x12\x1b.navopt.WorkloadInfoRequest\x1a\x1c.navopt.WorkloadInfoResponse\"\x00\x12\x45\n\ngetQueries\x12\x19.navopt.GetQueriesRequest\x1a\x1a.navopt.GetQueriesResponse\"\x00\x12W\n\x10getQueriesDetail\x12\x1f.navopt.GetQueriesDetailRequest\x1a .navopt.GetQueriesDetailResponse\"\x00\x12\x42\n\tgetTables\x12\x18.navopt.GetTablesRequest\x1a\x19.navopt.GetTablesResponse\"\x00\x12T\n\x0fgetTablesDetail\x12\x1e.navopt.GetTablesDetailRequest\x1a\x1f.navopt.GetTablesDetailResponse\"\x00\x12\x45\n\ngetColumns\x12\x19.navopt.GetColumnsRequest\x1a\x1a.navopt.GetColumnsResponse\"\x00\x12W\n\x10getColumnsDetail\x12\x1f.navopt.GetColumnsDetailRequest\x1a .navopt.GetColumnsDetailResponse\"\x00\x62\x06proto3')
   ,
   dependencies=[version__pb2.DESCRIPTOR,])
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
 
@@ -4312,6 +4311,117 @@ _GETCOLUMNSDETAILRESPONSE = _descriptor.Descriptor(
   serialized_end=9001,
 )
 
+
+_GETQUERYREWRITEREQUEST = _descriptor.Descriptor(
+  name='GetQueryRewriteRequest',
+  full_name='navopt.GetQueryRewriteRequest',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='tenant', full_name='navopt.GetQueryRewriteRequest.tenant', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='query', full_name='navopt.GetQueryRewriteRequest.query', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='sourcePlatform', full_name='navopt.GetQueryRewriteRequest.sourcePlatform', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='targetPlatform', full_name='navopt.GetQueryRewriteRequest.targetPlatform', index=3,
+      number=4, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='targetPlatformVersion', full_name='navopt.GetQueryRewriteRequest.targetPlatformVersion', index=4,
+      number=5, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=9004,
+  serialized_end=9138,
+)
+
+
+_GETQUERYREWRITERESPONSE = _descriptor.Descriptor(
+  name='GetQueryRewriteResponse',
+  full_name='navopt.GetQueryRewriteResponse',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='rewriteStatus', full_name='navopt.GetQueryRewriteResponse.rewriteStatus', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='isCompatible', full_name='navopt.GetQueryRewriteResponse.isCompatible', index=1,
+      number=2, type=8, cpp_type=7, label=1,
+      has_default_value=False, default_value=False,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='query', full_name='navopt.GetQueryRewriteResponse.query', index=2,
+      number=3, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+    _descriptor.FieldDescriptor(
+      name='rewrittenQueries', full_name='navopt.GetQueryRewriteResponse.rewrittenQueries', index=3,
+      number=4, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=9140,
+  serialized_end=9251,
+)
+
 _GETTOPDATABASESRESPONSE.fields_by_name['results'].message_type = _TOPDATABASES
 _GETTOPTABLESRESPONSE.fields_by_name['results'].message_type = _TOPTABLES
 _GETTOPQUERIESRESPONSE.fields_by_name['results'].message_type = _TOPQUERIES
@@ -4437,6 +4547,9 @@ DESCRIPTOR.message_types_by_name['ColumnData'] = _COLUMNDATA
 DESCRIPTOR.message_types_by_name['GetColumnsResponse'] = _GETCOLUMNSRESPONSE
 DESCRIPTOR.message_types_by_name['GetColumnsDetailRequest'] = _GETCOLUMNSDETAILREQUEST
 DESCRIPTOR.message_types_by_name['GetColumnsDetailResponse'] = _GETCOLUMNSDETAILRESPONSE
+DESCRIPTOR.message_types_by_name['GetQueryRewriteRequest'] = _GETQUERYREWRITEREQUEST
+DESCRIPTOR.message_types_by_name['GetQueryRewriteResponse'] = _GETQUERYREWRITERESPONSE
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 CreateTenantRequest = _reflection.GeneratedProtocolMessageType('CreateTenantRequest', (_message.Message,), dict(
   DESCRIPTOR = _CREATETENANTREQUEST,
@@ -4984,473 +5097,910 @@ GetColumnsDetailResponse = _reflection.GeneratedProtocolMessageType('GetColumnsD
   ))
 _sym_db.RegisterMessage(GetColumnsDetailResponse)
 
+GetQueryRewriteRequest = _reflection.GeneratedProtocolMessageType('GetQueryRewriteRequest', (_message.Message,), dict(
+  DESCRIPTOR = _GETQUERYREWRITEREQUEST,
+  __module__ = 'navopt_pb2'
+  # @@protoc_insertion_point(class_scope:navopt.GetQueryRewriteRequest)
+  ))
+_sym_db.RegisterMessage(GetQueryRewriteRequest)
 
-import abc
-import six
-from grpc.beta import implementations as beta_implementations
-from grpc.beta import interfaces as beta_interfaces
-from grpc.framework.common import cardinality
-from grpc.framework.interfaces.face import utilities as face_utilities
+GetQueryRewriteResponse = _reflection.GeneratedProtocolMessageType('GetQueryRewriteResponse', (_message.Message,), dict(
+  DESCRIPTOR = _GETQUERYREWRITERESPONSE,
+  __module__ = 'navopt_pb2'
+  # @@protoc_insertion_point(class_scope:navopt.GetQueryRewriteResponse)
+  ))
+_sym_db.RegisterMessage(GetQueryRewriteResponse)
 
-class BetaNavOptServicer(object):
-  """For future compatibility, all rpcs must take a request and return a response
-  even if there is initially no content for these messages.
-  """
-  def createTenant(self, request, context):
-    """Request for a new tenant.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getS3url(self, request, context):
-    """Request for get S3 URL.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getTenant(self, request, context):
-    """Request for get tables.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getTopDatabases(self, request, context):
-    """Request for top databases.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getTopTables(self, request, context):
-    """Request for get tables.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getTopQueries(self, request, context):
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getTopColumns(self, request, context):
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getTopFilters(self, request, context):
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getTopJoins(self, request, context):
-    """Request for top joins.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getTopAggs(self, request, context):
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getDesignBucket(self, request, context):
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getHAQR(self, request, context):
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getQueryCompatible(self, request, context):
-    """Request for Compatibility Info.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getQueryRisk(self, request, context):
-    """Request for Query Risk Info.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getSimilarQueries(self, request, context):
-    """Request for Query Similarity Info.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def upload(self, request, context):
-    """Request a new upload.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def uploadStatus(self, request, context):
-    """Request upload status.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def workloadInfo(self, request, context):
-    """Request upload status.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getQueries(self, request, context):
-    """Request upload status.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getQueriesDetail(self, request, context):
-    """Request upload status.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getTables(self, request, context):
-    """Request upload status.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getTablesDetail(self, request, context):
-    """Request upload status.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getColumns(self, request, context):
-    """Request upload status.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
-  def getColumnsDetail(self, request, context):
-    """Request upload status.
-    """
-    context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
 
-class BetaNavOptStub(object):
-  """For future compatibility, all rpcs must take a request and return a response
-  even if there is initially no content for these messages.
-  """
-  def createTenant(self, request, timeout):
-    """Request for a new tenant.
-    """
-    raise NotImplementedError()
-  createTenant.future = None
-  def getS3url(self, request, timeout):
-    """Request for get S3 URL.
-    """
-    raise NotImplementedError()
-  getS3url.future = None
-  def getTenant(self, request, timeout):
-    """Request for get tables.
-    """
-    raise NotImplementedError()
-  getTenant.future = None
-  def getTopDatabases(self, request, timeout):
-    """Request for top databases.
-    """
-    raise NotImplementedError()
-  getTopDatabases.future = None
-  def getTopTables(self, request, timeout):
-    """Request for get tables.
-    """
-    raise NotImplementedError()
-  getTopTables.future = None
-  def getTopQueries(self, request, timeout):
-    raise NotImplementedError()
-  getTopQueries.future = None
-  def getTopColumns(self, request, timeout):
-    raise NotImplementedError()
-  getTopColumns.future = None
-  def getTopFilters(self, request, timeout):
-    raise NotImplementedError()
-  getTopFilters.future = None
-  def getTopJoins(self, request, timeout):
-    """Request for top joins.
-    """
-    raise NotImplementedError()
-  getTopJoins.future = None
-  def getTopAggs(self, request, timeout):
-    raise NotImplementedError()
-  getTopAggs.future = None
-  def getDesignBucket(self, request, timeout):
-    raise NotImplementedError()
-  getDesignBucket.future = None
-  def getHAQR(self, request, timeout):
-    raise NotImplementedError()
-  getHAQR.future = None
-  def getQueryCompatible(self, request, timeout):
-    """Request for Compatibility Info.
-    """
-    raise NotImplementedError()
-  getQueryCompatible.future = None
-  def getQueryRisk(self, request, timeout):
-    """Request for Query Risk Info.
-    """
-    raise NotImplementedError()
-  getQueryRisk.future = None
-  def getSimilarQueries(self, request, timeout):
-    """Request for Query Similarity Info.
-    """
-    raise NotImplementedError()
-  getSimilarQueries.future = None
-  def upload(self, request, timeout):
-    """Request a new upload.
-    """
-    raise NotImplementedError()
-  upload.future = None
-  def uploadStatus(self, request, timeout):
-    """Request upload status.
-    """
-    raise NotImplementedError()
-  uploadStatus.future = None
-  def workloadInfo(self, request, timeout):
-    """Request upload status.
-    """
-    raise NotImplementedError()
-  workloadInfo.future = None
-  def getQueries(self, request, timeout):
-    """Request upload status.
-    """
-    raise NotImplementedError()
-  getQueries.future = None
-  def getQueriesDetail(self, request, timeout):
-    """Request upload status.
-    """
-    raise NotImplementedError()
-  getQueriesDetail.future = None
-  def getTables(self, request, timeout):
-    """Request upload status.
-    """
-    raise NotImplementedError()
-  getTables.future = None
-  def getTablesDetail(self, request, timeout):
-    """Request upload status.
-    """
-    raise NotImplementedError()
-  getTablesDetail.future = None
-  def getColumns(self, request, timeout):
-    """Request upload status.
-    """
-    raise NotImplementedError()
-  getColumns.future = None
-  def getColumnsDetail(self, request, timeout):
-    """Request upload status.
-    """
-    raise NotImplementedError()
-  getColumnsDetail.future = None
+try:
+  # THESE ELEMENTS WILL BE DEPRECATED.
+  # Please use the generated *_pb2_grpc.py files instead.
+  import grpc
+  from grpc.beta import implementations as beta_implementations
+  from grpc.beta import interfaces as beta_interfaces
+  from grpc.framework.common import cardinality
+  from grpc.framework.interfaces.face import utilities as face_utilities
 
-def beta_create_NavOpt_server(servicer, pool=None, pool_size=None, default_timeout=None, maximum_timeout=None):
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  request_deserializers = {
-    ('navopt.NavOpt', 'createTenant'): navopt_pb2.CreateTenantRequest.FromString,
-    ('navopt.NavOpt', 'getColumns'): navopt_pb2.GetColumnsRequest.FromString,
-    ('navopt.NavOpt', 'getColumnsDetail'): navopt_pb2.GetColumnsDetailRequest.FromString,
-    ('navopt.NavOpt', 'getDesignBucket'): navopt_pb2.GetDesignBucketRequest.FromString,
-    ('navopt.NavOpt', 'getHAQR'): navopt_pb2.GetHAQRRequest.FromString,
-    ('navopt.NavOpt', 'getQueries'): navopt_pb2.GetQueriesRequest.FromString,
-    ('navopt.NavOpt', 'getQueriesDetail'): navopt_pb2.GetQueriesDetailRequest.FromString,
-    ('navopt.NavOpt', 'getQueryCompatible'): navopt_pb2.GetQueryCompatibleRequest.FromString,
-    ('navopt.NavOpt', 'getQueryRisk'): navopt_pb2.GetQueryRiskRequest.FromString,
-    ('navopt.NavOpt', 'getS3url'): navopt_pb2.GetS3urlRequest.FromString,
-    ('navopt.NavOpt', 'getSimilarQueries'): navopt_pb2.GetSimilarQueriesRequest.FromString,
-    ('navopt.NavOpt', 'getTables'): navopt_pb2.GetTablesRequest.FromString,
-    ('navopt.NavOpt', 'getTablesDetail'): navopt_pb2.GetTablesDetailRequest.FromString,
-    ('navopt.NavOpt', 'getTenant'): navopt_pb2.GetTenantRequest.FromString,
-    ('navopt.NavOpt', 'getTopAggs'): navopt_pb2.GetTopAggsRequest.FromString,
-    ('navopt.NavOpt', 'getTopColumns'): navopt_pb2.GetTopColumnsRequest.FromString,
-    ('navopt.NavOpt', 'getTopDatabases'): navopt_pb2.GetTopDatabasesRequest.FromString,
-    ('navopt.NavOpt', 'getTopFilters'): navopt_pb2.GetTopFiltersRequest.FromString,
-    ('navopt.NavOpt', 'getTopJoins'): navopt_pb2.GetTopJoinsRequest.FromString,
-    ('navopt.NavOpt', 'getTopQueries'): navopt_pb2.GetTopQueriesRequest.FromString,
-    ('navopt.NavOpt', 'getTopTables'): navopt_pb2.GetTopTablesRequest.FromString,
-    ('navopt.NavOpt', 'upload'): navopt_pb2.UploadRequest.FromString,
-    ('navopt.NavOpt', 'uploadStatus'): navopt_pb2.UploadStatusRequest.FromString,
-    ('navopt.NavOpt', 'workloadInfo'): navopt_pb2.WorkloadInfoRequest.FromString,
-  }
-  response_serializers = {
-    ('navopt.NavOpt', 'createTenant'): navopt_pb2.CreateTenantResponse.SerializeToString,
-    ('navopt.NavOpt', 'getColumns'): navopt_pb2.GetColumnsResponse.SerializeToString,
-    ('navopt.NavOpt', 'getColumnsDetail'): navopt_pb2.GetColumnsDetailResponse.SerializeToString,
-    ('navopt.NavOpt', 'getDesignBucket'): navopt_pb2.GetDesignBucketResponse.SerializeToString,
-    ('navopt.NavOpt', 'getHAQR'): navopt_pb2.GetHAQRResponse.SerializeToString,
-    ('navopt.NavOpt', 'getQueries'): navopt_pb2.GetQueriesResponse.SerializeToString,
-    ('navopt.NavOpt', 'getQueriesDetail'): navopt_pb2.GetQueriesDetailResponse.SerializeToString,
-    ('navopt.NavOpt', 'getQueryCompatible'): navopt_pb2.GetQueryCompatibleResponse.SerializeToString,
-    ('navopt.NavOpt', 'getQueryRisk'): navopt_pb2.GetQueryRiskResponse.SerializeToString,
-    ('navopt.NavOpt', 'getS3url'): navopt_pb2.GetS3urlResponse.SerializeToString,
-    ('navopt.NavOpt', 'getSimilarQueries'): navopt_pb2.GetSimilarQueriesResponse.SerializeToString,
-    ('navopt.NavOpt', 'getTables'): navopt_pb2.GetTablesResponse.SerializeToString,
-    ('navopt.NavOpt', 'getTablesDetail'): navopt_pb2.GetTablesDetailResponse.SerializeToString,
-    ('navopt.NavOpt', 'getTenant'): navopt_pb2.GetTenantResponse.SerializeToString,
-    ('navopt.NavOpt', 'getTopAggs'): navopt_pb2.GetTopAggsResponse.SerializeToString,
-    ('navopt.NavOpt', 'getTopColumns'): navopt_pb2.GetTopColumnsResponse.SerializeToString,
-    ('navopt.NavOpt', 'getTopDatabases'): navopt_pb2.GetTopDatabasesResponse.SerializeToString,
-    ('navopt.NavOpt', 'getTopFilters'): navopt_pb2.GetTopFiltersResponse.SerializeToString,
-    ('navopt.NavOpt', 'getTopJoins'): navopt_pb2.GetTopJoinsResponse.SerializeToString,
-    ('navopt.NavOpt', 'getTopQueries'): navopt_pb2.GetTopQueriesResponse.SerializeToString,
-    ('navopt.NavOpt', 'getTopTables'): navopt_pb2.GetTopTablesResponse.SerializeToString,
-    ('navopt.NavOpt', 'upload'): navopt_pb2.UploadResponse.SerializeToString,
-    ('navopt.NavOpt', 'uploadStatus'): navopt_pb2.UploadStatusResponse.SerializeToString,
-    ('navopt.NavOpt', 'workloadInfo'): navopt_pb2.WorkloadInfoResponse.SerializeToString,
-  }
-  method_implementations = {
-    ('navopt.NavOpt', 'createTenant'): face_utilities.unary_unary_inline(servicer.createTenant),
-    ('navopt.NavOpt', 'getColumns'): face_utilities.unary_unary_inline(servicer.getColumns),
-    ('navopt.NavOpt', 'getColumnsDetail'): face_utilities.unary_unary_inline(servicer.getColumnsDetail),
-    ('navopt.NavOpt', 'getDesignBucket'): face_utilities.unary_unary_inline(servicer.getDesignBucket),
-    ('navopt.NavOpt', 'getHAQR'): face_utilities.unary_unary_inline(servicer.getHAQR),
-    ('navopt.NavOpt', 'getQueries'): face_utilities.unary_unary_inline(servicer.getQueries),
-    ('navopt.NavOpt', 'getQueriesDetail'): face_utilities.unary_unary_inline(servicer.getQueriesDetail),
-    ('navopt.NavOpt', 'getQueryCompatible'): face_utilities.unary_unary_inline(servicer.getQueryCompatible),
-    ('navopt.NavOpt', 'getQueryRisk'): face_utilities.unary_unary_inline(servicer.getQueryRisk),
-    ('navopt.NavOpt', 'getS3url'): face_utilities.unary_unary_inline(servicer.getS3url),
-    ('navopt.NavOpt', 'getSimilarQueries'): face_utilities.unary_unary_inline(servicer.getSimilarQueries),
-    ('navopt.NavOpt', 'getTables'): face_utilities.unary_unary_inline(servicer.getTables),
-    ('navopt.NavOpt', 'getTablesDetail'): face_utilities.unary_unary_inline(servicer.getTablesDetail),
-    ('navopt.NavOpt', 'getTenant'): face_utilities.unary_unary_inline(servicer.getTenant),
-    ('navopt.NavOpt', 'getTopAggs'): face_utilities.unary_unary_inline(servicer.getTopAggs),
-    ('navopt.NavOpt', 'getTopColumns'): face_utilities.unary_unary_inline(servicer.getTopColumns),
-    ('navopt.NavOpt', 'getTopDatabases'): face_utilities.unary_unary_inline(servicer.getTopDatabases),
-    ('navopt.NavOpt', 'getTopFilters'): face_utilities.unary_unary_inline(servicer.getTopFilters),
-    ('navopt.NavOpt', 'getTopJoins'): face_utilities.unary_unary_inline(servicer.getTopJoins),
-    ('navopt.NavOpt', 'getTopQueries'): face_utilities.unary_unary_inline(servicer.getTopQueries),
-    ('navopt.NavOpt', 'getTopTables'): face_utilities.unary_unary_inline(servicer.getTopTables),
-    ('navopt.NavOpt', 'upload'): face_utilities.unary_unary_inline(servicer.upload),
-    ('navopt.NavOpt', 'uploadStatus'): face_utilities.unary_unary_inline(servicer.uploadStatus),
-    ('navopt.NavOpt', 'workloadInfo'): face_utilities.unary_unary_inline(servicer.workloadInfo),
-  }
-  server_options = beta_implementations.server_options(request_deserializers=request_deserializers, response_serializers=response_serializers, thread_pool=pool, thread_pool_size=pool_size, default_timeout=default_timeout, maximum_timeout=maximum_timeout)
-  return beta_implementations.server(method_implementations, options=server_options)
 
-def beta_create_NavOpt_stub(channel, host=None, metadata_transformer=None, pool=None, pool_size=None):
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  import navopt_pb2
-  request_serializers = {
-    ('navopt.NavOpt', 'createTenant'): navopt_pb2.CreateTenantRequest.SerializeToString,
-    ('navopt.NavOpt', 'getColumns'): navopt_pb2.GetColumnsRequest.SerializeToString,
-    ('navopt.NavOpt', 'getColumnsDetail'): navopt_pb2.GetColumnsDetailRequest.SerializeToString,
-    ('navopt.NavOpt', 'getDesignBucket'): navopt_pb2.GetDesignBucketRequest.SerializeToString,
-    ('navopt.NavOpt', 'getHAQR'): navopt_pb2.GetHAQRRequest.SerializeToString,
-    ('navopt.NavOpt', 'getQueries'): navopt_pb2.GetQueriesRequest.SerializeToString,
-    ('navopt.NavOpt', 'getQueriesDetail'): navopt_pb2.GetQueriesDetailRequest.SerializeToString,
-    ('navopt.NavOpt', 'getQueryCompatible'): navopt_pb2.GetQueryCompatibleRequest.SerializeToString,
-    ('navopt.NavOpt', 'getQueryRisk'): navopt_pb2.GetQueryRiskRequest.SerializeToString,
-    ('navopt.NavOpt', 'getS3url'): navopt_pb2.GetS3urlRequest.SerializeToString,
-    ('navopt.NavOpt', 'getSimilarQueries'): navopt_pb2.GetSimilarQueriesRequest.SerializeToString,
-    ('navopt.NavOpt', 'getTables'): navopt_pb2.GetTablesRequest.SerializeToString,
-    ('navopt.NavOpt', 'getTablesDetail'): navopt_pb2.GetTablesDetailRequest.SerializeToString,
-    ('navopt.NavOpt', 'getTenant'): navopt_pb2.GetTenantRequest.SerializeToString,
-    ('navopt.NavOpt', 'getTopAggs'): navopt_pb2.GetTopAggsRequest.SerializeToString,
-    ('navopt.NavOpt', 'getTopColumns'): navopt_pb2.GetTopColumnsRequest.SerializeToString,
-    ('navopt.NavOpt', 'getTopDatabases'): navopt_pb2.GetTopDatabasesRequest.SerializeToString,
-    ('navopt.NavOpt', 'getTopFilters'): navopt_pb2.GetTopFiltersRequest.SerializeToString,
-    ('navopt.NavOpt', 'getTopJoins'): navopt_pb2.GetTopJoinsRequest.SerializeToString,
-    ('navopt.NavOpt', 'getTopQueries'): navopt_pb2.GetTopQueriesRequest.SerializeToString,
-    ('navopt.NavOpt', 'getTopTables'): navopt_pb2.GetTopTablesRequest.SerializeToString,
-    ('navopt.NavOpt', 'upload'): navopt_pb2.UploadRequest.SerializeToString,
-    ('navopt.NavOpt', 'uploadStatus'): navopt_pb2.UploadStatusRequest.SerializeToString,
-    ('navopt.NavOpt', 'workloadInfo'): navopt_pb2.WorkloadInfoRequest.SerializeToString,
-  }
-  response_deserializers = {
-    ('navopt.NavOpt', 'createTenant'): navopt_pb2.CreateTenantResponse.FromString,
-    ('navopt.NavOpt', 'getColumns'): navopt_pb2.GetColumnsResponse.FromString,
-    ('navopt.NavOpt', 'getColumnsDetail'): navopt_pb2.GetColumnsDetailResponse.FromString,
-    ('navopt.NavOpt', 'getDesignBucket'): navopt_pb2.GetDesignBucketResponse.FromString,
-    ('navopt.NavOpt', 'getHAQR'): navopt_pb2.GetHAQRResponse.FromString,
-    ('navopt.NavOpt', 'getQueries'): navopt_pb2.GetQueriesResponse.FromString,
-    ('navopt.NavOpt', 'getQueriesDetail'): navopt_pb2.GetQueriesDetailResponse.FromString,
-    ('navopt.NavOpt', 'getQueryCompatible'): navopt_pb2.GetQueryCompatibleResponse.FromString,
-    ('navopt.NavOpt', 'getQueryRisk'): navopt_pb2.GetQueryRiskResponse.FromString,
-    ('navopt.NavOpt', 'getS3url'): navopt_pb2.GetS3urlResponse.FromString,
-    ('navopt.NavOpt', 'getSimilarQueries'): navopt_pb2.GetSimilarQueriesResponse.FromString,
-    ('navopt.NavOpt', 'getTables'): navopt_pb2.GetTablesResponse.FromString,
-    ('navopt.NavOpt', 'getTablesDetail'): navopt_pb2.GetTablesDetailResponse.FromString,
-    ('navopt.NavOpt', 'getTenant'): navopt_pb2.GetTenantResponse.FromString,
-    ('navopt.NavOpt', 'getTopAggs'): navopt_pb2.GetTopAggsResponse.FromString,
-    ('navopt.NavOpt', 'getTopColumns'): navopt_pb2.GetTopColumnsResponse.FromString,
-    ('navopt.NavOpt', 'getTopDatabases'): navopt_pb2.GetTopDatabasesResponse.FromString,
-    ('navopt.NavOpt', 'getTopFilters'): navopt_pb2.GetTopFiltersResponse.FromString,
-    ('navopt.NavOpt', 'getTopJoins'): navopt_pb2.GetTopJoinsResponse.FromString,
-    ('navopt.NavOpt', 'getTopQueries'): navopt_pb2.GetTopQueriesResponse.FromString,
-    ('navopt.NavOpt', 'getTopTables'): navopt_pb2.GetTopTablesResponse.FromString,
-    ('navopt.NavOpt', 'upload'): navopt_pb2.UploadResponse.FromString,
-    ('navopt.NavOpt', 'uploadStatus'): navopt_pb2.UploadStatusResponse.FromString,
-    ('navopt.NavOpt', 'workloadInfo'): navopt_pb2.WorkloadInfoResponse.FromString,
-  }
-  cardinalities = {
-    'createTenant': cardinality.Cardinality.UNARY_UNARY,
-    'getColumns': cardinality.Cardinality.UNARY_UNARY,
-    'getColumnsDetail': cardinality.Cardinality.UNARY_UNARY,
-    'getDesignBucket': cardinality.Cardinality.UNARY_UNARY,
-    'getHAQR': cardinality.Cardinality.UNARY_UNARY,
-    'getQueries': cardinality.Cardinality.UNARY_UNARY,
-    'getQueriesDetail': cardinality.Cardinality.UNARY_UNARY,
-    'getQueryCompatible': cardinality.Cardinality.UNARY_UNARY,
-    'getQueryRisk': cardinality.Cardinality.UNARY_UNARY,
-    'getS3url': cardinality.Cardinality.UNARY_UNARY,
-    'getSimilarQueries': cardinality.Cardinality.UNARY_UNARY,
-    'getTables': cardinality.Cardinality.UNARY_UNARY,
-    'getTablesDetail': cardinality.Cardinality.UNARY_UNARY,
-    'getTenant': cardinality.Cardinality.UNARY_UNARY,
-    'getTopAggs': cardinality.Cardinality.UNARY_UNARY,
-    'getTopColumns': cardinality.Cardinality.UNARY_UNARY,
-    'getTopDatabases': cardinality.Cardinality.UNARY_UNARY,
-    'getTopFilters': cardinality.Cardinality.UNARY_UNARY,
-    'getTopJoins': cardinality.Cardinality.UNARY_UNARY,
-    'getTopQueries': cardinality.Cardinality.UNARY_UNARY,
-    'getTopTables': cardinality.Cardinality.UNARY_UNARY,
-    'upload': cardinality.Cardinality.UNARY_UNARY,
-    'uploadStatus': cardinality.Cardinality.UNARY_UNARY,
-    'workloadInfo': cardinality.Cardinality.UNARY_UNARY,
-  }
-  stub_options = beta_implementations.stub_options(host=host, metadata_transformer=metadata_transformer, request_serializers=request_serializers, response_deserializers=response_deserializers, thread_pool=pool, thread_pool_size=pool_size)
-  return beta_implementations.dynamic_stub(channel, 'navopt.NavOpt', cardinalities, options=stub_options)
+  class NavOptStub(object):
+    """For future compatibility, all rpcs must take a request and return a response
+    even if there is initially no content for these messages.
+    """
+
+    def __init__(self, channel):
+      """Constructor.
+
+      Args:
+        channel: A grpc.Channel.
+      """
+      self.createTenant = channel.unary_unary(
+          '/navopt.NavOpt/createTenant',
+          request_serializer=CreateTenantRequest.SerializeToString,
+          response_deserializer=CreateTenantResponse.FromString,
+          )
+      self.getS3url = channel.unary_unary(
+          '/navopt.NavOpt/getS3url',
+          request_serializer=GetS3urlRequest.SerializeToString,
+          response_deserializer=GetS3urlResponse.FromString,
+          )
+      self.getTenant = channel.unary_unary(
+          '/navopt.NavOpt/getTenant',
+          request_serializer=GetTenantRequest.SerializeToString,
+          response_deserializer=GetTenantResponse.FromString,
+          )
+      self.getTopDatabases = channel.unary_unary(
+          '/navopt.NavOpt/getTopDatabases',
+          request_serializer=GetTopDatabasesRequest.SerializeToString,
+          response_deserializer=GetTopDatabasesResponse.FromString,
+          )
+      self.getTopTables = channel.unary_unary(
+          '/navopt.NavOpt/getTopTables',
+          request_serializer=GetTopTablesRequest.SerializeToString,
+          response_deserializer=GetTopTablesResponse.FromString,
+          )
+      self.getTopQueries = channel.unary_unary(
+          '/navopt.NavOpt/getTopQueries',
+          request_serializer=GetTopQueriesRequest.SerializeToString,
+          response_deserializer=GetTopQueriesResponse.FromString,
+          )
+      self.getTopColumns = channel.unary_unary(
+          '/navopt.NavOpt/getTopColumns',
+          request_serializer=GetTopColumnsRequest.SerializeToString,
+          response_deserializer=GetTopColumnsResponse.FromString,
+          )
+      self.getTopFilters = channel.unary_unary(
+          '/navopt.NavOpt/getTopFilters',
+          request_serializer=GetTopFiltersRequest.SerializeToString,
+          response_deserializer=GetTopFiltersResponse.FromString,
+          )
+      self.getTopJoins = channel.unary_unary(
+          '/navopt.NavOpt/getTopJoins',
+          request_serializer=GetTopJoinsRequest.SerializeToString,
+          response_deserializer=GetTopJoinsResponse.FromString,
+          )
+      self.getTopAggs = channel.unary_unary(
+          '/navopt.NavOpt/getTopAggs',
+          request_serializer=GetTopAggsRequest.SerializeToString,
+          response_deserializer=GetTopAggsResponse.FromString,
+          )
+      self.getDesignBucket = channel.unary_unary(
+          '/navopt.NavOpt/getDesignBucket',
+          request_serializer=GetDesignBucketRequest.SerializeToString,
+          response_deserializer=GetDesignBucketResponse.FromString,
+          )
+      self.getHAQR = channel.unary_unary(
+          '/navopt.NavOpt/getHAQR',
+          request_serializer=GetHAQRRequest.SerializeToString,
+          response_deserializer=GetHAQRResponse.FromString,
+          )
+      self.getQueryCompatible = channel.unary_unary(
+          '/navopt.NavOpt/getQueryCompatible',
+          request_serializer=GetQueryCompatibleRequest.SerializeToString,
+          response_deserializer=GetQueryCompatibleResponse.FromString,
+          )
+      self.getQueryRisk = channel.unary_unary(
+          '/navopt.NavOpt/getQueryRisk',
+          request_serializer=GetQueryRiskRequest.SerializeToString,
+          response_deserializer=GetQueryRiskResponse.FromString,
+          )
+      self.getQueryRewrite = channel.unary_unary(
+          '/navopt.NavOpt/getQueryRewrite',
+          request_serializer=GetQueryRewriteRequest.SerializeToString,
+          response_deserializer=GetQueryRewriteResponse.FromString,
+          )
+      self.getSimilarQueries = channel.unary_unary(
+          '/navopt.NavOpt/getSimilarQueries',
+          request_serializer=GetSimilarQueriesRequest.SerializeToString,
+          response_deserializer=GetSimilarQueriesResponse.FromString,
+          )
+      self.upload = channel.unary_unary(
+          '/navopt.NavOpt/upload',
+          request_serializer=UploadRequest.SerializeToString,
+          response_deserializer=UploadResponse.FromString,
+          )
+      self.uploadStatus = channel.unary_unary(
+          '/navopt.NavOpt/uploadStatus',
+          request_serializer=UploadStatusRequest.SerializeToString,
+          response_deserializer=UploadStatusResponse.FromString,
+          )
+      self.workloadInfo = channel.unary_unary(
+          '/navopt.NavOpt/workloadInfo',
+          request_serializer=WorkloadInfoRequest.SerializeToString,
+          response_deserializer=WorkloadInfoResponse.FromString,
+          )
+      self.getQueries = channel.unary_unary(
+          '/navopt.NavOpt/getQueries',
+          request_serializer=GetQueriesRequest.SerializeToString,
+          response_deserializer=GetQueriesResponse.FromString,
+          )
+      self.getQueriesDetail = channel.unary_unary(
+          '/navopt.NavOpt/getQueriesDetail',
+          request_serializer=GetQueriesDetailRequest.SerializeToString,
+          response_deserializer=GetQueriesDetailResponse.FromString,
+          )
+      self.getTables = channel.unary_unary(
+          '/navopt.NavOpt/getTables',
+          request_serializer=GetTablesRequest.SerializeToString,
+          response_deserializer=GetTablesResponse.FromString,
+          )
+      self.getTablesDetail = channel.unary_unary(
+          '/navopt.NavOpt/getTablesDetail',
+          request_serializer=GetTablesDetailRequest.SerializeToString,
+          response_deserializer=GetTablesDetailResponse.FromString,
+          )
+      self.getColumns = channel.unary_unary(
+          '/navopt.NavOpt/getColumns',
+          request_serializer=GetColumnsRequest.SerializeToString,
+          response_deserializer=GetColumnsResponse.FromString,
+          )
+      self.getColumnsDetail = channel.unary_unary(
+          '/navopt.NavOpt/getColumnsDetail',
+          request_serializer=GetColumnsDetailRequest.SerializeToString,
+          response_deserializer=GetColumnsDetailResponse.FromString,
+          )
+
+
+  class NavOptServicer(object):
+    """For future compatibility, all rpcs must take a request and return a response
+    even if there is initially no content for these messages.
+    """
+
+    def createTenant(self, request, context):
+      """Request for a new tenant.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getS3url(self, request, context):
+      """Request for get S3 URL.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getTenant(self, request, context):
+      """Request for get tables.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getTopDatabases(self, request, context):
+      """Request for top databases.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getTopTables(self, request, context):
+      """Request for get tables.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getTopQueries(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getTopColumns(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getTopFilters(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getTopJoins(self, request, context):
+      """Request for top joins.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getTopAggs(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getDesignBucket(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getHAQR(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getQueryCompatible(self, request, context):
+      """Request for Compatibility Info.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getQueryRisk(self, request, context):
+      """Request for Query Risk Info.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getQueryRewrite(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getSimilarQueries(self, request, context):
+      """Request for Query Similarity Info.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def upload(self, request, context):
+      """Request a new upload.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def uploadStatus(self, request, context):
+      """Request upload status.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def workloadInfo(self, request, context):
+      """Request upload status.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getQueries(self, request, context):
+      """Request upload status.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getQueriesDetail(self, request, context):
+      """Request upload status.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getTables(self, request, context):
+      """Request upload status.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getTablesDetail(self, request, context):
+      """Request upload status.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getColumns(self, request, context):
+      """Request upload status.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+    def getColumnsDetail(self, request, context):
+      """Request upload status.
+      """
+      context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+      context.set_details('Method not implemented!')
+      raise NotImplementedError('Method not implemented!')
+
+
+  def add_NavOptServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+        'createTenant': grpc.unary_unary_rpc_method_handler(
+            servicer.createTenant,
+            request_deserializer=CreateTenantRequest.FromString,
+            response_serializer=CreateTenantResponse.SerializeToString,
+        ),
+        'getS3url': grpc.unary_unary_rpc_method_handler(
+            servicer.getS3url,
+            request_deserializer=GetS3urlRequest.FromString,
+            response_serializer=GetS3urlResponse.SerializeToString,
+        ),
+        'getTenant': grpc.unary_unary_rpc_method_handler(
+            servicer.getTenant,
+            request_deserializer=GetTenantRequest.FromString,
+            response_serializer=GetTenantResponse.SerializeToString,
+        ),
+        'getTopDatabases': grpc.unary_unary_rpc_method_handler(
+            servicer.getTopDatabases,
+            request_deserializer=GetTopDatabasesRequest.FromString,
+            response_serializer=GetTopDatabasesResponse.SerializeToString,
+        ),
+        'getTopTables': grpc.unary_unary_rpc_method_handler(
+            servicer.getTopTables,
+            request_deserializer=GetTopTablesRequest.FromString,
+            response_serializer=GetTopTablesResponse.SerializeToString,
+        ),
+        'getTopQueries': grpc.unary_unary_rpc_method_handler(
+            servicer.getTopQueries,
+            request_deserializer=GetTopQueriesRequest.FromString,
+            response_serializer=GetTopQueriesResponse.SerializeToString,
+        ),
+        'getTopColumns': grpc.unary_unary_rpc_method_handler(
+            servicer.getTopColumns,
+            request_deserializer=GetTopColumnsRequest.FromString,
+            response_serializer=GetTopColumnsResponse.SerializeToString,
+        ),
+        'getTopFilters': grpc.unary_unary_rpc_method_handler(
+            servicer.getTopFilters,
+            request_deserializer=GetTopFiltersRequest.FromString,
+            response_serializer=GetTopFiltersResponse.SerializeToString,
+        ),
+        'getTopJoins': grpc.unary_unary_rpc_method_handler(
+            servicer.getTopJoins,
+            request_deserializer=GetTopJoinsRequest.FromString,
+            response_serializer=GetTopJoinsResponse.SerializeToString,
+        ),
+        'getTopAggs': grpc.unary_unary_rpc_method_handler(
+            servicer.getTopAggs,
+            request_deserializer=GetTopAggsRequest.FromString,
+            response_serializer=GetTopAggsResponse.SerializeToString,
+        ),
+        'getDesignBucket': grpc.unary_unary_rpc_method_handler(
+            servicer.getDesignBucket,
+            request_deserializer=GetDesignBucketRequest.FromString,
+            response_serializer=GetDesignBucketResponse.SerializeToString,
+        ),
+        'getHAQR': grpc.unary_unary_rpc_method_handler(
+            servicer.getHAQR,
+            request_deserializer=GetHAQRRequest.FromString,
+            response_serializer=GetHAQRResponse.SerializeToString,
+        ),
+        'getQueryCompatible': grpc.unary_unary_rpc_method_handler(
+            servicer.getQueryCompatible,
+            request_deserializer=GetQueryCompatibleRequest.FromString,
+            response_serializer=GetQueryCompatibleResponse.SerializeToString,
+        ),
+        'getQueryRisk': grpc.unary_unary_rpc_method_handler(
+            servicer.getQueryRisk,
+            request_deserializer=GetQueryRiskRequest.FromString,
+            response_serializer=GetQueryRiskResponse.SerializeToString,
+        ),
+        'getQueryRewrite': grpc.unary_unary_rpc_method_handler(
+            servicer.getQueryRewrite,
+            request_deserializer=GetQueryRewriteRequest.FromString,
+            response_serializer=GetQueryRewriteResponse.SerializeToString,
+        ),
+        'getSimilarQueries': grpc.unary_unary_rpc_method_handler(
+            servicer.getSimilarQueries,
+            request_deserializer=GetSimilarQueriesRequest.FromString,
+            response_serializer=GetSimilarQueriesResponse.SerializeToString,
+        ),
+        'upload': grpc.unary_unary_rpc_method_handler(
+            servicer.upload,
+            request_deserializer=UploadRequest.FromString,
+            response_serializer=UploadResponse.SerializeToString,
+        ),
+        'uploadStatus': grpc.unary_unary_rpc_method_handler(
+            servicer.uploadStatus,
+            request_deserializer=UploadStatusRequest.FromString,
+            response_serializer=UploadStatusResponse.SerializeToString,
+        ),
+        'workloadInfo': grpc.unary_unary_rpc_method_handler(
+            servicer.workloadInfo,
+            request_deserializer=WorkloadInfoRequest.FromString,
+            response_serializer=WorkloadInfoResponse.SerializeToString,
+        ),
+        'getQueries': grpc.unary_unary_rpc_method_handler(
+            servicer.getQueries,
+            request_deserializer=GetQueriesRequest.FromString,
+            response_serializer=GetQueriesResponse.SerializeToString,
+        ),
+        'getQueriesDetail': grpc.unary_unary_rpc_method_handler(
+            servicer.getQueriesDetail,
+            request_deserializer=GetQueriesDetailRequest.FromString,
+            response_serializer=GetQueriesDetailResponse.SerializeToString,
+        ),
+        'getTables': grpc.unary_unary_rpc_method_handler(
+            servicer.getTables,
+            request_deserializer=GetTablesRequest.FromString,
+            response_serializer=GetTablesResponse.SerializeToString,
+        ),
+        'getTablesDetail': grpc.unary_unary_rpc_method_handler(
+            servicer.getTablesDetail,
+            request_deserializer=GetTablesDetailRequest.FromString,
+            response_serializer=GetTablesDetailResponse.SerializeToString,
+        ),
+        'getColumns': grpc.unary_unary_rpc_method_handler(
+            servicer.getColumns,
+            request_deserializer=GetColumnsRequest.FromString,
+            response_serializer=GetColumnsResponse.SerializeToString,
+        ),
+        'getColumnsDetail': grpc.unary_unary_rpc_method_handler(
+            servicer.getColumnsDetail,
+            request_deserializer=GetColumnsDetailRequest.FromString,
+            response_serializer=GetColumnsDetailResponse.SerializeToString,
+        ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+        'navopt.NavOpt', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+
+
+  class BetaNavOptServicer(object):
+    """The Beta API is deprecated for 0.15.0 and later.
+
+    It is recommended to use the GA API (classes and functions in this
+    file not marked beta) for all further purposes. This class was generated
+    only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0."""
+    """For future compatibility, all rpcs must take a request and return a response
+    even if there is initially no content for these messages.
+    """
+    def createTenant(self, request, context):
+      """Request for a new tenant.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getS3url(self, request, context):
+      """Request for get S3 URL.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getTenant(self, request, context):
+      """Request for get tables.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getTopDatabases(self, request, context):
+      """Request for top databases.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getTopTables(self, request, context):
+      """Request for get tables.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getTopQueries(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getTopColumns(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getTopFilters(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getTopJoins(self, request, context):
+      """Request for top joins.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getTopAggs(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getDesignBucket(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getHAQR(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getQueryCompatible(self, request, context):
+      """Request for Compatibility Info.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getQueryRisk(self, request, context):
+      """Request for Query Risk Info.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getQueryRewrite(self, request, context):
+      # missing associated documentation comment in .proto file
+      pass
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getSimilarQueries(self, request, context):
+      """Request for Query Similarity Info.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def upload(self, request, context):
+      """Request a new upload.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def uploadStatus(self, request, context):
+      """Request upload status.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def workloadInfo(self, request, context):
+      """Request upload status.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getQueries(self, request, context):
+      """Request upload status.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getQueriesDetail(self, request, context):
+      """Request upload status.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getTables(self, request, context):
+      """Request upload status.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getTablesDetail(self, request, context):
+      """Request upload status.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getColumns(self, request, context):
+      """Request upload status.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+    def getColumnsDetail(self, request, context):
+      """Request upload status.
+      """
+      context.code(beta_interfaces.StatusCode.UNIMPLEMENTED)
+
+
+  class BetaNavOptStub(object):
+    """The Beta API is deprecated for 0.15.0 and later.
+
+    It is recommended to use the GA API (classes and functions in this
+    file not marked beta) for all further purposes. This class was generated
+    only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0."""
+    """For future compatibility, all rpcs must take a request and return a response
+    even if there is initially no content for these messages.
+    """
+    def createTenant(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request for a new tenant.
+      """
+      raise NotImplementedError()
+    createTenant.future = None
+    def getS3url(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request for get S3 URL.
+      """
+      raise NotImplementedError()
+    getS3url.future = None
+    def getTenant(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request for get tables.
+      """
+      raise NotImplementedError()
+    getTenant.future = None
+    def getTopDatabases(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request for top databases.
+      """
+      raise NotImplementedError()
+    getTopDatabases.future = None
+    def getTopTables(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request for get tables.
+      """
+      raise NotImplementedError()
+    getTopTables.future = None
+    def getTopQueries(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      # missing associated documentation comment in .proto file
+      pass
+      raise NotImplementedError()
+    getTopQueries.future = None
+    def getTopColumns(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      # missing associated documentation comment in .proto file
+      pass
+      raise NotImplementedError()
+    getTopColumns.future = None
+    def getTopFilters(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      # missing associated documentation comment in .proto file
+      pass
+      raise NotImplementedError()
+    getTopFilters.future = None
+    def getTopJoins(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request for top joins.
+      """
+      raise NotImplementedError()
+    getTopJoins.future = None
+    def getTopAggs(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      # missing associated documentation comment in .proto file
+      pass
+      raise NotImplementedError()
+    getTopAggs.future = None
+    def getDesignBucket(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      # missing associated documentation comment in .proto file
+      pass
+      raise NotImplementedError()
+    getDesignBucket.future = None
+    def getHAQR(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      # missing associated documentation comment in .proto file
+      pass
+      raise NotImplementedError()
+    getHAQR.future = None
+    def getQueryCompatible(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request for Compatibility Info.
+      """
+      raise NotImplementedError()
+    getQueryCompatible.future = None
+    def getQueryRisk(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request for Query Risk Info.
+      """
+      raise NotImplementedError()
+    getQueryRisk.future = None
+    def getQueryRewrite(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      # missing associated documentation comment in .proto file
+      pass
+      raise NotImplementedError()
+    getQueryRewrite.future = None
+    def getSimilarQueries(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request for Query Similarity Info.
+      """
+      raise NotImplementedError()
+    getSimilarQueries.future = None
+    def upload(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request a new upload.
+      """
+      raise NotImplementedError()
+    upload.future = None
+    def uploadStatus(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request upload status.
+      """
+      raise NotImplementedError()
+    uploadStatus.future = None
+    def workloadInfo(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request upload status.
+      """
+      raise NotImplementedError()
+    workloadInfo.future = None
+    def getQueries(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request upload status.
+      """
+      raise NotImplementedError()
+    getQueries.future = None
+    def getQueriesDetail(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request upload status.
+      """
+      raise NotImplementedError()
+    getQueriesDetail.future = None
+    def getTables(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request upload status.
+      """
+      raise NotImplementedError()
+    getTables.future = None
+    def getTablesDetail(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request upload status.
+      """
+      raise NotImplementedError()
+    getTablesDetail.future = None
+    def getColumns(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request upload status.
+      """
+      raise NotImplementedError()
+    getColumns.future = None
+    def getColumnsDetail(self, request, timeout, metadata=None, with_call=False, protocol_options=None):
+      """Request upload status.
+      """
+      raise NotImplementedError()
+    getColumnsDetail.future = None
+
+
+  def beta_create_NavOpt_server(servicer, pool=None, pool_size=None, default_timeout=None, maximum_timeout=None):
+    """The Beta API is deprecated for 0.15.0 and later.
+
+    It is recommended to use the GA API (classes and functions in this
+    file not marked beta) for all further purposes. This function was
+    generated only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0"""
+    request_deserializers = {
+      ('navopt.NavOpt', 'createTenant'): CreateTenantRequest.FromString,
+      ('navopt.NavOpt', 'getColumns'): GetColumnsRequest.FromString,
+      ('navopt.NavOpt', 'getColumnsDetail'): GetColumnsDetailRequest.FromString,
+      ('navopt.NavOpt', 'getDesignBucket'): GetDesignBucketRequest.FromString,
+      ('navopt.NavOpt', 'getHAQR'): GetHAQRRequest.FromString,
+      ('navopt.NavOpt', 'getQueries'): GetQueriesRequest.FromString,
+      ('navopt.NavOpt', 'getQueriesDetail'): GetQueriesDetailRequest.FromString,
+      ('navopt.NavOpt', 'getQueryCompatible'): GetQueryCompatibleRequest.FromString,
+      ('navopt.NavOpt', 'getQueryRewrite'): GetQueryRewriteRequest.FromString,
+      ('navopt.NavOpt', 'getQueryRisk'): GetQueryRiskRequest.FromString,
+      ('navopt.NavOpt', 'getS3url'): GetS3urlRequest.FromString,
+      ('navopt.NavOpt', 'getSimilarQueries'): GetSimilarQueriesRequest.FromString,
+      ('navopt.NavOpt', 'getTables'): GetTablesRequest.FromString,
+      ('navopt.NavOpt', 'getTablesDetail'): GetTablesDetailRequest.FromString,
+      ('navopt.NavOpt', 'getTenant'): GetTenantRequest.FromString,
+      ('navopt.NavOpt', 'getTopAggs'): GetTopAggsRequest.FromString,
+      ('navopt.NavOpt', 'getTopColumns'): GetTopColumnsRequest.FromString,
+      ('navopt.NavOpt', 'getTopDatabases'): GetTopDatabasesRequest.FromString,
+      ('navopt.NavOpt', 'getTopFilters'): GetTopFiltersRequest.FromString,
+      ('navopt.NavOpt', 'getTopJoins'): GetTopJoinsRequest.FromString,
+      ('navopt.NavOpt', 'getTopQueries'): GetTopQueriesRequest.FromString,
+      ('navopt.NavOpt', 'getTopTables'): GetTopTablesRequest.FromString,
+      ('navopt.NavOpt', 'upload'): UploadRequest.FromString,
+      ('navopt.NavOpt', 'uploadStatus'): UploadStatusRequest.FromString,
+      ('navopt.NavOpt', 'workloadInfo'): WorkloadInfoRequest.FromString,
+    }
+    response_serializers = {
+      ('navopt.NavOpt', 'createTenant'): CreateTenantResponse.SerializeToString,
+      ('navopt.NavOpt', 'getColumns'): GetColumnsResponse.SerializeToString,
+      ('navopt.NavOpt', 'getColumnsDetail'): GetColumnsDetailResponse.SerializeToString,
+      ('navopt.NavOpt', 'getDesignBucket'): GetDesignBucketResponse.SerializeToString,
+      ('navopt.NavOpt', 'getHAQR'): GetHAQRResponse.SerializeToString,
+      ('navopt.NavOpt', 'getQueries'): GetQueriesResponse.SerializeToString,
+      ('navopt.NavOpt', 'getQueriesDetail'): GetQueriesDetailResponse.SerializeToString,
+      ('navopt.NavOpt', 'getQueryCompatible'): GetQueryCompatibleResponse.SerializeToString,
+      ('navopt.NavOpt', 'getQueryRewrite'): GetQueryRewriteResponse.SerializeToString,
+      ('navopt.NavOpt', 'getQueryRisk'): GetQueryRiskResponse.SerializeToString,
+      ('navopt.NavOpt', 'getS3url'): GetS3urlResponse.SerializeToString,
+      ('navopt.NavOpt', 'getSimilarQueries'): GetSimilarQueriesResponse.SerializeToString,
+      ('navopt.NavOpt', 'getTables'): GetTablesResponse.SerializeToString,
+      ('navopt.NavOpt', 'getTablesDetail'): GetTablesDetailResponse.SerializeToString,
+      ('navopt.NavOpt', 'getTenant'): GetTenantResponse.SerializeToString,
+      ('navopt.NavOpt', 'getTopAggs'): GetTopAggsResponse.SerializeToString,
+      ('navopt.NavOpt', 'getTopColumns'): GetTopColumnsResponse.SerializeToString,
+      ('navopt.NavOpt', 'getTopDatabases'): GetTopDatabasesResponse.SerializeToString,
+      ('navopt.NavOpt', 'getTopFilters'): GetTopFiltersResponse.SerializeToString,
+      ('navopt.NavOpt', 'getTopJoins'): GetTopJoinsResponse.SerializeToString,
+      ('navopt.NavOpt', 'getTopQueries'): GetTopQueriesResponse.SerializeToString,
+      ('navopt.NavOpt', 'getTopTables'): GetTopTablesResponse.SerializeToString,
+      ('navopt.NavOpt', 'upload'): UploadResponse.SerializeToString,
+      ('navopt.NavOpt', 'uploadStatus'): UploadStatusResponse.SerializeToString,
+      ('navopt.NavOpt', 'workloadInfo'): WorkloadInfoResponse.SerializeToString,
+    }
+    method_implementations = {
+      ('navopt.NavOpt', 'createTenant'): face_utilities.unary_unary_inline(servicer.createTenant),
+      ('navopt.NavOpt', 'getColumns'): face_utilities.unary_unary_inline(servicer.getColumns),
+      ('navopt.NavOpt', 'getColumnsDetail'): face_utilities.unary_unary_inline(servicer.getColumnsDetail),
+      ('navopt.NavOpt', 'getDesignBucket'): face_utilities.unary_unary_inline(servicer.getDesignBucket),
+      ('navopt.NavOpt', 'getHAQR'): face_utilities.unary_unary_inline(servicer.getHAQR),
+      ('navopt.NavOpt', 'getQueries'): face_utilities.unary_unary_inline(servicer.getQueries),
+      ('navopt.NavOpt', 'getQueriesDetail'): face_utilities.unary_unary_inline(servicer.getQueriesDetail),
+      ('navopt.NavOpt', 'getQueryCompatible'): face_utilities.unary_unary_inline(servicer.getQueryCompatible),
+      ('navopt.NavOpt', 'getQueryRewrite'): face_utilities.unary_unary_inline(servicer.getQueryRewrite),
+      ('navopt.NavOpt', 'getQueryRisk'): face_utilities.unary_unary_inline(servicer.getQueryRisk),
+      ('navopt.NavOpt', 'getS3url'): face_utilities.unary_unary_inline(servicer.getS3url),
+      ('navopt.NavOpt', 'getSimilarQueries'): face_utilities.unary_unary_inline(servicer.getSimilarQueries),
+      ('navopt.NavOpt', 'getTables'): face_utilities.unary_unary_inline(servicer.getTables),
+      ('navopt.NavOpt', 'getTablesDetail'): face_utilities.unary_unary_inline(servicer.getTablesDetail),
+      ('navopt.NavOpt', 'getTenant'): face_utilities.unary_unary_inline(servicer.getTenant),
+      ('navopt.NavOpt', 'getTopAggs'): face_utilities.unary_unary_inline(servicer.getTopAggs),
+      ('navopt.NavOpt', 'getTopColumns'): face_utilities.unary_unary_inline(servicer.getTopColumns),
+      ('navopt.NavOpt', 'getTopDatabases'): face_utilities.unary_unary_inline(servicer.getTopDatabases),
+      ('navopt.NavOpt', 'getTopFilters'): face_utilities.unary_unary_inline(servicer.getTopFilters),
+      ('navopt.NavOpt', 'getTopJoins'): face_utilities.unary_unary_inline(servicer.getTopJoins),
+      ('navopt.NavOpt', 'getTopQueries'): face_utilities.unary_unary_inline(servicer.getTopQueries),
+      ('navopt.NavOpt', 'getTopTables'): face_utilities.unary_unary_inline(servicer.getTopTables),
+      ('navopt.NavOpt', 'upload'): face_utilities.unary_unary_inline(servicer.upload),
+      ('navopt.NavOpt', 'uploadStatus'): face_utilities.unary_unary_inline(servicer.uploadStatus),
+      ('navopt.NavOpt', 'workloadInfo'): face_utilities.unary_unary_inline(servicer.workloadInfo),
+    }
+    server_options = beta_implementations.server_options(request_deserializers=request_deserializers, response_serializers=response_serializers, thread_pool=pool, thread_pool_size=pool_size, default_timeout=default_timeout, maximum_timeout=maximum_timeout)
+    return beta_implementations.server(method_implementations, options=server_options)
+
+
+  def beta_create_NavOpt_stub(channel, host=None, metadata_transformer=None, pool=None, pool_size=None):
+    """The Beta API is deprecated for 0.15.0 and later.
+
+    It is recommended to use the GA API (classes and functions in this
+    file not marked beta) for all further purposes. This function was
+    generated only to ease transition from grpcio<0.15.0 to grpcio>=0.15.0"""
+    request_serializers = {
+      ('navopt.NavOpt', 'createTenant'): CreateTenantRequest.SerializeToString,
+      ('navopt.NavOpt', 'getColumns'): GetColumnsRequest.SerializeToString,
+      ('navopt.NavOpt', 'getColumnsDetail'): GetColumnsDetailRequest.SerializeToString,
+      ('navopt.NavOpt', 'getDesignBucket'): GetDesignBucketRequest.SerializeToString,
+      ('navopt.NavOpt', 'getHAQR'): GetHAQRRequest.SerializeToString,
+      ('navopt.NavOpt', 'getQueries'): GetQueriesRequest.SerializeToString,
+      ('navopt.NavOpt', 'getQueriesDetail'): GetQueriesDetailRequest.SerializeToString,
+      ('navopt.NavOpt', 'getQueryCompatible'): GetQueryCompatibleRequest.SerializeToString,
+      ('navopt.NavOpt', 'getQueryRewrite'): GetQueryRewriteRequest.SerializeToString,
+      ('navopt.NavOpt', 'getQueryRisk'): GetQueryRiskRequest.SerializeToString,
+      ('navopt.NavOpt', 'getS3url'): GetS3urlRequest.SerializeToString,
+      ('navopt.NavOpt', 'getSimilarQueries'): GetSimilarQueriesRequest.SerializeToString,
+      ('navopt.NavOpt', 'getTables'): GetTablesRequest.SerializeToString,
+      ('navopt.NavOpt', 'getTablesDetail'): GetTablesDetailRequest.SerializeToString,
+      ('navopt.NavOpt', 'getTenant'): GetTenantRequest.SerializeToString,
+      ('navopt.NavOpt', 'getTopAggs'): GetTopAggsRequest.SerializeToString,
+      ('navopt.NavOpt', 'getTopColumns'): GetTopColumnsRequest.SerializeToString,
+      ('navopt.NavOpt', 'getTopDatabases'): GetTopDatabasesRequest.SerializeToString,
+      ('navopt.NavOpt', 'getTopFilters'): GetTopFiltersRequest.SerializeToString,
+      ('navopt.NavOpt', 'getTopJoins'): GetTopJoinsRequest.SerializeToString,
+      ('navopt.NavOpt', 'getTopQueries'): GetTopQueriesRequest.SerializeToString,
+      ('navopt.NavOpt', 'getTopTables'): GetTopTablesRequest.SerializeToString,
+      ('navopt.NavOpt', 'upload'): UploadRequest.SerializeToString,
+      ('navopt.NavOpt', 'uploadStatus'): UploadStatusRequest.SerializeToString,
+      ('navopt.NavOpt', 'workloadInfo'): WorkloadInfoRequest.SerializeToString,
+    }
+    response_deserializers = {
+      ('navopt.NavOpt', 'createTenant'): CreateTenantResponse.FromString,
+      ('navopt.NavOpt', 'getColumns'): GetColumnsResponse.FromString,
+      ('navopt.NavOpt', 'getColumnsDetail'): GetColumnsDetailResponse.FromString,
+      ('navopt.NavOpt', 'getDesignBucket'): GetDesignBucketResponse.FromString,
+      ('navopt.NavOpt', 'getHAQR'): GetHAQRResponse.FromString,
+      ('navopt.NavOpt', 'getQueries'): GetQueriesResponse.FromString,
+      ('navopt.NavOpt', 'getQueriesDetail'): GetQueriesDetailResponse.FromString,
+      ('navopt.NavOpt', 'getQueryCompatible'): GetQueryCompatibleResponse.FromString,
+      ('navopt.NavOpt', 'getQueryRewrite'): GetQueryRewriteResponse.FromString,
+      ('navopt.NavOpt', 'getQueryRisk'): GetQueryRiskResponse.FromString,
+      ('navopt.NavOpt', 'getS3url'): GetS3urlResponse.FromString,
+      ('navopt.NavOpt', 'getSimilarQueries'): GetSimilarQueriesResponse.FromString,
+      ('navopt.NavOpt', 'getTables'): GetTablesResponse.FromString,
+      ('navopt.NavOpt', 'getTablesDetail'): GetTablesDetailResponse.FromString,
+      ('navopt.NavOpt', 'getTenant'): GetTenantResponse.FromString,
+      ('navopt.NavOpt', 'getTopAggs'): GetTopAggsResponse.FromString,
+      ('navopt.NavOpt', 'getTopColumns'): GetTopColumnsResponse.FromString,
+      ('navopt.NavOpt', 'getTopDatabases'): GetTopDatabasesResponse.FromString,
+      ('navopt.NavOpt', 'getTopFilters'): GetTopFiltersResponse.FromString,
+      ('navopt.NavOpt', 'getTopJoins'): GetTopJoinsResponse.FromString,
+      ('navopt.NavOpt', 'getTopQueries'): GetTopQueriesResponse.FromString,
+      ('navopt.NavOpt', 'getTopTables'): GetTopTablesResponse.FromString,
+      ('navopt.NavOpt', 'upload'): UploadResponse.FromString,
+      ('navopt.NavOpt', 'uploadStatus'): UploadStatusResponse.FromString,
+      ('navopt.NavOpt', 'workloadInfo'): WorkloadInfoResponse.FromString,
+    }
+    cardinalities = {
+      'createTenant': cardinality.Cardinality.UNARY_UNARY,
+      'getColumns': cardinality.Cardinality.UNARY_UNARY,
+      'getColumnsDetail': cardinality.Cardinality.UNARY_UNARY,
+      'getDesignBucket': cardinality.Cardinality.UNARY_UNARY,
+      'getHAQR': cardinality.Cardinality.UNARY_UNARY,
+      'getQueries': cardinality.Cardinality.UNARY_UNARY,
+      'getQueriesDetail': cardinality.Cardinality.UNARY_UNARY,
+      'getQueryCompatible': cardinality.Cardinality.UNARY_UNARY,
+      'getQueryRewrite': cardinality.Cardinality.UNARY_UNARY,
+      'getQueryRisk': cardinality.Cardinality.UNARY_UNARY,
+      'getS3url': cardinality.Cardinality.UNARY_UNARY,
+      'getSimilarQueries': cardinality.Cardinality.UNARY_UNARY,
+      'getTables': cardinality.Cardinality.UNARY_UNARY,
+      'getTablesDetail': cardinality.Cardinality.UNARY_UNARY,
+      'getTenant': cardinality.Cardinality.UNARY_UNARY,
+      'getTopAggs': cardinality.Cardinality.UNARY_UNARY,
+      'getTopColumns': cardinality.Cardinality.UNARY_UNARY,
+      'getTopDatabases': cardinality.Cardinality.UNARY_UNARY,
+      'getTopFilters': cardinality.Cardinality.UNARY_UNARY,
+      'getTopJoins': cardinality.Cardinality.UNARY_UNARY,
+      'getTopQueries': cardinality.Cardinality.UNARY_UNARY,
+      'getTopTables': cardinality.Cardinality.UNARY_UNARY,
+      'upload': cardinality.Cardinality.UNARY_UNARY,
+      'uploadStatus': cardinality.Cardinality.UNARY_UNARY,
+      'workloadInfo': cardinality.Cardinality.UNARY_UNARY,
+    }
+    stub_options = beta_implementations.stub_options(host=host, metadata_transformer=metadata_transformer, request_serializers=request_serializers, response_deserializers=response_deserializers, thread_pool=pool, thread_pool_size=pool_size)
+    return beta_implementations.dynamic_stub(channel, 'navopt.NavOpt', cardinalities, options=stub_options)
+except ImportError:
+  pass
 # @@protoc_insertion_point(module_scope)

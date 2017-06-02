@@ -43,6 +43,8 @@ service NavOpt {
   // Request for Query Risk Info.
   rpc getQueryRisk (GetQueryRiskRequest)
     returns (GetQueryRiskResponse) {}
+  rpc getQueryRewrite (GetQueryRewriteRequest)
+    returns (GetQueryRewriteResponse) {}
   // Request for Query Similarity Info.
   rpc getSimilarQueries (GetSimilarQueriesRequest)
     returns (GetSimilarQueriesResponse) {}
@@ -667,3 +669,18 @@ message GetColumnsDetailResponse {
   string cid = 4;
   string tableName = 5;
 }
+message GetQueryRewriteRequest {
+  string tenant = 1;
+  string query = 2;
+  string sourcePlatform = 3;
+  string targetPlatform = 4;
+  string targetPlatformVersion = 5;
+}
+
+message GetQueryRewriteResponse {
+  string rewriteStatus = 1;
+  bool isCompatible = 2;
+  string query = 3;
+  repeated string rewrittenQueries = 4;
+}
+

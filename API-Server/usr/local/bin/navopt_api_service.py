@@ -602,6 +602,20 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         api_rpc.close()
         return ret_response
 
+    def convert_QueryRewrite(self, response):
+        ret = navopt_pb2.GetQueryRewriteResponse()
+        if 'errorMsg' in response:
+            ret.errorMsg = response['errorMsg']
+        if 'rewriteStatus' in response:
+            ret.noStats.extend(response['rewriteStatus'])
+        if 'isCompatible' in response:
+            ret.noStats.extend(response['isCompatible'])
+        if 'query' in response:
+            ret.noStats.extend(response['query'])
+        if 'rewrittenQueries' in response:
+            ret.rewrittenQueries.extend(response['rewrittenQueries'])
+        return ret
+
     def convert_QueryRisk(self, response):
         ret = navopt_pb2.GetQueryRiskResponse()
         if 'hive_risk' in response:
@@ -652,6 +666,23 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         response = api_rpc.call(dumps(msg_dict))
         logging.info("GetQueryRisk response: %s", response)
         ret_response = self.convert_QueryRisk(loads(response))
+        api_rpc.close()
+        return ret_response
+
+    def getQueryRewrite(self, request, context):
+        api_rpc = ApiRpcClient()
+        #get rewrittne query 
+        logging.info('GetQueryRewrite request: %s', request) 
+        msg_dict = {'tenant':str(request.tenant), 'opcode':'QueryRewrite', 'query':request.query}
+        if request.sourcePlatform != "":
+            msg_dict['source_platform'] = request.sourcePlatform
+        if request.targetPlatform != "":
+            msg_dict['target_platform'] = request.targetPlatform
+        if request.targetPlatformVersion != "":
+            msg_dict['target_platform_version'] = request.targetPlatformVersion
+        response = api_rpc.call(dumps(msg_dict))
+        logging.info("GetQueryRewrite response: %s", response)
+        ret_response = self.convert_QueryRewrite(loads(response))
         api_rpc.close()
         return ret_response
 
