@@ -1520,6 +1520,10 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     hive_success = 1
 
             mongoconn.updateProfile(entity, "Compiler", key, compile_doc[key])
+            if key == compiler_to_use:
+                mongoconn.db.entities.update({'eid':entity.eid},
+                                             {"$set": {'correctCompileDoc' : compile_doc[key]}},
+                                             upsert=True)
 
             is_compiler = False
             update_redis_data = False
