@@ -1193,9 +1193,9 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
         try:
             profile_dict['correctCompileDoc'] = comp_profile[compiler]
         except:
-            if compiler not in profile_dict:
-                logging.error("gsp not found in profile_dict")
-                logging.error("profile_dict keys: " + str(profile_dict.keys()))
+            if compiler not in comp_profile:
+                logging.error("{} not found in comp_profile".format(compiler))
+                logging.error("comp_profile keys: " + str(comp_profile.keys()))
 
 
         clog.debug("Going to create the entity")
