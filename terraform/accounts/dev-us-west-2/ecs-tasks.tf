@@ -16,7 +16,7 @@ resource "aws_ecs_task_definition" "navopt-applicationservice" {
         "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
-                "awslogs-group": "${aws_cloudwatch_log_group.navopt-applicationservice.name}",
+                "awslogs-group": "${module.navopt-applicationservice-log-group.name}",
                 "awslogs-region": "${var.region}"
             }
         }
@@ -43,7 +43,7 @@ resource "aws_ecs_task_definition" "navopt-compileservice" {
         "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
-                "awslogs-group": "${aws_cloudwatch_log_group.navopt-compileservice.name}",
+                "awslogs-group": "${module.navopt-compileservice-log-group.name}",
                 "awslogs-region": "${var.region}"
             }
         }
@@ -70,7 +70,7 @@ resource "aws_ecs_task_definition" "navopt-advanalytics" {
         "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
-                "awslogs-group": "${aws_cloudwatch_log_group.navopt-advanalytics.name}",
+                "awslogs-group": "${module.navopt-advanalytics-log-group.name}",
                 "awslogs-region": "${var.region}"
             }
         }
@@ -97,7 +97,7 @@ resource "aws_ecs_task_definition" "navopt-apiservice" {
         "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
-                "awslogs-group": "${aws_cloudwatch_log_group.navopt-apiservice.name}",
+                "awslogs-group": "${module.navopt-apiservice-log-group.name}",
                 "awslogs-region": "${var.region}"
             }
         }
@@ -125,7 +125,7 @@ resource "aws_ecs_task_definition" "navopt-mathservice" {
         "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
-                "awslogs-group": "${aws_cloudwatch_log_group.navopt-mathservice.name}",
+                "awslogs-group": "${module.navopt-mathservice-log-group.name}",
                 "awslogs-region": "${var.region}"
             }
         }
@@ -154,7 +154,7 @@ resource "aws_ecs_task_definition" "navopt-ruleengineservice" {
         "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
-                "awslogs-group": "${aws_cloudwatch_log_group.navopt-ruleengineservice.name}",
+                "awslogs-group": "${module.navopt-ruleengineservice-log-group.name}",
                 "awslogs-region": "${var.region}"
             }
         }
@@ -181,7 +181,7 @@ resource "aws_ecs_task_definition" "navopt-elasticpub" {
         "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
-                "awslogs-group": "${aws_cloudwatch_log_group.navopt-elasticpub.name}",
+                "awslogs-group": "${module.navopt-elasticpub-log-group.name}",
                 "awslogs-region": "${var.region}"
             }
         }
@@ -208,7 +208,7 @@ resource "aws_ecs_task_definition" "navopt-dataacquisitionservice" {
         "logConfiguration": {
             "logDriver": "awslogs",
             "options": {
-                "awslogs-group": "${aws_cloudwatch_log_group.navopt-dataaquisitionservice.name}",
+                "awslogs-group": "${module.navopt-dataaquisitionservice-log-group.name}",
                 "awslogs-region": "${var.region}"
             }
         }
