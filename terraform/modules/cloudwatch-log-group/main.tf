@@ -52,6 +52,10 @@ resource "aws_cloudwatch_log_subscription_filter" "subscriptions" {
 # Outputs
 #########
 
+output "name" {
+    value = "${var.name}"
+}
+
 output "arn" {
     value = "${aws_cloudwatch_log_group.group.arn}"
 }
