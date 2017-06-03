@@ -33,7 +33,7 @@ def get_epoch_time(dt, ms=True):
 
 def execute(msg_dict):
     out_type = msg_dict['out_type']
-    extraction_dir = msg_dict['out_type']
+    extraction_dir = msg_dict['extraction_dir']
     out_dir = msg_dict['out_dir']
     start_date = msg_dict['start_date']
     end_date = msg_dict['end_date']

@@ -3,6 +3,7 @@ Documentation: https://docs.google.com/document/d/1B7CK9edy6CJsHWzQqEV7xupZeFUvy
 */
 
 var gulp = require('gulp'),
+    gutil = require("gulp-util"),
     gulpConfig = require('./gulp-config'),
     webpackStream = require('webpack-stream'),
     webpack = require('webpack'),
@@ -23,6 +24,7 @@ var gulp = require('gulp'),
 var branch = args.branch || 'master';
 var xplainDir = args.xplainDir || null;
 var fixEslint = args.fix || false;
+var prod = (args.prod ? true : false);
 
 
 if(!gulpConfig.workDir) throw (new Error("No working directory found in gulp-config. Ensure that workDir is declared."));
@@ -71,7 +73,31 @@ gulp.task('pull-app', ['purge-ui'], function(){
          });
 });
 
-gulp.task('webpack-build', function(){
+gulp.task('webpack-build', function(cb){
+
+
+  if(prod){
+    process.stdout.write("Setting NODE_ENV to 'production'" + "\n");
+    process.env.NODE_ENV = 'production';
+    if (process.env.NODE_ENV != 'production') {
+        throw new Error("Failed to set NODE_ENV to production!!!!");
+    } else {
+        process.stdout.write("Successfully set NODE_ENV to production" + "\n");
+    }
+  }
+
+  var myConfig = Object.create(require((xplainDir || dirs.ui+'/xplain.io/')+'src/webpack.config.js'));
+	// run webpack
+	webpack(myConfig, function(err, stats) {
+		if(err) throw new gutil.PluginError("webpack:build", err);
+		gutil.log("[webpack:build]", stats.toString({
+			colors: true
+		}));
+		cb();
+	});
+});
+
+gulp.task('webpack-build-old', function(){
   console.log("Compiling code");
   var dir = xplainDir || dirs.ui+'/xplain.io/';
   var webpackCfg = require((xplainDir || dirs.ui+'/xplain.io/')+'src/webpack.config.js');
