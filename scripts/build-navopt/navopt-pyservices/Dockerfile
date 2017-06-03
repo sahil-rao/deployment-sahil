@@ -21,6 +21,7 @@ RUN mkdir /var/Baaz
 RUN mkdir /var/log/cloudera && mkdir /var/log/cloudera/navopt
 ADD target/flightpath-deployment.tar.gz /
 ADD target/Baaz-DataAcquisition-Service.tar.gz /
+ADD target/Baaz-API-Service.tar.gz /
 ADD target/Baaz-Analytics.tar.gz /
 ADD target/Baaz-Analytics-Service.tar.gz /
 ADD target/Baaz-Compile-Service.tar.gz /
