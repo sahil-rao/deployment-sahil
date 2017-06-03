@@ -17,8 +17,6 @@ import sys
 from flightpath.MongoConnector import *
 from flightpath.RedisConnector import *
 from flightpath.ScaleModeConnector import *
-import baazmath.workflows.hbase_analytics as Hbase
-import baazmath.workflows.impala_analytics as Impala
 import flightpath.services.app_get_table_detail as table_details
 import flightpath.services.app_get_query_detail as query_details
 import flightpath.services.app_get_upload_detail as upload_details
@@ -189,120 +187,6 @@ def process_mongo_rewrite_request(ch, properties, tenant, instances, clog):
     #                                                 properties.correlation_id),
     #                 body=dumps(resp_dict))
 
-def process_ddl_request(ch, properties, tenant, target, instances, db, redis_conn, clog):
-
-    """
-        Steps to generate Hbase DDL are as following:
-        1. Gets the pattern ID of the pattern. Finds the tables and
-           queries involved in the pattern.
-        2. Invoke analytics workflow to generate Hbase analytics.
-        3. Save the analytics results to a local file.
-        4. Send request to DDL generator.
-        5. Check the output file.
-        6. Read output file and send the RPC response.
-    """
-    compile_doc = None
-    prog_id = None
-    queryList = None
-    transformType = ""
-
-    if len(instances) > 0:
-        prog_id = instances
-        transformType = 'SingleTable'
-
-    if prog_id is None:
-        clog.error("No program ID found for ddl_request")
-        return
-
-    if transformType == "SingleTable":
-        clog.debug('Received SingleTable {0} transformation request.'.format(target))
-        tableList = [prog_id]
-    elif transformType == "SinglePattern":
-        clog.debug('Received SinglePattern {0} transformation request.'.format(target))
-        join_group = db.entities.find_one({'profile.PatternID':prog_id}, {'eid':1, 'profile.FullQueryList':1})
-
-        if join_group is None:
-            return
-
-        tableList = []
-        queryList = []
-
-        relations_to = redis_conn.getRelationships(join_group['eid'], None, "COOCCURRENCE_TABLE")
-        for rel in relations_to:
-            tableList.append(rel['end_en'])
-
-        if "profile" in join_group:
-            if "FullQueryList" in join_group['profile']:
-                queryList = join_group['profile']['FullQueryList']
-
-    """
-        Invoke analytics workflow to generate target object analytics.
-    """
-    result = None
-    if target == "hbase":
-        result = Hbase.run_workflow(tenant, prog_id, queryList)
-    elif target == "impala":
-        result = Impala.run_workflow(tenant, prog_id, queryList)
-    elif target == "hive":
-        result = Impala.run_workflow(tenant, prog_id, queryList, target)
-
-
-    """
-        Save the analytics results to a local file.
-    """
-
-    resp_dict = {}
-    status = "FAILED"
-    """
-        Send request to DDL generator.
-    """
-    try:
-
-        EntityId = '0'
-        if len(prog_id) == 0:
-            EntityId = prog_id[0]
-        data_dict = {"input_query": dumps(result),
-                     "EntityId": EntityId, "TenantId": "100", "Version": "1"}
-
-        """
-            For DDL generation the opcode is 2.
-        """
-        opcode = 2
-        retries = 3
-        response = tclient.send_compiler_request(opcode, data_dict, retries)
-
-        if response.isSuccess == True:
-            status = "SUCCESS"
-        else:
-            status = "FAILED"
-
-        """
-            Upon response, check the output file.
-        """
-        if not os.path.isfile(output_file_name):
-            resp_dict["status"] = "Failed"
-            clog.error("compiler request failed")
-        else:
-            """
-                Read the output and send the RPC response.
-            """
-            compile_coc = None
-            compile_doc = loads(response.result)
-            resp_dict = compile_doc
-            resp_dict["status"] = "Success"
-    except:
-        clog.exception("Tenent {0}, Entity {1}, {2}\n".format(tenant, prog_id, traceback.format_exc()))
-        resp_dict["status"] = "Failed"
-
-    """
-        Publish the response to the requestor.
-    """
-    return resp_dict
-    #ch.basic_publish(exchange='',
-    #                 routing_key=properties.reply_to,
-    #                 properties=pika.BasicProperties(correlation_id = \
-    #                                                 properties.correlation_id),
-    #                 body=dumps(resp_dict))
 
 def callback(ch, method, properties, body):
 
@@ -340,25 +224,7 @@ def callback(ch, method, properties, body):
          This needs to be dynamic in nature.
         """
         opcode_startTime = time.clock()
-        if msg_dict["opcode"] == "HbaseDDL":
-
-            clog.debug("Got the opcode of Hbase")
-            instances = msg_dict["job_instances"]
-            db = client[tenant]
-            redis_conn = RedisConnector(tenant)
-            add_table_volume.execute(tenant, msg_dict)
-            resp_dict = process_ddl_request(ch, properties, tenant, "hbase", instances, db, redis_conn, clog)
-        if msg_dict["opcode"] == "ImpalaDDL":
-            clog.debug("Got the opcode of Hbase")
-            instances = msg_dict["job_instances"]
-            db = client[tenant]
-            redis_conn = RedisConnector(tenant)
-            add_table_volume.execute(tenant, msg_dict)
-            if 'target' in msg_dict:
-                resp_dict = process_ddl_request(ch, properties, tenant, msg_dict['target'], instances, db, redis_conn, clog)
-            else:
-                resp_dict = process_ddl_request(ch, properties, tenant, "impala", instances, db, redis_conn, clog)
-        elif msg_dict["opcode"] == "ImpalaImport":
+        if msg_dict["opcode"] == "ImpalaImport":
 
             clog.debug("Got the opcode of Impala import")
             filename = msg_dict["filename"]
