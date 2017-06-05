@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+CLASSPATH="/usr/lib/teleMetry"
+XPLAIN_HOME="/usr/lib/teleMetry"
+
+# needed for execution
+if [ ! -f ${XPLAIN_HOME}/navopt*.jar ]; then
+  echo "Missing Compiler Execution Jar: ${XPLAIN_HOME}/navopt*.jar"
+  exit 1;
+fi
+
+for f in ${XPLAIN_HOME}/*.jar; do
+  CLASSPATH=${CLASSPATH}:$f;
+done
+
+java -Dcompiler.servicename=$SERVICE_NAME -Dnavopt.log.dir=/var/log/cloudera/navopt -Dlogback.configurationFile=$XPLAIN_HOME/logback.xml  -classpath $CLASSPATH com.cloudera.navopt.Main HiveAudit
+

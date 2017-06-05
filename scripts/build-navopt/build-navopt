@@ -44,7 +44,8 @@ SERVICES = {
             'Baaz-DataAcquisition-Service.tar.gz',
             'Baaz-Compile-Service.tar.gz',
             'Baaz-Analytics-Service.tar.gz',
-            'Baaz-API-Service.tar.gz'
+            'Baaz-API-Service.tar.gz',
+            'Baaz-TeleMetry.tar.gz'
         ],
     },
     'UI': {

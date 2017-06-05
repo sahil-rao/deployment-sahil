@@ -25,3 +25,18 @@ echo "--- building api server..."
 cd API-Server
 tar -zcvf /target/Baaz-API-Service.tar.gz etc usr
 cd ..
+
+
+echo "--- building telemetry consumer..."
+cd TeleMetry-Consumer
+echo "--- building compiler..."
+mvn install
+
+echo "--- archiving compiler..."
+mkdir teleMetry
+
+cp target/lib/*.jar teleMetry/
+cp target/*.jar teleMetry/
+cp target/classes/logback.xml teleMetry/
+tar -zcvf /target/Baaz-TeleMetry.tar.gz etc usr teleMetry
+cd ..

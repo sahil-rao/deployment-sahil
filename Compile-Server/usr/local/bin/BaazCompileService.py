@@ -1832,6 +1832,43 @@ def compile_query_with_catalog(mongoconn, redis_conn, compilername, data_dict, c
 
     return compile_doc
 
+def setup_uid_for_telemetry_upload(tenant, client, sourcePlatform):
+    db = client[tenant]
+    userclient = getMongoServer('xplainDb')
+    userdb = userclient['xplainIO']
+    redis_conn = RedisConnector(tenant)
+
+    #find active uid for this tenant
+    activeUid = userdb.activeUploadsUIDs.find_one({'guid': tenant}, {'upUID': 1})
+    if not activeUid or 'upUID' not in activeUid:
+        uid = str(uuid.uuid4())
+        #mark start of upload process
+        db.uploadStats.update({ 'uid': '0' }, {'$set': { 'done': False }}, upsert=True)
+        db.uploadSessionUIDs.update({ "uploadSession": "uploadSession" }, {'$push': { 'session': str(uid) }}, upsert=True)
+        userdb.activeUploadsUIDs.insert({'guid': tenant, 'upUID': uid})
+        fileTimestamp = time.time()
+        timestr = datetime.datetime.fromtimestamp(time.time()).strftime('%m-%d-%Y')
+        newFileName = timestr + "/teleMetryUpload"
+        #update upload stats
+        objectToInsert = {
+            'tenent': tenant,
+            'filename': newFileName,
+            'uid': str(uid),
+            'timestamp': fileTimestamp,
+            'active': True,
+            'source_platform': sourcePlatform
+        }
+        db.uploadStats.insert(objectToInsert)
+        uidKey = tenant + ":uid:" + str(uid)
+        redis_conn.r.mset({uidKey: objectToInsert['active']})
+    else:
+        uid = activeUid['upUID']
+
+    startProcessingPhase(db.uploadStats, redis_conn, uid)
+    if redis_conn.getEntityProfile("dashboard_data") == {}:
+        redis_conn.createEntityProfile("dashboard_data", "dashboard_data")
+    redis_conn.incrEntityCounter("dashboard_data", "TotalQueries", sort=False, incrBy=1)
+    return uid
 
 @trace_zipkin(service_name="BaazCompileService",
               span_name="CompileService")
@@ -1866,6 +1903,11 @@ def callback(ch, method, properties, body, **kwargs):
     db = None
 
     client = getMongoServer(tenant)
+    #check if message came via TeleMetry Publisher
+    if 'isTeleMetry' in msg_dict and msg_dict['isTeleMetry']:
+        #if so setup UID stuff
+        msg_dict['uid'] = setup_uid_for_telemetry_upload(tenant, client, msg_dict['source_platform'])
+
     log_dict = {'tenant':tenant, 'tag': 'compileservice'}
     if 'uid' in msg_dict:
         log_dict['uid'] = msg_dict['uid']
