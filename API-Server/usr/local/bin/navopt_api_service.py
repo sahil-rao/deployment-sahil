@@ -104,7 +104,7 @@ class ApiRpcClient(object):
 
 class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
     logging.info('GRPC NavOptApiServer Started')
- 
+
     def createTenant(self, request, context):
         api_rpc = ApiRpcClient()
         logging.info('Create Tenant Request Message: %s', request)
@@ -137,8 +137,6 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         api_rpc = ApiRpcClient()
         logging.info('GetTenant Request message: %s', request)
         msg_dict = {'opcode':'GetTenant'}
-        if request.email != '':
-            msg_dict['email'] = str(request.email)
         if request.clusterId != '':
             msg_dict['clusterId'] = str(request.clusterId)
         if request.externalAccountId != '':
@@ -215,7 +213,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
             'uid': str(fileGuid),
             'header_info': headerInfo
         }
-     
+
         logging.info("Upload msg dict: %s", msg_dict) 
         if row_delim:
             if row_delim == "\\n":
@@ -255,6 +253,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
         api_rpc = ApiRpcClient()
         logging.info('GetTopDatabases Request message: %s', request)
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopDataBases'}
+
         if request.pageSize != 0:
             msg_dict['pageSize'] = request.pageSize
         if request.startingToken != "":
@@ -267,7 +266,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
 
     def getTopTables(self, request, context):
         api_rpc = ApiRpcClient()
-        logging.info('GetTopTables request message: %s', request) 
+        logging.info('GetTopTables request message: %s', request)
         msg_dict = {'tenant':str(request.tenant), 'opcode':'TopTables'}
         if request.dbName != "":
             msg_dict['dbname'] = request.dbName
@@ -643,7 +642,7 @@ class NavOptApiServer(navopt_pb2.BetaNavOptServicer):
     def getQueryRisk(self, request, context):
         api_rpc = ApiRpcClient()
         #get Risk analysis
-        logging.info('GetQueryRisk request: %s', request) 
+        logging.info('GetQueryRisk request: %s', request)
         msg_dict = {'tenant':str(request.tenant), 'opcode':'QueryRisk', 'query':request.query}
         if request.sourcePlatform != "":
             msg_dict['source_platform'] = request.sourcePlatform
