@@ -1303,6 +1303,12 @@ def processCompilerOutputs(mongoconn, redis_conn, ch, collection, tenant, uid, q
                     setDict[field] = []
                 setDict[field].append(data[field])
             mongoconn.db.entities.update({'md5':q_hash}, {'$set':{'profile.stats': setDict}})
+        #update uid of the query that has failed with latest uid
+        if 'Compiler' in entity_instance['profile'] and compiler_to_use in entity_instance['profile']['Compiler'] and \
+           "ErrorSignature" in entity_instance['profile']['Compiler'][compiler_to_use] and \
+           len(entity_instance['profile']['Compiler'][compiler_to_use]["ErrorSignature"]) > 0 and \
+           entity.uid != uid:
+            mongoconn.db.entities.update({'md5':q_hash}, {"$set": {"uid": uid}})
 
 
     """
