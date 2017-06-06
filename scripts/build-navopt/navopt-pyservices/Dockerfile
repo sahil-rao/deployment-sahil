@@ -8,7 +8,7 @@ RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 RUN apt-get update && \
     apt-get install -y python python-pip graphviz libgraphviz-dev pkg-config \
-                       ntp python-dev monit
+                       ntp python-dev monit emacs
 
 RUN pip install -U pip
 
