@@ -7,11 +7,11 @@
   </appender>
 
   <appender name="ROOT" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${navopt.log.dir:-/tmp}/querycompiler.log</file>
+    <file>${navopt.log.dir:-/tmp}/querycompiler-${compiler.servicename:-default}.log</file>
     <append>true</append>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <!-- daily rollover -->
-      <fileNamePattern>${navopt.log.dir:-/tmp}/querycompiler.log.%d{yyyy-MM-dd}.%i</fileNamePattern>
+      <fileNamePattern>${navopt.log.dir:-/tmp}/querycompiler-${compiler.servicename:-default}.log.%d{yyyy-MM-dd}.%i</fileNamePattern>
       <timeBasedFileNamingAndTriggeringPolicy
           class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
           <!-- or whenever the file size reaches 10MB -->
@@ -26,11 +26,11 @@
   </appender>
 
   <appender name="REQUESTS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-    <file>${navopt.log.dir:-/tmp}/querycompiler-strategy.log</file>
+    <file>${navopt.log.dir:-/tmp}/querycompiler-requests.log</file>
     <append>true</append>
     <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
       <!-- daily rollover -->
-      <fileNamePattern>${navopt.log.dir:-/tmp}/querycompiler-strategy.%d{yyyy-MM-dd}.%i</fileNamePattern>
+      <fileNamePattern>${navopt.log.dir:-/tmp}/querycompiler-requests.%d{yyyy-MM-dd}.%i</fileNamePattern>
       <timeBasedFileNamingAndTriggeringPolicy
           class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
           <!-- or whenever the file size reaches 10MB -->
@@ -45,11 +45,11 @@
   </appender>
 
   <appender name="logstash-tcp" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
-    <destination>${logstash.host:-192.168.1.1}:5400</destination>
-    <!-- host>${logstash.host:-192.168.1.1}</host>
+    <destination>${logstash.host:-172.31.15.82}:5400</destination>
+    <!-- host>${logstash.host:-172.31.15.82}</host>
     <port>5400</port -->
     <encoder class="net.logstash.logback.encoder.LogstashEncoder">
-      <customFields>{"tags":"java-compiler"}</customFields>
+      <customFields>{"tags":"java-compiler-${compiler.servicename:-default}"}</customFields>
     </encoder>
   </appender>
 
@@ -77,7 +77,7 @@
   </appender>
 
   <appender name="logstash-redis" class="com.cloudera.navopt.compiler.logback.NavOptRedisAppender">
-    <host>{{ services.redislog.server }}</host>
+    <host>${logstash.redis.host:-172.31.2.218}</host>
     <port>6379</port>
     <key>logstash</key>
     <tags>java-compiler</tags>
@@ -94,14 +94,14 @@
     <appender-ref ref="logstash-redis" />
   </appender>
 
-  <logger name="com.cloudera.navopt.compiler.QueryCompilerServer" additivity="true" level="DEBUG">
+
+  <!-- logger name="com.cloudera.navopt.compiler.QueryCompilerServer" additivity="true" level="DEBUG">
     <appender-ref ref="REQUESTS" />
-  </logger>
+  </logger -->
   <logger name="org.apache.hadoop.hive.ql.parse.ParseDriver" level="OFF"/>
   <logger name="ch.qos.logback" level="INFO"/>
 
   <root level="INFO">
     <appender-ref ref="ROOT" />
-    <appender-ref ref="async" />
   </root>
 </configuration>
