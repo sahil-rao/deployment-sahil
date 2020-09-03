@@ -9,7 +9,7 @@
     "babel-plugin-transform-react-jsx-img-import": "0.1.4",
     "babili": "0.1.2",
     "babili-webpack-plugin": "0.1.1",
-    "bootstrap-select": "1.11.2",
+    "bootstrap-select": "1.13.18",
     "bootstrap": "3.3.7",
     "case-sensitive-paths-webpack-plugin": "2.1.0",
     "cloudera-ui": "git://github.mtv.cloudera.com/Starship/cloudera-ui.git#1e842d0871f0ac1980e9e72dadf8ac5390f0489d",
